@@ -1,0 +1,36 @@
+test {
+	useJUnitPlatform()
+	testLogging {
+		events "skipped", "failed"
+	}
+}
+
+task unitTest(type: Test) {
+	description 'Run only unit tests.'
+	group 'Verification'
+
+	filter {
+		includeTestsMatching '*Test*.*'
+		excludeTestsMatching '*IT'
+	}
+	useJUnitPlatform()
+	testLogging {
+		events "skipped", "failed"
+	}
+}
+
+task integrationTest(type: Test) {
+	description 'Run only the integration tests.'
+	group 'Verification'
+
+	filter {
+		includeTestsMatching '*IT.*'
+		excludeTestsMatching '*Test*.*'
+	}
+	useJUnitPlatform()
+	testLogging {
+		events "skipped", "failed"
+	}
+
+	mustRunAfter unitTest
+}
