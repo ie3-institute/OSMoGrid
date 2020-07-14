@@ -25,7 +25,7 @@ spotless {
 
 	groovyGradle {
 		// same as groovy, but for .gradle (defaults to '*.gradle')
-		target '*.gradle', 'gradle/scripts/*.gradle'
+		target '*.gradle', 'gradle/scripts/*.gradle', 'Jenkinsfile'
 		greclipse()
 	}
 
@@ -33,7 +33,7 @@ spotless {
 	format 'misc', {
 		target '**/*.md', '**/.gitignore', 'configs/**'
 		trimTrailingWhitespace()
-		indentWithTabs()
+		indentWithSpaces(2)
 		endWithNewline()
 	}
 }
