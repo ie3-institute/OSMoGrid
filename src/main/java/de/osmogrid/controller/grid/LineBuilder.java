@@ -1,14 +1,13 @@
 /*
- * © 2019. TU Dortmund University,
+ * © 2020. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
- */
-
+*/
 package de.osmogrid.controller.grid;
 
-import de.osmogrid.model.graph.OsmogridNode;
+import de.osmogrid.model.graph.DistanceWeightedOsmEdge;
+import de.osmogrid.model.graph.OsmGridNode;
 import de.osmogrid.util.GridUtils;
-import edu.ie3.datamodel.graph.DistanceWeightedEdge;
 import edu.ie3.datamodel.models.input.NodeInput;
 import edu.ie3.datamodel.models.input.connector.LineInput;
 import edu.ie3.datamodel.models.input.connector.type.LineTypeInput;
@@ -24,7 +23,7 @@ import tec.uom.se.ComparableQuantity;
 /**
  * Provides the methods, based on depth first search, to build the {@link LineInput}s of the
  * electrical grid from the graph. A special algorithm is necessary because not all {@link
- * OsmogridNode}s from the graph are connected with one {@link LineInput} but only those with a load
+ * OsmGridNode}s from the graph are connected with one {@link LineInput} but only those with a load
  * (or intersections).
  *
  * @author Mahr
@@ -32,14 +31,14 @@ import tec.uom.se.ComparableQuantity;
  */
 public class LineBuilder {
 
-  private AsSubgraph<OsmogridNode, DistanceWeightedEdge> subgraph;
+  private AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge> subgraph;
   private final LineTypeInput lineTypeInput;
-  private Map<OsmogridNode, NodeInput> geoGridNodesMap;
-  private OsmogridNode startNode;
-  private OsmogridNode endNode;
-  private List<OsmogridNode> geoNodes;
-  private Map<OsmogridNode, VisitColor> nodeColorMap;
-  private OsmogridNode lastVisitedNode;
+  private Map<OsmGridNode, NodeInput> geoGridNodesMap;
+  private OsmGridNode startNode;
+  private OsmGridNode endNode;
+  private List<OsmGridNode> geoNodes;
+  private Map<OsmGridNode, VisitColor> nodeColorMap;
+  private OsmGridNode lastVisitedNode;
   private int lineIdCounter;
   private List<LineInput> lineInputModels;
 
@@ -54,8 +53,8 @@ public class LineBuilder {
   }
 
   public void initialize(
-      AsSubgraph<OsmogridNode, DistanceWeightedEdge> subgraph,
-      Map<OsmogridNode, NodeInput> geoGridNodesMap,
+      AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge> subgraph,
+      Map<OsmGridNode, NodeInput> geoGridNodesMap,
       int lineIdCounter) {
     this.subgraph = subgraph;
     this.geoGridNodesMap = geoGridNodesMap;
@@ -74,7 +73,7 @@ public class LineBuilder {
   public void start() {
     boolean startVertexFound = false;
 
-    for (OsmogridNode node : subgraph.vertexSet()) {
+    for (OsmGridNode node : subgraph.vertexSet()) {
       if (!startVertexFound && (node.getLoad() != null || subgraph.degreeOf(node) > 2))
         startVertexFound = true;
       if (startVertexFound && nodeColorMap.get(node).equals(VisitColor.WHITE)) visitNode(node);
@@ -86,7 +85,7 @@ public class LineBuilder {
    *
    * @param node Node that has to be visited.
    */
-  private void visitNode(OsmogridNode node) {
+  private void visitNode(OsmGridNode node) {
     nodeColorMap.remove(node);
     nodeColorMap.put(node, VisitColor.GRAY);
 
@@ -134,8 +133,8 @@ public class LineBuilder {
     if (!isDeadEnd) {
 
       // create neighbor list (consider only "forward" nodes)
-      List<OsmogridNode> neighborNodes = new LinkedList<>();
-      for (DistanceWeightedEdge connectedEdge : subgraph.edgesOf(node)) {
+      List<OsmGridNode> neighborNodes = new LinkedList<>();
+      for (DistanceWeightedOsmEdge connectedEdge : subgraph.edgesOf(node)) {
         if (subgraph.getEdgeSource(connectedEdge).equals(node)
             && !subgraph.getEdgeTarget(connectedEdge).equals(lastVisitedNode))
           neighborNodes.add(subgraph.getEdgeTarget(connectedEdge));
@@ -145,7 +144,7 @@ public class LineBuilder {
       }
 
       // investigate the neighbor nodes
-      for (OsmogridNode neighborNode : neighborNodes) {
+      for (OsmGridNode neighborNode : neighborNodes) {
         // set startNode again if it's null (this could happen if we have reached a dead end or
         // closed a circle in the step before)
         if (startNode == null && (node.getLoad() != null || subgraph.degreeOf(node) > 2)) {

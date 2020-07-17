@@ -1,17 +1,16 @@
 /*
- * © 2019. TU Dortmund University,
+ * © 2020. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
- */
-
+*/
 package de.osmogrid.controller.grid;
 
 import de.osmogrid.config.OsmogridConfig;
-import de.osmogrid.model.graph.OsmogridNode;
+import de.osmogrid.model.graph.DistanceWeightedOsmEdge;
+import de.osmogrid.model.graph.OsmGridNode;
 import de.osmogrid.util.GridUtils;
 import de.osmogrid.util.enums.TypeSourceFormat;
 import edu.ie3.datamodel.exceptions.VoltageLevelException;
-import edu.ie3.datamodel.graph.DistanceWeightedEdge;
 import edu.ie3.datamodel.io.FileNamingStrategy;
 import edu.ie3.datamodel.io.source.TypeSource;
 import edu.ie3.datamodel.io.source.csv.CsvTypeSource;
@@ -106,7 +105,7 @@ public class GridController {
    *     subnet).
    */
   public JointGridContainer generateGrid(
-      List<AsSubgraph<OsmogridNode, DistanceWeightedEdge>> graphModel) {
+      List<AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge>> graphModel) {
 
     JointGridContainer gridModel = buildGrid(graphModel);
 
@@ -169,7 +168,7 @@ public class GridController {
    * @param graphModel GraphModel from which the GridInputModels shall be generated
    */
   private JointGridContainer buildGrid(
-      @NotNull List<AsSubgraph<OsmogridNode, DistanceWeightedEdge>> graphModel) {
+      @NotNull List<AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge>> graphModel) {
 
     ComparableQuantity<ElectricPotential> vRated =
         Quantities.getQuantity(osmogridConfig.grid.ratedVoltage, PowerSystemUnits.KILOVOLT);
@@ -193,22 +192,22 @@ public class GridController {
     Set<LoadInput> loadInputs = new HashSet<>();
     Set<LineInput> lineInputs = new HashSet<>();
 
-    for (AsSubgraph<OsmogridNode, DistanceWeightedEdge> subgraph : graphModel) {
-      Map<OsmogridNode, NodeInput> geoGridNodesMap = new HashMap<>();
+    for (AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge> subgraph : graphModel) {
+      Map<OsmGridNode, NodeInput> geoGridNodesMap = new HashMap<>();
 
-      for (OsmogridNode osmogridNode : subgraph.vertexSet()) {
-        if (osmogridNode.getLoad() != null) {
+      for (OsmGridNode osmGridNode : subgraph.vertexSet()) {
+        if (osmGridNode.getLoad() != null) {
           NodeInput nodeInput =
               new NodeInput(
                   UUID.randomUUID(),
                   "Node " + nodeIdCounter++,
                   vTarget,
-                  osmogridNode.isSubStation(),
-                  GridUtils.latLonToPointNew(osmogridNode.getLatlon()),
+                  osmGridNode.isSubStation(),
+                  GridUtils.latLonToPointNew(osmGridNode.getLatlon()),
                   voltLvl,
                   subNetCounter);
 
-          geoGridNodesMap.put(osmogridNode, nodeInput);
+          geoGridNodesMap.put(osmGridNode, nodeInput);
           nodeInputs.add(nodeInput);
 
           if (osmogridConfig.grid.considerHouseConnectionPoints) {
@@ -220,14 +219,14 @@ public class GridController {
                     "Node " + nodeIdCounter++,
                     vTarget,
                     false,
-                    GridUtils.latLonToPointNew(osmogridNode.getHouseConnectionPoint()),
+                    GridUtils.latLonToPointNew(osmGridNode.getHouseConnectionPoint()),
                     voltLvl,
                     subNetCounter);
 
             // The load will then be set to the node that represents the house connection point.
             ComparableQuantity<Energy> eConsAnnual =
                 Quantities.getQuantity(
-                    osmogridNode.getLoad().toSystemUnit().getValue().doubleValue(),
+                    osmGridNode.getLoad().toSystemUnit().getValue().doubleValue(),
                     PowerSystemUnits.KILOWATTHOUR);
 
             LoadInput loadInput =
@@ -240,7 +239,7 @@ public class GridController {
                     false,
                     eConsAnnual,
                     (ComparableQuantity<Power>)
-                        osmogridNode.getLoad().to(PowerSystemUnits.KILOVOLTAMPERE),
+                        osmGridNode.getLoad().to(PowerSystemUnits.KILOVOLTAMPERE),
                     1d);
 
             // Create a LineInput between the NodeInputs from the OsmogridNode and the house
@@ -273,7 +272,7 @@ public class GridController {
             // and set it to the NodeInput.
             ComparableQuantity<Energy> eConsAnnual =
                 Quantities.getQuantity(
-                    osmogridNode.getLoad().toSystemUnit().getValue().doubleValue(),
+                    osmGridNode.getLoad().toSystemUnit().getValue().doubleValue(),
                     PowerSystemUnits.KILOWATTHOUR);
 
             LoadInput loadInput =
@@ -286,23 +285,23 @@ public class GridController {
                     false,
                     eConsAnnual,
                     (ComparableQuantity<Power>)
-                        osmogridNode.getLoad().to(PowerSystemUnits.KILOVOLTAMPERE),
+                        osmGridNode.getLoad().to(PowerSystemUnits.KILOVOLTAMPERE),
                     1d);
             loadInputs.add(loadInput);
           }
-        } else if (subgraph.degreeOf(osmogridNode) > 2) {
+        } else if (subgraph.degreeOf(osmGridNode) > 2) {
           // If the node is an intersection, create a NodeInput
           NodeInput nodeInput =
               new NodeInput(
                   UUID.randomUUID(),
                   "Node " + nodeIdCounter++,
                   vTarget,
-                  osmogridNode.isSubStation(),
-                  GridUtils.latLonToPointNew(osmogridNode.getLatlon()),
+                  osmGridNode.isSubStation(),
+                  GridUtils.latLonToPointNew(osmGridNode.getLatlon()),
                   voltLvl,
                   subNetCounter);
 
-          geoGridNodesMap.put(osmogridNode, nodeInput);
+          geoGridNodesMap.put(osmGridNode, nodeInput);
           nodeInputs.add(nodeInput);
         }
       }

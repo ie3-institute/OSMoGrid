@@ -1,16 +1,15 @@
 /*
- * © 2019. TU Dortmund University,
+ * © 2020. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
- */
-
+*/
 package de.osmogrid.controller.graph;
 
-import de.osmogrid.model.graph.OsmogridNode;
+import de.osmogrid.model.graph.DistanceWeightedOsmEdge;
+import de.osmogrid.model.graph.OsmGridNode;
 import de.osmogrid.util.OsmDataProvider;
 import de.osmogrid.util.exceptions.EmptyClusterException;
 import de.osmogrid.util.exceptions.UnconnectedClusterException;
-import edu.ie3.datamodel.graph.DistanceWeightedEdge;
 import edu.ie3.util.geo.GeoUtils;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -44,11 +43,11 @@ public class KMedoidsSameSize {
 
   public static final Logger logger = LogManager.getLogger(KMedoidsSameSize.class);
 
-  private final Graph<OsmogridNode, DistanceWeightedEdge> clusterSubgraph;
-  private final ShortestPathAlgorithm<OsmogridNode, DistanceWeightedEdge> shortestPaths;
-  private final List<OsmogridNode> clusterNodes;
-  private final List<Set<OsmogridNode>> clusters;
-  private final List<OsmogridNode> medoids;
+  private final Graph<OsmGridNode, DistanceWeightedOsmEdge> clusterSubgraph;
+  private final ShortestPathAlgorithm<OsmGridNode, DistanceWeightedOsmEdge> shortestPaths;
+  private final List<OsmGridNode> clusterNodes;
+  private final List<Set<OsmGridNode>> clusters;
+  private final List<OsmGridNode> medoids;
   private final int k;
   private final double maxSize;
   private final boolean considerRealSubstations;
@@ -66,8 +65,8 @@ public class KMedoidsSameSize {
    *     moved (Not stable yet)
    */
   KMedoidsSameSize(
-      ShortestPathAlgorithm<OsmogridNode, DistanceWeightedEdge> shortestPaths,
-      Graph<OsmogridNode, DistanceWeightedEdge> clusterSubgraph,
+      ShortestPathAlgorithm<OsmGridNode, DistanceWeightedOsmEdge> shortestPaths,
+      Graph<OsmGridNode, DistanceWeightedOsmEdge> clusterSubgraph,
       int k,
       double maxSize,
       boolean considerRealSubstations,
@@ -89,7 +88,7 @@ public class KMedoidsSameSize {
    * @return Clustered nodes grouped by cluster
    * @throws EmptyClusterException If a cluster does not contain any nodes.
    */
-  List<Set<OsmogridNode>> run() throws EmptyClusterException {
+  List<Set<OsmGridNode>> run() throws EmptyClusterException {
 
     logger.info(
         "Starting K-Medoids, " + k + " clusters, highest allowed cluster load: " + this.maxSize);
@@ -124,17 +123,17 @@ public class KMedoidsSameSize {
   /**
    * Randomly selects initial medoids for k-medoids algorithm.
    *
-   * @param nodes All {@link OsmogridNode}s that have to be clustered.
+   * @param nodes All {@link OsmGridNode}s that have to be clustered.
    * @param considerRealSubstations If set to true, considers previous detected real substations
    *     (from {@link OsmDataProvider}).
    */
-  private void initialMedoidSelection(Set<OsmogridNode> nodes, boolean considerRealSubstations) {
+  private void initialMedoidSelection(Set<OsmGridNode> nodes, boolean considerRealSubstations) {
 
-    LinkedList<OsmogridNode> clusterNodes = new LinkedList<>(nodes);
+    LinkedList<OsmGridNode> clusterNodes = new LinkedList<>(nodes);
 
     // look for real substations and add them to medoids list
     if (considerRealSubstations) {
-      for (OsmogridNode node : nodes) {
+      for (OsmGridNode node : nodes) {
         if (node.isSubStation()) {
           medoids.add(node);
         }
@@ -148,7 +147,7 @@ public class KMedoidsSameSize {
     }
 
     // set substation value for each medoid to true
-    for (OsmogridNode medoid : medoids) {
+    for (OsmGridNode medoid : medoids) {
       medoid.setSubStation(true);
     }
   }
@@ -157,14 +156,14 @@ public class KMedoidsSameSize {
    * Randomly determines initial medoids for k-medoids algorithm (using the k-medoids++
    * initialization) (Does not work properly for all regions).
    *
-   * @param nodes All {@link OsmogridNode}s that have to be clustered.
+   * @param nodes All {@link OsmGridNode}s that have to be clustered.
    */
   @SuppressWarnings("unused")
-  private void initializeKMedoidsPlusPlus(Set<OsmogridNode> nodes) {
+  private void initializeKMedoidsPlusPlus(Set<OsmGridNode> nodes) {
 
     // TODO: fix this method and add consideration of real substations
 
-    LinkedList<OsmogridNode> clusterNodes = new LinkedList<>(nodes);
+    LinkedList<OsmGridNode> clusterNodes = new LinkedList<>(nodes);
 
     // find first medoid randomly
     int random = ThreadLocalRandom.current().nextInt(0, clusterNodes.size());
@@ -173,13 +172,13 @@ public class KMedoidsSameSize {
     // repeat k-1 times:
     for (int i = 1; i < k; i++) {
 
-      Map<Double, OsmogridNode> squaredDistances = new HashMap<>();
+      Map<Double, OsmGridNode> squaredDistances = new HashMap<>();
 
       // for each node calculate the distance to each medoid and save the one to the closest medoid
-      for (OsmogridNode node : clusterNodes) {
+      for (OsmGridNode node : clusterNodes) {
         if (!medoids.contains(node)) {
           double lowestWeight = Double.MAX_VALUE;
-          for (OsmogridNode medoid : medoids) {
+          for (OsmGridNode medoid : medoids) {
             // calculate distance in graph from node to medoid
             double weight = shortestPaths.getPathWeight(medoid, node);
             if (weight < lowestWeight) {
@@ -191,8 +190,8 @@ public class KMedoidsSameSize {
       }
 
       // sort and cumulate squaredDistances
-      TreeMap<Double, OsmogridNode> sortedSquaredDistances = new TreeMap<>(squaredDistances);
-      List<OsmogridNode> osmogridNodes = new LinkedList<>(sortedSquaredDistances.values());
+      TreeMap<Double, OsmGridNode> sortedSquaredDistances = new TreeMap<>(squaredDistances);
+      List<OsmGridNode> osmGridNodes = new LinkedList<>(sortedSquaredDistances.values());
       double[] cumulatedDistances = new double[sortedSquaredDistances.size()];
 
       int j = 0;
@@ -210,14 +209,14 @@ public class KMedoidsSameSize {
       // find the least entry in cumulatedDistances that is greater than nextMedoid
       for (int l = 0; l < cumulatedDistances.length; l++) {
         if (cumulatedDistances[l] > nextMedoid) {
-          medoids.add(osmogridNodes.get(l));
+          medoids.add(osmGridNodes.get(l));
           break;
         }
       }
       squaredDistances.clear();
     }
 
-    for (OsmogridNode medoid : medoids) {
+    for (OsmGridNode medoid : medoids) {
       medoid.setSubStation(true);
     }
   }
@@ -235,11 +234,11 @@ public class KMedoidsSameSize {
     }
 
     // get the medoid with the shortest distance and assign to the corresponding cluster
-    List<OsmogridNode> nodesToRemove = new LinkedList<>();
-    for (OsmogridNode node : clusterNodes) {
+    List<OsmGridNode> nodesToRemove = new LinkedList<>();
+    for (OsmGridNode node : clusterNodes) {
       double shortestDistance = Double.POSITIVE_INFINITY;
       int cluster = -1;
-      for (OsmogridNode medoid : medoids) {
+      for (OsmGridNode medoid : medoids) {
         double distance = shortestPaths.getPathWeight(node, medoid);
         if (distance < shortestDistance) {
           shortestDistance = distance;
@@ -257,10 +256,10 @@ public class KMedoidsSameSize {
     clusterNodes.removeAll(nodesToRemove);
 
     // check for each cluster whether its connected
-    for (Set<OsmogridNode> cluster : clusters) {
-      AsSubgraph<OsmogridNode, DistanceWeightedEdge> subgraph =
+    for (Set<OsmGridNode> cluster : clusters) {
+      AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge> subgraph =
           new AsSubgraph<>(clusterSubgraph, new HashSet<>(cluster));
-      ConnectivityInspector<OsmogridNode, DistanceWeightedEdge> connectivityInspector =
+      ConnectivityInspector<OsmGridNode, DistanceWeightedOsmEdge> connectivityInspector =
           new ConnectivityInspector<>(subgraph);
       if (connectivityInspector.connectedSets().size() > 1) {
         throw new UnconnectedClusterException(
@@ -283,12 +282,12 @@ public class KMedoidsSameSize {
     for (int iterations = 0; maxIterations < 0 || iterations < maxIterations; iterations++) {
       // calculate load map
       Map<Integer, Double> loadMap = new LinkedHashMap<>();
-      for (Set<OsmogridNode> cluster : clusters) {
+      for (Set<OsmGridNode> cluster : clusters) {
         if (cluster.isEmpty()) {
           throw new EmptyClusterException("Detected empty cluster");
         }
         double loadSum = 0.0;
-        for (OsmogridNode loadNode : cluster) {
+        for (OsmGridNode loadNode : cluster) {
           if (loadNode.getLoad() != null) {
             loadSum += loadNode.getLoad().getValue().doubleValue();
           }
@@ -299,16 +298,16 @@ public class KMedoidsSameSize {
       // between min/max values)
 
       // check movability for each node to each cluster
-      Map<OsmogridNode, Boolean[]> movable = new LinkedHashMap<>(clusterNodes.size());
-      List<OsmogridNode> movableNodes = new LinkedList<>();
-      for (OsmogridNode node : clusterNodes) {
+      Map<OsmGridNode, Boolean[]> movable = new LinkedHashMap<>(clusterNodes.size());
+      List<OsmGridNode> movableNodes = new LinkedList<>();
+      for (OsmGridNode node : clusterNodes) {
         double load = 0.0;
         if (node.getLoad() != null) {
           load = node.getLoad().getValue().doubleValue();
         }
         Boolean[] movableArray = new Boolean[k];
         Arrays.fill(movableArray, false);
-        for (OsmogridNode neighbor : Graphs.neighborSetOf(clusterSubgraph, node)) {
+        for (OsmGridNode neighbor : Graphs.neighborSetOf(clusterSubgraph, node)) {
           if (neighbor.getCluster() != node.getCluster()
               && loadMap.get(node.getCluster()) > loadMap.get(neighbor.getCluster()) + load) {
             movableArray[neighbor.getCluster()] = true;
@@ -321,12 +320,12 @@ public class KMedoidsSameSize {
       }
 
       // if a node is moved, the neighbor node becomes invalid
-      List<OsmogridNode> invalidNodes = new LinkedList<>();
+      List<OsmGridNode> invalidNodes = new LinkedList<>();
 
       // Track if anything has changed
       int active = 0;
 
-      for (OsmogridNode node : movableNodes) {
+      for (OsmGridNode node : movableNodes) {
         if (invalidNodes.contains(node)) {
           continue;
         }
@@ -353,29 +352,29 @@ public class KMedoidsSameSize {
             if (clusterSubgraph.degreeOf(node) > 2) {
               // create a temporary subgraph for the source cluster and check the number of
               // connected sets
-              AsSubgraph<OsmogridNode, DistanceWeightedEdge> testSubgraph =
+              AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge> testSubgraph =
                   new AsSubgraph<>(clusterSubgraph, new HashSet<>(clusters.get(source)));
 
-              ConnectivityInspector<OsmogridNode, DistanceWeightedEdge> connectivityInspector =
+              ConnectivityInspector<OsmGridNode, DistanceWeightedOsmEdge> connectivityInspector =
                   new ConnectivityInspector<>(testSubgraph);
 
               if (!connectivityInspector.isConnected()) {
                 // not connected: check if one of the new connected sets could be completely moved
                 // to
                 // the destination cluster (check if it would be an advantage too)
-                List<Set<OsmogridNode>> connectedSets = connectivityInspector.connectedSets();
+                List<Set<OsmGridNode>> connectedSets = connectivityInspector.connectedSets();
 
                 // sort connected sets by size and start we the smallest
                 connectedSets.sort(Comparator.comparingInt(Set::size));
 
-                List<OsmogridNode> tempMovedNodes = new LinkedList<>();
+                List<OsmGridNode> tempMovedNodes = new LinkedList<>();
                 tempMovedNodes.add(node);
 
-                for (Set<OsmogridNode> connectedSet : connectedSets) {
+                for (Set<OsmGridNode> connectedSet : connectedSets) {
 
                   // calculate the load sum for the connected set
                   double loadSum = 0.0;
-                  for (OsmogridNode n : connectedSet) {
+                  for (OsmGridNode n : connectedSet) {
                     if (n.getLoad() != null) {
                       loadSum += n.getLoad().getValue().doubleValue();
                     }
@@ -385,7 +384,7 @@ public class KMedoidsSameSize {
                   if (destinationLoad + loadSum < maxSize
                       && destinationLoad + loadSum < sourceLoad) {
                     // move the connected set completely to destination
-                    for (OsmogridNode n : connectedSet) {
+                    for (OsmGridNode n : connectedSet) {
                       transfer(source, i, n);
                       tempMovedNodes.add(n);
                       active++;
@@ -400,7 +399,7 @@ public class KMedoidsSameSize {
                   } else {
                     // if the cluster is still not connected and moving the unconnected parts is not
                     // possible, undo all transfers
-                    for (OsmogridNode tempMovedNode : tempMovedNodes) {
+                    for (OsmGridNode tempMovedNode : tempMovedNodes) {
                       transfer(i, source, tempMovedNode);
                       active--;
                     }
@@ -439,7 +438,7 @@ public class KMedoidsSameSize {
   private double calculateLoad(int k) {
 
     double loadSum = 0.0;
-    for (OsmogridNode node : clusters.get(k)) {
+    for (OsmGridNode node : clusters.get(k)) {
       if (node.getLoad() != null) {
         loadSum += node.getLoad().getValue().doubleValue();
       }
@@ -453,7 +452,7 @@ public class KMedoidsSameSize {
    */
   private void updateMedoids() {
 
-    for (Set<OsmogridNode> cluster : clusters) {
+    for (Set<OsmGridNode> cluster : clusters) {
 
       int clusterIndex = clusters.indexOf(cluster);
 
@@ -461,7 +460,7 @@ public class KMedoidsSameSize {
       double medoidLat = 0.0;
       double medoidLon = 0.0;
 
-      for (OsmogridNode node : cluster) {
+      for (OsmGridNode node : cluster) {
         medoidLat += node.getLatlon().getLat();
         medoidLon += node.getLatlon().getLon();
       }
@@ -471,12 +470,12 @@ public class KMedoidsSameSize {
       LatLon medoidLatLon = new LatLon(medoidLat, medoidLon);
 
       // get the closest node in full graph
-      Map<Double, OsmogridNode> distances = new LinkedHashMap<>();
+      Map<Double, OsmGridNode> distances = new LinkedHashMap<>();
 
       // calculate the distance from each node to the mean
-      Set<OsmogridNode> loadNodes =
+      Set<OsmGridNode> loadNodes =
           cluster.stream().filter(node -> node.getLoad() != null).collect(Collectors.toSet());
-      for (OsmogridNode node : loadNodes) {
+      for (OsmGridNode node : loadNodes) {
         double distance =
             GeoUtils.haversine(
                     medoidLatLon.getLat(),
@@ -510,7 +509,7 @@ public class KMedoidsSameSize {
    * @param destination The cluster the node has to be moved to.
    * @param node The node that has to be moved.
    */
-  private void transfer(int source, int destination, OsmogridNode node) {
+  private void transfer(int source, int destination, OsmGridNode node) {
 
     if (clusters.get(source).contains(node)) {
       clusters.get(source).remove(node);

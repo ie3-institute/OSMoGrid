@@ -1,9 +1,8 @@
 /*
- * © 2019. TU Dortmund University,
+ * © 2020. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
- */
-
+*/
 package de.osmogrid.util;
 
 import static edu.ie3.util.geo.GeoUtils.EARTH_RADIUS;
@@ -11,7 +10,7 @@ import static edu.ie3.util.geo.GeoUtils.EARTH_RADIUS;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
-import de.osmogrid.model.graph.OsmogridNode;
+import de.osmogrid.model.graph.OsmGridNode;
 import edu.ie3.datamodel.models.input.NodeInput;
 import edu.ie3.datamodel.models.input.connector.LineInput;
 import edu.ie3.util.OneToOneMap;
@@ -335,13 +334,13 @@ public class GridUtils {
    * @param nodes List of Nodes which shall be converted to OsmogridNodes
    * @return List of converted OsmogridNodes
    */
-  public static List<OsmogridNode> getOsmogridNodeList(@NotNull List<Node> nodes) {
-    List<OsmogridNode> osmogridNodes = new LinkedList<>();
+  public static List<OsmGridNode> getOsmogridNodeList(@NotNull List<Node> nodes) {
+    List<OsmGridNode> osmGridNodes = new LinkedList<>();
     for (Node node : nodes) {
-      OsmogridNode osmogridNode = new OsmogridNode(node);
-      osmogridNodes.add(osmogridNode);
+      OsmGridNode osmGridNode = new OsmGridNode(node);
+      osmGridNodes.add(osmGridNode);
     }
-    return osmogridNodes;
+    return osmGridNodes;
   }
 
   /**
@@ -370,12 +369,12 @@ public class GridUtils {
 
   /**
    * Calculates the geo position as a {@link LineString} from a given collection of {@link
-   * OsmogridNode}s.
+   * OsmGridNode}s.
    *
    * @param nodes Node list from which the geo position shall be calculated.
    * @return Calculated LineString from the given node list.
    */
-  public static LineString nodesToLineString(Collection<OsmogridNode> nodes) {
+  public static LineString nodesToLineString(Collection<OsmGridNode> nodes) {
 
     Set<LatLon> latLons = nodes.stream().map(Node::getLatlon).collect(Collectors.toSet());
     return latLonsToLineString(latLons);

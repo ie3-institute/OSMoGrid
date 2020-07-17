@@ -1,17 +1,16 @@
 /*
- * © 2019. TU Dortmund University,
+ * © 2020. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
- */
-
+*/
 package de.osmogrid.controller;
 
 import de.osmogrid.config.OsmogridConfig;
 import de.osmogrid.controller.graph.GraphController;
 import de.osmogrid.controller.grid.GridController;
-import de.osmogrid.model.graph.OsmogridNode;
+import de.osmogrid.model.graph.DistanceWeightedOsmEdge;
+import de.osmogrid.model.graph.OsmGridNode;
 import de.osmogrid.util.enums.TargetFormat;
-import edu.ie3.datamodel.graph.DistanceWeightedEdge;
 import edu.ie3.datamodel.models.input.container.JointGridContainer;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -36,7 +35,7 @@ public class SessionController {
     GraphController graphController = new GraphController();
     graphController.initialize(osmogridConfig);
     logger.info("Start building the graph ...");
-    List<AsSubgraph<OsmogridNode, DistanceWeightedEdge>> graphModel =
+    List<AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge>> graphModel =
         graphController.generateGraph();
 
     GridController gridController = new GridController();

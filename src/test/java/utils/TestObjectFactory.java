@@ -2,13 +2,11 @@
  * © 2020. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
- */
-
+*/
 package utils;
 
-import de.osmogrid.model.graph.OsmogridNode;
-import edu.ie3.datamodel.graph.DistanceWeightedEdge;
-import edu.ie3.datamodel.graph.DistanceWeightedGraph;
+import de.osmogrid.model.graph.OsmGraph;
+import de.osmogrid.model.graph.OsmGridNode;
 import edu.ie3.util.quantities.PowerSystemUnits;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,10 +20,9 @@ import tec.uom.se.quantity.Quantities;
 public class TestObjectFactory {
 
   @Deprecated
-  public static DistanceWeightedGraph<OsmogridNode> calcPerpGraphFuerweiler() {
+  public static OsmGraph calcPerpGraphFuerweiler() {
 
-    DistanceWeightedGraph<OsmogridNode> graph =
-        new DistanceWeightedGraph<>(DistanceWeightedEdge.class);
+    OsmGraph graph = new OsmGraph();
 
     graph.addVertex(
         createOsmogridNode(
@@ -3486,7 +3483,7 @@ public class TestObjectFactory {
   }
 
   @Deprecated
-  public static OsmogridNode createOsmogridNode(
+  public static OsmGridNode createOsmogridNode(
       long id,
       Tags tags,
       LatLon latLon,
@@ -3494,12 +3491,12 @@ public class TestObjectFactory {
       LatLon houseConnectionPoint,
       boolean subStation,
       int cluster) {
-    OsmogridNode osmogridNode = new OsmogridNode(id, tags, latLon);
-    osmogridNode.setLoad(load);
-    osmogridNode.setHouseConnectionPoint(houseConnectionPoint);
-    osmogridNode.setSubStation(subStation);
-    osmogridNode.setCluster(cluster);
+    OsmGridNode osmGridNode = new OsmGridNode(id, tags, latLon);
+    osmGridNode.setLoad(load);
+    osmGridNode.setHouseConnectionPoint(houseConnectionPoint);
+    osmGridNode.setSubStation(subStation);
+    osmGridNode.setCluster(cluster);
 
-    return osmogridNode;
+    return osmGridNode;
   }
 }

@@ -50,15 +50,15 @@ dependencies {
 		exclude group: 'tec.uom.se'
 		exclude group:'com.github.johanneshiry', module:'OSMonaut'
 	}
-	
+
 	//	 ie³ power system data model
 	compile ('com.github.ie3-institute:PowerSystemDataModel:1.1-SNAPSHOT') {
 		exclude group: 'org.slf4j', module: 'slf4j-api'
 		exclude group: 'com.github.ie3-institute'
 		exclude group: 'tec.uom.se'
 	}
-	
-	
+
+
 
 	compile "tec.uom:uom-se:$unitsOfMeasurementVersion"
 
@@ -87,7 +87,7 @@ dependencies {
 	compile group: 'org.openjfx', name: 'javafx-swing', version: javaVersion.toString()
 	compile group: 'org.openjfx', name: 'javafx-graphics', version: javaVersion.toString()
 	compile group: 'org.openjfx', name: 'javafx-web', version: javaVersion.toString()
-	
+
 	compile 'org.jxmapviewer:jxmapviewer2:+' // osm map viewer
 	compile 'org.glassfish.jaxb:jaxb-runtime:+' // required for xml parser (javax.xml.bind) (see: https://stackoverflow.com/questions/48204141/replacements-for-deprecated-jpms-modules-with-java-ee-apis/48279048#48279048)
 	compile 'javax.xml.bind:jaxb-api:+' // xml parsing
@@ -108,7 +108,7 @@ dependencies {
 	// config //
 	implementation 'com.typesafe:config:+'
 	compile('com.github.carueda:tscfg_2.13:' + tscfgVersion)
-	
+
 }
 
 wrapper {

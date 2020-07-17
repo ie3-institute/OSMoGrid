@@ -1,14 +1,13 @@
 /*
- * © 2019. TU Dortmund University,
+ * © 2020. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
- */
-
+*/
 package de.osmogrid.util;
 
-import de.osmogrid.model.graph.OsmogridNode;
-import edu.ie3.datamodel.graph.DistanceWeightedEdge;
-import edu.ie3.datamodel.graph.DistanceWeightedGraph;
+import de.osmogrid.model.graph.DistanceWeightedOsmEdge;
+import de.osmogrid.model.graph.OsmGraph;
+import de.osmogrid.model.graph.OsmGridNode;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -32,7 +31,7 @@ public class OsmDataProvider {
 
   public static final Logger logger = LogManager.getLogger(OsmDataProvider.class);
 
-  private List<OsmogridNode> nodes;
+  private List<OsmGridNode> nodes;
   private List<Way> ways;
   private final List<Way> buildings = new ArrayList<>();
   private final List<Way> landUses = new ArrayList<>();
@@ -44,8 +43,7 @@ public class OsmDataProvider {
   private double maxLatitude;
   private double minLatitude;
 
-  private static final DistanceWeightedGraph<OsmogridNode> rawGraph =
-      new DistanceWeightedGraph(DistanceWeightedEdge.class);
+  private static final OsmGraph rawGraph = new OsmGraph();
 
   public void initialize(String pbfFilePath, boolean cutArea, boolean plot) {
     logger.debug("Read OSM-Data ...");
@@ -77,7 +75,7 @@ public class OsmDataProvider {
 
       for (Way way : this.ways) {
         if (way.getTags().hasKey("building")) {
-          for (OsmogridNode node : GridUtils.getOsmogridNodeList(way.getNodes())) {
+          for (OsmGridNode node : GridUtils.getOsmogridNodeList(way.getNodes())) {
             if (node.getLatlon().getLat() > maxLatitude) {
               maxLatitude = node.getLatlon().getLat();
             }
@@ -101,7 +99,7 @@ public class OsmDataProvider {
       maxLongitude = -1000;
       minLongitude = 1000;
 
-      for (OsmogridNode node : this.nodes) {
+      for (OsmGridNode node : this.nodes) {
         if (node.getLatlon().getLat() > maxLatitude) {
           maxLatitude = node.getLatlon().getLat();
         }
@@ -197,11 +195,11 @@ public class OsmDataProvider {
   private void createRawGraph() {
 
     for (Way way : this.highways) {
-      List<OsmogridNode> osmogridNodes = GridUtils.getOsmogridNodeList(way.getNodes());
+      List<OsmGridNode> osmGridNodes = GridUtils.getOsmogridNodeList(way.getNodes());
 
-      for (int i = 1; i < osmogridNodes.size(); i++) {
-        OsmogridNode n1 = osmogridNodes.get(i - 1);
-        OsmogridNode n2 = osmogridNodes.get(i);
+      for (int i = 1; i < osmGridNodes.size(); i++) {
+        OsmGridNode n1 = osmGridNodes.get(i - 1);
+        OsmGridNode n2 = osmGridNodes.get(i);
 
         rawGraph.addVertex(n1);
         rawGraph.addVertex(n2);
@@ -215,7 +213,7 @@ public class OsmDataProvider {
                 n2.getLatlon().getLon());
 
         // create edge and add edge to rawGraph
-        DistanceWeightedEdge e = new DistanceWeightedEdge(weight);
+        DistanceWeightedOsmEdge e = new DistanceWeightedOsmEdge();
         rawGraph.setEdgeWeight(e, weight.getValue().doubleValue());
         rawGraph.addEdge(n1, n2, e); // TODO: consider checking boolean from this method
       }
@@ -240,9 +238,9 @@ public class OsmDataProvider {
 
     // add highways to fields
     for (Way way : this.highways) {
-      List<OsmogridNode> nodes = GridUtils.getOsmogridNodeList(way.getNodes());
+      List<OsmGridNode> nodes = GridUtils.getOsmogridNodeList(way.getNodes());
 
-      for (OsmogridNode n : nodes) {
+      for (OsmGridNode n : nodes) {
         int xCoord =
             (int)
                     Math.ceil(
@@ -336,7 +334,7 @@ public class OsmDataProvider {
       highways.addAll(highwayDistanceMatrix[yCoord][xCoord - 1]); // the highways at left
   }
 
-  public List<OsmogridNode> getNodes() {
+  public List<OsmGridNode> getNodes() {
     return nodes;
   }
 
@@ -380,7 +378,7 @@ public class OsmDataProvider {
     return highwayDistanceMatrix;
   }
 
-  public DistanceWeightedGraph<OsmogridNode> getRawGraph() {
+  public OsmGraph getRawGraph() {
     return rawGraph;
   }
 }

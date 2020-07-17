@@ -1,9 +1,8 @@
 /*
- * © 2019. TU Dortmund University,
+ * © 2020. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
- */
-
+*/
 package de.osmogrid.controller.graph;
 
 import static de.osmogrid.util.GridUtils.GEO2QM_CORRECTION;
@@ -14,13 +13,13 @@ import static tec.uom.se.unit.Units.METRE;
 
 import com.vividsolutions.jts.geom.Point;
 import de.osmogrid.config.OsmogridConfig;
-import de.osmogrid.model.graph.OsmogridNode;
+import de.osmogrid.model.graph.DistanceWeightedOsmEdge;
+import de.osmogrid.model.graph.OsmGraph;
+import de.osmogrid.model.graph.OsmGridNode;
 import de.osmogrid.util.GridUtils;
 import de.osmogrid.util.OsmDataProvider;
 import de.osmogrid.util.QuantityUtils;
 import de.osmogrid.util.exceptions.EmptyClusterException;
-import edu.ie3.datamodel.graph.DistanceWeightedEdge;
-import edu.ie3.datamodel.graph.DistanceWeightedGraph;
 import edu.ie3.util.exceptions.GeoPreparationException;
 import edu.ie3.util.geo.GeoUtils;
 import edu.ie3.util.quantities.interfaces.PowerDensity;
@@ -69,11 +68,11 @@ public class GraphController {
 
   public static final Logger logger = LogManager.getLogger(GraphController.class);
 
-  private static final List<AsSubgraph<OsmogridNode, DistanceWeightedEdge>> graphModel =
+  private static final List<AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge>> graphModel =
       new ArrayList<>();
   private OsmDataProvider osmDataProvider;
   private OsmogridConfig osmogridConfig;
-  private DistanceWeightedGraph<OsmogridNode> fullGraph;
+  private OsmGraph fullGraph;
 
   public void initialize(OsmogridConfig osmogridConfig) {
     this.osmogridConfig = osmogridConfig;
@@ -90,7 +89,7 @@ public class GraphController {
    *
    * @return The graph model separated into subgraphs.
    */
-  public List<AsSubgraph<OsmogridNode, DistanceWeightedEdge>> generateGraph() {
+  public List<AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge>> generateGraph() {
 
     ComparableQuantity<PowerDensity> powerDensity =
         Quantities.getQuantity(osmogridConfig.grid.averagePowerDensity, WATT_PER_SQUAREMETRE);
@@ -119,14 +118,14 @@ public class GraphController {
       System.exit(-1);
     }
 
-    List<Set<OsmogridNode>> clusters = createClusterKMedoids(convexLandUses);
+    List<Set<OsmGridNode>> clusters = createClusterKMedoids(convexLandUses);
 
     logger.info("Creating subgraphs");
     createSubgraphs(clusters);
     logger.info("Created " + graphModel.size() + " subgraphs");
 
     logger.info("Cleaning up the subgraphs");
-    for (AsSubgraph<OsmogridNode, DistanceWeightedEdge> subgraph : graphModel) {
+    for (AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge> subgraph : graphModel) {
       cleanGraph(subgraph);
     }
 
@@ -146,7 +145,7 @@ public class GraphController {
 
     // add highways that already have been visited and have a Perp here
     Set<Way> hasPerp = new HashSet<>();
-    Map<Way, Set<OsmogridNode>> highwayPerps = new HashMap<>();
+    Map<Way, Set<OsmGridNode>> highwayPerps = new HashMap<>();
 
     for (Way building : buildings) {
       boolean isSubstation = osmDataProvider.getRealSubstations().contains(building);
@@ -159,8 +158,8 @@ public class GraphController {
       if (GridUtils.isInsideLanduse(center, osmDataProvider.getLandUses())) {
         Vector2D p0fin = new Vector2D();
         Way highwayfin = new Way();
-        OsmogridNode n1Fin = new OsmogridNode();
-        OsmogridNode n2Fin = new OsmogridNode();
+        OsmGridNode n1Fin = new OsmGridNode();
+        OsmGridNode n2Fin = new OsmGridNode();
         boolean aFin = false;
         boolean bFin = false;
 
@@ -202,8 +201,8 @@ public class GraphController {
           for (int i = 0; i < highway.getNodes().size(); i++) {
 
             if (i != 0) {
-              OsmogridNode n = new OsmogridNode(highway.getNodes().get(i - 1));
-              OsmogridNode n1 = new OsmogridNode(highway.getNodes().get(i));
+              OsmGridNode n = new OsmGridNode(highway.getNodes().get(i - 1));
+              OsmGridNode n1 = new OsmGridNode(highway.getNodes().get(i));
 
               Vector2D a = new Vector2D(n.getLatlon().getLon(), n.getLatlon().getLat());
               Vector2D b = new Vector2D(n1.getLatlon().getLon(), n1.getLatlon().getLat());
@@ -282,7 +281,7 @@ public class GraphController {
         }
 
         // check if a or b are reusable or create new node
-        OsmogridNode n;
+        OsmGridNode n;
         if (aFin) {
           n = n1Fin;
         } else if (bFin) {
@@ -290,7 +289,7 @@ public class GraphController {
         } else {
           LatLon latLon = new LatLon(p0fin.y(), p0fin.x());
           n =
-              new OsmogridNode(
+              new OsmGridNode(
                   UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE,
                   new Tags(),
                   latLon); // unique id necessary
@@ -307,7 +306,7 @@ public class GraphController {
           // add node to graph or modify node if existent
           if (!fullGraph.addVertex(n)) {
             long id = n.getId();
-            OsmogridNode tempNode =
+            OsmGridNode tempNode =
                 fullGraph.vertexSet().stream()
                     .filter(node -> node.getId() == id)
                     .findFirst()
@@ -326,11 +325,11 @@ public class GraphController {
           }
 
           // get the nodes that are on specific highway
-          Set<OsmogridNode> nodes = highwayPerps.get(highwayfin);
+          Set<OsmGridNode> nodes = highwayPerps.get(highwayfin);
 
           // extract nodes that are connected to node under investigation but are not on the
           // specific highway
-          for (OsmogridNode edn : fullGraph.vertexSet()) {
+          for (OsmGridNode edn : fullGraph.vertexSet()) {
             if (!fullGraph.getAllEdges(n, edn).isEmpty()) {
               nodes.add(edn);
             }
@@ -344,14 +343,14 @@ public class GraphController {
             // perpnode yet
             double d1 = 1000;
             double d2 = 1000;
-            OsmogridNode nd1 = n1Fin;
-            OsmogridNode nd2 = n2Fin;
+            OsmGridNode nd1 = n1Fin;
+            OsmGridNode nd2 = n2Fin;
 
             // iterator through all nodes on highway and near highway to find the nearest ones
             // idea: 1. criteria: part of the straight
             // 2. criteria: smallest distance
 
-            for (OsmogridNode node : nodes) {
+            for (OsmGridNode node : nodes) {
               Quantity<Length> d =
                   GridUtils.haversine(
                       n.getLatlon().getLat(),
@@ -395,7 +394,7 @@ public class GraphController {
           // add node to graph or modify node if existent
           if (!fullGraph.addVertex(n)) {
             long id = n.getId();
-            OsmogridNode tempNode =
+            OsmGridNode tempNode =
                 fullGraph.vertexSet().stream()
                     .filter(node -> node.getId() == id)
                     .findFirst()
@@ -435,7 +434,7 @@ public class GraphController {
           highwayPerps.get(highwayfin).add(n1Fin);
           highwayPerps.get(highwayfin).add(n2Fin);
         } else {
-          Set<OsmogridNode> nodes = new HashSet<>();
+          Set<OsmGridNode> nodes = new HashSet<>();
           nodes.add(n);
           nodes.add(n1Fin);
           nodes.add(n2Fin);
@@ -461,7 +460,7 @@ public class GraphController {
 
     // add highways that already has been visited and have a Perp here
     Set<Way> hasPerp = new HashSet<>();
-    Map<Way, Set<OsmogridNode>> highwayPerps = new HashMap<>();
+    Map<Way, Set<OsmGridNode>> highwayPerps = new HashMap<>();
 
     // TODO: restrict search for highways to highways near the house to speed up calculations
     for (Way building : buildings) {
@@ -474,8 +473,8 @@ public class GraphController {
       if (GridUtils.isInsideLanduse(building.getCenter(), osmDataProvider.getLandUses())) {
         Vector2D p0Fin = new Vector2D();
         Way highwayFin = new Way();
-        OsmogridNode n1Fin = new OsmogridNode();
-        OsmogridNode n2Fin = new OsmogridNode();
+        OsmGridNode n1Fin = new OsmGridNode();
+        OsmGridNode n2Fin = new OsmGridNode();
         boolean aFin = false;
         boolean bFin = false;
         double distance = 1000;
@@ -484,8 +483,8 @@ public class GraphController {
 
           for (int i = 1; i < highway.getNodes().size(); i++) {
 
-            OsmogridNode n = new OsmogridNode(highway.getNodes().get(i - 1));
-            OsmogridNode n1 = new OsmogridNode(highway.getNodes().get(i));
+            OsmGridNode n = new OsmGridNode(highway.getNodes().get(i - 1));
+            OsmGridNode n1 = new OsmGridNode(highway.getNodes().get(i));
 
             Vector2D a = new Vector2D(n.getLatlon().getLon(), n.getLatlon().getLat());
             Vector2D b = new Vector2D(n1.getLatlon().getLon(), n1.getLatlon().getLat());
@@ -564,7 +563,7 @@ public class GraphController {
         }
 
         // create new Node
-        OsmogridNode n;
+        OsmGridNode n;
         if (aFin) {
           n = n1Fin;
         } else if (bFin) {
@@ -572,7 +571,7 @@ public class GraphController {
         } else {
           LatLon latLon = new LatLon(p0Fin.y(), p0Fin.x());
           n =
-              new OsmogridNode(
+              new OsmGridNode(
                   UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE,
                   new Tags(),
                   latLon); // unique id necessary
@@ -593,7 +592,7 @@ public class GraphController {
           // add node to graph or modify node if existent
           if (!fullGraph.addVertex(n)) {
             long id = n.getId();
-            OsmogridNode tempNode =
+            OsmGridNode tempNode =
                 fullGraph.vertexSet().stream()
                     .filter(node -> node.getId() == id)
                     .findFirst()
@@ -608,11 +607,11 @@ public class GraphController {
           }
 
           // get the nodes that are on specific highway
-          Set<OsmogridNode> nodes = highwayPerps.get(highwayFin);
+          Set<OsmGridNode> nodes = highwayPerps.get(highwayFin);
 
           // extract nodes that are connected to node under investigation but are not on the
           // specific highway
-          for (OsmogridNode edn : fullGraph.vertexSet()) {
+          for (OsmGridNode edn : fullGraph.vertexSet()) {
             if (!fullGraph.getAllEdges(n, edn).isEmpty()) {
               nodes.add(edn);
             }
@@ -626,16 +625,16 @@ public class GraphController {
             // an existing node on highway without perpNode yet
             double d1 = 1000;
             double d2 = 1000;
-            OsmogridNode nd1 = n1Fin;
-            OsmogridNode nd2 = n2Fin;
+            OsmGridNode nd1 = n1Fin;
+            OsmGridNode nd2 = n2Fin;
             // iterator through all nodes on highway and near highway to find the nearest ones
             // idea: 1. criteria: part of the straigt
             // 2. criteria: smallest distance
-            Iterator<OsmogridNode> nodesIterator = nodes.iterator();
+            Iterator<OsmGridNode> nodesIterator = nodes.iterator();
             int nodesSize = nodes.size();
             double nodesCounter = 0;
             while (nodesIterator.hasNext()) {
-              OsmogridNode nx = nodesIterator.next();
+              OsmGridNode nx = nodesIterator.next();
               Quantity<Length> d =
                   GridUtils.haversine(
                       n.getLatlon().getLat(),
@@ -672,7 +671,7 @@ public class GraphController {
           // add node to graph or modify node if existent
           if (!fullGraph.addVertex(n)) {
             long id = n.getId();
-            OsmogridNode tempNode =
+            OsmGridNode tempNode =
                 fullGraph.vertexSet().stream()
                     .filter(node -> node.getId() == id)
                     .findFirst()
@@ -708,7 +707,7 @@ public class GraphController {
           highwayPerps.get(highwayFin).add(n1Fin);
           highwayPerps.get(highwayFin).add(n2Fin);
         } else {
-          Set<OsmogridNode> nodes = new HashSet<>();
+          Set<OsmGridNode> nodes = new HashSet<>();
           nodes.add(n);
           nodes.add(n1Fin);
           nodes.add(n2Fin);
@@ -725,26 +724,25 @@ public class GraphController {
   }
 
   /**
-   * Refreshes all {@link DistanceWeightedEdge}s. This is necessary after {@link OsmogridNode}s are
-   * modified, because the modification of {@link OsmogridNode}s is not communicated to the {@link
-   * DistanceWeightedEdge}s.
+   * Refreshes all {@link DistanceWeightedOsmEdge}s. This is necessary after {@link OsmGridNode}s
+   * are modified, because the modification of {@link OsmGridNode}s is not communicated to the
+   * {@link DistanceWeightedOsmEdge}s.
    */
-  private DistanceWeightedGraph<OsmogridNode> refreshGraph() {
+  private OsmGraph refreshGraph() {
 
-    DistanceWeightedGraph<OsmogridNode> refreshedGraph =
-        new DistanceWeightedGraph<>(DistanceWeightedEdge.class);
+    OsmGraph refreshedGraph = new OsmGraph();
     fullGraph.vertexSet().forEach(refreshedGraph::addVertex);
 
     // iterate through all edges, get the edges source and target node from the graph, remove the
     // old edge and add
     // the edge again with the correct nodes
-    for (DistanceWeightedEdge edge : fullGraph.edgeSet()) {
-      OsmogridNode source =
+    for (DistanceWeightedOsmEdge edge : fullGraph.edgeSet()) {
+      OsmGridNode source =
           fullGraph.vertexSet().stream()
               .filter(node -> node.getId() == fullGraph.getEdgeSource(edge).getId())
               .findFirst()
               .orElse(null);
-      OsmogridNode target =
+      OsmGridNode target =
           fullGraph.vertexSet().stream()
               .filter(node -> node.getId() == fullGraph.getEdgeTarget(edge).getId())
               .findFirst()
@@ -752,8 +750,8 @@ public class GraphController {
       ComparableQuantity<Length> weight =
           Quantities.getQuantity(fullGraph.getEdgeWeight(edge), METRE);
 
-      DistanceWeightedEdge e = new DistanceWeightedEdge(weight);
-      refreshedGraph.setEdgeWeight(e, weight.getValue().doubleValue());
+      DistanceWeightedOsmEdge e = new DistanceWeightedOsmEdge();
+      refreshedGraph.setEdgeWeight(e, weight);
       refreshedGraph.addEdge(source, target, e);
     }
     return refreshedGraph;
@@ -783,11 +781,13 @@ public class GraphController {
     osmDataProvider.getLandUses().removeAll(landUsesToBeRemoved);
   }
 
-  /** Calculates distances for all {@link DistanceWeightedEdge}s and adds them as edge weights. */
+  /**
+   * Calculates distances for all {@link DistanceWeightedOsmEdge}s and adds them as edge weights.
+   */
   private void addEdgeWeights() {
-    for (DistanceWeightedEdge edge : fullGraph.edgeSet()) {
-      OsmogridNode edgeSource = fullGraph.getEdgeSource(edge);
-      OsmogridNode edgeTarget = fullGraph.getEdgeTarget(edge);
+    for (DistanceWeightedOsmEdge edge : fullGraph.edgeSet()) {
+      OsmGridNode edgeSource = fullGraph.getEdgeSource(edge);
+      OsmGridNode edgeTarget = fullGraph.getEdgeTarget(edge);
       Quantity<Length> distance =
           GridUtils.haversine(
               edgeSource.getLatlon().getLat(),
@@ -799,11 +799,11 @@ public class GraphController {
   }
 
   /** Removes dead ends without a load from the {@link Graph}. */
-  private void cleanGraph(Graph<OsmogridNode, DistanceWeightedEdge> graph) {
+  private void cleanGraph(Graph<OsmGridNode, DistanceWeightedOsmEdge> graph) {
 
     boolean graphClean = false;
     while (!graphClean) {
-      List<OsmogridNode> deadEnds =
+      List<OsmGridNode> deadEnds =
           graph.vertexSet().stream()
               .filter(n -> graph.degreeOf(n) < 2 && n.getLoad() == null)
               .collect(Collectors.toList());
@@ -816,7 +816,7 @@ public class GraphController {
   }
 
   /**
-   * Builds convex hulls around the land uses to also consider {@link OsmogridNode}s that are nearby
+   * Builds convex hulls around the land uses to also consider {@link OsmGridNode}s that are nearby
    * the land uses.
    *
    * @return A list of {@link Polygon}s representing the convex hulls.
@@ -877,16 +877,16 @@ public class GraphController {
    * @param convexLandUses List of {@link Polygon}s (has to contain at least one element).
    * @return All nodes that have to be clustered separated by {@link Polygon}s.
    */
-  private Set<Set<OsmogridNode>> collectClusterNodes(List<Polygon> convexLandUses) {
+  private Set<Set<OsmGridNode>> collectClusterNodes(List<Polygon> convexLandUses) {
 
     // Map to check whether a node has already been assigned to a cluster set
-    Map<OsmogridNode, Boolean> addedNodes = new HashMap<>();
+    Map<OsmGridNode, Boolean> addedNodes = new HashMap<>();
     fullGraph.vertexSet().forEach(node -> addedNodes.put(node, false));
 
-    Set<Set<OsmogridNode>> clusterSets = new HashSet<>();
+    Set<Set<OsmGridNode>> clusterSets = new HashSet<>();
     for (Polygon convexLandUse : convexLandUses) {
-      Set<OsmogridNode> clusterNodes = new HashSet<>();
-      for (OsmogridNode node : fullGraph.vertexSet()) {
+      Set<OsmGridNode> clusterNodes = new HashSet<>();
+      for (OsmGridNode node : fullGraph.vertexSet()) {
         if (!addedNodes.get(node)) {
           if (node.getHouseConnectionPoint() != null) {
             if (GridUtils.rayCasting(convexLandUse, node.getHouseConnectionPoint())) {
@@ -906,21 +906,21 @@ public class GraphController {
     }
 
     // each cluster set has to be fully connected (if not, split into separate cluster sets)
-    List<Set<OsmogridNode>> unconnectedParts = new LinkedList<>();
-    List<Set<OsmogridNode>> setsToRemove = new LinkedList<>();
+    List<Set<OsmGridNode>> unconnectedParts = new LinkedList<>();
+    List<Set<OsmGridNode>> setsToRemove = new LinkedList<>();
     double minClusterSize = osmogridConfig.grid.ignoreClustersSmallerThan;
     int ignoredParts = 0;
-    for (Set<OsmogridNode> clusterSet : clusterSets) {
-      AsSubgraph<OsmogridNode, DistanceWeightedEdge> tempSubgraph =
+    for (Set<OsmGridNode> clusterSet : clusterSets) {
+      AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge> tempSubgraph =
           new AsSubgraph<>(fullGraph, new HashSet<>(clusterSet));
-      ConnectivityInspector<OsmogridNode, DistanceWeightedEdge> conIn =
+      ConnectivityInspector<OsmGridNode, DistanceWeightedOsmEdge> conIn =
           new ConnectivityInspector<>(tempSubgraph);
       if (!conIn.isConnected()) {
-        List<Set<OsmogridNode>> connectedSets = conIn.connectedSets();
-        for (Set<OsmogridNode> connectedSet : connectedSets) {
+        List<Set<OsmGridNode>> connectedSets = conIn.connectedSets();
+        for (Set<OsmGridNode> connectedSet : connectedSets) {
           // add up load
           Quantity<Power> loadSum = Quantities.getQuantity(0.0, KILOWATT);
-          for (OsmogridNode node : connectedSet) {
+          for (OsmGridNode node : connectedSet) {
             if (node.getLoad() != null) {
               loadSum = loadSum.add(node.getLoad());
               if (loadSum.getValue().doubleValue() >= minClusterSize) {
@@ -950,21 +950,21 @@ public class GraphController {
   }
 
   /** Creates clusters based on the k-medoids algorithm. */
-  private List<Set<OsmogridNode>> createClusterKMedoids(List<Polygon> convexLandUses) {
+  private List<Set<OsmGridNode>> createClusterKMedoids(List<Polygon> convexLandUses) {
 
     Quantity<Power> loadSubstation =
         Quantities.getQuantity(osmogridConfig.grid.loadSubstation, KILOVOLTAMPERE);
 
     // collect cluster nodes (all nodes inside the land use/convex hull)
-    Set<Set<OsmogridNode>> clusterSets = collectClusterNodes(convexLandUses);
+    Set<Set<OsmGridNode>> clusterSets = collectClusterNodes(convexLandUses);
 
     // calculate the number of required clusters
-    Map<Set<OsmogridNode>, Quantity<Power>> landUseLoadMap = new LinkedHashMap<>();
-    Map<Set<OsmogridNode>, Integer> numberOfClustersMap = new HashMap<>();
-    for (Set<OsmogridNode> clusterSet : clusterSets) {
+    Map<Set<OsmGridNode>, Quantity<Power>> landUseLoadMap = new LinkedHashMap<>();
+    Map<Set<OsmGridNode>, Integer> numberOfClustersMap = new HashMap<>();
+    for (Set<OsmGridNode> clusterSet : clusterSets) {
       // sum of load in the current grid area
       Quantity<Power> loadSum = Quantities.getQuantity(0.0, KILOWATT);
-      for (OsmogridNode node : clusterSet) {
+      for (OsmGridNode node : clusterSet) {
         if (node.getLoad() != null) {
           loadSum = loadSum.add(node.getLoad());
         }
@@ -987,27 +987,27 @@ public class GraphController {
     }
 
     // k-medoids algorithm for each set of nodes
-    List<Set<OsmogridNode>> clusters = new LinkedList<>();
-    for (Set<OsmogridNode> clusterSet : clusterSets) {
+    List<Set<OsmGridNode>> clusters = new LinkedList<>();
+    for (Set<OsmGridNode> clusterSet : clusterSets) {
 
       // get number of required clusters
       int numberOfClusters = numberOfClustersMap.get(clusterSet);
 
       AbstractMap.SimpleEntry<
-              Graph<OsmogridNode, DistanceWeightedEdge>, Map<OsmogridNode, Set<OsmogridNode>>>
+              Graph<OsmGridNode, DistanceWeightedOsmEdge>, Map<OsmGridNode, Set<OsmGridNode>>>
           simplifiedSubgraphMap = null;
 
       if (numberOfClusters > 1) {
-        AsSubgraph<OsmogridNode, DistanceWeightedEdge> clusterSubgraph =
+        AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge> clusterSubgraph =
             new AsSubgraph<>(fullGraph, new HashSet<>(clusterSet));
 
         cleanGraph(clusterSubgraph);
 
         simplifiedSubgraphMap = simplifyGraph(clusterSubgraph);
-        Graph<OsmogridNode, DistanceWeightedEdge> simplifiedSubgraph =
+        Graph<OsmGridNode, DistanceWeightedOsmEdge> simplifiedSubgraph =
             simplifiedSubgraphMap.getKey();
 
-        ShortestPathAlgorithm<OsmogridNode, DistanceWeightedEdge> shortestPaths =
+        ShortestPathAlgorithm<OsmGridNode, DistanceWeightedOsmEdge> shortestPaths =
             new JohnsonShortestPaths<>(simplifiedSubgraph);
 
         // start k-medoids
@@ -1028,7 +1028,7 @@ public class GraphController {
         }
       } else {
         // if only one cluster is needed for this cluster set, we only have to set the cluster
-        for (OsmogridNode node : clusterSet) {
+        for (OsmGridNode node : clusterSet) {
           node.setCluster(0);
         }
         clusterSet.stream()
@@ -1042,15 +1042,15 @@ public class GraphController {
       // rebuild simplified graph
       if (simplifiedSubgraphMap != null) {
         while (!simplifiedSubgraphMap.getValue().isEmpty()) {
-          Set<OsmogridNode> nodeIterator =
+          Set<OsmGridNode> nodeIterator =
               clusterSet.stream()
                   .filter(node -> node.getCluster() >= 0)
                   .collect(Collectors.toSet());
-          for (OsmogridNode node : nodeIterator) {
+          for (OsmGridNode node : nodeIterator) {
             // if the node represents other nodes in the simplified graph, the simplified nodes have
             // to be assigned to the same cluster
             if (simplifiedSubgraphMap.getValue().containsKey(node)) {
-              for (OsmogridNode simplifiedNode : simplifiedSubgraphMap.getValue().get(node)) {
+              for (OsmGridNode simplifiedNode : simplifiedSubgraphMap.getValue().get(node)) {
                 // the previous added load has to be subtracted again
                 if (node.getLoad() != null) {
                   if (simplifiedNode.getLoad() != null) {
@@ -1061,7 +1061,7 @@ public class GraphController {
                   }
                 }
                 simplifiedNode.setCluster(node.getCluster());
-                for (Set<OsmogridNode> cluster : clusters) {
+                for (Set<OsmGridNode> cluster : clusters) {
                   if (cluster.contains(node)) {
                     cluster.add(simplifiedNode);
                   }
@@ -1074,8 +1074,8 @@ public class GraphController {
       }
     }
     // set a unique cluster id for each cluster
-    for (Set<OsmogridNode> cluster : clusters) {
-      for (OsmogridNode node : cluster) {
+    for (Set<OsmGridNode> cluster : clusters) {
+      for (OsmGridNode node : cluster) {
         node.setCluster(clusters.indexOf(cluster));
       }
     }
@@ -1088,17 +1088,17 @@ public class GraphController {
    *
    * @param graph The {@link Graph} that is simplified during the call of this method.
    * @param deadEnd The dead end node where the recursion starts.
-   * @param lastNode The last visited {@link OsmogridNode}. Used for determining the next {@link
-   *     OsmogridNode} to examine.
-   * @param visitedNodes A list with all {@link OsmogridNode}s visited.
-   * @param loadSum The added up load from all {@link OsmogridNode}s visited until now.
-   * @return A list with all visited {@link OsmogridNode}s from the dead end to the intersection.
+   * @param lastNode The last visited {@link OsmGridNode}. Used for determining the next {@link
+   *     OsmGridNode} to examine.
+   * @param visitedNodes A list with all {@link OsmGridNode}s visited.
+   * @param loadSum The added up load from all {@link OsmGridNode}s visited until now.
+   * @return A list with all visited {@link OsmGridNode}s from the dead end to the intersection.
    */
-  private List<OsmogridNode> walkDeadEnd(
-      Graph<OsmogridNode, DistanceWeightedEdge> graph,
-      OsmogridNode deadEnd,
-      OsmogridNode lastNode,
-      List<OsmogridNode> visitedNodes,
+  private List<OsmGridNode> walkDeadEnd(
+      Graph<OsmGridNode, DistanceWeightedOsmEdge> graph,
+      OsmGridNode deadEnd,
+      OsmGridNode lastNode,
+      List<OsmGridNode> visitedNodes,
       Quantity<Power> loadSum) {
     if (loadSum == null) {
       loadSum = Quantities.getQuantity(0.0, KILOWATT);
@@ -1106,7 +1106,7 @@ public class GraphController {
 
     // since the passed node should at most have two neighbor nodes,
     // the one that not equals the last node is the next node
-    OsmogridNode neighborNode =
+    OsmGridNode neighborNode =
         Graphs.neighborSetOf(graph, deadEnd).stream()
             .filter(node -> node != lastNode)
             .findFirst()
@@ -1142,21 +1142,21 @@ public class GraphController {
    *     nodes and their representing nodes.
    */
   private AbstractMap.SimpleEntry<
-          Graph<OsmogridNode, DistanceWeightedEdge>, Map<OsmogridNode, Set<OsmogridNode>>>
-      simplifyGraph(Graph<OsmogridNode, DistanceWeightedEdge> graph) {
+          Graph<OsmGridNode, DistanceWeightedOsmEdge>, Map<OsmGridNode, Set<OsmGridNode>>>
+      simplifyGraph(Graph<OsmGridNode, DistanceWeightedOsmEdge> graph) {
 
     // defines the maximum transformer load, the load sum of simplified parts must not be greater
     // than this value
     double maxLoad = osmogridConfig.grid.loadSubstation;
-    Graph<OsmogridNode, DistanceWeightedEdge> simplifiedGraph = new AsSubgraph<>(graph);
-    Map<OsmogridNode, Set<OsmogridNode>> simplifiedNodes = new HashMap<>();
+    Graph<OsmGridNode, DistanceWeightedOsmEdge> simplifiedGraph = new AsSubgraph<>(graph);
+    Map<OsmGridNode, Set<OsmGridNode>> simplifiedNodes = new HashMap<>();
 
     // detect dead ends and walk to the next intersection
     boolean noDeadEndsLeft = false;
     boolean noCyclesLeft = false;
     while (!noDeadEndsLeft && !noCyclesLeft) {
       // get all dead ends
-      Set<OsmogridNode> deadEnds =
+      Set<OsmGridNode> deadEnds =
           simplifiedGraph.vertexSet().stream()
               .filter(node -> simplifiedGraph.degreeOf(node) == 1)
               .collect(Collectors.toSet());
@@ -1164,7 +1164,7 @@ public class GraphController {
       if (!deadEnds.isEmpty()) {
         noDeadEndsLeft = false;
         noCyclesLeft = false;
-        for (OsmogridNode deadEnd : deadEnds) {
+        for (OsmGridNode deadEnd : deadEnds) {
           // since it is possible that a single street (two dead ends) already has been simplified,
           // the
           // resulting representing node has now a degree of zero and cannot be more simplified
@@ -1175,11 +1175,11 @@ public class GraphController {
           // recursive method call, returns a list containing all nodes from the dead end (first
           // index) to the
           // next intersection (last index)
-          List<OsmogridNode> visitedNodes =
+          List<OsmGridNode> visitedNodes =
               walkDeadEnd(simplifiedGraph, deadEnd, null, new LinkedList<>(), deadEnd.getLoad());
 
           // now the pair <intersection, all other nodes> is put in the simplifiedNodesMap
-          OsmogridNode representingNode = visitedNodes.remove(0);
+          OsmGridNode representingNode = visitedNodes.remove(0);
           if (simplifiedNodes.containsKey(representingNode)) {
             simplifiedNodes.get(representingNode).addAll(visitedNodes);
           } else {
@@ -1198,16 +1198,16 @@ public class GraphController {
       // 2 (all other
       // nodes degrees are equal 2), the node whose degree is greater than 2 serves as the
       // representing node
-      BiconnectivityInspector<OsmogridNode, DistanceWeightedEdge> inspector =
+      BiconnectivityInspector<OsmGridNode, DistanceWeightedOsmEdge> inspector =
           new BiconnectivityInspector<>(simplifiedGraph);
-      Set<Graph<OsmogridNode, DistanceWeightedEdge>> blocks =
+      Set<Graph<OsmGridNode, DistanceWeightedOsmEdge>> blocks =
           inspector.getBlocks().stream()
               .filter(g -> g.vertexSet().size() > 2)
               .collect(Collectors.toSet());
 
-      for (Graph<OsmogridNode, DistanceWeightedEdge> block : blocks) {
+      for (Graph<OsmGridNode, DistanceWeightedOsmEdge> block : blocks) {
         int counter = 0; // counts the number of nodes with degree greater than 2
-        for (OsmogridNode node : block.vertexSet()) {
+        for (OsmGridNode node : block.vertexSet()) {
           if (simplifiedGraph.degreeOf(node) > 2) {
             counter++;
           }
@@ -1217,14 +1217,14 @@ public class GraphController {
         if (counter == 1) {
           Quantity<Power> loadSum = Quantities.getQuantity(0.0, KILOWATT);
           // check whether the added up load would fit the maximum transformer load
-          for (OsmogridNode node : block.vertexSet()) {
+          for (OsmGridNode node : block.vertexSet()) {
             if (node.getLoad() != null) {
               loadSum = loadSum.add(node.getLoad());
             }
           }
           if (loadSum.getValue().doubleValue() < maxLoad) {
             // simplify cycle to one node (the one whose degree is greater than 2)
-            OsmogridNode representingNode =
+            OsmGridNode representingNode =
                 block.vertexSet().stream()
                     .filter(node -> simplifiedGraph.degreeOf(node) > 2)
                     .findFirst()
@@ -1256,13 +1256,13 @@ public class GraphController {
   }
 
   /** Creates a {@link AsSubgraph} for each cluster. */
-  private void createSubgraphs(List<Set<OsmogridNode>> clusters) {
+  private void createSubgraphs(List<Set<OsmGridNode>> clusters) {
 
     // create a subgraph for each cluster set
-    for (Set<OsmogridNode> cluster : clusters) {
-      AsSubgraph<OsmogridNode, DistanceWeightedEdge> subgraph =
+    for (Set<OsmGridNode> cluster : clusters) {
+      AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge> subgraph =
           new AsSubgraph<>(fullGraph, cluster);
-      ConnectivityInspector<OsmogridNode, DistanceWeightedEdge> conIn =
+      ConnectivityInspector<OsmGridNode, DistanceWeightedOsmEdge> conIn =
           new ConnectivityInspector<>(subgraph);
       if (!conIn.isConnected()) {
         logger.warn("Cluster " + clusters.indexOf(cluster) + " is not fully connected.");
@@ -1271,7 +1271,7 @@ public class GraphController {
 
       // check if load sum is higher than minimum cluster size from config file
       double load = 0.0;
-      for (OsmogridNode node : cluster) {
+      for (OsmGridNode node : cluster) {
         if (node.getLoad() != null) {
           load += node.getLoad().getValue().doubleValue();
         }
@@ -1288,9 +1288,9 @@ public class GraphController {
 
   /** Calculates the overall load for each {@link AsSubgraph} in the graph model. */
   private void calculateClusterLoads() {
-    for (AsSubgraph<OsmogridNode, DistanceWeightedEdge> subgraph : graphModel) {
+    for (AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge> subgraph : graphModel) {
       double loadSum = 0.0;
-      for (OsmogridNode loadNode : subgraph.vertexSet()) {
+      for (OsmGridNode loadNode : subgraph.vertexSet()) {
         if (loadNode.getLoad() != null) {
           loadSum += loadNode.getLoad().getValue().doubleValue();
         }

@@ -1,9 +1,8 @@
 /*
- * © 2019. TU Dortmund University,
+ * © 2020. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
- */
-
+*/
 package de.osmogrid.model.graph;
 
 import java.util.Objects;
@@ -21,7 +20,7 @@ import net.morbz.osmonaut.util.StringUtil;
  * @author Mahr
  * @since 17.12.2018
  */
-public class OsmogridNode extends Node {
+public class OsmGridNode extends Node {
 
   private static final long serialVersionUID = -7214964092396827554L;
 
@@ -30,15 +29,15 @@ public class OsmogridNode extends Node {
   private boolean subStation;
   private int cluster = -1;
 
-  public OsmogridNode() {
+  public OsmGridNode() {
     super();
   }
 
-  public OsmogridNode(long id, Tags tags, LatLon latLon) {
+  public OsmGridNode(long id, Tags tags, LatLon latLon) {
     super(id, tags, latLon);
   }
 
-  public OsmogridNode(Node n) {
+  public OsmGridNode(Node n) {
     super(n.getId(), n.getTags(), n.getLatlon());
   }
 
