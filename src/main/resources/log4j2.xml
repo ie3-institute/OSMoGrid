@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2019. TU Dortmund University,
+  ~ Institute of Energy Systems, Energy Efficiency and Energy Economics,
+  ~ Research group Distribution grid planning and operation
+  -->
+
+<Configuration>
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level - %msg%n"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <logger name="de.osmogridOld" additivity="false" level="ALL">
+            <AppenderRef ref="Console"/>
+
+        </logger>
+
+        <logger name="de.osmogrid" additivity="false" level="ALL">
+            <AppenderRef ref="Console"/>
+        </logger>
+
+        <asyncRoot level="debug">
+            <AppenderRef ref="Console" level="info"/>
+        </asyncRoot>
+    </Loggers>
+</Configuration>
+
