@@ -24,6 +24,8 @@ import edu.ie3.datamodel.models.input.container.RawGridElements;
 import edu.ie3.datamodel.models.input.container.SubGridContainer;
 import edu.ie3.datamodel.models.input.container.SystemParticipants;
 import edu.ie3.datamodel.models.input.system.LoadInput;
+import edu.ie3.datamodel.models.input.system.characteristic.CosPhiFixed;
+import edu.ie3.datamodel.models.input.system.characteristic.OlmCharacteristicInput;
 import edu.ie3.datamodel.models.voltagelevels.CommonVoltageLevel;
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils;
 import edu.ie3.util.OneToOneMap;
@@ -234,7 +236,7 @@ public class GridController {
                     UUID.randomUUID(),
                     "Load " + loadIdCounter,
                     houseConnectionPoint,
-                    null,
+                    CosPhiFixed.CONSTANT_CHARACTERISTIC,
                     BdewLoadProfile.H0,
                     false,
                     eConsAnnual,
@@ -261,7 +263,7 @@ public class GridController {
                     lineType,
                     length,
                     GridUtils.lineStringFromNodeInputs(nodeInput, houseConnectionPoint),
-                    null);
+                    OlmCharacteristicInput.CONSTANT_CHARACTERISTIC);
 
             lineInputs.add(lineInput);
             nodeInputs.add(houseConnectionPoint);
@@ -280,7 +282,7 @@ public class GridController {
                     UUID.randomUUID(),
                     "Load " + loadIdCounter++,
                     nodeInput,
-                    null,
+                    CosPhiFixed.CONSTANT_CHARACTERISTIC,
                     BdewLoadProfile.H0,
                     false,
                     eConsAnnual,
