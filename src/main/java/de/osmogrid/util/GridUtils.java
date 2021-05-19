@@ -1,11 +1,11 @@
 /*
- * © 2020. TU Dortmund University,
+ * © 2021. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
 */
 package de.osmogrid.util;
 
-import static edu.ie3.util.geo.GeoUtils.EARTH_RADIUS;
+import static tec.uom.se.unit.Units.METRE;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -14,8 +14,8 @@ import de.osmogrid.model.graph.OsmGridNode;
 import edu.ie3.datamodel.models.input.NodeInput;
 import edu.ie3.datamodel.models.input.connector.LineInput;
 import edu.ie3.util.OneToOneMap;
-import edu.ie3.util.quantities.PowerSystemUnits;
-import edu.ie3.util.quantities.interfaces.PowerDensity;
+import edu.ie3.util.quantities.dep.PowerSystemUnits;
+import edu.ie3.util.quantities.dep.interfaces.PowerDensity;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -56,6 +56,9 @@ public class GridUtils {
   /** area correction factor set to 0 (see calGeo2qm for details) */
   public static final Quantity<Area> GEO2QM_CORRECTION =
       Quantities.getQuantity(0.0, Units.SQUARE_METRE);
+
+  public static final ComparableQuantity<Length> EARTH_RADIUS =
+      Quantities.getQuantity(6378137.0, METRE);
 
   /**
    * Checks if Node c is between Node a and b
@@ -158,8 +161,8 @@ public class GridUtils {
             * EARTH_RADIUS.getValue().doubleValue();
 
     // (e1 * e2) - cor
-    return Quantities.getQuantity(e1, Units.METRE)
-        .multiply(Quantities.getQuantity(e2, Units.METRE))
+    return Quantities.getQuantity(e1, METRE)
+        .multiply(Quantities.getQuantity(e2, METRE))
         .asType(Area.class)
         .subtract(cor);
   }

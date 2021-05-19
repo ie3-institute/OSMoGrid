@@ -1,14 +1,14 @@
 /*
- * © 2020. TU Dortmund University,
+ * © 2021. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
 */
 package de.osmogrid.controller.graph;
 
 import static de.osmogrid.util.GridUtils.GEO2QM_CORRECTION;
-import static edu.ie3.util.quantities.PowerSystemUnits.KILOVOLTAMPERE;
-import static edu.ie3.util.quantities.PowerSystemUnits.KILOWATT;
-import static edu.ie3.util.quantities.PowerSystemUnits.WATT_PER_SQUAREMETRE;
+import static edu.ie3.util.quantities.dep.PowerSystemUnits.KILOVOLTAMPERE;
+import static edu.ie3.util.quantities.dep.PowerSystemUnits.KILOWATT;
+import static edu.ie3.util.quantities.dep.PowerSystemUnits.WATT_PER_SQUAREMETRE;
 import static tec.uom.se.unit.Units.METRE;
 
 import com.vividsolutions.jts.geom.Point;
@@ -22,7 +22,7 @@ import de.osmogrid.util.QuantityUtils;
 import de.osmogrid.util.exceptions.EmptyClusterException;
 import edu.ie3.util.exceptions.GeoPreparationException;
 import edu.ie3.util.geo.GeoUtils;
-import edu.ie3.util.quantities.interfaces.PowerDensity;
+import edu.ie3.util.quantities.dep.interfaces.PowerDensity;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;

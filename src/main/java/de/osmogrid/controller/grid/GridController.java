@@ -1,5 +1,5 @@
 /*
- * © 2020. TU Dortmund University,
+ * © 2021. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
 */
@@ -27,7 +27,7 @@ import edu.ie3.datamodel.models.input.system.LoadInput;
 import edu.ie3.datamodel.models.voltagelevels.CommonVoltageLevel;
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils;
 import edu.ie3.util.OneToOneMap;
-import edu.ie3.util.quantities.PowerSystemUnits;
+import edu.ie3.util.quantities.dep.PowerSystemUnits;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
