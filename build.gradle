@@ -82,10 +82,10 @@ dependencies {
 	compile group: 'org.openjfx', name: 'javafx-graphics', version: javaVersion.toString()
 	compile group: 'org.openjfx', name: 'javafx-web', version: javaVersion.toString()
 
-	compile 'org.jxmapviewer:jxmapviewer2:+' // osm map viewer
-	compile 'org.glassfish.jaxb:jaxb-runtime:3.0.2'
+	compile 'org.jxmapviewer:jxmapviewer2:2.6' // osm map viewer
+	compile 'org.glassfish.jaxb:jaxb-runtime:3.0.1'
 	// required for xml parser (javax.xml.bind) (see: https://stackoverflow.com/questions/48204141/replacements-for-deprecated-jpms-modules-with-java-ee-apis/48279048#48279048)
-	compile 'javax.xml.bind:jaxb-api:2.4.0' // xml parsing
+	compile 'javax.xml.bind:jaxb-api:2.3.1' // xml parsing
 	compile 'javax.measure:unit-api:2.0'
 	compile 'org.apache.commons:commons-lang3:3.12.0' // for HashCodeBuilder
 	compile group: 'math.geom2d', name: 'javaGeom', version: '0.11.1'
