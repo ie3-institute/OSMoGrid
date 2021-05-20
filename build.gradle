@@ -8,7 +8,7 @@ plugins {
 	id 'de.undercouch.download' version '4.1.0'
 	id 'kr.motd.sphinx' version '2.9.0' // documentation generation
 	id 'jacoco' // java code coverage plugin
-	id "org.sonarqube" version "3.0" // sonarqube
+	id "org.sonarqube" version "3.2.0" // sonarqube
 }
 
 ext {
