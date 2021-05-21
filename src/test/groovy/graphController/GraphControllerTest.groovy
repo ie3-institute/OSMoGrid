@@ -14,7 +14,6 @@ import edu.ie3.util.quantities.PowerSystemUnits
 import org.apache.commons.lang3.tuple.Pair
 import spock.lang.Shared
 import spock.lang.Specification
-import tec.uom.se.quantity.Quantities
 import utils.TestObjectFactory
 
 import java.util.stream.Collectors

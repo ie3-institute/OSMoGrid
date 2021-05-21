@@ -10,7 +10,7 @@ import java.util.function.Supplier;
 import javax.measure.Quantity;
 import javax.measure.quantity.Length;
 import org.jgrapht.graph.SimpleWeightedGraph;
-import tec.uom.se.ComparableQuantity;
+import tech.units.indriya.ComparableQuantity;
 
 /**
  * //ToDo: Class Description
