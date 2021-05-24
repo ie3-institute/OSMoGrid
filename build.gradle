@@ -2,11 +2,11 @@ plugins {
 	id 'java' //java support
 	id 'groovy' // groovy support
 	id 'pmd' // code check, working on source code
-	id 'com.github.spotbugs' version '4.4.4' // code check, working on byte code
-	id 'com.diffplug.spotless' version '5.0.0'//code format
+	id 'com.diffplug.spotless' version '5.12.5'//code format
+	id 'com.github.spotbugs' version '4.7.1' // code check, working on byte code
 	id 'org.openjfx.javafxplugin' version '0.0.10' // java 11 javafx plugin for gradle
 	id 'de.undercouch.download' version '4.1.1'
-	id 'kr.motd.sphinx' version '2.9.0' // documentation generation
+	id 'kr.motd.sphinx' version '2.10.1' // documentation generation
 	id 'jacoco' // java code coverage plugin
 	id "org.sonarqube" version "3.2.0" // sonarqube
 }
@@ -94,7 +94,7 @@ dependencies {
 	spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:+'
 
 	// testing
-	testCompile 'junit:junit:4.10'
+	testCompile 'junit:junit:4.13.2'
 	testCompile 'org.spockframework:spock-core:1.3-groovy-+'
 	testCompile 'cglib:cglib-nodep:+' // enables mocking of classes (in addition to interfaces)
 	compile 'org.mockito:mockito-core:+' // mocking framework
