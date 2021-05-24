@@ -51,7 +51,7 @@ dependencies {
 	}
 
 	//	 ie³ power system data model
-	compile('com.github.ie3-institute:PowerSystemDataModel:1.1.0') {
+	compile('com.github.ie3-institute:PowerSystemDataModel:2.0.0') {
 		exclude group: 'org.slf4j', module: 'slf4j-api'
 		exclude group: 'com.github.ie3-institute'
 	}
