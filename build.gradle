@@ -41,7 +41,7 @@ repositories {
 
 dependencies {
 	//	 ie³ power system utils
-	compile('com.github.ie3-institute:PowerSystemUtils:1.5.2') {
+	compile('com.github.ie3-institute:PowerSystemUtils:1.5.3') {
 		exclude group: 'org.slf4j', module: 'slf4j-api'
 		exclude group: 'com.github.ie3-institute'
 		exclude group: 'tec.uom.se'
@@ -49,7 +49,7 @@ dependencies {
 	}
 
 	//	 ie³ power system data model
-	compile('com.github.ie3-institute:PowerSystemDataModel:2.0-SNAPSHOT') {
+	compile('com.github.ie3-institute:PowerSystemDataModel:2.0.0') {
 		exclude group: 'org.slf4j', module: 'slf4j-api'
 		exclude group: 'com.github.ie3-institute'
 	}
@@ -82,6 +82,7 @@ dependencies {
 
 	compile 'org.jxmapviewer:jxmapviewer2:2.6' // osm map viewer
 	compile 'org.glassfish.jaxb:jaxb-runtime:3.0.1'
+
 	// required for xml parser (javax.xml.bind) (see: https://stackoverflow.com/questions/48204141/replacements-for-deprecated-jpms-modules-with-java-ee-apis/48279048#48279048)
 	compile 'javax.xml.bind:jaxb-api:2.3.1' // xml parsing
 	compile 'org.apache.commons:commons-lang3:3.12.0' // for HashCodeBuilder
