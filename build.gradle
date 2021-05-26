@@ -43,7 +43,7 @@ repositories {
 
 dependencies {
 	//	 ie³ power system utils
-	compile('com.github.ie3-institute:PowerSystemUtils:1.3.2') {
+	compile('com.github.ie3-institute:PowerSystemUtils:1.5.3') {
 		exclude group: 'org.slf4j', module: 'slf4j-api'
 		exclude group: 'com.github.ie3-institute'
 		exclude group: 'tec.uom.se'
