@@ -1,4 +1,4 @@
-#!groovy​
+#!groovy
 
 ////////////////////////////////
 // general config values

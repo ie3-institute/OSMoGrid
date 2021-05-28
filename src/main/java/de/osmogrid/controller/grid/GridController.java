@@ -43,8 +43,6 @@ import javax.measure.quantity.ElectricPotential;
 import javax.measure.quantity.Energy;
 import javax.measure.quantity.Length;
 import javax.measure.quantity.Power;
-import org.apache.commons.math3.complex.Complex;
-import org.apache.commons.math3.linear.FieldMatrix;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -63,7 +61,6 @@ public class GridController {
 
   public static final Logger logger = LogManager.getLogger(GridController.class);
 
-  private static final Map<Integer, FieldMatrix<Complex>> admittanceMatrices = new HashMap<>();
   private static final Map<Integer, OneToOneMap<String, Integer>> nodeCodeMaps = new HashMap<>();
   private OsmogridConfig osmogridConfig;
   private LineTypeInput lineType;
