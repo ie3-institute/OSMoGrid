@@ -8,6 +8,7 @@ package de.osmogrid.util;
 import de.osmogrid.model.graph.DistanceWeightedOsmEdge;
 import de.osmogrid.model.graph.OsmGraph;
 import de.osmogrid.model.graph.OsmGridNode;
+import edu.ie3.util.geo.GeoUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -19,7 +20,7 @@ import net.morbz.osmonaut.osm.LatLon;
 import net.morbz.osmonaut.osm.Way;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import tec.uom.se.ComparableQuantity;
+import tech.units.indriya.ComparableQuantity;
 
 /**
  * Provides reading and filtering for OSM input data and building a graph from this data.
@@ -57,10 +58,7 @@ public class OsmDataProvider {
     // Set the binary OSM source (pbf) file and scan for nodes and ways
     Osmonaut osmonaut = new Osmonaut(pbfFilePath, filter);
     osmonaut.scan(osmReader);
-    this.nodes = GridUtils.getOsmogridNodeList(osmReader.getNodes());
-    this.ways = osmReader.getWays();
-
-    this.nodes = GridUtils.getOsmogridNodeList(osmReader.getNodes());
+    this.nodes = OsmoGridUtils.getOsmoGridNodeList(osmReader.getNodes());
     this.ways = osmReader.getWays();
 
     logger.debug(this.nodes.size() + " nodes have been found.");
@@ -75,7 +73,7 @@ public class OsmDataProvider {
 
       for (Way way : this.ways) {
         if (way.getTags().hasKey("building")) {
-          for (OsmGridNode node : GridUtils.getOsmogridNodeList(way.getNodes())) {
+          for (OsmGridNode node : OsmoGridUtils.getOsmoGridNodeList(way.getNodes())) {
             if (node.getLatlon().getLat() > maxLatitude) {
               maxLatitude = node.getLatlon().getLat();
             }
@@ -195,7 +193,7 @@ public class OsmDataProvider {
   private void createRawGraph() {
 
     for (Way way : this.highways) {
-      List<OsmGridNode> osmGridNodes = GridUtils.getOsmogridNodeList(way.getNodes());
+      List<OsmGridNode> osmGridNodes = OsmoGridUtils.getOsmoGridNodeList(way.getNodes());
 
       for (int i = 1; i < osmGridNodes.size(); i++) {
         OsmGridNode n1 = osmGridNodes.get(i - 1);
@@ -206,7 +204,7 @@ public class OsmDataProvider {
 
         // calculate edge weight
         ComparableQuantity<Length> weight =
-            GridUtils.haversine(
+            GeoUtils.calcHaversine(
                 n1.getLatlon().getLat(),
                 n1.getLatlon().getLon(),
                 n2.getLatlon().getLat(),
@@ -238,7 +236,7 @@ public class OsmDataProvider {
 
     // add highways to fields
     for (Way way : this.highways) {
-      List<OsmGridNode> nodes = GridUtils.getOsmogridNodeList(way.getNodes());
+      List<OsmGridNode> nodes = OsmoGridUtils.getOsmoGridNodeList(way.getNodes());
 
       for (OsmGridNode n : nodes) {
         int xCoord =

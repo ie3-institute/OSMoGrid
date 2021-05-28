@@ -15,7 +15,7 @@ import javax.measure.quantity.Power;
 import net.morbz.osmonaut.osm.LatLon;
 import net.morbz.osmonaut.osm.Tags;
 import org.apache.commons.lang3.tuple.Pair;
-import tec.uom.se.quantity.Quantities;
+import tech.units.indriya.quantity.Quantities;
 
 public class TestObjectFactory {
 

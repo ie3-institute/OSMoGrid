@@ -477,7 +477,7 @@ public class KMedoidsSameSize {
           cluster.stream().filter(node -> node.getLoad() != null).collect(Collectors.toSet());
       for (OsmGridNode node : loadNodes) {
         double distance =
-            GeoUtils.haversine(
+            GeoUtils.calcHaversine(
                     medoidLatLon.getLat(),
                     medoidLatLon.getLon(),
                     node.getLatlon().getLat(),

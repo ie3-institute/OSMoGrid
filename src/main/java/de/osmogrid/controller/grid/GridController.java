@@ -8,10 +8,10 @@ package de.osmogrid.controller.grid;
 import de.osmogrid.config.OsmogridConfig;
 import de.osmogrid.model.graph.DistanceWeightedOsmEdge;
 import de.osmogrid.model.graph.OsmGridNode;
-import de.osmogrid.util.GridUtils;
+import de.osmogrid.util.OsmoGridUtils;
 import de.osmogrid.util.enums.TypeSourceFormat;
 import edu.ie3.datamodel.exceptions.VoltageLevelException;
-import edu.ie3.datamodel.io.FileNamingStrategy;
+import edu.ie3.datamodel.io.naming.EntityPersistenceNamingStrategy;
 import edu.ie3.datamodel.io.source.TypeSource;
 import edu.ie3.datamodel.io.source.csv.CsvTypeSource;
 import edu.ie3.datamodel.models.BdewLoadProfile;
@@ -28,8 +28,10 @@ import edu.ie3.datamodel.models.input.system.characteristic.CosPhiFixed;
 import edu.ie3.datamodel.models.input.system.characteristic.OlmCharacteristicInput;
 import edu.ie3.datamodel.models.voltagelevels.CommonVoltageLevel;
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils;
+import edu.ie3.datamodel.utils.GridAndGeoUtils;
 import edu.ie3.util.OneToOneMap;
-import edu.ie3.util.quantities.dep.PowerSystemUnits;
+import edu.ie3.util.geo.GeoUtils;
+import edu.ie3.util.quantities.PowerSystemUnits;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,15 +43,13 @@ import javax.measure.quantity.ElectricPotential;
 import javax.measure.quantity.Energy;
 import javax.measure.quantity.Length;
 import javax.measure.quantity.Power;
-import org.apache.commons.math3.complex.Complex;
-import org.apache.commons.math3.linear.FieldMatrix;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jgrapht.graph.AsSubgraph;
-import tec.uom.se.ComparableQuantity;
-import tec.uom.se.quantity.Quantities;
-import tec.uom.se.unit.Units;
+import tech.units.indriya.ComparableQuantity;
+import tech.units.indriya.quantity.Quantities;
+import tech.units.indriya.unit.Units;
 
 /**
  * Controls all operations on the grid.
@@ -61,7 +61,6 @@ public class GridController {
 
   public static final Logger logger = LogManager.getLogger(GridController.class);
 
-  private static final Map<Integer, FieldMatrix<Complex>> admittanceMatrices = new HashMap<>();
   private static final Map<Integer, OneToOneMap<String, Integer>> nodeCodeMaps = new HashMap<>();
   private OsmogridConfig osmogridConfig;
   private LineTypeInput lineType;
@@ -114,16 +113,8 @@ public class GridController {
     // build node code maps and admittance matrices for each sub net
     for (SubGridContainer subGrid : gridModel.getSubGridTopologyGraph().vertexSet()) {
       OneToOneMap<String, Integer> nodeCodeMap =
-          GridUtils.buildNodeCodeMap(subGrid.getRawGrid().getNodes());
+          OsmoGridUtils.buildNodeCodeMap(subGrid.getRawGrid().getNodes());
       nodeCodeMaps.put(subGrid.getSubnet(), nodeCodeMap);
-
-      FieldMatrix<Complex> admittanceMatrix =
-          GridUtils.calcAdmittanceMatrix(
-              nodeCodeMap,
-              subGrid.getRawGrid().getLines(),
-              Quantities.getQuantity(
-                  osmogridConfig.grid.nominalPower, PowerSystemUnits.KILOVOLTAMPERE));
-      admittanceMatrices.put(subGrid.getSubnet(), admittanceMatrix);
     }
     return gridModel;
   }
@@ -135,7 +126,7 @@ public class GridController {
 
     if (osmogridConfig.io.readTypes) {
       if (sourceFormat == TypeSourceFormat.CSV) {
-        typeSource = new CsvTypeSource(";", "", new FileNamingStrategy());
+        typeSource = new CsvTypeSource(";", "", new EntityPersistenceNamingStrategy());
 
         lineType =
             typeSource.getLineTypes().stream()
@@ -205,7 +196,7 @@ public class GridController {
                   "Node " + nodeIdCounter++,
                   vTarget,
                   osmGridNode.isSubStation(),
-                  GridUtils.latLonToPointNew(osmGridNode.getLatlon()),
+                  GeoUtils.latlonToPoint(osmGridNode.getLatlon()),
                   voltLvl,
                   subNetCounter);
 
@@ -221,7 +212,7 @@ public class GridController {
                     "Node " + nodeIdCounter++,
                     vTarget,
                     false,
-                    GridUtils.latLonToPointNew(osmGridNode.getHouseConnectionPoint()),
+                    GeoUtils.latlonToPoint(osmGridNode.getHouseConnectionPoint()),
                     voltLvl,
                     subNetCounter);
 
@@ -247,7 +238,7 @@ public class GridController {
             // Create a LineInput between the NodeInputs from the OsmogridNode and the house
             // connection point
             ComparableQuantity<Length> length =
-                GridUtils.haversine(
+                GeoUtils.calcHaversine(
                     nodeInput.getGeoPosition().getY(),
                     nodeInput.getGeoPosition().getX(),
                     houseConnectionPoint.getGeoPosition().getY(),
@@ -262,7 +253,8 @@ public class GridController {
                     1,
                     lineType,
                     length,
-                    GridUtils.lineStringFromNodeInputs(nodeInput, houseConnectionPoint),
+                    GridAndGeoUtils.buildSafeLineStringBetweenNodes(
+                        nodeInput, houseConnectionPoint),
                     OlmCharacteristicInput.CONSTANT_CHARACTERISTIC);
 
             lineInputs.add(lineInput);
@@ -299,7 +291,7 @@ public class GridController {
                   "Node " + nodeIdCounter++,
                   vTarget,
                   osmGridNode.isSubStation(),
-                  GridUtils.latLonToPointNew(osmGridNode.getLatlon()),
+                  GeoUtils.latlonToPoint(osmGridNode.getLatlon()),
                   voltLvl,
                   subNetCounter);
 
