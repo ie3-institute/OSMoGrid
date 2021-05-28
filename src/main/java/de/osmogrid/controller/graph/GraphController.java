@@ -711,7 +711,7 @@ public class GraphController {
           nodes.add(n);
           nodes.add(n1Fin);
           nodes.add(n2Fin);
-          nodes.addAll(OsmoGridUtils.getOsmoGridNodeList((highwayFin.getNodes())));
+          nodes.addAll(OsmoGridUtils.getOsmoGridNodeList(highwayFin.getNodes()));
           highwayPerps.put(highwayFin, nodes);
         }
       }
