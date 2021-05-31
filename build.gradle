@@ -22,7 +22,6 @@ group = 'com.github.ie3-institute'
 description = 'OSMoGrid'
 version = '1.0-SNAPSHOT'
 
-
 apply from: scriptsLocation + 'tests.gradle'
 apply from: scriptsLocation + 'pmd.gradle'
 apply from: scriptsLocation + 'spotbugs.gradle'
@@ -41,7 +40,7 @@ repositories {
 
 dependencies {
 	//	 ie³ power system utils
-	compile('com.github.ie3-institute:PowerSystemUtils:1.5.3') {
+	implementation('com.github.ie3-institute:PowerSystemUtils:1.5.3') {
 		exclude group: 'org.slf4j', module: 'slf4j-api'
 		exclude group: 'com.github.ie3-institute'
 		exclude group: 'tec.uom.se'
@@ -49,59 +48,59 @@ dependencies {
 	}
 
 	//	 ie³ power system data model
-	compile('com.github.ie3-institute:PowerSystemDataModel:2.0.0') {
+	implementation('com.github.ie3-institute:PowerSystemDataModel:2.0.0') {
 		exclude group: 'org.slf4j', module: 'slf4j-api'
 		exclude group: 'com.github.ie3-institute'
 	}
 
 	// JTS Topology Suite for GeoPositions, License: EPL 1.0 / EDL 1.0
-	compile 'org.locationtech.jts:jts-core:1.16.1'
-	compile 'org.locationtech.jts.io:jts-io-common:1.16.1'
+	implementation 'org.locationtech.jts:jts-core:1.16.1'
+	implementation 'org.locationtech.jts.io:jts-io-common:1.16.1'
 
 	// Graphs
-	compile 'org.jgrapht:jgrapht-core:1.5.1'
+	implementation 'org.jgrapht:jgrapht-core:1.5.1'
 
 	// logging
-	compile 'org.apache.logging.log4j:log4j-api:2.14.1' // log4j
-	compile 'org.apache.logging.log4j:log4j-core:2.14.1' // log4j
-	compile 'org.apache.logging.log4j:log4j-slf4j-impl:2.14.1' // log4j -> slf4j
+	implementation 'org.apache.logging.log4j:log4j-api:2.14.1' // log4j
+	implementation 'org.apache.logging.log4j:log4j-core:2.14.1' // log4j
+	implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.14.1' // log4j -> slf4j
 
 	// pbf parser
-	compile group: 'com.github.johanneshiry', name: 'OSMonaut', version: 'v1.1.1'
+	implementation group: 'com.github.johanneshiry', name: 'OSMonaut', version: 'v1.1.1'
 
 	// javafx
-	compile group: 'org.openjfx', name: 'javafx-fxml', version: javaVersion.toString()
-	compile group: 'org.openjfx', name: 'javafx-swing', version: javaVersion.toString()
-	compile group: 'org.openjfx', name: 'javafx-graphics', version: javaVersion.toString()
-	compile group: 'org.openjfx', name: 'javafx-web', version: javaVersion.toString()
+	implementation group: 'org.openjfx', name: 'javafx-fxml', version: javaVersion.toString()
+	implementation group: 'org.openjfx', name: 'javafx-swing', version: javaVersion.toString()
+	implementation group: 'org.openjfx', name: 'javafx-graphics', version: javaVersion.toString()
+	implementation group: 'org.openjfx', name: 'javafx-web', version: javaVersion.toString()
 
-	compile 'org.jxmapviewer:jxmapviewer2:2.6' // osm map viewer
-	compile 'org.glassfish.jaxb:jaxb-runtime:3.0.1'
+	implementation 'org.jxmapviewer:jxmapviewer2:2.6' // osm map viewer
+	implementation 'org.glassfish.jaxb:jaxb-runtime:3.0.1'
 
 	// required for xml parser (javax.xml.bind) (see: https://stackoverflow.com/questions/48204141/replacements-for-deprecated-jpms-modules-with-java-ee-apis/48279048#48279048)
-	compile 'javax.xml.bind:jaxb-api:2.3.1' // xml parsing
-	compile 'org.apache.commons:commons-lang3:3.12.0' // for HashCodeBuilder
-	compile group: 'math.geom2d', name: 'javaGeom', version: '0.11.1'
-	compile 'info.picocli:picocli:4.6.1' // command line interface
+	implementation 'javax.xml.bind:jaxb-api:2.3.1' // xml parsing
+	implementation 'org.apache.commons:commons-lang3:3.12.0' // for HashCodeBuilder
+	implementation group: 'math.geom2d', name: 'javaGeom', version: '0.11.1'
+	implementation 'info.picocli:picocli:4.6.1' // command line interface
 
 	spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:+'
 
 	// testing
-	testCompile 'junit:junit:4.13.2'
-	testCompile 'cglib:cglib-nodep:3.3.0' // enables mocking of classes (in addition to interfaces)
-	compile 'org.mockito:mockito-core:3.10.0' // mocking framework
-	testCompile 'org.spockframework:spock-core:2.0-M3-groovy-3.0'
-	testCompile 'org.objenesis:objenesis:3.1' // Mock creation with constructor parameters
+	testImplementation 'junit:junit:4.13.2'
+	testImplementation 'cglib:cglib-nodep:3.3.0' // enables mocking of classes (in addition to interfaces)
+	testImplementation 'org.mockito:mockito-core:3.10.0' // mocking framework
+	testImplementation 'org.spockframework:spock-core:2.0-M3-groovy-3.0'
+	testImplementation 'org.objenesis:objenesis:3.1' // Mock creation with constructor parameters
 
 
 	// config //
 	implementation 'com.typesafe:config:1.4.1'
-	compile('com.github.carueda:tscfg_2.13:' + tscfgVersion)
+	implementation "com.github.carueda:tscfg_2.13:$tscfgVersion"
 
 }
 
 wrapper {
-	gradleVersion = '6.5.1'
+	gradleVersion = '7.0'
 }
 
 tasks.withType(JavaCompile) {
