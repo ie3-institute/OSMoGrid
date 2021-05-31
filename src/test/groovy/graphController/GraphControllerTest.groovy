@@ -8,12 +8,14 @@ package graphController
 import com.typesafe.config.ConfigFactory
 import de.osmogrid.config.OsmogridConfig
 import de.osmogrid.controller.graph.GraphController
+import de.osmogrid.model.graph.OsmGraph
 import de.osmogrid.model.graph.OsmGridNode
 import edu.ie3.datamodel.graph.DistanceWeightedGraph
 import edu.ie3.util.quantities.PowerSystemUnits
 import org.apache.commons.lang3.tuple.Pair
 import spock.lang.Shared
 import spock.lang.Specification
+import tech.units.indriya.quantity.Quantities
 import utils.TestObjectFactory
 
 import java.util.stream.Collectors
@@ -46,7 +48,7 @@ class GraphControllerTest extends Specification {
 
 		when:
 		/* Get the actual node to lat lon mapping */
-		def actual = ((DistanceWeightedGraph<OsmGridNode>) graphController["fullGraph"]).
+		def actual = ((OsmGraph) graphController["fullGraph"]).
 				vertexSet().
 				parallelStream().
 				filter({node -> Objects.nonNull(node.getHouseConnectionPoint())}).
