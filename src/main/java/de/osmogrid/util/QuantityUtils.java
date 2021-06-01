@@ -6,7 +6,7 @@
 package de.osmogrid.util;
 
 import javax.measure.Quantity;
-import tec.uom.se.quantity.Quantities;
+import tech.units.indriya.quantity.Quantities;
 
 /**
  * Provides utils for quantities.
