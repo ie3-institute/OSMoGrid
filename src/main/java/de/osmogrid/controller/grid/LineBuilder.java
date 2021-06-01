@@ -7,10 +7,11 @@ package de.osmogrid.controller.grid;
 
 import de.osmogrid.model.graph.DistanceWeightedOsmEdge;
 import de.osmogrid.model.graph.OsmGridNode;
-import de.osmogrid.util.GridUtils;
+import de.osmogrid.util.OsmoGridUtils;
 import edu.ie3.datamodel.models.input.NodeInput;
 import edu.ie3.datamodel.models.input.connector.LineInput;
 import edu.ie3.datamodel.models.input.connector.type.LineTypeInput;
+import edu.ie3.util.geo.GeoUtils;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -18,7 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 import javax.measure.quantity.Length;
 import org.jgrapht.graph.AsSubgraph;
-import tec.uom.se.ComparableQuantity;
+import tech.units.indriya.ComparableQuantity;
 
 /**
  * Provides the methods, based on depth first search, to build the {@link LineInput}s of the
@@ -181,7 +182,7 @@ public class LineBuilder {
   private void buildLineInputModel() {
     if (startNode != null && endNode != null && startNode != endNode) {
       ComparableQuantity<Length> length =
-          GridUtils.haversine(
+          GeoUtils.calcHaversine(
               startNode.getLatlon().getLat(),
               startNode.getLatlon().getLon(),
               endNode.getLatlon().getLat(),
@@ -195,7 +196,7 @@ public class LineBuilder {
               1,
               lineTypeInput,
               length,
-              GridUtils.nodesToLineString(geoNodes),
+              OsmoGridUtils.nodesToLineString(geoNodes),
               null);
 
       if (lineInput.getNodeA() != null

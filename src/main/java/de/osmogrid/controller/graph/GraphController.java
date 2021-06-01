@@ -5,24 +5,22 @@
 */
 package de.osmogrid.controller.graph;
 
-import static de.osmogrid.util.GridUtils.GEO2QM_CORRECTION;
-import static edu.ie3.util.quantities.dep.PowerSystemUnits.KILOVOLTAMPERE;
-import static edu.ie3.util.quantities.dep.PowerSystemUnits.KILOWATT;
-import static edu.ie3.util.quantities.dep.PowerSystemUnits.WATT_PER_SQUAREMETRE;
-import static tec.uom.se.unit.Units.METRE;
+import static de.osmogrid.util.OsmoGridUtils.GEO2QM_CORRECTION;
+import static edu.ie3.util.quantities.PowerSystemUnits.*;
+import static tech.units.indriya.unit.Units.METRE;
 
-import com.vividsolutions.jts.geom.Point;
 import de.osmogrid.config.OsmogridConfig;
 import de.osmogrid.model.graph.DistanceWeightedOsmEdge;
 import de.osmogrid.model.graph.OsmGraph;
 import de.osmogrid.model.graph.OsmGridNode;
-import de.osmogrid.util.GridUtils;
 import de.osmogrid.util.OsmDataProvider;
+import de.osmogrid.util.OsmoGridUtils;
 import de.osmogrid.util.QuantityUtils;
 import de.osmogrid.util.exceptions.EmptyClusterException;
+import de.osmogrid.util.quantities.OsmoGridUnits;
+import de.osmogrid.util.quantities.PowerDensity;
 import edu.ie3.util.exceptions.GeoPreparationException;
 import edu.ie3.util.geo.GeoUtils;
-import edu.ie3.util.quantities.dep.interfaces.PowerDensity;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,8 +53,9 @@ import org.jgrapht.alg.connectivity.ConnectivityInspector;
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
 import org.jgrapht.alg.shortestpath.JohnsonShortestPaths;
 import org.jgrapht.graph.AsSubgraph;
-import tec.uom.se.ComparableQuantity;
-import tec.uom.se.quantity.Quantities;
+import org.locationtech.jts.geom.Point;
+import tech.units.indriya.ComparableQuantity;
+import tech.units.indriya.quantity.Quantities;
 
 /**
  * Controls all operations on the graph.
@@ -92,7 +91,8 @@ public class GraphController {
   public List<AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge>> generateGraph() {
 
     ComparableQuantity<PowerDensity> powerDensity =
-        Quantities.getQuantity(osmogridConfig.grid.averagePowerDensity, WATT_PER_SQUAREMETRE);
+        Quantities.getQuantity(
+            osmogridConfig.grid.averagePowerDensity, OsmoGridUnits.WATT_PER_SQUARE_METRE);
 
     logger.info("Calculating perpendiculars");
     calcPerpendicularDistanceMatrix(powerDensity);
@@ -155,7 +155,7 @@ public class GraphController {
 
       // now we have to check if the buildings center is inside a residential area, if yes go on, if
       // no go next
-      if (GridUtils.isInsideLanduse(center, osmDataProvider.getLandUses())) {
+      if (GeoUtils.isInsideLanduse(center, osmDataProvider.getLandUses())) {
         Vector2D p0fin = new Vector2D();
         Way highwayfin = new Way();
         OsmGridNode n1Fin = new OsmGridNode();
@@ -296,9 +296,9 @@ public class GraphController {
         }
 
         // calc building power consumption
-        double geoArea = GridUtils.calculateBuildingArea(building);
-        Quantity<Area> area = GridUtils.calcGeo2qm(geoArea, GEO2QM_CORRECTION);
-        Quantity<Power> load = GridUtils.calcPower(area, powerDensity);
+        double geoArea = GeoUtils.calculateBuildingArea(building);
+        Quantity<Area> area = GeoUtils.calcGeo2qmNew(geoArea, GEO2QM_CORRECTION);
+        Quantity<Power> load = OsmoGridUtils.calcPower(area, powerDensity);
 
         // check if highway has already a perp
         if (hasPerp.contains(highwayfin)) { // highway has already a perp node
@@ -352,21 +352,21 @@ public class GraphController {
 
             for (OsmGridNode node : nodes) {
               Quantity<Length> d =
-                  GridUtils.haversine(
+                  GeoUtils.calcHaversine(
                       n.getLatlon().getLat(),
                       n.getLatlon().getLon(),
                       node.getLatlon().getLat(),
                       node.getLatlon().getLon());
 
               if (d.getValue().doubleValue() < d1
-                  && GridUtils.isBetween(node, nd2, n)
+                  && GeoUtils.isBetween(node, nd2, n)
                   && !(node.equals(nd2))) {
                 d1 = d.getValue().doubleValue();
                 nd1 = node;
               }
 
               if (d.getValue().doubleValue() < d2
-                  && GridUtils.isBetween(node, nd1, n)
+                  && GeoUtils.isBetween(node, nd1, n)
                   && !(node.equals(nd1))) {
                 d2 = d.getValue().doubleValue();
                 nd2 = node;
@@ -438,7 +438,7 @@ public class GraphController {
           nodes.add(n);
           nodes.add(n1Fin);
           nodes.add(n2Fin);
-          nodes.addAll(GridUtils.getOsmogridNodeList(highwayfin.getNodes()));
+          nodes.addAll(OsmoGridUtils.getOsmoGridNodeList(highwayfin.getNodes()));
           highwayPerps.put(highwayfin, nodes);
         }
       }
@@ -470,7 +470,7 @@ public class GraphController {
 
       // now we have to check if the building center point is inside a residential area,
       // if yes go on, if not go next
-      if (GridUtils.isInsideLanduse(building.getCenter(), osmDataProvider.getLandUses())) {
+      if (GeoUtils.isInsideLanduse(building.getCenter(), osmDataProvider.getLandUses())) {
         Vector2D p0Fin = new Vector2D();
         Way highwayFin = new Way();
         OsmGridNode n1Fin = new OsmGridNode();
@@ -578,9 +578,9 @@ public class GraphController {
         }
 
         // calc building power consumption
-        double geoArea = GridUtils.calculateBuildingArea(building);
-        Quantity<Area> area = GridUtils.calcGeo2qm(geoArea, GEO2QM_CORRECTION);
-        Quantity<Power> load = GridUtils.calcPower(area, powerDensity);
+        double geoArea = GeoUtils.calculateBuildingArea(building);
+        Quantity<Area> area = GeoUtils.calcGeo2qmNew(geoArea, GEO2QM_CORRECTION);
+        Quantity<Power> load = OsmoGridUtils.calcPower(area, powerDensity);
 
         n.setHouseConnectionPoint(building.getCenter());
         n.setLoad(load);
@@ -636,21 +636,21 @@ public class GraphController {
             while (nodesIterator.hasNext()) {
               OsmGridNode nx = nodesIterator.next();
               Quantity<Length> d =
-                  GridUtils.haversine(
+                  GeoUtils.calcHaversine(
                       n.getLatlon().getLat(),
                       n.getLatlon().getLon(),
                       nx.getLatlon().getLat(),
                       nx.getLatlon().getLon());
 
               if (d.getValue().doubleValue() < d1
-                  && GridUtils.isBetween(nx, nd2, n)
+                  && GeoUtils.isBetween(nx, nd2, n)
                   && !(nx.equals(nd2))) {
                 d1 = d.getValue().doubleValue();
                 nd1 = nx;
               }
 
               if (d.getValue().doubleValue() < d2
-                  && GridUtils.isBetween(nx, nd1, n)
+                  && GeoUtils.isBetween(nx, nd1, n)
                   && !(nx.equals(nd1))) {
                 d2 = d.getValue().doubleValue();
                 nd2 = nx;
@@ -711,7 +711,7 @@ public class GraphController {
           nodes.add(n);
           nodes.add(n1Fin);
           nodes.add(n2Fin);
-          nodes.addAll(GridUtils.getOsmogridNodeList(highwayFin.getNodes()));
+          nodes.addAll(OsmoGridUtils.getOsmoGridNodeList(highwayFin.getNodes()));
           highwayPerps.put(highwayFin, nodes);
         }
       }
@@ -766,7 +766,7 @@ public class GraphController {
       boolean anyBuildingInLandUse = false;
       for (Way building : osmDataProvider.getBuildings()) {
         // check if building center is in land use
-        if (GridUtils.rayCasting(new Polygon(landUse), building.getCenter())) {
+        if (GeoUtils.rayCasting(new Polygon(landUse), building.getCenter())) {
           anyBuildingInLandUse = true;
           break;
         }
@@ -789,7 +789,7 @@ public class GraphController {
       OsmGridNode edgeSource = fullGraph.getEdgeSource(edge);
       OsmGridNode edgeTarget = fullGraph.getEdgeTarget(edge);
       Quantity<Length> distance =
-          GridUtils.haversine(
+          GeoUtils.calcHaversine(
               edgeSource.getLatlon().getLat(),
               edgeSource.getLatlon().getLon(),
               edgeTarget.getLatlon().getLat(),
@@ -834,11 +834,14 @@ public class GraphController {
       for (Way landUse : landUses) {
         Set<Point> points = new HashSet<>();
         for (Node node : landUse.getNodes()) {
-          points.add(GridUtils.latlonToPoint(node.getLatlon()));
+          points.add(GeoUtils.latlonToPoint(node.getLatlon()));
         }
         Polygon convexLandUse;
+
         try {
-          convexLandUse = GeoUtils.buildConvexHull(points, 5, GeoUtils.ConvexHullAlgorithm.GRAHAM);
+          convexLandUse =
+              GeoUtils.buildConvexHull(
+                  OsmoGridUtils.toJavaAwtPoints(points), 5, GeoUtils.ConvexHullAlgorithm.GRAHAM);
           convexLandUses.add(convexLandUse);
         } catch (GeoPreparationException e) {
           // only throw the exception if the convexLandUses is empty and the current land use was
@@ -856,12 +859,14 @@ public class GraphController {
       Set<Point> points = new HashSet<>();
       for (Way landUse : landUses) {
         for (Node node : landUse.getNodes()) {
-          points.add(GridUtils.latlonToPoint(node.getLatlon()));
+          points.add(GeoUtils.latlonToPoint(node.getLatlon()));
         }
       }
       Polygon convexLandUse;
       try {
-        convexLandUse = GeoUtils.buildConvexHull(points, 5, GeoUtils.ConvexHullAlgorithm.GRAHAM);
+        convexLandUse =
+            GeoUtils.buildConvexHull(
+                OsmoGridUtils.toJavaAwtPoints(points), 5, GeoUtils.ConvexHullAlgorithm.GRAHAM);
         convexLandUses.add(convexLandUse);
       } catch (GeoPreparationException e) {
         logger.error("Could not build convex hull for landuse", e);
@@ -889,14 +894,14 @@ public class GraphController {
       for (OsmGridNode node : fullGraph.vertexSet()) {
         if (!addedNodes.get(node)) {
           if (node.getHouseConnectionPoint() != null) {
-            if (GridUtils.rayCasting(convexLandUse, node.getHouseConnectionPoint())) {
+            if (GeoUtils.rayCasting(convexLandUse, node.getHouseConnectionPoint())) {
               clusterNodes.add(node);
               addedNodes.put(node, true);
-            } else if (GridUtils.rayCasting(convexLandUse, node.getCenter())) {
+            } else if (GeoUtils.rayCasting(convexLandUse, node.getCenter())) {
               clusterNodes.add(node);
               addedNodes.put(node, true);
             }
-          } else if (GridUtils.rayCasting(convexLandUse, node.getCenter())) {
+          } else if (GeoUtils.rayCasting(convexLandUse, node.getCenter())) {
             clusterNodes.add(node);
             addedNodes.put(node, true);
           }

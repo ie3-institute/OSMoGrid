@@ -5,13 +5,13 @@
 */
 package de.osmogrid.model.graph;
 
-import static tec.uom.se.unit.Units.METRE;
+import static tech.units.indriya.unit.Units.METRE;
 
 import javax.measure.Quantity;
 import javax.measure.Unit;
 import javax.measure.quantity.Length;
 import org.jgrapht.graph.DefaultWeightedEdge;
-import tec.uom.se.quantity.Quantities;
+import tech.units.indriya.quantity.Quantities;
 
 /**
  * //ToDo: Class Description
