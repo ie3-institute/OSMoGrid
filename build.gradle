@@ -3,7 +3,7 @@ plugins {
 	id 'groovy' // groovy support
 	id 'pmd' // code check, working on source code
 	id 'com.diffplug.spotless' version '5.12.5'//code format
-	id 'com.github.spotbugs' version '4.7.1' // code check, working on byte code
+	id 'com.github.spotbugs' version '4.7.8' // code check, working on byte code
 	id 'org.openjfx.javafxplugin' version '0.0.10' // java 11 javafx plugin for gradle
 	id 'de.undercouch.download' version '4.1.2'
 	id 'kr.motd.sphinx' version '2.10.1' // documentation generation
