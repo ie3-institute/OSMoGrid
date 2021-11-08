@@ -81,7 +81,7 @@ dependencies {
 	implementation 'javax.xml.bind:jaxb-api:2.3.1' // xml parsing
 	implementation 'org.apache.commons:commons-lang3:3.12.0' // for HashCodeBuilder
 	implementation group: 'math.geom2d', name: 'javaGeom', version: '0.11.1'
-	implementation 'info.picocli:picocli:4.6.1' // command line interface
+	implementation 'info.picocli:picocli:4.6.2' // command line interface
 
 	spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:+'
 
