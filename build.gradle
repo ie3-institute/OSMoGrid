@@ -14,7 +14,7 @@ plugins {
 ext {
 	//version (changing these should be considered thoroughly!)
 	javaVersion = JavaVersion.VERSION_11
-	tscfgVersion = '0.9.986'
+	tscfgVersion = '0.9.996'
 	scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator //location of script
 }
 
