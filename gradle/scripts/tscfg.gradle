@@ -2,31 +2,31 @@
 // Generate config classes reflecting the osmogrid-config-tempalte.conf template file
 ////////////////////////////////////////////////////////////////////////////
 task genConfigClass {
-	doLast {
-		def tscfgJarFile = project.file('build/tscfg-' + tscfgVersion + '.jar')
-		if (!tscfgJarFile.exists() || !tscfgJarFile.isFile()) {
-			download {
-				src 'https://github.com/carueda/tscfg/releases/download/v' + tscfgVersion + '/tscfg-' + tscfgVersion + '.jar'
-				dest buildDir
-			}
-		}
-		javaexec {
-			main = "-jar"
-			args = [
-				"build/tscfg-${tscfgVersion}.jar",
-				"--spec",
-				"src/main/resources/config/config-template.conf",
-				"--scala",
-				"--durations",
-				"--pn",
-				"edu.ie3.osmogrid.cfg",
-				"--cn",
-				"OsmoGridConfig",
-				"--dd",
-				"src/main/scala/edu/ie3/osmogrid/cfg/"
-			]
-		}
-	}
+  doLast {
+    def tscfgJarFile = project.file('build/tscfg-' + tscfgVersion + '.jar')
+    if (!tscfgJarFile.exists() || !tscfgJarFile.isFile()) {
+      download {
+        src 'https://github.com/carueda/tscfg/releases/download/v' + tscfgVersion + '/tscfg-' + tscfgVersion + '.jar'
+        dest buildDir
+      }
+    }
+    javaexec {
+      main = "-jar"
+      args = [
+        "build/tscfg-${tscfgVersion}.jar",
+        "--spec",
+        "src/main/resources/config/config-template.conf",
+        "--scala",
+        "--durations",
+        "--pn",
+        "edu.ie3.osmogrid.cfg",
+        "--cn",
+        "OsmoGridConfig",
+        "--dd",
+        "src/main/scala/edu/ie3/osmogrid/cfg/"
+      ]
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -34,23 +34,23 @@ task genConfigClass {
 // This can be used to setup a new simulation configuration
 ////////////////////////////////////////////////////////////////////////////
 task genConfigSample {
-	doLast {
-		def tscfgJarFile = project.file('build/tscfg-' + tscfgVersion + '.jar')
-		if (!tscfgJarFile.exists() || !tscfgJarFile.isFile()) {
-			download {
-				src 'https://github.com/carueda/tscfg/releases/download/v' + tscfgVersion + '/tscfg-' + tscfgVersion + '.jar'
-				dest buildDir
-			}
-		}
-		javaexec {
-			main = "-jar"
-			args = [
-				"build/tscfg-${tscfgVersion}.jar",
-				"--spec",
-				"src/main/resources/config/config-template.conf",
-				"--tpl",
-				"configs/osmogrid/OSMoGrid_sample.conf"
-			]
-		}
-	}
+  doLast {
+    def tscfgJarFile = project.file('build/tscfg-' + tscfgVersion + '.jar')
+    if (!tscfgJarFile.exists() || !tscfgJarFile.isFile()) {
+      download {
+        src 'https://github.com/carueda/tscfg/releases/download/v' + tscfgVersion + '/tscfg-' + tscfgVersion + '.jar'
+        dest buildDir
+      }
+    }
+    javaexec {
+      main = "-jar"
+      args = [
+        "build/tscfg-${tscfgVersion}.jar",
+        "--spec",
+        "src/main/resources/config/config-template.conf",
+        "--tpl",
+        "configs/osmogrid/OSMoGrid_sample.conf"
+      ]
+    }
+  }
 }
