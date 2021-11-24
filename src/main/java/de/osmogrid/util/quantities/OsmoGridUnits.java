@@ -2,7 +2,8 @@
  * © 2021. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
-*/
+ */
+
 package de.osmogrid.util.quantities;
 
 import static tech.units.indriya.unit.Units.SQUARE_METRE;

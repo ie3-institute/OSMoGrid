@@ -44,7 +44,7 @@ repositories {
 }
 
 dependencies {
-// todo CLEANUP old dependencies
+  // todo CLEANUP old dependencies
   //	 ie³ power system utils
   implementation('com.github.ie3-institute:PowerSystemUtils:1.5.3') {
     exclude group: 'org.slf4j', module: 'slf4j-api'
