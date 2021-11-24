@@ -222,115 +222,115 @@ public class OsmDataProvider {
   /** Creates an highway distance matrix. */
   @SuppressWarnings("unchecked")
   private void createHighwayDistanceMatrix() {
-
-    // TODO: calculate or pass max/min laditude/longitude (vorher: Berechnung in
-    // GeoPreparator.readOSM)
-
-    double minCellDistance = 0.0005; // min distance between two cells in lat/lon
-
-    // calculate number of cells
-    int columns = (int) Math.ceil((maxLongitude - minLongitude) / minCellDistance);
-    int rows = (int) Math.ceil((maxLatitude - minLatitude) / minCellDistance);
-
-    // create distance matrix
-    highwayDistanceMatrix = new HashSet[rows][columns];
-
-    // add highways to fields
-    for (Way way : this.highways) {
-      List<OsmGridNode> nodes = OsmoGridUtils.getOsmoGridNodeList(way.getNodes());
-
-      for (OsmGridNode n : nodes) {
-        int xCoord =
-            (int)
-                    Math.ceil(
-                        ((n.getLatlon().getLon() - minLongitude))
-                            / ((maxLongitude - minLongitude))
-                            * columns)
-                - 1;
-        int yCoord =
-            (int)
-                    Math.ceil(
-                        -((n.getLatlon().getLat() - maxLatitude))
-                            / ((maxLatitude - minLatitude))
-                            * rows)
-                - 1;
-
-        if (xCoord < 0 || xCoord > columns - 1 || yCoord < 0 || yCoord > rows - 1) {
-          // TODO: add exception ("at least one coordinate out of range")
-        } else {
-          if (highwayDistanceMatrix[yCoord][xCoord] == null)
-            highwayDistanceMatrix[yCoord][xCoord] = new HashSet<>();
-
-          highwayDistanceMatrix[yCoord][xCoord].add(way);
-        }
-      }
-    }
-
-    // fill null values with neighbor values
-    boolean nullFound = true;
-    while (nullFound) {
-      nullFound = false;
-      boolean[][] filled =
-          new boolean[highwayDistanceMatrix.length][highwayDistanceMatrix[0].length];
-
-      for (int i = 0; i < highwayDistanceMatrix.length; i++) {
-        for (int j = 0; j < highwayDistanceMatrix[0].length; j++) {
-          if (highwayDistanceMatrix[i][j] == null || highwayDistanceMatrix[i][j].isEmpty()) {
-            nullFound = true;
-
-            // look to neighbor, copy over
-            highwayDistanceMatrix[i][j] = new HashSet<>();
-            if (i > 0) {
-              if (j > 0 && highwayDistanceMatrix[i - 1][j - 1] != null && !filled[i - 1][j - 1]) {
-                highwayDistanceMatrix[i][j].addAll(highwayDistanceMatrix[i - 1][j - 1]);
-                filled[i - 1][j - 1] = true;
-              }
-              if (j < highwayDistanceMatrix[i].length - 1
-                  && highwayDistanceMatrix[i - 1][j + 1] != null
-                  && !filled[i - 1][j + 1]) {
-                highwayDistanceMatrix[i][j].addAll(highwayDistanceMatrix[i - 1][j + 1]);
-                filled[i - 1][j + 1] = true;
-              }
-            }
-            if (i < highwayDistanceMatrix.length - 1) {
-              if (j > 0 && highwayDistanceMatrix[i + 1][j - 1] != null & !filled[i + 1][j - 1]) {
-                highwayDistanceMatrix[i][j].addAll(highwayDistanceMatrix[i + 1][j - 1]);
-                filled[i + 1][j - 1] = true;
-              }
-              if (j < highwayDistanceMatrix[i].length - 1
-                  && highwayDistanceMatrix[i + 1][j + 1] != null
-                  && !filled[i + 1][j + 1]) {
-                highwayDistanceMatrix[i][j].addAll(highwayDistanceMatrix[i + 1][j + 1]);
-                filled[i + 1][j + 1] = true;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    LatLon center = buildings.get(5).getCenter();
-
-    // determine the grid point
-    int xCoord =
-        (int)
-                Math.ceil(
-                    ((center.getLon() - minLongitude)) / ((maxLongitude - minLongitude)) * columns)
-            - 1;
-    int yCoord =
-        (int) Math.ceil(-((center.getLat() - maxLatitude)) / ((maxLatitude - minLatitude)) * rows)
-            - 1;
-
-    Set<Way> highways = highwayDistanceMatrix[yCoord][xCoord];
-
-    if (yCoord < highwayDistanceMatrix.length - 1)
-      highways.addAll(highwayDistanceMatrix[yCoord + 1][xCoord]); // the highways above
-    if (yCoord != 0)
-      highways.addAll(highwayDistanceMatrix[yCoord - 1][xCoord]); // the highways below
-    if (xCoord < highwayDistanceMatrix[0].length - 1)
-      highways.addAll(highwayDistanceMatrix[yCoord][xCoord + 1]); // the highways at right
-    if (xCoord != 0)
-      highways.addAll(highwayDistanceMatrix[yCoord][xCoord - 1]); // the highways at left
+//
+//    // TODO: calculate or pass max/min laditude/longitude (vorher: Berechnung in
+//    // GeoPreparator.readOSM)
+//
+//    double minCellDistance = 0.0005; // min distance between two cells in lat/lon
+//
+//    // calculate number of cells
+//    int columns = (int) Math.ceil((maxLongitude - minLongitude) / minCellDistance);
+//    int rows = (int) Math.ceil((maxLatitude - minLatitude) / minCellDistance);
+//
+//    // create distance matrix
+//    highwayDistanceMatrix = new HashSet[rows][columns];
+//
+//    // add highways to fields
+//    for (Way way : this.highways) {
+//      List<OsmGridNode> nodes = OsmoGridUtils.getOsmoGridNodeList(way.getNodes());
+//
+//      for (OsmGridNode n : nodes) {
+//        int xCoord =
+//            (int)
+//                    Math.ceil(
+//                        ((n.getLatlon().getLon() - minLongitude))
+//                            / ((maxLongitude - minLongitude))
+//                            * columns)
+//                - 1;
+//        int yCoord =
+//            (int)
+//                    Math.ceil(
+//                        -((n.getLatlon().getLat() - maxLatitude))
+//                            / ((maxLatitude - minLatitude))
+//                            * rows)
+//                - 1;
+//
+//        if (xCoord < 0 || xCoord > columns - 1 || yCoord < 0 || yCoord > rows - 1) {
+//          // TODO: add exception ("at least one coordinate out of range")
+//        } else {
+//          if (highwayDistanceMatrix[yCoord][xCoord] == null)
+//            highwayDistanceMatrix[yCoord][xCoord] = new HashSet<>();
+//
+//          highwayDistanceMatrix[yCoord][xCoord].add(way);
+//        }
+//      }
+//    }
+//
+//    // fill null values with neighbor values
+//    boolean nullFound = true;
+//    while (nullFound) {
+//      nullFound = false;
+//      boolean[][] filled =
+//          new boolean[highwayDistanceMatrix.length][highwayDistanceMatrix[0].length];
+//
+//      for (int i = 0; i < highwayDistanceMatrix.length; i++) {
+//        for (int j = 0; j < highwayDistanceMatrix[0].length; j++) {
+//          if (highwayDistanceMatrix[i][j] == null || highwayDistanceMatrix[i][j].isEmpty()) {
+//            nullFound = true;
+//
+//            // look to neighbor, copy over
+//            highwayDistanceMatrix[i][j] = new HashSet<>();
+//            if (i > 0) {
+//              if (j > 0 && highwayDistanceMatrix[i - 1][j - 1] != null && !filled[i - 1][j - 1]) {
+//                highwayDistanceMatrix[i][j].addAll(highwayDistanceMatrix[i - 1][j - 1]);
+//                filled[i - 1][j - 1] = true;
+//              }
+//              if (j < highwayDistanceMatrix[i].length - 1
+//                  && highwayDistanceMatrix[i - 1][j + 1] != null
+//                  && !filled[i - 1][j + 1]) {
+//                highwayDistanceMatrix[i][j].addAll(highwayDistanceMatrix[i - 1][j + 1]);
+//                filled[i - 1][j + 1] = true;
+//              }
+//            }
+//            if (i < highwayDistanceMatrix.length - 1) {
+//              if (j > 0 && highwayDistanceMatrix[i + 1][j - 1] != null & !filled[i + 1][j - 1]) {
+//                highwayDistanceMatrix[i][j].addAll(highwayDistanceMatrix[i + 1][j - 1]);
+//                filled[i + 1][j - 1] = true;
+//              }
+//              if (j < highwayDistanceMatrix[i].length - 1
+//                  && highwayDistanceMatrix[i + 1][j + 1] != null
+//                  && !filled[i + 1][j + 1]) {
+//                highwayDistanceMatrix[i][j].addAll(highwayDistanceMatrix[i + 1][j + 1]);
+//                filled[i + 1][j + 1] = true;
+//              }
+//            }
+//          }
+//        }
+//      }
+//    }
+//
+//    LatLon center = buildings.get(5).getCenter();
+//
+//    // determine the grid point
+//    int xCoord =
+//        (int)
+//                Math.ceil(
+//                    ((center.getLon() - minLongitude)) / ((maxLongitude - minLongitude)) * columns)
+//            - 1;
+//    int yCoord =
+//        (int) Math.ceil(-((center.getLat() - maxLatitude)) / ((maxLatitude - minLatitude)) * rows)
+//            - 1;
+//
+//    Set<Way> highways = highwayDistanceMatrix[yCoord][xCoord];
+//
+//    if (yCoord < highwayDistanceMatrix.length - 1)
+//      highways.addAll(highwayDistanceMatrix[yCoord + 1][xCoord]); // the highways above
+//    if (yCoord != 0)
+//      highways.addAll(highwayDistanceMatrix[yCoord - 1][xCoord]); // the highways below
+//    if (xCoord < highwayDistanceMatrix[0].length - 1)
+//      highways.addAll(highwayDistanceMatrix[yCoord][xCoord + 1]); // the highways at right
+//    if (xCoord != 0)
+//      highways.addAll(highwayDistanceMatrix[yCoord][xCoord - 1]); // the highways at left
   }
 
   public List<OsmGridNode> getNodes() {
