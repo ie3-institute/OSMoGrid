@@ -21,7 +21,7 @@ ext {
   scalaVersion = '3.0.2'
   akkaVersion = '2.6.17'
 
-  tscfgVersion = '0.9.995'
+  tscfgVersion = '0.9.996'
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
 }
 
@@ -71,7 +71,6 @@ dependencies {
 
   // config
   implementation 'com.typesafe:config:1.4.1'
-  implementation "com.github.carueda:tscfg_2.13:$tscfgVersion"
 
   // todo CLEANUP following old dependencies
   //	 ie³ power system utils
