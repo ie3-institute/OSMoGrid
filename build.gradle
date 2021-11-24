@@ -21,7 +21,7 @@ ext {
   scalaVersion = '3.0.2'
   akkaVersion = '2.6.17'
 
-  tscfgVersion = '0.9.996'
+  tscfgVersion = '0.9.995'
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
 }
 
@@ -44,6 +44,7 @@ apply from: scriptsLocation + 'jacoco.gradle' // jacoco java code coverage
 apply from: scriptsLocation + 'sonarqube.gradle'
 apply from: scriptsLocation + 'vcs.gradle'
 apply from: scriptsLocation + 'semVer.gradle'
+apply from: scriptsLocation + 'tscfg.gradle'
 
 repositories {
   mavenCentral() //searches in bintray's repository 'jCenter', which contains Maven Central
