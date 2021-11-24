@@ -12,7 +12,6 @@ import de.osmogrid.util.OsmDataProvider;
 import de.osmogrid.util.exceptions.EmptyClusterException;
 import de.osmogrid.util.exceptions.UnconnectedClusterException;
 import edu.ie3.util.geo.GeoUtils;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,7 +27,6 @@ import net.morbz.osmonaut.osm.LatLon;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jgrapht.Graph;
-import org.jgrapht.Graphs;
 import org.jgrapht.alg.connectivity.ConnectivityInspector;
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
 import org.jgrapht.graph.AsSubgraph;
@@ -277,157 +275,163 @@ public class KMedoidsSameSize {
    */
   private void refineResults() throws EmptyClusterException {
     // TODO: throw and handle UnconnectedClusterException here too
-
-    int iterator = 0;
-
-    for (int iterations = 0; maxIterations < 0 || iterations < maxIterations; iterations++) {
-      // calculate load map
-      Map<Integer, Double> loadMap = new LinkedHashMap<>();
-      for (Set<OsmGridNode> cluster : clusters) {
-        if (cluster.isEmpty()) {
-          throw new EmptyClusterException("Detected empty cluster");
-        }
-        double loadSum = 0.0;
-        for (OsmGridNode loadNode : cluster) {
-          if (loadNode.getLoad() != null) {
-            loadSum += loadNode.getLoad().getValue().doubleValue();
-          }
-        }
-        loadMap.put(clusters.indexOf(cluster), loadSum);
-      }
-      // TODO: think on a way to terminate the algorithm (i.e. standard deviation, all cluster
-      // between min/max values)
-
-      // check movability for each node to each cluster
-      Map<OsmGridNode, Boolean[]> movable = new LinkedHashMap<>(clusterNodes.size());
-      List<OsmGridNode> movableNodes = new LinkedList<>();
-      for (OsmGridNode node : clusterNodes) {
-        double load = 0.0;
-        if (node.getLoad() != null) {
-          load = node.getLoad().getValue().doubleValue();
-        }
-        Boolean[] movableArray = new Boolean[k];
-        Arrays.fill(movableArray, false);
-        for (OsmGridNode neighbor : Graphs.neighborSetOf(clusterSubgraph, node)) {
-          if (neighbor.getCluster() != node.getCluster()
-              && loadMap.get(node.getCluster()) > loadMap.get(neighbor.getCluster()) + load) {
-            movableArray[neighbor.getCluster()] = true;
-            if (!movableNodes.contains(node)) {
-              movableNodes.add(node);
-            }
-          }
-        }
-        movable.put(node, movableArray);
-      }
-
-      // if a node is moved, the neighbor node becomes invalid
-      List<OsmGridNode> invalidNodes = new LinkedList<>();
-
-      // Track if anything has changed
-      int active = 0;
-
-      for (OsmGridNode node : movableNodes) {
-        if (invalidNodes.contains(node)) {
-          continue;
-        }
-
-        int source = node.getCluster();
-
-        for (int i = 0; i < k; i++) { // i indicates the destination cluster
-
-          // continue with next i if node is not movable to current cluster
-          if (!movable.get(node)[i]) {
-            continue;
-          }
-
-          double sourceLoad = calculateLoad(source);
-          double destinationLoad = calculateLoad(i);
-
-          if (sourceLoad > destinationLoad) {
-            // move node from source to destination
-            transfer(source, i, node);
-            active++;
-
-            // if the node is an intersection we have to check whether the source cluster is still
-            // connected
-            if (clusterSubgraph.degreeOf(node) > 2) {
-              // create a temporary subgraph for the source cluster and check the number of
-              // connected sets
-              AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge> testSubgraph =
-                  new AsSubgraph<>(clusterSubgraph, new HashSet<>(clusters.get(source)));
-
-              ConnectivityInspector<OsmGridNode, DistanceWeightedOsmEdge> connectivityInspector =
-                  new ConnectivityInspector<>(testSubgraph);
-
-              if (!connectivityInspector.isConnected()) {
-                // not connected: check if one of the new connected sets could be completely moved
-                // to
-                // the destination cluster (check if it would be an advantage too)
-                List<Set<OsmGridNode>> connectedSets = connectivityInspector.connectedSets();
-
-                // sort connected sets by size and start we the smallest
-                connectedSets.sort(Comparator.comparingInt(Set::size));
-
-                List<OsmGridNode> tempMovedNodes = new LinkedList<>();
-                tempMovedNodes.add(node);
-
-                for (Set<OsmGridNode> connectedSet : connectedSets) {
-
-                  // calculate the load sum for the connected set
-                  double loadSum = 0.0;
-                  for (OsmGridNode n : connectedSet) {
-                    if (n.getLoad() != null) {
-                      loadSum += n.getLoad().getValue().doubleValue();
-                    }
-                  }
-                  // check if the connected set could be completely moved to the destination cluster
-                  // (check if it would be an advantage too)
-                  if (destinationLoad + loadSum < maxSize
-                      && destinationLoad + loadSum < sourceLoad) {
-                    // move the connected set completely to destination
-                    for (OsmGridNode n : connectedSet) {
-                      transfer(source, i, n);
-                      tempMovedNodes.add(n);
-                      active++;
-                    }
-                    // check whether source cluster is reconnected
-                    testSubgraph =
-                        new AsSubgraph<>(clusterSubgraph, new HashSet<>(clusters.get(source)));
-                    connectivityInspector = new ConnectivityInspector<>(testSubgraph);
-                    if (connectivityInspector.isConnected()) {
-                      break;
-                    }
-                  } else {
-                    // if the cluster is still not connected and moving the unconnected parts is not
-                    // possible, undo all transfers
-                    for (OsmGridNode tempMovedNode : tempMovedNodes) {
-                      transfer(i, source, tempMovedNode);
-                      active--;
-                    }
-                    tempMovedNodes.clear();
-                  }
-                  invalidNodes.addAll(tempMovedNodes);
-                }
-              }
-            }
-            // set all neighbors of the current node invalid for transfers
-            invalidNodes.addAll(Graphs.neighborSetOf(clusterSubgraph, node));
-          }
-          // go on with the next node
-          break;
-        }
-      }
-      if (active <= 0) {
-        break;
-      }
-
-      // Clear movable node list and invalid node list for next iteration
-      invalidNodes.clear();
-      movableNodes.clear();
-      iterator = iterations;
-    }
-
-    logger.info("Finished K-Medoids after " + (iterator + 1) + " iterations");
+    //
+    //    int iterator = 0;
+    //
+    //    for (int iterations = 0; maxIterations < 0 || iterations < maxIterations; iterations++) {
+    //      // calculate load map
+    //      Map<Integer, Double> loadMap = new LinkedHashMap<>();
+    //      for (Set<OsmGridNode> cluster : clusters) {
+    //        if (cluster.isEmpty()) {
+    //          throw new EmptyClusterException("Detected empty cluster");
+    //        }
+    //        double loadSum = 0.0;
+    //        for (OsmGridNode loadNode : cluster) {
+    //          if (loadNode.getLoad() != null) {
+    //            loadSum += loadNode.getLoad().getValue().doubleValue();
+    //          }
+    //        }
+    //        loadMap.put(clusters.indexOf(cluster), loadSum);
+    //      }
+    //      // TODO: think on a way to terminate the algorithm (i.e. standard deviation, all cluster
+    //      // between min/max values)
+    //
+    //      // check movability for each node to each cluster
+    //      Map<OsmGridNode, Boolean[]> movable = new LinkedHashMap<>(clusterNodes.size());
+    //      List<OsmGridNode> movableNodes = new LinkedList<>();
+    //      for (OsmGridNode node : clusterNodes) {
+    //        double load = 0.0;
+    //        if (node.getLoad() != null) {
+    //          load = node.getLoad().getValue().doubleValue();
+    //        }
+    //        Boolean[] movableArray = new Boolean[k];
+    //        Arrays.fill(movableArray, false);
+    //        for (OsmGridNode neighbor : Graphs.neighborSetOf(clusterSubgraph, node)) {
+    //          if (neighbor.getCluster() != node.getCluster()
+    //              && loadMap.get(node.getCluster()) > loadMap.get(neighbor.getCluster()) + load) {
+    //            movableArray[neighbor.getCluster()] = true;
+    //            if (!movableNodes.contains(node)) {
+    //              movableNodes.add(node);
+    //            }
+    //          }
+    //        }
+    //        movable.put(node, movableArray);
+    //      }
+    //
+    //      // if a node is moved, the neighbor node becomes invalid
+    //      List<OsmGridNode> invalidNodes = new LinkedList<>();
+    //
+    //      // Track if anything has changed
+    //      int active = 0;
+    //
+    //      for (OsmGridNode node : movableNodes) {
+    //        if (invalidNodes.contains(node)) {
+    //          continue;
+    //        }
+    //
+    //        int source = node.getCluster();
+    //
+    //        for (int i = 0; i < k; i++) { // i indicates the destination cluster
+    //
+    //          // continue with next i if node is not movable to current cluster
+    //          if (!movable.get(node)[i]) {
+    //            continue;
+    //          }
+    //
+    //          double sourceLoad = calculateLoad(source);
+    //          double destinationLoad = calculateLoad(i);
+    //
+    //          if (sourceLoad > destinationLoad) {
+    //            // move node from source to destination
+    //            transfer(source, i, node);
+    //            active++;
+    //
+    //            // if the node is an intersection we have to check whether the source cluster is
+    // still
+    //            // connected
+    //            if (clusterSubgraph.degreeOf(node) > 2) {
+    //              // create a temporary subgraph for the source cluster and check the number of
+    //              // connected sets
+    //              AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge> testSubgraph =
+    //                  new AsSubgraph<>(clusterSubgraph, new HashSet<>(clusters.get(source)));
+    //
+    //              ConnectivityInspector<OsmGridNode, DistanceWeightedOsmEdge>
+    // connectivityInspector =
+    //                  new ConnectivityInspector<>(testSubgraph);
+    //
+    //              if (!connectivityInspector.isConnected()) {
+    //                // not connected: check if one of the new connected sets could be completely
+    // moved
+    //                // to
+    //                // the destination cluster (check if it would be an advantage too)
+    //                List<Set<OsmGridNode>> connectedSets = connectivityInspector.connectedSets();
+    //
+    //                // sort connected sets by size and start we the smallest
+    //                connectedSets.sort(Comparator.comparingInt(Set::size));
+    //
+    //                List<OsmGridNode> tempMovedNodes = new LinkedList<>();
+    //                tempMovedNodes.add(node);
+    //
+    //                for (Set<OsmGridNode> connectedSet : connectedSets) {
+    //
+    //                  // calculate the load sum for the connected set
+    //                  double loadSum = 0.0;
+    //                  for (OsmGridNode n : connectedSet) {
+    //                    if (n.getLoad() != null) {
+    //                      loadSum += n.getLoad().getValue().doubleValue();
+    //                    }
+    //                  }
+    //                  // check if the connected set could be completely moved to the destination
+    // cluster
+    //                  // (check if it would be an advantage too)
+    //                  if (destinationLoad + loadSum < maxSize
+    //                      && destinationLoad + loadSum < sourceLoad) {
+    //                    // move the connected set completely to destination
+    //                    for (OsmGridNode n : connectedSet) {
+    //                      transfer(source, i, n);
+    //                      tempMovedNodes.add(n);
+    //                      active++;
+    //                    }
+    //                    // check whether source cluster is reconnected
+    //                    testSubgraph =
+    //                        new AsSubgraph<>(clusterSubgraph, new
+    // HashSet<>(clusters.get(source)));
+    //                    connectivityInspector = new ConnectivityInspector<>(testSubgraph);
+    //                    if (connectivityInspector.isConnected()) {
+    //                      break;
+    //                    }
+    //                  } else {
+    //                    // if the cluster is still not connected and moving the unconnected parts
+    // is not
+    //                    // possible, undo all transfers
+    //                    for (OsmGridNode tempMovedNode : tempMovedNodes) {
+    //                      transfer(i, source, tempMovedNode);
+    //                      active--;
+    //                    }
+    //                    tempMovedNodes.clear();
+    //                  }
+    //                  invalidNodes.addAll(tempMovedNodes);
+    //                }
+    //              }
+    //            }
+    //            // set all neighbors of the current node invalid for transfers
+    //            invalidNodes.addAll(Graphs.neighborSetOf(clusterSubgraph, node));
+    //          }
+    //          // go on with the next node
+    //          break;
+    //        }
+    //      }
+    //      if (active <= 0) {
+    //        break;
+    //      }
+    //
+    //      // Clear movable node list and invalid node list for next iteration
+    //      invalidNodes.clear();
+    //      movableNodes.clear();
+    //      iterator = iterations;
+    //    }
+    //
+    //    logger.info("Finished K-Medoids after " + (iterator + 1) + " iterations");
   }
 
   /**
