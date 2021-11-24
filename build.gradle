@@ -10,13 +10,19 @@ plugins {
   id 'jacoco' // java code coverage plugin
   id "org.sonarqube" version "3.3" // sonarqube
   id 'net.thauvin.erik.gradle.semver' version '1.0.4' // semantic versioning
+  id 'scala'
 }
 
 ext {
   javaVersion = JavaVersion.VERSION_11
+  fxVersion = '17.0.0.1' // todo drop
+
+  scalaMajorVersion = '3'
+  scalaVersion = '3.0.2'
+  akkaVersion = '2.6.17'
+
   tscfgVersion = '0.9.996'
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
-  fxVersion = '17.0.0.1' // todo drop
 }
 
 java {
@@ -27,7 +33,6 @@ java {
 
 group = 'com.github.ie3-institute'
 description = 'OSMoGrid'
-version = '1.0-SNAPSHOT'
 
 apply from: scriptsLocation + 'tests.gradle'
 apply from: scriptsLocation + 'pmd.gradle'
@@ -46,7 +51,28 @@ repositories {
 }
 
 dependencies {
-  // todo CLEANUP old dependencies
+
+  // scala core
+  implementation "org.scala-lang:scala3-library_3:$scalaVersion"
+  implementation group: 'org.scala-lang.modules', name: 'scala-parallel-collections_3', version: '1.0.4'
+
+  // akka
+  implementation "com.typesafe.akka:akka-actor-typed_${scalaMajorVersion}:${akkaVersion}"
+
+  // logging
+  implementation "com.typesafe.scala-logging:scala-logging_${scalaMajorVersion}:3.9.4"
+  implementation 'ch.qos.logback:logback-classic:1.2.7'
+
+  // testing
+  testImplementation "org.scalatest:scalatest_$scalaMajorVersion:3.2.10"
+  testRuntimeClasspath 'com.vladsch.flexmark:flexmark-all:0.62.2'
+  testImplementation group: 'org.pegdown', name: 'pegdown', version: '1.6.0'
+
+  // config
+  implementation 'com.typesafe:config:1.4.1'
+  implementation "com.github.carueda:tscfg_2.13:$tscfgVersion"
+
+  // todo CLEANUP following old dependencies
   //	 ie³ power system utils
   implementation('com.github.ie3-institute:PowerSystemUtils:1.5.3') {
     exclude group: 'org.slf4j', module: 'slf4j-api'
@@ -96,12 +122,19 @@ dependencies {
   testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
   testImplementation 'org.objenesis:objenesis:3.2' // Mock creation with constructor parameters
 
-  // config //
-  implementation 'com.typesafe:config:1.4.1'
-  implementation "com.github.carueda:tscfg_2.13:$tscfgVersion"
-
 }
 
 tasks.withType(JavaCompile) {
   options.encoding = 'UTF-8'
 }
+
+tasks.withType(Javadoc){
+  options.encoding = 'UTF-8'
+}
+
+task printVersion {
+  doLast {
+    println project.version
+  }
+}
+
