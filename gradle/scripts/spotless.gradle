@@ -1,39 +1,47 @@
 // spotless is a code formatter
 
 spotless {
-	def ie3LicHead = '/*\n' +
-			' * © $YEAR. TU Dortmund University,\n' +
-			' * Institute of Energy Systems, Energy Efficiency and Energy Economics,\n' +
-			' * Research group Distribution grid planning and operation\n' +
-			'*/'
+  def ie3LicHead = '/*\n' +
+      ' * © $YEAR. TU Dortmund University,\n' +
+      ' * Institute of Energy Systems, Energy Efficiency and Energy Economics,\n' +
+      ' * Research group Distribution grid planning and operation\n' +
+      ' */\n\n'
 
-	//sets a license header, removes unused imports and formats conforming to the google java format
-	java {
-		removeUnusedImports() // removes any unused imports
-		googleJavaFormat()
-		licenseHeader ie3LicHead
-	}
+  //sets a license header, removes unused imports and formats conforming to the google java format
+  java {
+    removeUnusedImports() // removes any unused imports
+    googleJavaFormat()
+    licenseHeader ie3LicHead
+  }
 
-	/* cf. https://github.com/diffplug/spotless/tree/master/plugin-gradle */
-	groovy {
-		licenseHeader ie3LicHead
-		excludeJava() // excludes all Java sources within the Groovy source dirs from formatting
-		// the Groovy Eclipse formatter extends the Java Eclipse formatter,
-		// so it formats Java files by default (unless `excludeJava` is used).
-		greclipse()
-	}
+  /* cf. https://github.com/diffplug/spotless/tree/master/plugin-gradle */
+  groovy {
+    target '**.groovy', 'Jenkinsfile'
+    licenseHeader "#!groovy\n\n" + ie3LicHead, "////////////////////////////////"
+    // the Groovy Eclipse formatter extends the Java Eclipse formatter,
+    // so it formats Java files by default (unless `excludeJava` is used).
+    greclipse()
+    indentWithSpaces 2
+  }
 
-	groovyGradle {
-		// same as groovy, but for .gradle (defaults to '*.gradle')
-		target '*.gradle', 'gradle/scripts/*.gradle', 'Jenkinsfile'
-		greclipse()
-	}
+  groovyGradle {
+    // same as groovy, but for .gradle (defaults to '*.gradle')
+    target '*.gradle', 'gradle/scripts/*.gradle'
+    greclipse()
+    indentWithSpaces 2
+  }
 
-	// removes unnecessary whitespace, indents with tabs and ends on new line for gradle, md and gitignore files and config-XMLs
-	format 'misc', {
-		target '**/*.md', '**/.gitignore', 'configs/**'
-		trimTrailingWhitespace()
-		indentWithSpaces(2)
-		endWithNewline()
-	}
+  //sets a license header, removes unused imports and formats conforming to the scala fmt formatter
+  scala {
+    scalafmt()
+    licenseHeader ie3LicHead, "package.*\\n"
+  }
+
+  // removes unnecessary whitespace, indents with tabs and ends on new line for gradle, md and gitignore files and config-XMLs
+  format 'misc', {
+    target '**/*.md', '**/.gitignore', 'configs/**'
+    trimTrailingWhitespace()
+    indentWithTabs()
+    endWithNewline()
+  }
 }
