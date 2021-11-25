@@ -5,13 +5,12 @@ sonarqube {
     property 'sonar.projectKey', 'edu.ie3:OSMoGrid'
     property 'sonar.verbose', 'false' // WARNING: There is the potential for this setting to expose sensitive information such as passwords if they are stored as server-side environment variables.
     property 'sonar.sourceEncoding', 'UTF-8' // encoding
-    property 'sonar.sources', [] // TODO replace with below
-    //		property 'sonar.sources', [
-    //			'src/main/resources',
-    //			'src/main/java'] // src dirs
+    property 'sonar.sources', [
+      'src/main/resources',
+      'src/main/java'] // src dirs
     property "sonar.tests", [
-      //			'src/test/resources',
-      //			'src/test/java',
+      'src/test/resources',
+      'src/test/java',
       'src/test/groovy'] // test src dirs
     // reports stuff (for all languages)
     property 'sonar.junit.reportPaths', [

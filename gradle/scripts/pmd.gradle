@@ -2,6 +2,6 @@
 
 pmd {
   consoleOutput = true
-  toolVersion = "6.24.0"
+  toolVersion = "6.40.0"
   rulesMinimumPriority = 2
 }

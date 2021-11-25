@@ -155,9 +155,7 @@ node {
           ]) {
 
             /*
-             * There is a known bug in JavaDoc generation in JDK 8. Therefore generate the JavaDoc with JDK
-             * 11 first and do the rest of the tasks with JDK 8. IMPORTANT: Do not issue 'clean' in the
-             * following task
+             * IMPORTANT: Do not issue 'clean' in the following task
              */
             sh(
                 script: """set +x && cd $projectName""" +
@@ -191,7 +189,7 @@ node {
           // notify rocket chat
           String successMsg = "deployment of version $projectVersion from branch '$currentBranchName' to sonatype " +
               "successful. If this is a deployment from 'main' pls remember visiting https://oss.sonatype.org to " +
-              "stag and release artifact!\n" +
+              "stage and release artifact!\n" +
               "*project:* ${projectName}\n" +
               "*branch:* ${currentBranchName}\n"
 
