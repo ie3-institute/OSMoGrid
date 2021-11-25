@@ -9,6 +9,7 @@ plugins {
 	id 'kr.motd.sphinx' version '2.10.1' // documentation generation
 	id 'jacoco' // java code coverage plugin
 	id "org.sonarqube" version "3.3" // sonarqube
+	id 'net.thauvin.erik.gradle.semver' version '1.0.4' // semantic versioning
 }
 
 ext {
@@ -20,7 +21,6 @@ ext {
 
 group = 'com.github.ie3-institute'
 description = 'OSMoGrid'
-version = '1.0-SNAPSHOT'
 
 apply from: scriptsLocation + 'tests.gradle'
 apply from: scriptsLocation + 'pmd.gradle'
@@ -31,6 +31,7 @@ apply from: scriptsLocation + 'documentation.gradle'
 apply from: scriptsLocation + 'jacoco.gradle' // jacoco java code coverage
 apply from: scriptsLocation + 'sonarqube.gradle'
 apply from: scriptsLocation + 'vcs.gradle'
+apply from: scriptsLocation + 'semVer.gradle'
 
 repositories {
 	mavenCentral() //searches in bintray's repository 'jCenter', which contains Maven Central

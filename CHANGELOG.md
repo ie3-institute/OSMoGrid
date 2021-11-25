@@ -7,10 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased/Snapshot]
 
 ### Added
--  ...
+-  Gradle scripts for semantic versioning
 
 ### Changed
 -  ...
 
 ### Fixed
 -  ...
+
+[Unreleased/Snapshot]: https://github.com/ie3-institute/osmogrid/
