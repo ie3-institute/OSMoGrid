@@ -18,7 +18,7 @@ ext {
   fxVersion = '17.0.0.1' // todo drop
 
   scalaMajorVersion = '3'
-  scalaVersion = '3.0.2'
+  scalaVersion = '3.1.0'
   akkaVersion = '2.6.17'
 
   tscfgVersion = '0.9.996'
