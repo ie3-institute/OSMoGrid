@@ -67,7 +67,7 @@ dependencies {
   // testing
   testImplementation "org.scalatest:scalatest_$scalaMajorVersion:3.2.10"
   testRuntimeClasspath 'com.vladsch.flexmark:flexmark-all:0.62.2'
-  testImplementation group: 'org.pegdown', name: 'pegdown', version: '1.6.0'
+  testImplementation 'org.pegdown:pegdown:1.6.0'
 
   // config
   implementation 'com.typesafe:config:1.4.1'
