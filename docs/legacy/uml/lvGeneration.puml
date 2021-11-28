@@ -15,7 +15,7 @@ partition "Build street graph" {
       :Determine lat/lon boundaries\nof all known nodes;
     endif
     :Extract buildings and identify real substations;
-    note right: Cf. details in\n ""notes.md"" under (1)
+    note right: Cf. details in legacy section\nof read the docs under (1)
     :Extract land uses;
     note right: (2)
     :Extract highways;

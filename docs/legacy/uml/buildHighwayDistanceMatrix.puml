@@ -4,7 +4,7 @@
 !theme plain
 
 start
-  note right: Cf. details in\n ""notes.md"" under (4)
+  note right: Cf. details in legacy section\nof read the docs under (4)
   :Select highways;
   repeat
     :Extract nodes from way and convert to ""OsmGridNode"";
