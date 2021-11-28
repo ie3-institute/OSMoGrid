@@ -1,0 +1,24 @@
+@startuml
+'https://plantuml.com/activity-diagram-beta
+
+!theme plain
+
+start
+  note right: Cf. details in\n ""notes.md"" under (4)
+  :Select highways;
+  repeat
+    :Extract nodes from way and convert to ""OsmGridNode"";
+    repeat
+      :Determine assignment of node to grid cell;
+      :Add way to cell (""HashSet"" of (high)ways);
+    repeat while (more nodes?)
+  repeat while (more highways?)
+  repeat
+    :Find cells with ""null"" or empty Sets;
+    :Copy content from neighbor;
+  repeat while (any null values in matrix?)
+  :Replicate the boundary rows and cols of the matrix;
+  note right: Not sure, if I totally\n understood, what\nhappens here...
+stop
+
+@enduml

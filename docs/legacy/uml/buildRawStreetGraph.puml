@@ -1,0 +1,16 @@
+@startuml
+'https://plantuml.com/activity-diagram-beta
+
+!theme plain
+
+start
+:Select highways;
+repeat
+  :Extract nodes from way and convert to ""OsmGridNode"";
+  :Add nodes to graph;
+  :Calculate distance of way segment;
+  :Add edge with distance as weight to graph;
+repeat while (more highways?)
+stop
+
+@enduml
