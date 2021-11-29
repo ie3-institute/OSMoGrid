@@ -219,3 +219,8 @@ gradle-app.setting
 
 # Cache of project
 .gradletasknamecache
+
+# Read the docs integration
+# Don't commit the virtual environment of python
+**/venv
+docs/readthedocs/build

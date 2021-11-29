@@ -1,0 +1,77 @@
+@startuml
+'https://plantuml.com/activity-diagram-beta
+!theme plain
+
+start
+:Read config;
+partition "Build street graph" {
+  partition "Read OSM data" {
+    :Read *.pbf file;
+    :Parse nodes into ""OsmGridNode"";
+    :Extract ways;
+    if (""cutArea"" && ""plot"") then (true)
+      :Determine lat/lon boundaries\nof all ways with tag //building//;
+    else (false)
+      :Determine lat/lon boundaries\nof all known nodes;
+    endif
+    :Extract buildings and identify real substations;
+    note right: Cf. details in legacy section\nof read the docs under (1)
+    :Extract land uses;
+    note right: (2)
+    :Extract highways;
+    note right: (3)
+  }
+  partition "Transform OSM data to graph" {
+    :Build raw street graph;
+    :Build highway distance matrix;
+    :Define power density;
+    note right: Load per area of a house
+    :Calculate perpendicular distance matrix;
+    :Update edges with correct node assignment;
+    :Remove land uses without any building;
+    :Update the edge weights;
+    :Filter out dead ends from graph;
+    :Create clusters;
+    :Create sub-graphs;
+    note right: Neglects clusters with a\nload sum beneath\nconfigured threshold
+    :Clean up all sub-graphs;
+    :Calculate cluster load;
+    note right: Only for log output
+  }
+}
+partition "Build grid" {
+  :Load standard asset types;
+  :Determine rated and target voltages\nas well as equivalent voltage level;
+  repeat
+    repeat
+      if (Node has load) then (yes)
+        :Convert ""OsmGridNode"""s to ""NodeInput""s;
+        if (Create distinct house connection points) then (yes)
+          :Create house connection point;
+          :Create distinct load;
+          :Connect house connection point to grid node (via line);
+        else
+          :Create load;
+        endif
+      else if (Node is intersection) then (yes)
+        :Create node;
+      endif
+    repeat while (More nodes?)
+    :Create lines;
+    :Assign subnet number;
+  repeat while (more sub-graphs?)
+  :Build ""JointGridContainer"";
+  repeat
+    :Build node code map;
+    note right: Mapping from node id to index
+    :Register node code maps per sub-grid;
+    note right: Node code maps\naren't used at all
+  repeat while (more sub-grids?)
+}
+if (output) then (true)
+  :Persist grid;
+  note right: Currently no output is generated?!
+endif
+stop
+
+@enduml

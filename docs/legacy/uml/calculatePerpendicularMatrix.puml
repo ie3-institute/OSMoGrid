@@ -1,0 +1,57 @@
+@startuml
+'https://plantuml.com/activity-diagram-beta
+
+!theme plain
+
+start
+:Get buildings and highway distance matrix;
+repeat
+  :Determine if building is a substation;
+  :Determine center of building;
+  if (is inside any landuse area?) then (yes)
+    :Get nearby highways by distance matrix;
+    repeat
+      repeat
+        :Calculate orthogonal projection onto way segment;
+        if (project hits segment) then (yes)
+          :Calculate length of perpendicular;
+          if (is shortest perpendicular) then (yes)
+            :Register properties;
+          endif
+        endif
+        :Correct perpendicular length, if the house is closer to one end of the segment;
+        note right: This shouldn't happen, right?
+      repeat while (more way segments?);
+    repeat while (more highways?)
+    :Some check I don't understand;
+    :Calculate the power consumption of the building;
+    if (proposed highway already has a perpendicular) then (yes)
+      :Attempt to add perpendicular foot to graph;
+      if (is already part of graph?) then (yes)
+        :Find that node;
+        :Add the building center to node;
+        :Add load;
+      else (no)
+        :Set building center and load;
+      endif
+      :Get all nodes connected to the\nperpendicular foot (from whole graph)\nand collect nodes;
+      if (graph contains edge to perpendicular foot) then (no)
+        :Add node and adapt the edge, that it cuts;
+      endif
+    else (no)
+      :Remove old edge;
+      :Add perpendicular foot;
+      if (is already part of graph?) then (yes)
+        :Update contained node;
+      else
+        :Set properties of node;
+      endif
+      :Reconnect nodes by edges;
+      :Register, that this highway has a perpendicular foot;
+      :Register perpendicular foot nodes;
+    endif
+  endif
+repeat while (more buildings?)
+stop
+
+@enduml
