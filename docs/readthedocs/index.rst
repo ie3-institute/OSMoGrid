@@ -11,6 +11,7 @@ Welcome to OSMoGrid's documentation!
    :caption: Contents:
 
    legacy/legacy.md
+   concept.md
 
 Indices and tables
 ==================
