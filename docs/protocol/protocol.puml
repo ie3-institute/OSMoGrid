@@ -1,0 +1,69 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+!theme plain
+autonumber
+
+boundary Main
+database Input
+participant InputDataProvider
+participant OsmoGridGuardian
+participant LvCoordinator
+collections LvRegionGenerator
+collections LvGridGenerator
+participant ResultListener
+
+== Init ==
+Main -> OsmoGridGuardian: Run(cfg)
+OsmoGridGuardian --> InputDataProvider: //Spawn//
+OsmoGridGuardian -> InputDataProvider: !Init(cfg)
+InputDataProvider -> OsmoGridGuardian: !InitComplete
+
+OsmoGridGuardian --> ResultListener: //Spawn//
+OsmoGridGuardian -> ResultListener: !Init(...)
+ResultListener -> OsmoGridGuardian: !InitComplete(...)
+note right: Death watch of\n""ResultListener""
+
+== LV generation ==
+OsmoGridGuardian --> LvCoordinator: //Spawn//
+OsmoGridGuardian -> LvCoordinator: !ReqLvGrids(...)
+LvCoordinator -> InputDataProvider: !ReqOsm(...)
+InputDataProvider <--> Input: //Read//
+LvCoordinator -> InputDataProvider: !ReqAssetTypes(...)
+InputDataProvider <--> Input: //Read//
+InputDataProvider -> LvCoordinator: !RepOsm(...)
+InputDataProvider -> LvCoordinator: !RepAssetTypes(...)
+activate LvCoordinator
+note right: Partition OSM data\nby municipal boundaries
+LvCoordinator --> LvGridGenerator: //Spawn worker pool//
+LvCoordinator --> LvRegionGenerator: //Spawn worker pool//
+
+LvCoordinator -> LvRegionGenerator: !ReqLvGrids(...)
+deactivate LvCoordinator
+LvRegionGenerator -> LvGridGenerator: !ReqLvGrid(...)
+activate LvGridGenerator
+... ...
+LvGridGenerator -> LvRegionGenerator: !PepLvGrid(...)
+deactivate LvGridGenerator
+
+LvRegionGenerator -> LvCoordinator: !RepLvGrids(...)
+LvCoordinator -> OsmoGridGuardian: !RepLvGrids(...)
+
+== MV generation ==
+... **To be defined in a later stage** ...
+
+== Result handling ==
+OsmoGridGuardian -> ResultListener: !PersistJointGrid(...)
+activate ResultListener
+... ...
+ResultListener -> OsmoGridGuardian: !Terminated(...)
+deactivate ResultListener
+OsmoGridGuardian -> InputDataProvider: !Terminate(...)
+InputDataProvider <--> Input: //Close//
+InputDataProvider -> OsmoGridGuardian: !Terminated(...)
+
+OsmoGridGuardian -> Main: !Done
+
+'TODO: Don't forget to spawn and initialize the ResultListener
+
+@enduml

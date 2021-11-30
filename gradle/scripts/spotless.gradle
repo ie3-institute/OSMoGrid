@@ -39,9 +39,17 @@ spotless {
 
   // removes unnecessary whitespace, indents with tabs and ends on new line for gradle, md and gitignore files and config-XMLs
   format 'misc', {
-    target '**/*.md', '**/.gitignore', 'configs/**'
+    target '**/.gitignore', 'configs/**'
     trimTrailingWhitespace()
     indentWithTabs()
+    endWithNewline()
+  }
+
+  /* Formats markdown files, just like the other misc files, but without trimming trailing white spaces (nested
+   * enumerations) */
+  format 'md', {
+    target '**/*.md'
+    indentWithSpaces 2
     endWithNewline()
   }
 }
