@@ -71,6 +71,7 @@ dependencies {
 
   // config
   implementation 'com.typesafe:config:1.4.1'
+  implementation "com.github.scopt:scopt_$scalaMajorVersion:4.0.1" // cmd args parser
 
   // todo CLEANUP following old dependencies
   //	 ie³ power system utils
