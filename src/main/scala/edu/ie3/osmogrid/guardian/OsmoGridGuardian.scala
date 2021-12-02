@@ -10,6 +10,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.InputDataProvider
+import edu.ie3.osmogrid.io.output.ResultListener
 
 object OsmoGridGuardian {
 
@@ -27,10 +28,11 @@ object OsmoGridGuardian {
           ctx.log.info("Starting input data provider")
           val inputProvider =
             ctx.spawn(InputDataProvider(cfg.input), "InputDataProvider")
+          ctx.log.debug("Starting output data listener")
+          val outputListener =
+            ctx.spawn(ResultListener(cfg.output), "ResultListener")
           /*
-           * TODO:
-           *  1) Spawn InputDataProvider and initialize it
-           *  2) Spawn result listener and initialize it
+           * TODO: Spawn LvCoordinator and trigger it for action
            */
           Behaviors.stopped
       }
