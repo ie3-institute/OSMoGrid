@@ -16,6 +16,8 @@ object OsmoGridGuardian {
 
   sealed trait OsmoGridGuardianEvent
   final case class Run(cfg: OsmoGridConfig) extends OsmoGridGuardianEvent
+  object InputDataProviderDied extends OsmoGridGuardianEvent
+  object ResultEventListenerDied extends OsmoGridGuardianEvent
 
   def apply(): Behavior[OsmoGridGuardianEvent] = idle()
 
@@ -28,12 +30,20 @@ object OsmoGridGuardian {
           ctx.log.info("Starting input data provider")
           val inputProvider =
             ctx.spawn(InputDataProvider(cfg.input), "InputDataProvider")
+          ctx.watchWith(inputProvider, InputDataProviderDied)
           ctx.log.debug("Starting output data listener")
-          val outputListener =
+          val resultEventListenerDied =
             ctx.spawn(ResultListener(cfg.output), "ResultListener")
+          ctx.watchWith(resultEventListenerDied, ResultEventListenerDied)
           /*
            * TODO: Spawn LvCoordinator and trigger it for action
            */
+          Behaviors.stopped
+        case InputDataProviderDied =>
+          ctx.log.error("Input data provider died. That's bad...")
+          Behaviors.stopped
+        case ResultEventListenerDied =>
+          ctx.log.error("Result event listener died. That's bad...")
           Behaviors.stopped
       }
     }
