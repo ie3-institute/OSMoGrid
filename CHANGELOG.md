@@ -7,10 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased/Snapshot]
 
 ### Added
--  Read the docs capabilities
+- Read the docs capabilities
+- Parsing and checking configuration
+- Adding content to config file
+  - Input
+  - Output
+- Let `OsmoGridGuardian` initialize services
 
 ### Changed
--  ...
 
 ### Fixed
 -  ...
