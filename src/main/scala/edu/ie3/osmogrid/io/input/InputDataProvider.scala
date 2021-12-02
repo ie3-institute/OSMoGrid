@@ -7,6 +7,7 @@
 package edu.ie3.osmogrid.io.input
 
 import akka.actor.typed.Behavior
+import edu.ie3.osmogrid.cfg.OsmoGridConfig
 
 object InputDataProvider {
 
@@ -15,6 +16,6 @@ object InputDataProvider {
   final case class Read()
       extends InputDataEvent // todo this read method should contain configuration parameters for the actual source + potential filter options
 
-  def apply(): Behavior[InputDataEvent] = ???
+  def apply(cfg: OsmoGridConfig.Input): Behavior[InputDataEvent] = ???
 
 }
