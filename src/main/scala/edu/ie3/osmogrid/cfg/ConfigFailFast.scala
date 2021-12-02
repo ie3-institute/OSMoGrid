@@ -8,13 +8,32 @@ package edu.ie3.osmogrid.cfg
 
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Input, Output}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.exception.IllegalConfigException
 
 object ConfigFailFast {
   def check(cfg: OsmoGridConfig): Unit = cfg match {
-    case OsmoGridConfig(input, output) =>
+    case OsmoGridConfig(generation, input, output) =>
       checkInputConfig(input)
       checkOutputConfig(output)
+  }
+
+  private def checkGenerationConfig(generation: Generation): Unit =
+    generation match {
+      case Generation(lv) =>
+        /* Check, that at least one config is set */
+        if (Vector(lv).count(_.isDefined) < 1)
+          throw IllegalConfigException(
+            "At least one voltage level generation config has to be defined."
+          )
+
+        /* Check single configs */
+        lv.foreach(checkLvConfig)
+    }
+
+  private def checkLvConfig(lv: OsmoGridConfig.Generation.Lv): Unit = lv match {
+    case Lv(distinctHouseConnections) => /* I don't care. Everything is fine. */
   }
 
   private def checkInputConfig(input: OsmoGridConfig.Input): Unit =

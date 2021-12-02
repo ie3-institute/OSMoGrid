@@ -7,10 +7,49 @@
 package edu.ie3.osmogrid.cfg
 
 final case class OsmoGridConfig(
+    generation: OsmoGridConfig.Generation,
     input: OsmoGridConfig.Input,
     output: OsmoGridConfig.Output
 )
 object OsmoGridConfig {
+  final case class Generation(
+      lv: scala.Option[OsmoGridConfig.Generation.Lv]
+  )
+  object Generation {
+    final case class Lv(
+        distinctHouseConnections: scala.Boolean
+    )
+    object Lv {
+      def apply(
+          c: com.typesafe.config.Config,
+          parentPath: java.lang.String,
+          $tsCfgValidator: $TsCfgValidator
+      ): OsmoGridConfig.Generation.Lv = {
+        OsmoGridConfig.Generation.Lv(
+          distinctHouseConnections = c.hasPathOrNull(
+            "distinctHouseConnections"
+          ) && c.getBoolean("distinctHouseConnections")
+        )
+      }
+    }
+
+    def apply(
+        c: com.typesafe.config.Config,
+        parentPath: java.lang.String,
+        $tsCfgValidator: $TsCfgValidator
+    ): OsmoGridConfig.Generation = {
+      OsmoGridConfig.Generation(
+        lv =
+          if (c.hasPathOrNull("lv"))
+            scala.Some(
+              OsmoGridConfig.Generation
+                .Lv(c.getConfig("lv"), parentPath + "lv.", $tsCfgValidator)
+            )
+          else None
+      )
+    }
+  }
+
   final case class Input(
       asset: OsmoGridConfig.Input.Asset,
       osm: OsmoGridConfig.Input.Osm
@@ -210,6 +249,12 @@ object OsmoGridConfig {
     val $tsCfgValidator: $TsCfgValidator = new $TsCfgValidator()
     val parentPath: java.lang.String = ""
     val $result = OsmoGridConfig(
+      generation = OsmoGridConfig.Generation(
+        if (c.hasPathOrNull("generation")) c.getConfig("generation")
+        else com.typesafe.config.ConfigFactory.parseString("generation{}"),
+        parentPath + "generation.",
+        $tsCfgValidator
+      ),
       input = OsmoGridConfig.Input(
         if (c.hasPathOrNull("input")) c.getConfig("input")
         else com.typesafe.config.ConfigFactory.parseString("input{}"),
