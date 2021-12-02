@@ -13,17 +13,22 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig
 object OsmoGridGuardian {
 
   sealed trait OsmoGridGuardianEvent
-
   final case class Run(cfg: OsmoGridConfig) extends OsmoGridGuardianEvent
 
   def apply(): Behavior[OsmoGridGuardianEvent] = idle()
 
   private def idle(): Behavior[OsmoGridGuardianEvent] =
-    Behaviors.receive { case (ctx, msg) =>
+    Behaviors.receive { (ctx, msg) =>
       msg match {
-        case _: Run => ???
+        case Run(cfg) =>
+          ctx.log.info("Initializing grid generation!")
+          /*
+           * TODO:
+           *  1) Spawn InputDataProvider and initialize it
+           *  2) Spawn result listener and initialize it
+           *  3) Await both completion messages
+           */
+          Behaviors.stopped
       }
-
     }
-
 }

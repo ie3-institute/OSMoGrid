@@ -14,10 +14,11 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig
 object RunOsmoGridStandalone {
 
   def main(args: Array[String]): Unit = {
-    val cfg: OsmoGridConfig = ???
+    val cfg: OsmoGridConfig = OsmoGridConfig()
 
     val actorSystem: ActorSystem[OsmoGridGuardianEvent] =
       ActorSystem(OsmoGridGuardian(), "OSMoGridGuardian")
     actorSystem ! Run(cfg)
+    print("Foo")
   }
 }
