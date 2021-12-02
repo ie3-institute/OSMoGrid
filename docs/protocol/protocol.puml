@@ -49,14 +49,14 @@ LvCoordinator -> OsmoGridGuardian: !RepLvGrids(...)
 ... **To be defined in a later stage** ...
 
 == Result handling ==
-OsmoGridGuardian -> ResultListener: !PersistJointGrid(...)
+OsmoGridGuardian -> ResultListener: !GridResult(...)
 activate ResultListener
 ... ...
-ResultListener -> OsmoGridGuardian: !Terminated(...)
+ResultListener -> OsmoGridGuardian: !ResultListenerDied
 deactivate ResultListener
 OsmoGridGuardian -> InputDataProvider: !Terminate(...)
 InputDataProvider <--> Input: //Close//
-InputDataProvider -> OsmoGridGuardian: !Terminated(...)
+InputDataProvider -> OsmoGridGuardian: !InputDataProviderDied
 
 OsmoGridGuardian -> Main: !Done
 
