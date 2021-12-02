@@ -7,8 +7,8 @@
 package de.osmogrid.interfaces;
 
 import java.io.File;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Main interface to control an OSMoGrid instance.
@@ -19,7 +19,7 @@ import org.apache.logging.log4j.Logger;
  */
 public interface OsmogridMainControl {
 
-  Logger logger = LogManager.getLogger(OsmogridMainControl.class);
+  Logger logger = LoggerFactory.getLogger(OsmogridMainControl.class);
 
   /**
    * Builds the configuration class.

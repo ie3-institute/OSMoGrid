@@ -44,10 +44,10 @@ import javax.measure.quantity.ElectricPotential;
 import javax.measure.quantity.Energy;
 import javax.measure.quantity.Length;
 import javax.measure.quantity.Power;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jgrapht.graph.AsSubgraph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tech.units.indriya.ComparableQuantity;
 import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.Units;
@@ -60,7 +60,7 @@ import tech.units.indriya.unit.Units;
  */
 public class GridController {
 
-  public static final Logger logger = LogManager.getLogger(GridController.class);
+  public static final Logger logger = LoggerFactory.getLogger(GridController.class);
 
   private static final Map<Integer, OneToOneMap<String, Integer>> nodeCodeMaps = new HashMap<>();
   private OsmogridConfig osmogridConfig;
