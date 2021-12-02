@@ -7,7 +7,8 @@
 package edu.ie3.osmogrid.cfg
 
 final case class OsmoGridConfig(
-    input: OsmoGridConfig.Input
+    input: OsmoGridConfig.Input,
+    output: OsmoGridConfig.Output
 )
 object OsmoGridConfig {
   final case class Input(
@@ -31,25 +32,10 @@ object OsmoGridConfig {
         ): OsmoGridConfig.Input.Asset.File = {
           OsmoGridConfig.Input.Asset.File(
             directory = $_reqStr(parentPath, c, "directory", $tsCfgValidator),
-            hierarchic = $_reqBln(parentPath, c, "hierarchic", $tsCfgValidator)
+            hierarchic =
+              c.hasPathOrNull("hierarchic") && c.getBoolean("hierarchic")
           )
         }
-        private def $_reqBln(
-            parentPath: java.lang.String,
-            c: com.typesafe.config.Config,
-            path: java.lang.String,
-            $tsCfgValidator: $TsCfgValidator
-        ): scala.Boolean = {
-          if (c == null) false
-          else
-            try c.getBoolean(path)
-            catch {
-              case e: com.typesafe.config.ConfigException =>
-                $tsCfgValidator.addBadPath(parentPath + path, e)
-                false
-            }
-        }
-
         private def $_reqStr(
             parentPath: java.lang.String,
             c: com.typesafe.config.Config,
@@ -162,6 +148,64 @@ object OsmoGridConfig {
     }
   }
 
+  final case class Output(
+      file: scala.Option[OsmoGridConfig.Output.File]
+  )
+  object Output {
+    final case class File(
+        directory: java.lang.String,
+        hierarchic: scala.Boolean
+    )
+    object File {
+      def apply(
+          c: com.typesafe.config.Config,
+          parentPath: java.lang.String,
+          $tsCfgValidator: $TsCfgValidator
+      ): OsmoGridConfig.Output.File = {
+        OsmoGridConfig.Output.File(
+          directory = $_reqStr(parentPath, c, "directory", $tsCfgValidator),
+          hierarchic =
+            c.hasPathOrNull("hierarchic") && c.getBoolean("hierarchic")
+        )
+      }
+      private def $_reqStr(
+          parentPath: java.lang.String,
+          c: com.typesafe.config.Config,
+          path: java.lang.String,
+          $tsCfgValidator: $TsCfgValidator
+      ): java.lang.String = {
+        if (c == null) null
+        else
+          try c.getString(path)
+          catch {
+            case e: com.typesafe.config.ConfigException =>
+              $tsCfgValidator.addBadPath(parentPath + path, e)
+              null
+          }
+      }
+
+    }
+
+    def apply(
+        c: com.typesafe.config.Config,
+        parentPath: java.lang.String,
+        $tsCfgValidator: $TsCfgValidator
+    ): OsmoGridConfig.Output = {
+      OsmoGridConfig.Output(
+        file =
+          if (c.hasPathOrNull("file"))
+            scala.Some(
+              OsmoGridConfig.Output.File(
+                c.getConfig("file"),
+                parentPath + "file.",
+                $tsCfgValidator
+              )
+            )
+          else None
+      )
+    }
+  }
+
   def apply(c: com.typesafe.config.Config): OsmoGridConfig = {
     val $tsCfgValidator: $TsCfgValidator = new $TsCfgValidator()
     val parentPath: java.lang.String = ""
@@ -170,6 +214,12 @@ object OsmoGridConfig {
         if (c.hasPathOrNull("input")) c.getConfig("input")
         else com.typesafe.config.ConfigFactory.parseString("input{}"),
         parentPath + "input.",
+        $tsCfgValidator
+      ),
+      output = OsmoGridConfig.Output(
+        if (c.hasPathOrNull("output")) c.getConfig("output")
+        else com.typesafe.config.ConfigFactory.parseString("output{}"),
+        parentPath + "output.",
         $tsCfgValidator
       )
     )
