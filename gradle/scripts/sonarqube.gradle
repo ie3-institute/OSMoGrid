@@ -36,17 +36,19 @@ sonarqube {
     // exclusions
     property 'sonar.exclusions', [
       'docs/**',
-      'scala/edu/ie3/osmogrid/cfg/OsmoGridConfig.scala'
+      'src/main/scala/edu/ie3/osmogrid/cfg/OsmoGridConfig.scala'
     ]
   }
 }
 
 // forces sonarqube to execute integration tests
-project.tasks["sonarqube"].dependsOn "pmdMain"
-project.tasks["sonarqube"].dependsOn "pmdTest"
-project.tasks["sonarqube"].dependsOn "spotbugsMain"
-project.tasks["sonarqube"].dependsOn "spotbugsTest"
-project.tasks["sonarqube"].dependsOn "test"
+project.tasks["sonarqube"].dependsOn "check"
+// Check itself depends on
+// - pmdMain
+// - spotBugsMain
+// - pmdTest
+// - spotBugsTest
+// - test
 
 project.tasks["sonarqube"].dependsOn "jacocoTestReport"
 project.tasks["sonarqube"].dependsOn "jacocoTestCoverageVerification"
