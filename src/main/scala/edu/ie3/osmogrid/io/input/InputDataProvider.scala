@@ -29,6 +29,11 @@ object InputDataProvider {
     case Init(cfg, replyTo) =>
       replyTo ! InitComplete()
       Behaviors.same
+    case ReqOsm(importPath, replyTo) =>
+      replyTo ! RepOsm(readPbf(importPath))
+      Behaviors.same
   }
+
+  def readPbf(importPath: String): OsmModel = ???
 
 }
