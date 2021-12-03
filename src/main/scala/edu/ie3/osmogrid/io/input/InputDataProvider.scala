@@ -53,7 +53,7 @@ object InputDataProvider {
             e match {
               case n: NodeEntity => (nodes.addOne(Node(UUID.randomUUID(), n.id.toInt, ZonedDateTime.now(), n.tags, Point(Coordinate(n.latitude, n.longitude), PrecisionModel(), 4326))), ways, relations)
               case r: RelationEntity => (nodes, ways, relations)
-              case w: WayEntity => (nodes, ways.addOne(OpenWay(UUID.randomUUID(), w.id.toInt, ZonedDateTime.now(), w.tags,)), relations)
+              case w: WayEntity => (nodes, ways, relations)
               case _ => (nodes, ways, relations)
             }
         }
