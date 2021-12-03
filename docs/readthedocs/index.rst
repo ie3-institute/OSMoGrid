@@ -10,7 +10,7 @@ Welcome to OSMoGrid's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   use/usersGuide.md
+   use/usersGuide
    dev/developersGuide
 
 Indices and tables
