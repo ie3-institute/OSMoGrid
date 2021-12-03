@@ -14,7 +14,13 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.InputDataProvider.readPbf
 import edu.ie3.util.osm.OsmEntities.{Node, OpenWay, Relation, Way}
 import edu.ie3.util.osm.OsmModel
-import org.locationtech.jts.geom.{Coordinate, LinearRing, Point, Polygon, PrecisionModel}
+import org.locationtech.jts.geom.{
+  Coordinate,
+  LinearRing,
+  Point,
+  Polygon,
+  PrecisionModel
+}
 
 import java.io.{FileInputStream, InputStream}
 import java.time.ZonedDateTime
@@ -24,9 +30,12 @@ import scala.collection.mutable.ListBuffer
 object InputDataProvider {
 
   sealed trait InputDataEvent
-  final case class Init(cfg: OsmoGridConfig, replyTo: ActorRef[Response]) extends InputDataEvent
-  final case class ReqOsm(importPath: String, replyTo: ActorRef[Response]) extends InputDataEvent
-  final case class ReqAssetTypes(replyTo: ActorRef[Response]) extends InputDataEvent
+  final case class Init(cfg: OsmoGridConfig, replyTo: ActorRef[Response])
+      extends InputDataEvent
+  final case class ReqOsm(importPath: String, replyTo: ActorRef[Response])
+      extends InputDataEvent
+  final case class ReqAssetTypes(replyTo: ActorRef[Response])
+      extends InputDataEvent
 
   sealed trait Response
   final case class InitComplete() extends Response
@@ -34,33 +43,71 @@ object InputDataProvider {
   final case class RepAssetTypes(osmModel: OsmModel) extends Response
 
   def apply(): Behavior[InputDataEvent] =
-  Behaviors.receiveMessage[InputDataEvent] {
-    case Init(cfg, replyTo) =>
-      replyTo ! InitComplete()
-      Behaviors.same
-    case ReqOsm(importPath, replyTo) =>
-      replyTo ! RepOsm(readPbf(importPath))
-      Behaviors.same
-  }
+    Behaviors.receiveMessage[InputDataEvent] {
+      case Init(cfg, replyTo) =>
+        replyTo ! InitComplete()
+        Behaviors.same
+      case ReqOsm(importPath, replyTo) =>
+        replyTo ! RepOsm(readPbf(importPath))
+        Behaviors.same
+    }
 
   def readPbf(importPath: String): OsmModel = {
     var pbfIS: InputStream = null
-    var (nodes, ways, relations) = try {
-      pbfIS = new FileInputStream(importPath)
-      fromPbf(pbfIS)
-        .foldLeft((ListBuffer[Node](), ListBuffer[Way](), ListBuffer[Relation]())) {
-          case ((nodes, ways, relations), e) =>
+    var (nodes, ways, relations) =
+      try {
+        pbfIS = new FileInputStream(importPath)
+        fromPbf(pbfIS)
+          .foldLeft(
+            (ListBuffer[Node](), ListBuffer[Way](), ListBuffer[Relation]())
+          ) { case ((nodes, ways, relations), e) =>
             e match {
-              case n: NodeEntity => (nodes.addOne(Node(UUID.randomUUID(), n.id.toInt, ZonedDateTime.now(), n.tags, Point(Coordinate(n.latitude, n.longitude), PrecisionModel(), 4326))), ways, relations)
+              case n: NodeEntity =>
+                (
+                  nodes.addOne(
+                    Node(
+                      UUID.randomUUID(),
+                      n.id.toInt,
+                      ZonedDateTime.now(),
+                      n.tags,
+                      Point(
+                        Coordinate(n.latitude, n.longitude),
+                        PrecisionModel(),
+                        4326
+                      )
+                    )
+                  ),
+                  ways,
+                  relations
+                )
               case r: RelationEntity => (nodes, ways, relations)
-              case w: WayEntity => (nodes, ways, relations)
-              case _ => (nodes, ways, relations)
+              case w: WayEntity      => (nodes, ways, relations)
+              case _                 => (nodes, ways, relations)
             }
-        }
-    } finally {
-      if (pbfIS != null) pbfIS.close()
-    }
-    OsmModel(nodes.toList, ways.toList, Option(relations.toList), Polygon(LinearRing(Array(Coordinate(1000.0, 1000.0),Coordinate(1000.0, -1000.0),Coordinate(-1000.0, -1000.0),Coordinate(-1000.0, 1000.0),Coordinate(1000.0, 1000.0)), PrecisionModel(), 4326), PrecisionModel(), 4326))
+          }
+      } finally {
+        if (pbfIS != null) pbfIS.close()
+      }
+    OsmModel(
+      nodes.toList,
+      ways.toList,
+      Option(relations.toList),
+      Polygon(
+        LinearRing(
+          Array(
+            Coordinate(1000.0, 1000.0),
+            Coordinate(1000.0, -1000.0),
+            Coordinate(-1000.0, -1000.0),
+            Coordinate(-1000.0, 1000.0),
+            Coordinate(1000.0, 1000.0)
+          ),
+          PrecisionModel(),
+          4326
+        ),
+        PrecisionModel(),
+        4326
+      )
+    )
   }
 
 }
