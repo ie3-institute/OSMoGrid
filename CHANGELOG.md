@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased/Snapshot]
 
 ### Added
--  Read the docs capabilities
+- Read the docs capabilities
+- Parsing and checking configuration
+  - Input
+  - Output
+  - Generation
 
 ### Changed
 -  ...
