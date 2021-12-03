@@ -20,6 +20,5 @@ object RunOsmoGridStandalone {
     val actorSystem: ActorSystem[OsmoGridGuardianEvent] =
       ActorSystem(OsmoGridGuardian(), "OSMoGridGuardian")
     actorSystem ! Run(cfg)
-    print("Foo")
   }
 }
