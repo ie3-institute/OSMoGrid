@@ -10,6 +10,7 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Input, Output}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
 import edu.ie3.osmogrid.exception.IllegalConfigException
 
 object ConfigFailFast {
@@ -17,6 +18,7 @@ object ConfigFailFast {
     case OsmoGridConfig(generation, input, output) =>
       checkInputConfig(input)
       checkOutputConfig(output)
+      checkGenerationConfig(generation)
   }
 
   private def checkGenerationConfig(generation: Generation): Unit =
@@ -45,28 +47,50 @@ object ConfigFailFast {
 
   private def checkAssetInputConfig(asset: OsmoGridConfig.Input.Asset): Unit =
     asset match {
-      case Asset(Some(file)) => /* I don't care. Everything is fine. */
+      case Asset(Some(file)) => checkAssetInputFile(file)
       case Asset(None) =>
         throw IllegalConfigException(
           "You have to provide at least one input data type for asset information!"
         )
     }
 
+  private def checkAssetInputFile(file: OsmoGridConfig.Input.Asset.File): Unit =
+    file match {
+      case File(directory, _) if directory.isEmpty =>
+        throw IllegalConfigException("Asset input directory may be set!")
+      case _ => /* I don't care. Everything is fine. */
+    }
+
   private def checkOsmInputConfig(osm: OsmoGridConfig.Input.Osm): Unit =
     osm match {
-      case Osm(Some(file)) => /* I don't care. Everything is fine. */
+      case Osm(Some(file)) => checkPbfFileDefinition(file)
       case Osm(None) =>
         throw IllegalConfigException(
           "You have to provide at least one input data type for open street map information!"
         )
     }
 
+  private def checkPbfFileDefinition(pbf: OsmoGridConfig.Input.Osm.Pbf): Unit =
+    pbf match {
+      case OsmoGridConfig.Input.Osm.Pbf(file) if file.isEmpty =>
+        throw IllegalConfigException("Pbf file may be set!")
+      case _ => /* I don't care. Everything is fine. */
+    }
+
   private def checkOutputConfig(output: OsmoGridConfig.Output): Unit =
     output match {
-      case Output(Some(file)) => /* I don't care. Everything is fine. */
+      case Output(Some(file)) =>
+        checkOutputFile(file)
       case Output(None) =>
         throw IllegalConfigException(
           "You have to provide at least one output data type!"
         )
+    }
+
+  private def checkOutputFile(file: OsmoGridConfig.Output.File): Unit =
+    file match {
+      case OsmoGridConfig.Output.File(directory, _) if directory.isEmpty =>
+        throw IllegalConfigException("Output directory may be set!")
+      case _ => /* I don't care. Everything is fine. */
     }
 }
