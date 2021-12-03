@@ -30,26 +30,18 @@ import scala.collection.mutable.ListBuffer
 object InputDataProvider {
 
   sealed trait InputDataEvent
-  final case class Init(cfg: OsmoGridConfig, replyTo: ActorRef[Response])
-      extends InputDataEvent
-  final case class ReqOsm(importPath: String, replyTo: ActorRef[Response])
-      extends InputDataEvent
+  final case class ReqOsm(replyTo: ActorRef[Response]) extends InputDataEvent
   final case class ReqAssetTypes(replyTo: ActorRef[Response])
       extends InputDataEvent
 
   sealed trait Response
-  final case class InitComplete() extends Response
   final case class RepOsm(osmModel: OsmModel) extends Response
   final case class RepAssetTypes(osmModel: OsmModel) extends Response
 
-  def apply(): Behavior[InputDataEvent] =
-    Behaviors.receiveMessage[InputDataEvent] {
-      case Init(cfg, replyTo) =>
-        replyTo ! InitComplete()
-        Behaviors.same
-      case ReqOsm(importPath, replyTo) =>
-        replyTo ! RepOsm(readPbf(importPath))
-        Behaviors.same
+  def apply(cfgInput: OsmoGridConfig.Input): Behavior[InputDataEvent] =
+    Behaviors.receiveMessage[InputDataEvent] { case ReqOsm(replyTo) =>
+      replyTo ! RepOsm(readPbf(cfgInput.osm.pbf.get.file))
+      Behaviors.same
     }
 
   def readPbf(importPath: String): OsmModel = {
@@ -81,8 +73,28 @@ object InputDataProvider {
                   relations
                 )
               case r: RelationEntity => (nodes, ways, relations)
-              case w: WayEntity      => (nodes, ways, relations)
-              case _                 => (nodes, ways, relations)
+              case w: WayEntity =>
+                (
+                  nodes,
+                  ways.addOne(
+                    OpenWay(
+                      UUID.randomUUID(),
+                      w.id.toInt,
+                      ZonedDateTime.now(),
+                      w.tags,
+                      w.nodes
+                        .foldLeft((ListBuffer[Node]())) {
+                          case ((osmNodes), e) =>
+                            osmNodes.addOne(
+                              nodes.find(Node => Node.osmId == e.toInt).get
+                            )
+                        }
+                        .toList
+                    )
+                  ),
+                  relations
+                )
+              case _ => (nodes, ways, relations)
             }
           }
       } finally {
