@@ -34,7 +34,10 @@ sonarqube {
     property 'sonar.groovy.binaries', 'build/classes/groovy' // groovy binaries
 
     // exclusions
-    property 'sonar.exclusions', ['docs/**']
+    property 'sonar.exclusions', [
+      'docs/**',
+      'scala/edu/ie3/osmogrid/cfg/OsmoGridConfig.scala'
+    ]
   }
 }
 
