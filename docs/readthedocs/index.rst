@@ -10,8 +10,8 @@ Welcome to OSMoGrid's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   legacy/legacy.md
-   concept.md
+   use/usersGuide.md
+   dev/developersGuide
 
 Indices and tables
 ==================
