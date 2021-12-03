@@ -7,6 +7,7 @@ plugins {
   id 'com.github.spotbugs' version '4.8.0' // code check, working on byte code
   id 'de.undercouch.download' version '4.1.2'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
+  id "com.github.maiflai.scalatest" version "0.31" // run scalatest without specific spec task
   id 'jacoco' // java code coverage plugin
   id "org.sonarqube" version "3.3" // sonarqube
   id 'net.thauvin.erik.gradle.semver' version '1.0.4' // semantic versioning
@@ -22,6 +23,7 @@ ext {
   akkaVersion = '2.6.17'
 
   tscfgVersion = '0.9.995'
+
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
 }
 
@@ -34,7 +36,6 @@ java {
 group = 'com.github.ie3-institute'
 description = 'OSMoGrid'
 
-apply from: scriptsLocation + 'tests.gradle'
 apply from: scriptsLocation + 'pmd.gradle'
 apply from: scriptsLocation + 'spotbugs.gradle'
 apply from: scriptsLocation + 'spotless.gradle'
@@ -71,6 +72,7 @@ dependencies {
 
   // config
   implementation 'com.typesafe:config:1.4.1'
+  implementation "com.github.scopt:scopt_$scalaMajorVersion:4.0.1" // cmd args parser
 
   // todo CLEANUP following old dependencies
   //	 ie³ power system utils
@@ -96,13 +98,13 @@ dependencies {
   implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.14.1' // log4j -> slf4j
 
   // pbf parser
-  implementation group: 'com.github.johanneshiry', name: 'OSMonaut', version: 'v1.1.1'
+  implementation 'com.github.johanneshiry:OSMonaut:v1.1.1'
 
   // javafx
-  implementation group: 'org.openjfx', name: 'javafx-fxml', version: fxVersion
-  implementation group: 'org.openjfx', name: 'javafx-swing', version: fxVersion
-  implementation group: 'org.openjfx', name: 'javafx-graphics', version: fxVersion
-  implementation group: 'org.openjfx', name: 'javafx-web', version: fxVersion
+  implementation "org.openjfx:javafx-fxml:$fxVersion"
+  implementation "org.openjfx:javafx-swing:$fxVersion"
+  implementation "org.openjfx:javafx-graphics:$fxVersion"
+  implementation "org.openjfx:javafx-web:$fxVersion"
 
   implementation 'org.jxmapviewer:jxmapviewer2:2.6' // osm map viewer
   implementation 'org.glassfish.jaxb:jaxb-runtime:3.0.2'
@@ -110,7 +112,7 @@ dependencies {
   // required for xml parser (javax.xml.bind) (see: https://stackoverflow.com/questions/48204141/replacements-for-deprecated-jpms-modules-with-java-ee-apis/48279048#48279048)
   implementation 'javax.xml.bind:jaxb-api:2.4.0-b180830.0359' // xml parsing
   implementation 'org.apache.commons:commons-lang3:3.12.0' // for HashCodeBuilder
-  implementation group: 'math.geom2d', name: 'javaGeom', version: '0.11.1'
+  implementation 'math.geom2d:javaGeom:0.11.1'
   implementation 'info.picocli:picocli:4.6.2' // command line interface
 
   spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.11.0'
@@ -121,7 +123,6 @@ dependencies {
   testImplementation 'org.mockito:mockito-core:4.1.0' // mocking framework
   testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
   testImplementation 'org.objenesis:objenesis:3.2' // Mock creation with constructor parameters
-
 }
 
 tasks.withType(JavaCompile) {
