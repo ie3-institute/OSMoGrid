@@ -1,0 +1,20 @@
+@startuml
+'https://plantuml.com/state-diagram
+
+!theme plain
+hide empty description
+
+idle: Awaiting arbitrary requests
+awaitLvGrids: Await low voltage\ngrid generation results
+awaitShutDown: Awaiting reports in\ncoordinated shutdown\nphase
+
+[*] --> idle
+idle --> awaitLvGrids: !Run(OsmoGridConfig)
+idle --> [*]: !InputDataProviderDied\n!ResultEventListenerDied\n!LvCoordinatorDied\n//unsupported msg//
+
+awaitLvGrids --> awaitShutDown: !RepLvGrids(Vector[SubGridContainer])
+awaitLvGrids --> [*]: //unsupported msg//
+
+awaitShutDown --> awaitShutDown: !ResultEventListenerDied
+awaitShutDown --> [*]: InputDataProviderDied
+@enduml

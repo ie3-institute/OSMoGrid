@@ -9,6 +9,9 @@ Here, we want to focus on the overall structure of the tool and which part does 
 - Error handling
 - Collection of lv grids received from `LvCoordinator` and assigning subnet numbers
 
+#### Finite state representation
+![](../_static/figures/puml/OsmoGridGuardian.png)
+
 ### InputDataProvider
 - Connects to OpenStreeMap (either via pbf file or API)
 - Acquires needed data and filters it (on request and dependent on the purpose)
