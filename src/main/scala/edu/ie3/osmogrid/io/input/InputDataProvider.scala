@@ -6,14 +6,21 @@
 
 package edu.ie3.osmogrid.io.input
 
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ActorRef, Behavior}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.util.osm.OsmModel
 
 object InputDataProvider {
 
   sealed trait InputDataEvent
+  final case class Init(cfg: OsmoGridConfig, replyTo: ActorRef[Response]) extends InputDataEvent
+  final case class ReqOsm(importPath: String, replyTo: ActorRef[Response]) extends InputDataEvent
+  final case class ReqAssetTypes(replyTo: ActorRef[Response]) extends InputDataEvent
 
-  final case class Read()
-      extends InputDataEvent // todo this read method should contain configuration parameters for the actual source + potential filter options
+  sealed trait Response
+  final case class InitComplete() extends Response
+  final case class RepOsm(osmModel: OsmModel) extends Response
+  final case class RepAssetTypes(osmModel: OsmModel) extends Response
 
   def apply(): Behavior[InputDataEvent] = ???
 
