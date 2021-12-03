@@ -6,8 +6,10 @@
 
 package edu.ie3.osmogrid.io.input
 
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.io.input.InputDataProvider.readPbf
 import edu.ie3.util.osm.OsmModel
 
 object InputDataProvider {
@@ -22,6 +24,11 @@ object InputDataProvider {
   final case class RepOsm(osmModel: OsmModel) extends Response
   final case class RepAssetTypes(osmModel: OsmModel) extends Response
 
-  def apply(): Behavior[InputDataEvent] = ???
+  def apply(): Behavior[InputDataEvent] =
+  Behaviors.receiveMessage[InputDataEvent] {
+    case Init(cfg, replyTo) =>
+      replyTo ! InitComplete()
+      Behaviors.same
+  }
 
 }
