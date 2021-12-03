@@ -7,11 +7,12 @@ sonarqube {
     property 'sonar.sourceEncoding', 'UTF-8' // encoding
     property 'sonar.sources', [
       'src/main/resources',
-      'src/main/java'] // src dirs
+      'src/main/java',
+      'src/main/scala'] // src dirs
     property "sonar.tests", [
       'src/test/resources',
       'src/test/java',
-      'src/test/groovy'] // test src dirs
+      'src/test/scala'] // test src dirs
     // reports stuff (for all languages)
     property 'sonar.junit.reportPaths', [
       'build/test-results/test'] // Comma-delimited list of paths to Surefire XML-format reports.
@@ -33,18 +34,21 @@ sonarqube {
     property 'sonar.groovy.binaries', 'build/classes/groovy' // groovy binaries
 
     // exclusions
-    property 'sonar.exclusions', ['docs/**']
-
-
+    property 'sonar.exclusions', [
+      'docs/**',
+      'src/main/scala/edu/ie3/osmogrid/cfg/OsmoGridConfig.scala'
+    ]
   }
 }
 
 // forces sonarqube to execute integration tests
-project.tasks["sonarqube"].dependsOn "pmdMain"
-project.tasks["sonarqube"].dependsOn "pmdTest"
-project.tasks["sonarqube"].dependsOn "spotbugsMain"
-project.tasks["sonarqube"].dependsOn "spotbugsTest"
-project.tasks["sonarqube"].dependsOn "test"
+project.tasks["sonarqube"].dependsOn "check"
+// Check itself depends on
+// - pmdMain
+// - spotBugsMain
+// - pmdTest
+// - spotBugsTest
+// - test
 
 project.tasks["sonarqube"].dependsOn "jacocoTestReport"
 project.tasks["sonarqube"].dependsOn "jacocoTestCoverageVerification"
