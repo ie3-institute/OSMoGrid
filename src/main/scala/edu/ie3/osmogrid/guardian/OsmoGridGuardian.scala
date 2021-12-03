@@ -24,6 +24,7 @@ import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
 
 import scala.jdk.CollectionConverters.*
+import scala.util.{Failure, Success, Try}
 
 object OsmoGridGuardian {
 
@@ -89,9 +90,16 @@ object OsmoGridGuardian {
       msg match {
         case RepLvGrids(lvGrids) =>
           ctx.log.info(s"Received ${lvGrids.length} lv grids. Join them.")
-          val jointGrid = ContainerUtils.combineToJointGrid(lvGrids.asJava)
-          resultListener ! GridResult(jointGrid, ctx.self)
-          awaitShutDown(inputDataProvider)
+          Try(ContainerUtils.combineToJointGrid(lvGrids.asJava)) match {
+            case Success(jointGrid) =>
+              resultListener ! GridResult(jointGrid, ctx.self)
+              awaitShutDown(inputDataProvider)
+            case Failure(exception) =>
+              ctx.log.error(
+                "Combination of received sub-grids failed. Shutting down."
+              )
+              Behaviors.stopped
+          }
         case unsupported =>
           ctx.log.error(
             s"Received unsupported message while waiting for lv grids. Unsupported: $unsupported"

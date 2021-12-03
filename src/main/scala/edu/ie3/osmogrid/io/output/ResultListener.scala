@@ -8,6 +8,7 @@ package edu.ie3.osmogrid.io.output
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.ActorRef
+import akka.actor.typed.scaladsl.Behaviors
 import edu.ie3.datamodel.models.input.container.{
   GridContainer,
   JointGridContainer
@@ -24,6 +25,14 @@ object ResultListener {
       replyTo: ActorRef[OsmoGridGuardianEvent]
   ) extends ResultEvent
 
-  def apply(cfg: OsmoGridConfig.Output): Behavior[ResultEvent] = ???
+  def apply(cfg: OsmoGridConfig.Output): Behavior[ResultEvent] =
+    Behaviors.receive { (ctx, msg) =>
+      msg match {
+        case GridResult(grid, _) =>
+          ctx.log.info(s"Received grid result for grid '${grid.getGridName}'")
+          // TODO: Actual persistence and stuff, closing sinks, ...
+          Behaviors.stopped
+      }
+    }
 
 }
