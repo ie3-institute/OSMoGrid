@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Read the docs capabilities
 - Parsing and checking configuration
-- Adding content to config file
   - Input
   - Output
+  - Generation
 - Let `OsmoGridGuardian` initialize services
 - Spawn `LvCoordinator` and trigger it
 - Forward results to `ResultEventListener`

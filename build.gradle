@@ -16,7 +16,6 @@ plugins {
 
 ext {
   javaVersion = JavaVersion.VERSION_11
-  fxVersion = '17.0.0.1' // todo drop
 
   scalaMajorVersion = '3'
   scalaVersion = '3.1.0'
@@ -96,12 +95,6 @@ dependencies {
 
   // pbf parser
   implementation 'com.github.johanneshiry:OSMonaut:v1.1.1'
-
-  // javafx
-  implementation "org.openjfx:javafx-fxml:$fxVersion"
-  implementation "org.openjfx:javafx-swing:$fxVersion"
-  implementation "org.openjfx:javafx-graphics:$fxVersion"
-  implementation "org.openjfx:javafx-web:$fxVersion"
 
   implementation 'org.jxmapviewer:jxmapviewer2:2.6' // osm map viewer
   implementation 'org.glassfish.jaxb:jaxb-runtime:3.0.2'
