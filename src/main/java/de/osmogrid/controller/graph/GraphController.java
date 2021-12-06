@@ -45,8 +45,6 @@ import net.morbz.osmonaut.osm.LatLon;
 import net.morbz.osmonaut.osm.Node;
 import net.morbz.osmonaut.osm.Tags;
 import net.morbz.osmonaut.osm.Way;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
 import org.jgrapht.alg.connectivity.BiconnectivityInspector;
@@ -55,6 +53,8 @@ import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
 import org.jgrapht.alg.shortestpath.JohnsonShortestPaths;
 import org.jgrapht.graph.AsSubgraph;
 import org.locationtech.jts.geom.Point;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tech.units.indriya.ComparableQuantity;
 import tech.units.indriya.quantity.Quantities;
 
@@ -66,7 +66,7 @@ import tech.units.indriya.quantity.Quantities;
  */
 public class GraphController {
 
-  public static final Logger logger = LogManager.getLogger(GraphController.class);
+  public static final Logger logger = LoggerFactory.getLogger(GraphController.class);
 
   private static final List<AsSubgraph<OsmGridNode, DistanceWeightedOsmEdge>> graphModel =
       new ArrayList<>();

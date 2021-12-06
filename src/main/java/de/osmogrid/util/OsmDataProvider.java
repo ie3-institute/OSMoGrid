@@ -17,8 +17,8 @@ import javax.measure.quantity.Length;
 import net.morbz.osmonaut.EntityFilter;
 import net.morbz.osmonaut.Osmonaut;
 import net.morbz.osmonaut.osm.Way;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tech.units.indriya.ComparableQuantity;
 
 /**
@@ -29,7 +29,7 @@ import tech.units.indriya.ComparableQuantity;
  */
 public class OsmDataProvider {
 
-  public static final Logger logger = LogManager.getLogger(OsmDataProvider.class);
+  public static final Logger logger = LoggerFactory.getLogger(OsmDataProvider.class);
 
   private List<OsmGridNode> nodes;
   private List<Way> ways;

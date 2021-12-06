@@ -24,6 +24,7 @@ ext {
   tscfgVersion = '0.9.995'
 
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
+  docsDirName = 'docs'
 }
 
 java {
@@ -76,25 +77,21 @@ dependencies {
   // todo CLEANUP following old dependencies
   //	 ie³ power system utils
   implementation('com.github.ie3-institute:PowerSystemUtils:1.5.3') {
-    exclude group: 'org.slf4j', module: 'slf4j-api'
+    exclude group: 'org.slf4j'
+    exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
-    exclude group: 'tec.uom.se'
     exclude group: 'com.github.johanneshiry', module: 'OSMonaut'
   }
 
   //	 ie³ power system data model
   implementation('com.github.ie3-institute:PowerSystemDataModel:2.0.1') {
-    exclude group: 'org.slf4j', module: 'slf4j-api'
+    exclude group: 'org.slf4j'
+    exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
   }
 
   // Graphs
   implementation 'org.jgrapht:jgrapht-core:1.5.1'
-
-  // logging
-  implementation 'org.apache.logging.log4j:log4j-api:2.14.1' // log4j
-  implementation 'org.apache.logging.log4j:log4j-core:2.14.1' // log4j
-  implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.14.1' // log4j -> slf4j
 
   // pbf parser
   implementation 'com.github.johanneshiry:OSMonaut:v1.1.1'

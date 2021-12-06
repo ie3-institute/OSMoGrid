@@ -16,12 +16,8 @@ participant ResultListener
 == Init ==
 Main -> OsmoGridGuardian: Run(cfg)
 OsmoGridGuardian --> InputDataProvider: //Spawn//
-OsmoGridGuardian -> InputDataProvider: !Init(cfg)
-InputDataProvider -> OsmoGridGuardian: !InitComplete
 
 OsmoGridGuardian --> ResultListener: //Spawn//
-OsmoGridGuardian -> ResultListener: !Init(...)
-ResultListener -> OsmoGridGuardian: !InitComplete(...)
 note right: Death watch of\n""ResultListener""
 
 == LV generation ==
@@ -53,14 +49,14 @@ LvCoordinator -> OsmoGridGuardian: !RepLvGrids(...)
 ... **To be defined in a later stage** ...
 
 == Result handling ==
-OsmoGridGuardian -> ResultListener: !PersistJointGrid(...)
+OsmoGridGuardian -> ResultListener: !GridResult(...)
 activate ResultListener
 ... ...
-ResultListener -> OsmoGridGuardian: !Terminated(...)
+ResultListener -> OsmoGridGuardian: !ResultListenerDied
 deactivate ResultListener
 OsmoGridGuardian -> InputDataProvider: !Terminate(...)
 InputDataProvider <--> Input: //Close//
-InputDataProvider -> OsmoGridGuardian: !Terminated(...)
+InputDataProvider -> OsmoGridGuardian: !InputDataProviderDied
 
 OsmoGridGuardian -> Main: !Done
 
