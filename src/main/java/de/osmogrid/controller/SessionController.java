@@ -14,9 +14,9 @@ import de.osmogrid.model.graph.OsmGridNode;
 import de.osmogrid.util.enums.TargetFormat;
 import edu.ie3.datamodel.models.input.container.JointGridContainer;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jgrapht.graph.AsSubgraph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controls all operations on the session.
@@ -26,7 +26,7 @@ import org.jgrapht.graph.AsSubgraph;
  */
 public class SessionController {
 
-  private static final Logger logger = LogManager.getLogger(SessionController.class);
+  private static final Logger logger = LoggerFactory.getLogger(SessionController.class);
 
   public void initialize(OsmogridConfig osmogridConfig) {
 

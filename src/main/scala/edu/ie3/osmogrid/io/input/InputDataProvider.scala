@@ -11,6 +11,7 @@ import akka.actor.typed.{ActorRef, Behavior}
 import com.acervera.osm4scala.EntityIterator.fromPbf
 import com.acervera.osm4scala.model.{NodeEntity, RelationEntity, WayEntity}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.guardian.OsmoGridGuardian.OsmoGridGuardianEvent
 import edu.ie3.osmogrid.io.input.InputDataProvider.readPbf
 import edu.ie3.util.osm.OsmEntities.{Node, OpenWay, Relation, Way}
 import edu.ie3.util.osm.OsmModel
@@ -38,10 +39,18 @@ object InputDataProvider {
   final case class RepOsm(osmModel: OsmModel) extends Response
   final case class RepAssetTypes(osmModel: OsmModel) extends Response
 
+  final case class Terminate(replyTo: ActorRef[OsmoGridGuardianEvent])
+      extends InputDataEvent
+
   def apply(cfgInput: OsmoGridConfig.Input): Behavior[InputDataEvent] =
-    Behaviors.receiveMessage[InputDataEvent] { case ReqOsm(replyTo) =>
-      replyTo ! RepOsm(readPbf(cfgInput.osm.pbf.get.file))
-      Behaviors.same
+    Behaviors.receiveMessage[InputDataEvent] {
+      case ReqOsm(replyTo) =>
+        replyTo ! RepOsm(readPbf(cfgInput.osm.pbf.get.file))
+        Behaviors.same
+      case Terminate(_) =>
+        ctx.log.info("Stopping input data provider")
+        // TODO: Any closing of sources and stuff
+        Behaviors.stopped
     }
 
   def readPbf(importPath: String): OsmModel = {

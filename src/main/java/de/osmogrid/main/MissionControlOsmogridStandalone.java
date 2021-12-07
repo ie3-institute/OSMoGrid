@@ -8,8 +8,8 @@ package de.osmogrid.main;
 
 import de.osmogrid.interfaces.MissionControlOsmogrid;
 import java.io.File;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
@@ -43,7 +43,8 @@ import picocli.CommandLine.Parameters;
     })
 public class MissionControlOsmogridStandalone implements MissionControlOsmogrid {
 
-  public static final Logger logger = LogManager.getLogger(MissionControlOsmogridStandalone.class);
+  public static final Logger logger =
+      LoggerFactory.getLogger(MissionControlOsmogridStandalone.class);
 
   /**
    * Starts the grid generation.

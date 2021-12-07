@@ -12,9 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Input
   - Output
   - Generation
+- Let `OsmoGridGuardian` initialize services
+- Spawn `LvCoordinator` and trigger it
+- Forward results to `ResultEventListener`
+- Coordinated shut down phase
 
 ### Changed
--  ...
 
 ### Fixed
 -  ...

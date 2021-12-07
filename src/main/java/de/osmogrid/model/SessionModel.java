@@ -6,8 +6,8 @@
 
 package de.osmogrid.model;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Model class for the session.
@@ -20,7 +20,7 @@ public class SessionModel {
 
   // TODO: implement
 
-  private static final Logger logger = LogManager.getLogger(SessionModel.class);
+  private static final Logger logger = LoggerFactory.getLogger(SessionModel.class);
 
   private String sessionName;
 

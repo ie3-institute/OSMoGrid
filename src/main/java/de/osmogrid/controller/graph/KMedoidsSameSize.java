@@ -24,12 +24,12 @@ import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import net.morbz.osmonaut.osm.LatLon;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jgrapht.Graph;
 import org.jgrapht.alg.connectivity.ConnectivityInspector;
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
 import org.jgrapht.graph.AsSubgraph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Performs a K-Medoids based algorithm and tries to generate clusters that have the same load sum.
@@ -40,7 +40,7 @@ import org.jgrapht.graph.AsSubgraph;
  */
 public class KMedoidsSameSize {
 
-  public static final Logger logger = LogManager.getLogger(KMedoidsSameSize.class);
+  public static final Logger logger = LoggerFactory.getLogger(KMedoidsSameSize.class);
 
   private final Graph<OsmGridNode, DistanceWeightedOsmEdge> clusterSubgraph;
   private final ShortestPathAlgorithm<OsmGridNode, DistanceWeightedOsmEdge> shortestPaths;

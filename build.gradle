@@ -3,8 +3,8 @@ plugins {
   id 'java' //java support
   id 'groovy' // groovy support
   id 'pmd' // code check, working on source code
-  id 'com.diffplug.spotless' version '6.0.1'//code format
-  id 'com.github.spotbugs' version '4.8.0' // code check, working on byte code
+  id 'com.diffplug.spotless' version '6.0.4'//code format
+  id 'com.github.spotbugs' version '5.0.0' // code check, working on byte code
   id 'de.undercouch.download' version '4.1.2'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.31" // run scalatest without specific spec task
@@ -24,6 +24,7 @@ ext {
   tscfgVersion = '0.9.995'
 
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
+  docsDirName = 'docs'
 }
 
 java {
@@ -80,9 +81,9 @@ dependencies {
   // todo CLEANUP following old dependencies
   //	 ie³ power system utils
   implementation('com.github.ie3-institute:PowerSystemUtils:1.6-SNAPSHOT') {
-    exclude group: 'org.slf4j', module: 'slf4j-api'
+    exclude group: 'org.slf4j'
+    exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
-    exclude group: 'tec.uom.se'
     exclude group: 'com.github.johanneshiry', module: 'OSMonaut'
   }
 
@@ -91,17 +92,13 @@ dependencies {
 
   //	 ie³ power system data model
   implementation('com.github.ie3-institute:PowerSystemDataModel:2.0.1') {
-    exclude group: 'org.slf4j', module: 'slf4j-api'
+    exclude group: 'org.slf4j'
+    exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
   }
 
   // Graphs
   implementation 'org.jgrapht:jgrapht-core:1.5.1'
-
-  // logging
-  implementation 'org.apache.logging.log4j:log4j-api:2.14.1' // log4j
-  implementation 'org.apache.logging.log4j:log4j-core:2.14.1' // log4j
-  implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.14.1' // log4j -> slf4j
 
   // pbf parser
   implementation 'com.github.johanneshiry:OSMonaut:v1.1.1'
