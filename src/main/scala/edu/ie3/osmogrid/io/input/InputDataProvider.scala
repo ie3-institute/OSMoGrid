@@ -43,11 +43,11 @@ object InputDataProvider {
       extends InputDataEvent
 
   def apply(cfgInput: OsmoGridConfig.Input): Behavior[InputDataEvent] =
-    Behaviors.receiveMessage[InputDataEvent] {
-      case ReqOsm(replyTo) =>
+    Behaviors.receive[InputDataEvent] {
+      case (_, ReqOsm(replyTo)) =>
         replyTo ! RepOsm(readPbf(cfgInput.osm.pbf.get.file))
         Behaviors.same
-      case Terminate(_) =>
+      case (ctx, Terminate(_)) =>
         ctx.log.info("Stopping input data provider")
         // TODO: Any closing of sources and stuff
         Behaviors.stopped
