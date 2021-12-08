@@ -45,7 +45,16 @@ object InputDataProvider {
   def apply(cfgInput: OsmoGridConfig.Input): Behavior[InputDataEvent] =
     Behaviors.receive[InputDataEvent] {
       case (_, ReqOsm(replyTo)) =>
-        replyTo ! RepOsm(readPbf(cfgInput.osm.pbf.get.file))
+        readPbf(cfgInput.osm.pbf.get.file) match {
+          case Success(osmModel) =>
+            replyTo ! RepOsm(osmModel)
+            Behaviors.same
+          case Failure(exception) =>
+            ctx.log.error(s"Unable to read osm information from file '${cfgInput.osm.pbf.get.file}'.")
+            Behaviors.stopped
+        }
+      case (ctx, ReqAssetTypes(_)) =>
+        ctx.log.info("Got request to provide asset types. But do nothing.")
         Behaviors.same
       case (ctx, Terminate(_)) =>
         ctx.log.info("Stopping input data provider")
@@ -54,9 +63,8 @@ object InputDataProvider {
     }
 
   def readPbf(importPath: String): OsmModel = {
-    var pbfIS: InputStream = null
-    var (nodes, ways, relations) =
-      try {
+    val (nodes, ways, relations) =
+      Using ( new FileInputStream(importPath) ) { pbfIS =>
         pbfIS = new FileInputStream(importPath)
         fromPbf(pbfIS)
           .foldLeft(
@@ -106,29 +114,28 @@ object InputDataProvider {
               case _ => (nodes, ways, relations)
             }
           }
-      } finally {
-        if (pbfIS != null) pbfIS.close()
-      }
-    OsmModel(
-      nodes.toList,
-      ways.toList,
-      Option(relations.toList),
-      Polygon(
-        LinearRing(
-          Array(
-            Coordinate(1000.0, 1000.0),
-            Coordinate(1000.0, -1000.0),
-            Coordinate(-1000.0, -1000.0),
-            Coordinate(-1000.0, 1000.0),
-            Coordinate(1000.0, 1000.0)
+      }.map {
+    case (nodeBuffer, lineBuffer, relationsBuffer) =>
+      OsmModel(
+        nodeBuffer.toList,
+        lineBuffer.toList,
+        Option(relationsBuffer.toList),
+        Polygon(
+          LinearRing(
+            Array(
+              Coordinate(1000.0, 1000.0),
+              Coordinate(1000.0, -1000.0),
+              Coordinate(-1000.0, -1000.0),
+              Coordinate(-1000.0, 1000.0),
+              Coordinate(1000.0, 1000.0)
+            ),
+            PrecisionModel(),
+            4326
           ),
           PrecisionModel(),
           4326
-        ),
-        PrecisionModel(),
-        4326
+        )
       )
-    )
   }
 
 }
