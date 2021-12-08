@@ -10,12 +10,20 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.ActorRef
 import de.osmogrid.util.quantities.PowerDensity
 import edu.ie3.datamodel.models.input.container.SubGridContainer
+import edu.ie3.osmogrid.exception.IllegalCalculationException
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian.RepLvGrids
 import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.osmogrid.lv.LvCoordinator.LvCoordinatorEvent
 import edu.ie3.osmogrid.lv.LvGenerator.LvGeneratorEvent
-import edu.ie3.util.osm.OsmModel
+import edu.ie3.osmogrid.model.LoadLocation
+import edu.ie3.osmogrid.model.RichClosedWay.RichClosedWay
+import edu.ie3.util.geo.GeoUtils
+import edu.ie3.util.osm.OsmEntities.Way
+import edu.ie3.util.osm.{OsmEntities, OsmModel}
 import tech.units.indriya.ComparableQuantity
+
+import javax.measure.quantity.Power
+import scala.util.{Failure, Success, Try}
 
 object LvRegionCoordinator {
   sealed trait LvRegionCoordinatorEvent
@@ -38,7 +46,7 @@ object LvRegionCoordinator {
       ctx.log.debug("Received osm data for a given region. Start execution.")
 
       /* Determine the loads */
-      determineLoads(osmModel, loadDensity)
+      val loadLocations = determineLoads(osmModel, loadDensity)
 
       /* TODO
           1) Generate load model in the area of interest
@@ -57,11 +65,46 @@ object LvRegionCoordinator {
   private def determineLoads(
       osmModel: OsmModel,
       loadDensity: ComparableQuantity[PowerDensity]
-  ): Unit = {
+  ): Vector[LoadLocation[_]] = {
+    val loadsFromWays =
+      OsmModel.extractBuildings(osmModel.ways).map(loadFromWay(_, loadDensity))
+
     /* TODO
         1) Find ways and relations, that have the tag "building"
         2) Calculate their area and equivalent load (as per given load density)
         3) Transform to suitable data model
      */
+    Vector.empty[LoadLocation[_]]
+  }
+
+  /** Determine the load of a building, if it is modeled as a way
+    *
+    * @param way
+    *   Way, describing the building
+    * @param loadDensity
+    *   Assumed load density
+    * @return
+    */
+  private def loadFromWay(
+      way: Way,
+      loadDensity: ComparableQuantity[PowerDensity]
+  ): Try[LoadLocation[Way]] = way match {
+    case closedWay @ OsmEntities.ClosedWay(
+          uuid,
+          osmId,
+          lastEdited,
+          tags,
+          nodes
+        ) =>
+      closedWay.area.map { area =>
+        val load = loadDensity.multiply(area).asType(classOf[Power])
+        LoadLocation(closedWay.center, load, closedWay)
+      }
+    case OsmEntities.OpenWay(_, osmId, _, _, _) =>
+      Failure(
+        IllegalCalculationException(
+          s"Cannot determine the area of a building with id '$osmId' from an open way."
+        )
+      )
   }
 }

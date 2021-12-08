@@ -94,6 +94,8 @@ dependencies {
     exclude group: 'com.github.ie3-institute'
   }
 
+  implementation 'org.scalanlp:breeze_3:2.0'
+
   // Graphs
   implementation 'org.jgrapht:jgrapht-core:1.5.1'
 
