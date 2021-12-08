@@ -15,18 +15,13 @@ import edu.ie3.osmogrid.guardian.OsmoGridGuardian.OsmoGridGuardianEvent
 import edu.ie3.osmogrid.io.input.InputDataProvider.readPbf
 import edu.ie3.util.osm.OsmEntities.{Node, OpenWay, Relation, Way}
 import edu.ie3.util.osm.OsmModel
-import org.locationtech.jts.geom.{
-  Coordinate,
-  LinearRing,
-  Point,
-  Polygon,
-  PrecisionModel
-}
+import org.locationtech.jts.geom.{Coordinate, LinearRing, Point, Polygon, PrecisionModel}
 
 import java.io.{FileInputStream, InputStream}
 import java.time.ZonedDateTime
 import java.util.UUID
 import scala.collection.mutable.ListBuffer
+import scala.util.{Failure, Using, Success, Try}
 
 object InputDataProvider {
 
@@ -44,7 +39,7 @@ object InputDataProvider {
 
   def apply(cfgInput: OsmoGridConfig.Input): Behavior[InputDataEvent] =
     Behaviors.receive[InputDataEvent] {
-      case (_, ReqOsm(replyTo)) =>
+      case (ctx, ReqOsm(replyTo)) =>
         readPbf(cfgInput.osm.pbf.get.file) match {
           case Success(osmModel) =>
             replyTo ! RepOsm(osmModel)
@@ -62,10 +57,14 @@ object InputDataProvider {
         Behaviors.stopped
     }
 
-  def readPbf(importPath: String): OsmModel = {
-    val (nodes, ways, relations) =
-      Using ( new FileInputStream(importPath) ) { pbfIS =>
-        pbfIS = new FileInputStream(importPath)
+  /** Convenience method to extract osmModel from a pbf file
+   *
+   * @param importPath
+   *   path to pbf file
+   */
+  def readPbf(importPath: String): Try[OsmModel] = {
+      Using(new FileInputStream(importPath)) { pbfIS =>
+        // pbfIS = new FileInputStream(importPath)
         fromPbf(pbfIS)
           .foldLeft(
             (ListBuffer[Node](), ListBuffer[Way](), ListBuffer[Relation]())
@@ -115,27 +114,27 @@ object InputDataProvider {
             }
           }
       }.map {
-    case (nodeBuffer, lineBuffer, relationsBuffer) =>
-      OsmModel(
-        nodeBuffer.toList,
-        lineBuffer.toList,
-        Option(relationsBuffer.toList),
-        Polygon(
-          LinearRing(
-            Array(
-              Coordinate(1000.0, 1000.0),
-              Coordinate(1000.0, -1000.0),
-              Coordinate(-1000.0, -1000.0),
-              Coordinate(-1000.0, 1000.0),
-              Coordinate(1000.0, 1000.0)
-            ),
-            PrecisionModel(),
-            4326
-          ),
-          PrecisionModel(),
-          4326
-        )
-      )
+        case (nodeBuffer, lineBuffer, relationsBuffer) =>
+          OsmModel(
+            nodeBuffer.toList,
+            lineBuffer.toList,
+            Option(relationsBuffer.toList),
+            Polygon(
+              LinearRing(
+                Array(
+                  Coordinate(1000.0, 1000.0),
+                  Coordinate(1000.0, -1000.0),
+                  Coordinate(-1000.0, -1000.0),
+                  Coordinate(-1000.0, 1000.0),
+                  Coordinate(1000.0, 1000.0)
+                ),
+                PrecisionModel(),
+                4326
+              ),
+              PrecisionModel(),
+              4326
+            )
+          )
+      }
   }
-
 }
