@@ -11,6 +11,7 @@ import akka.actor.typed.scaladsl.{Behaviors, Routers}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
+import edu.ie3.osmogrid.guardian.OsmoGridGuardian
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian.{
   OsmoGridGuardianEvent,
   RepLvGrids
@@ -23,6 +24,8 @@ object LvCoordinator {
       cfg: OsmoGridConfig.Generation.Lv,
       replyTo: ActorRef[OsmoGridGuardianEvent]
   ) extends LvCoordinatorEvent
+  final case class RepLvGrids(grids: Vector[SubGridContainer])
+      extends LvCoordinatorEvent
 
   def apply(): Behavior[LvCoordinatorEvent] = idle
 
@@ -42,7 +45,7 @@ object LvCoordinator {
               1) Ask for OSM data
               2) Ask for asset data
               3) Split up osm data at municipality boundaries
-              4) start generation */
+              4) start generation (register, how many requests have been sent!) */
 
           /* Spawn a pool of workers to build grids from sub-graphs */
           val lvGeneratorPool =
@@ -65,11 +68,36 @@ object LvCoordinator {
           val lvRegionCoordinatorProxy =
             ctx.spawn(lvRegionCoordinatorPool, "LvRegionCoordinatorPool")
 
-          replyTo ! RepLvGrids(Vector.empty[SubGridContainer])
-          Behaviors.stopped
+          /* Wait for the incoming data and check, if all replies are received. */
+          awaitReplies(0)
         case unsupported =>
           ctx.log.error(s"Received unsupported message: $unsupported")
           Behaviors.stopped
       }
+  }
+
+  private def awaitReplies(
+      awaitedReplies: Int,
+      guardian: ActorRef[OsmoGridGuardianEvent],
+      collectedGrids: Vector[SubGridContainer] = Vector.empty
+  ): Behaviors.Receive[LvCoordinatorEvent] = Behaviors.receive {
+    case (ctx, RepLvGrids(grids)) =>
+      val stillAwaited = awaitedReplies - 1
+      ctx.log.debug(
+        s"Received another ${grids.length} sub grids. ${if (stillAwaited == 0) "All requests are answered."
+        else s"Still awaiting $stillAwaited replies."}."
+      )
+      val updatedGrids = collectedGrids ++ grids
+      if (stillAwaited == 0) {
+        ctx.log.info(
+          s"Received ${updatedGrids.length} sub grid containers in total. Join and send them to the guardian."
+        )
+        guardian ! OsmoGridGuardian.RepLvGrids(updatedGrids)
+        Behaviors.stopped
+      } else
+        awaitedReplies(stillAwaited, updatedGrids)
+    case (ctx, unsupported) =>
+      ctx.log.error(s"Received unsupported message: $unsupported")
+      Behaviors.stopped
   }
 }
