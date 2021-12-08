@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Generation
 - Let `OsmoGridGuardian` initialize services
 - Spawn `LvCoordinator` and trigger it
+- Spawn worker pools of `LvRegionCoordinator`s and `LvGridGenerator`s
 - Forward results to `ResultEventListener`
 - Coordinated shut down phase
 
