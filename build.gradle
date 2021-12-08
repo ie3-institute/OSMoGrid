@@ -84,6 +84,9 @@ dependencies {
     exclude group: 'com.github.johanneshiry', module: 'OSMonaut'
   }
 
+  // indriya
+  implementation 'tech.units:indriya:2.1.2'
+
   //	 ie³ power system data model
   implementation('com.github.ie3-institute:PowerSystemDataModel:2.0.1') {
     exclude group: 'org.slf4j'

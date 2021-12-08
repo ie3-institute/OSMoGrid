@@ -8,6 +8,7 @@ package edu.ie3.osmogrid.lv
 
 import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import akka.actor.typed.scaladsl.{Behaviors, Routers}
+import de.osmogrid.util.quantities.OsmoGridUnits
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
@@ -17,6 +18,7 @@ import edu.ie3.osmogrid.guardian.OsmoGridGuardian.{
   RepLvGrids
 }
 import edu.ie3.osmogrid.lv.LvGenerator
+import tech.units.indriya.quantity.Quantities
 
 object LvCoordinator {
   sealed trait LvCoordinatorEvent
@@ -36,9 +38,10 @@ object LvCoordinator {
               Lv(
                 amountOfGridGenerators,
                 amountOfRegionCoordinators,
-                distinctHouseConnections
+                distinctHouseConnections,
+                loadDensity
               ),
-              replyTo
+              guardian
             ) =>
           ctx.log.info("Starting generation of low voltage grids!")
           /* TODO:
@@ -62,14 +65,22 @@ object LvCoordinator {
             Routers.pool(poolSize = amountOfRegionCoordinators) {
               // Restart workers on failure
               Behaviors
-                .supervise(LvRegionCoordinator(lvGeneratorProxy))
+                .supervise(
+                  LvRegionCoordinator(
+                    lvGeneratorProxy,
+                    Quantities.getQuantity(
+                      loadDensity,
+                      OsmoGridUnits.WATT_PER_SQUARE_METRE
+                    )
+                  )
+                )
                 .onFailure(SupervisorStrategy.restart)
             }
           val lvRegionCoordinatorProxy =
             ctx.spawn(lvRegionCoordinatorPool, "LvRegionCoordinatorPool")
 
           /* Wait for the incoming data and check, if all replies are received. */
-          awaitReplies(0)
+          awaitReplies(0, guardian)
         case unsupported =>
           ctx.log.error(s"Received unsupported message: $unsupported")
           Behaviors.stopped
@@ -95,7 +106,7 @@ object LvCoordinator {
         guardian ! OsmoGridGuardian.RepLvGrids(updatedGrids)
         Behaviors.stopped
       } else
-        awaitedReplies(stillAwaited, updatedGrids)
+        awaitReplies(stillAwaited, guardian, updatedGrids)
     case (ctx, unsupported) =>
       ctx.log.error(s"Received unsupported message: $unsupported")
       Behaviors.stopped

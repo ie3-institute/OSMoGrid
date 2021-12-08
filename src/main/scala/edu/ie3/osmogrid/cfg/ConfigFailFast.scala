@@ -38,7 +38,8 @@ object ConfigFailFast {
     case Lv(
           amountOfGridGenerators,
           amountOfRegionCoordinators,
-          distinctHouseConnections
+          distinctHouseConnections,
+          loadDensity
         ) =>
       if (amountOfGridGenerators < 1)
         throw IllegalConfigException(
@@ -47,6 +48,10 @@ object ConfigFailFast {
       if (amountOfRegionCoordinators < 1)
         throw IllegalConfigException(
           s"The amount of lv region coordination actors needs to be at least 1 (provided: $amountOfRegionCoordinators)."
+        )
+      if (loadDensity < 0)
+        throw IllegalConfigException(
+          s"The load density of a building in an lv grid needs to be positive (provided: $loadDensity)."
         )
   }
 

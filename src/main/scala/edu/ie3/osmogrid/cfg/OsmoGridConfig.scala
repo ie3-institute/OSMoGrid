@@ -19,7 +19,8 @@ object OsmoGridConfig {
     final case class Lv(
         amountOfGridGenerators: scala.Int,
         amountOfRegionCoordinators: scala.Int,
-        distinctHouseConnections: scala.Boolean
+        distinctHouseConnections: scala.Boolean,
+        loadDensity: scala.Double
     )
     object Lv {
       def apply(
@@ -35,12 +36,29 @@ object OsmoGridConfig {
           amountOfRegionCoordinators =
             if (c.hasPathOrNull("amountOfRegionCoordinators"))
               c.getInt("amountOfRegionCoordinators")
-            else 50,
+            else 5,
           distinctHouseConnections = c.hasPathOrNull(
             "distinctHouseConnections"
-          ) && c.getBoolean("distinctHouseConnections")
+          ) && c.getBoolean("distinctHouseConnections"),
+          loadDensity = $_reqDbl(parentPath, c, "loadDensity", $tsCfgValidator)
         )
       }
+      private def $_reqDbl(
+          parentPath: java.lang.String,
+          c: com.typesafe.config.Config,
+          path: java.lang.String,
+          $tsCfgValidator: $TsCfgValidator
+      ): scala.Double = {
+        if (c == null) 0
+        else
+          try c.getDouble(path)
+          catch {
+            case e: com.typesafe.config.ConfigException =>
+              $tsCfgValidator.addBadPath(parentPath + path, e)
+              0
+          }
+      }
+
     }
 
     def apply(
