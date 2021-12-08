@@ -17,6 +17,7 @@ object OsmoGridConfig {
   )
   object Generation {
     final case class Lv(
+        amountOfGridGenerators: scala.Int,
         distinctHouseConnections: scala.Boolean
     )
     object Lv {
@@ -26,6 +27,10 @@ object OsmoGridConfig {
           $tsCfgValidator: $TsCfgValidator
       ): OsmoGridConfig.Generation.Lv = {
         OsmoGridConfig.Generation.Lv(
+          amountOfGridGenerators =
+            if (c.hasPathOrNull("amountOfGridGenerators"))
+              c.getInt("amountOfGridGenerators")
+            else 10,
           distinctHouseConnections = c.hasPathOrNull(
             "distinctHouseConnections"
           ) && c.getBoolean("distinctHouseConnections")

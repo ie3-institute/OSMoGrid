@@ -6,15 +6,16 @@
 
 package edu.ie3.osmogrid.lv
 
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.ActorRef
+import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
+import akka.actor.typed.scaladsl.{Behaviors, Routers}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian.{
   OsmoGridGuardianEvent,
   RepLvGrids
 }
+import edu.ie3.osmogrid.lv.LvGenerator
 
 object LvCoordinator {
   sealed trait LvCoordinatorEvent
@@ -28,9 +29,28 @@ object LvCoordinator {
   private def idle: Behavior[LvCoordinatorEvent] = Behaviors.receive {
     (ctx, msg) =>
       msg match {
-        case ReqLvGrids(cfg, replyTo) =>
+        case ReqLvGrids(
+              Lv(amountOfGridGenerators, distinctHouseConnections),
+              replyTo
+            ) =>
           ctx.log.info("Starting generation of low voltage grids!")
-          /* TODO: Split up osm data at municipality boundaries, spawn needed actors and start generation */
+          /* TODO:
+              1) Ask for OSM data
+              2) Ask for asset data
+              3) Split up osm data at municipality boundaries
+              4) spawn needed actors
+              5) start generation */
+
+          /* Spawn a pool of workers to build grids from sub-graphs */
+          val lvGeneratorPool =
+            Routers.pool(poolSize = amountOfGridGenerators) {
+              // Restart workers on failure
+              Behaviors
+                .supervise(LvGenerator())
+                .onFailure(SupervisorStrategy.restart)
+            }
+          val lvGeneratorProxy = ctx.spawn(lvGeneratorPool, "LvGeneratorPool")
+
           replyTo ! RepLvGrids(Vector.empty[SubGridContainer])
           Behaviors.stopped
         case unsupported =>
