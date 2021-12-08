@@ -22,11 +22,11 @@ Here, we want to focus on the overall structure of the tool and which part does 
   - Settlements only rarely cross municipality boundaries
   - The concept of concessional agreements on serving a municipality incentive to not let grids cross boundaries
 - Spawns a pool of `LvGridGenerator`s
-- Spawns a pool of `LvRegionHandler`s (needs to know the `LvGridGenerator` worker pool)
-- Hand over regions (here: municipalities) to `LvRegionGenerator`s
-- Collect results from `LvRegionGenerator`s and check completeness
+- Spawns a pool of `LvRegionCoordinator`s (needs to know the `LvGridGenerator` worker pool)
+- Hand over regions (here: municipalities) to `LvRegionCoordinator`s
+- Collect results from `LvRegionCoordinator`s and check completeness
 
-### LvRegionalGenerator
+### LvRegionCoordinator
 - Responsible for generation of lv grids within a defined region (might be a municipality)
 - Generate loads in that region
 - Cluster them to secondary-substation regions
