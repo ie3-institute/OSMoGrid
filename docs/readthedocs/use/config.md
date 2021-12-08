@@ -33,4 +33,5 @@ At least one of the following configuration blocks has to be defined.
 #### Lv (`generation.lv`)
 | Parameter                | Allowed values | Note                                                      |
 |--------------------------|----------------|-----------------------------------------------------------|
+| amountOfGridGenerators   | `Int`          | Amount of actors to build actual grids (default: 10)      |
 | distinctHouseConnections | `Boolean`      | Build distinct house connection lines? (default: `false`) |
