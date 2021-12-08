@@ -35,7 +35,11 @@ object ConfigFailFast {
     }
 
   private def checkLvConfig(lv: OsmoGridConfig.Generation.Lv): Unit = lv match {
-    case Lv(distinctHouseConnections) => /* I don't care. Everything is fine. */
+    case Lv(amountOfGridGenerators, distinctHouseConnections) =>
+      if (amountOfGridGenerators < 1)
+        throw IllegalConfigException(
+          s"The amount of lv grid generation actors needs to be at least 1 (provided: $amountOfGridGenerators)."
+        )
   }
 
   private def checkInputConfig(input: OsmoGridConfig.Input): Unit =
