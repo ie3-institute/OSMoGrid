@@ -30,7 +30,11 @@ object LvCoordinator {
     (ctx, msg) =>
       msg match {
         case ReqLvGrids(
-              Lv(amountOfGridGenerators, distinctHouseConnections),
+              Lv(
+                amountOfGridGenerators,
+                amountOfRegionCoordinators,
+                distinctHouseConnections
+              ),
               replyTo
             ) =>
           ctx.log.info("Starting generation of low voltage grids!")
@@ -38,8 +42,7 @@ object LvCoordinator {
               1) Ask for OSM data
               2) Ask for asset data
               3) Split up osm data at municipality boundaries
-              4) spawn needed actors
-              5) start generation */
+              4) start generation */
 
           /* Spawn a pool of workers to build grids from sub-graphs */
           val lvGeneratorPool =
@@ -50,6 +53,17 @@ object LvCoordinator {
                 .onFailure(SupervisorStrategy.restart)
             }
           val lvGeneratorProxy = ctx.spawn(lvGeneratorPool, "LvGeneratorPool")
+
+          /* Spawn a pool of workers to build grids for one municipality */
+          val lvRegionCoordinatorPool =
+            Routers.pool(poolSize = amountOfRegionCoordinators) {
+              // Restart workers on failure
+              Behaviors
+                .supervise(LvRegionCoordinator(lvGeneratorProxy))
+                .onFailure(SupervisorStrategy.restart)
+            }
+          val lvRegionCoordinatorProxy =
+            ctx.spawn(lvRegionCoordinatorPool, "LvRegionCoordinatorPool")
 
           replyTo ! RepLvGrids(Vector.empty[SubGridContainer])
           Behaviors.stopped

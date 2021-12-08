@@ -9,7 +9,7 @@ database Input
 participant InputDataProvider
 participant OsmoGridGuardian
 participant LvCoordinator
-collections LvRegionGenerator
+collections LvRegionCoordinator
 collections LvGridGenerator
 participant ResultListener
 
@@ -32,17 +32,17 @@ InputDataProvider -> LvCoordinator: !RepAssetTypes(...)
 activate LvCoordinator
 note right: Partition OSM data\nby municipal boundaries
 LvCoordinator --> LvGridGenerator: //Spawn worker pool//
-LvCoordinator --> LvRegionGenerator: //Spawn worker pool//
+LvCoordinator --> LvRegionCoordinator: //Spawn worker pool//
 
-LvCoordinator -> LvRegionGenerator: !ReqLvGrids(...)
+LvCoordinator -> LvRegionCoordinator: !ReqLvGrids(...)
 deactivate LvCoordinator
-LvRegionGenerator -> LvGridGenerator: !ReqLvGrid(...)
+LvRegionCoordinator -> LvGridGenerator: !ReqLvGrid(...)
 activate LvGridGenerator
 ... ...
-LvGridGenerator -> LvRegionGenerator: !PepLvGrid(...)
+LvGridGenerator -> LvRegionCoordinator: !PepLvGrid(...)
 deactivate LvGridGenerator
 
-LvRegionGenerator -> LvCoordinator: !RepLvGrids(...)
+LvRegionCoordinator -> LvCoordinator: !RepLvGrids(...)
 LvCoordinator -> OsmoGridGuardian: !RepLvGrids(...)
 
 == MV generation ==

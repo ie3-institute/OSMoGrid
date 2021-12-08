@@ -108,6 +108,7 @@ class ConfigFailFastSpec extends UnitSpec {
             |input.asset.file.hierarchic = false
             |output.file.directory = "output_file_path"
             |generation.lv.amountOfGridGenerators = 0
+            |generation.lv.amountOfRegionCoordinators = 5
             |generation.lv.distinctHouseConnections = false""".stripMargin
         } match {
           case Success(cfg) =>
@@ -126,12 +127,51 @@ class ConfigFailFastSpec extends UnitSpec {
             |input.asset.file.hierarchic = false
             |output.file.directory = "output_file_path"
             |generation.lv.amountOfGridGenerators = -42
+            |generation.lv.amountOfRegionCoordinators = 5
             |generation.lv.distinctHouseConnections = false""".stripMargin
         } match {
           case Success(cfg) =>
             val exc =
               intercept[IllegalConfigException](ConfigFailFast.check(cfg))
             exc.msg shouldBe "The amount of lv grid generation actors needs to be at least 1 (provided: -42)."
+          case Failure(exception) =>
+            fail(s"Config generation failed with an exception: '$exception'")
+        }
+      }
+
+      "fail on zero amount of lv region coordinators" in {
+        OsmoGridConfigFactory.parseWithoutFallback {
+          """input.osm.pbf.file = "input_file_path"
+            |input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.hierarchic = false
+            |output.file.directory = "output_file_path"
+            |generation.lv.amountOfGridGenerators = 10
+            |generation.lv.amountOfRegionCoordinators = 0
+            |generation.lv.distinctHouseConnections = false""".stripMargin
+        } match {
+          case Success(cfg) =>
+            val exc =
+              intercept[IllegalConfigException](ConfigFailFast.check(cfg))
+            exc.msg shouldBe "The amount of lv region coordination actors needs to be at least 1 (provided: 0)."
+          case Failure(exception) =>
+            fail(s"Config generation failed with an exception: '$exception'")
+        }
+      }
+
+      "fail on negative amount of lv region coordinators" in {
+        OsmoGridConfigFactory.parseWithoutFallback {
+          """input.osm.pbf.file = "input_file_path"
+            |input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.hierarchic = false
+            |output.file.directory = "output_file_path"
+            |generation.lv.amountOfGridGenerators = 10
+            |generation.lv.amountOfRegionCoordinators = -42
+            |generation.lv.distinctHouseConnections = false""".stripMargin
+        } match {
+          case Success(cfg) =>
+            val exc =
+              intercept[IllegalConfigException](ConfigFailFast.check(cfg))
+            exc.msg shouldBe "The amount of lv region coordination actors needs to be at least 1 (provided: -42)."
           case Failure(exception) =>
             fail(s"Config generation failed with an exception: '$exception'")
         }

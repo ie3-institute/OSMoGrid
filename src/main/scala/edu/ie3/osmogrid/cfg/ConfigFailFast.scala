@@ -35,10 +35,18 @@ object ConfigFailFast {
     }
 
   private def checkLvConfig(lv: OsmoGridConfig.Generation.Lv): Unit = lv match {
-    case Lv(amountOfGridGenerators, distinctHouseConnections) =>
+    case Lv(
+          amountOfGridGenerators,
+          amountOfRegionCoordinators,
+          distinctHouseConnections
+        ) =>
       if (amountOfGridGenerators < 1)
         throw IllegalConfigException(
           s"The amount of lv grid generation actors needs to be at least 1 (provided: $amountOfGridGenerators)."
+        )
+      if (amountOfRegionCoordinators < 1)
+        throw IllegalConfigException(
+          s"The amount of lv region coordination actors needs to be at least 1 (provided: $amountOfRegionCoordinators)."
         )
   }
 
