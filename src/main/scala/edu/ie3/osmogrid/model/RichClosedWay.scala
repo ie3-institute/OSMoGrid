@@ -9,7 +9,7 @@ package edu.ie3.osmogrid.model
 import breeze.stats.mean
 import edu.ie3.osmogrid.exception.IllegalCalculationException
 import edu.ie3.osmogrid.model.Coordinate.RichPoint
-import edu.ie3.util.geo.GeoUtils
+import edu.ie3.util.geo.{GeoUtilScala, GeoUtils}
 import edu.ie3.util.osm.OsmEntities.{ClosedWay, Node}
 import edu.ie3.util.CollectionUtils.RichList
 import org.locationtech.jts.geom.Coordinates
@@ -40,7 +40,12 @@ object RichClosedWay {
           val coordinates = way.nodes
             .map(_.coordinates.toCoordinate)
             .map(transformCoordinate(_, latMin, lonMin))
-          Success(areaOfPolygon(coordinates))
+          Success(
+            Quantities.getQuantity(
+              GeoUtilScala.enclosedArea(coordinates),
+              Units.SQUARE_METRE
+            )
+          )
         case _ =>
           Failure(
             IllegalCalculationException(
@@ -93,29 +98,6 @@ object RichClosedWay {
         .getValue
         .doubleValue()
       Coordinate(y, x)
-    }
-
-    /** Try to calculate the area of an irregular polygon described by its
-      * coordinates
-      *
-      * @param coordinates
-      *   Coordinates describing the polygon
-      * @return
-      *   A try on the area
-      */
-    private def areaOfPolygon(
-        coordinates: List[Coordinate]
-    ): ComparableQuantity[Area] = {
-      val rotatedCoordinates = coordinates.rotate(-1)
-      val area = coordinates.zip(rotatedCoordinates).foldLeft(0.0) {
-        case (
-              currentArea,
-              (Coordinate(yLeft, xLeft), Coordinate(yRight, xRight))
-            ) =>
-          val partialArea = xLeft * yRight - xRight * yLeft
-          currentArea + partialArea
-      } / 2
-      Quantities.getQuantity(area, Units.SQUARE_METRE)
     }
 
     def center: Coordinate = way.nodes
