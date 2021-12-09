@@ -8,17 +8,18 @@ package edu.ie3.osmogrid.model
 
 import edu.ie3.osmogrid.exception.TestPreparationFailedException
 import edu.ie3.osmogrid.model.WayUtils.RichClosedWay
-import edu.ie3.test.common.UnitSpec
+import edu.ie3.test.common.{UnitSpec, WayTestData}
 import edu.ie3.util.osm.OsmEntities
 import edu.ie3.util.osm.OsmEntities.{ClosedWay, Node}
 import org.locationtech.jts.geom.impl.CoordinateArraySequence
 import org.locationtech.jts.geom.{GeometryFactory, Point, PrecisionModel}
+import tech.units.indriya.unit.Units
 
 import java.time.ZonedDateTime
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
 
-class WayUtilsSpec extends UnitSpec {
+class WayUtilsSpec extends UnitSpec with WayTestData {
   "Closed way with enhances functionality" when {
     "calculating the center coordinate" should {
       "provide correct values for a rectangle" in {
@@ -121,6 +122,21 @@ class WayUtilsSpec extends UnitSpec {
           case Coordinate(lat, lon) =>
             lon shouldBe 3008237.7976 +- 1e-3
             lat shouldBe 0.0 +- 1e-3
+        }
+      }
+    }
+
+    "determining the enclosed area" should {
+      "deliver correct result" in {
+        G2.building.area match {
+          case Success(area) =>
+            area
+              .to(Units.SQUARE_METRE)
+              .getValue
+              .doubleValue() shouldBe G2.buildingArea.getValue
+              .doubleValue() +- 1e-3
+          case Failure(exception) =>
+            fail("Determination of area failed.", exception)
         }
       }
     }
