@@ -55,20 +55,6 @@ object WayUtils {
       }
     }
 
-    /** Determine minimum latitude and longitude among the given nodes
-      *
-      * @param nodes
-      *   nodes to assess
-      * @return
-      *   Options onto the minimum values
-      */
-    private def determineMinLatLon(nodes: List[Node]) = nodes
-      .map(_.coordinates.toCoordinate)
-      .map { case Coordinate(lat, lon) => (lat, lon) }
-      .unzip match {
-      case (lats, lons) => (lats.minOption, lons.minOption)
-    }
-
     def center: Coordinate = way.nodes
       .slice(
         0,
@@ -79,6 +65,22 @@ object WayUtils {
       .unzip match {
       case (lats, lons) => Coordinate(mean(lats), mean(lons))
     }
+  }
+
+  /** Determine minimum latitude and longitude among the given nodes
+    *
+    * @param nodes
+    *   nodes to assess
+    * @return
+    *   Options onto the minimum values
+    */
+  private def determineMinLatLon(
+      nodes: List[Node]
+  ): (Option[Double], Option[Double]) = nodes
+    .map(_.coordinates.toCoordinate)
+    .map { case Coordinate(lat, lon) => (lat, lon) }
+    .unzip match {
+    case (lats, lons) => (lats.minOption, lons.minOption)
   }
 
   /** Transform the given node from angle description (as of geographical

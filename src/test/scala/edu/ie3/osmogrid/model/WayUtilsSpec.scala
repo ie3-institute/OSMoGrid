@@ -64,6 +64,37 @@ class WayUtilsSpec extends UnitSpec {
       }
     }
 
+    "determining minimum latitude and longitude" should {
+      val determineMinLatLon = PrivateMethod[(Option[Double], Option[Double])](
+        Symbol("determineMinLatLon")
+      )
+      "provide nothing, if nodes are empty" in {
+        val (minLat, minLon) =
+          WayUtils invokePrivate determineMinLatLon(List.empty[Node])
+        minLat.isDefined shouldBe false
+        minLon.isDefined shouldBe false
+      }
+
+      "provide correct values" in {
+        WayUtilsSpec.buildNodes(
+          List((1, 0), (1, 5), (2, 2.5), (3, 5), (3, 0))
+        ) match {
+          case Success(nodes) =>
+            println(nodes)
+            WayUtils invokePrivate determineMinLatLon(nodes) match {
+              case (Some(minLat), Some(minLon)) =>
+                minLat shouldBe 1.0 +- 1e-3
+                minLon shouldBe 0.0 +- 1e-3
+              case _ =>
+                fail(
+                  "Received nothing as minimum coordinates, which is not expected"
+                )
+            }
+          case Failure(exception) => fail("Node preparation failed", exception)
+        }
+      }
+    }
+
     "transforming coordinates from geo to distances in metre" should {
       val (originLon, originLat) = (7.4116482, 51.4843281)
       val transformCoordinate =
@@ -99,7 +130,20 @@ class WayUtilsSpec extends UnitSpec {
 object WayUtilsSpec {
   val geomFactory =
     new GeometryFactory(new PrecisionModel(PrecisionModel.FIXED))
-  def buildClosedWay(coordinates: List[(Double, Double)]): Try[ClosedWay] = {
+  def buildClosedWay(coordinates: List[(Double, Double)]): Try[ClosedWay] =
+    buildNodes(coordinates).map(
+      ClosedWay(
+        UUID.randomUUID(),
+        0,
+        ZonedDateTime.now(),
+        Map.empty[String, String],
+        _
+      )
+    )
+
+  private def buildNodes(
+      coordinates: List[(Double, Double)]
+  ): Try[List[Node]] = {
     val nodes = coordinates.map { case (y, x) =>
       Node(
         UUID.randomUUID(),
@@ -118,13 +162,7 @@ object WayUtilsSpec {
     nodes.headOption match {
       case Some(head) =>
         Success(
-          ClosedWay(
-            UUID.randomUUID(),
-            0,
-            ZonedDateTime.now(),
-            Map.empty[String, String],
-            nodes.appended(head)
-          )
+          nodes.appended(head)
         )
       case None =>
         Failure(
