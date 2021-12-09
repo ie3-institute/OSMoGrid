@@ -17,10 +17,13 @@ import edu.ie3.osmogrid.guardian.OsmoGridGuardian.{
 }
 import edu.ie3.osmogrid.lv.LvGenerator
 
+import edu.ie3.util.osm.{OsmEntities, OsmModel}
+
 object LvCoordinator {
   sealed trait LvCoordinatorEvent
   final case class ReqLvGrids(
       cfg: OsmoGridConfig.Generation.Lv,
+      osmModel: OsmModel,
       replyTo: ActorRef[OsmoGridGuardianEvent]
   ) extends LvCoordinatorEvent
 
@@ -35,6 +38,7 @@ object LvCoordinator {
                 amountOfRegionCoordinators,
                 distinctHouseConnections
               ),
+              osmModel,
               replyTo
             ) =>
           ctx.log.info("Starting generation of low voltage grids!")
@@ -43,6 +47,8 @@ object LvCoordinator {
               2) Ask for asset data
               3) Split up osm data at municipality boundaries
               4) start generation */
+
+          val boundaries = extractBoundaries(osmModel)
 
           /* Spawn a pool of workers to build grids from sub-graphs */
           val lvGeneratorPool =
@@ -71,5 +77,36 @@ object LvCoordinator {
           ctx.log.error(s"Received unsupported message: $unsupported")
           Behaviors.stopped
       }
+  }
+
+  /** Returns a list of boundary relations consisting of counties ("Gemeinden")
+    * and independent towns ("Kreisfreie Städte").
+    *
+    * Should work in most places in Germany.
+    * @param osmModel
+    *   the OSM model
+    * @return
+    *   list of boundary relations
+    */
+  private def extractBoundaries(
+      osmModel: OsmModel
+  ): List[OsmEntities.Relation] = {
+    val relations = osmModel.relations.getOrElse(throw new RuntimeException())
+
+    val boundaries = relations.filter {
+      _.tags.get("boundary").contains("administrative")
+    }
+
+    val municipalities =
+      boundaries.filter(_.tags.get("admin_level").contains("8"))
+
+    // independent towns with tag de:place=city https://forum.openstreetmap.org/viewtopic.php?id=21788
+    val independentCities = boundaries.filter { b =>
+      b.tags.get("admin_level").contains("6") && b.tags
+        .get("de:place")
+        .contains("city")
+    }
+
+    municipalities.appendedAll(independentCities)
   }
 }

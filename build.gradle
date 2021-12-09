@@ -50,6 +50,7 @@ apply from: scriptsLocation + 'tscfg.gradle'
 repositories {
   mavenCentral() //searches in bintray's repository 'jCenter', which contains Maven Central
   maven { url 'https://www.jitpack.io' } // allows github repos as dependencies
+  maven { url 'https://oss.sonatype.org/service/local/repositories/snapshots/content' }
 }
 
 dependencies {
@@ -76,12 +77,15 @@ dependencies {
 
   // todo CLEANUP following old dependencies
   //	 ie³ power system utils
-  implementation('com.github.ie3-institute:PowerSystemUtils:1.5.3') {
+  implementation('com.github.ie3-institute:PowerSystemUtils:1.6-SNAPSHOT') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
     exclude group: 'com.github.johanneshiry', module: 'OSMonaut'
   }
+
+  // indriya
+  implementation 'tech.units:indriya:2.1.2'
 
   //	 ie³ power system data model
   implementation('com.github.ie3-institute:PowerSystemDataModel:2.0.1') {

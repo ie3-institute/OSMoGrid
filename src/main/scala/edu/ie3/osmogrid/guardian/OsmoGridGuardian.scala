@@ -22,8 +22,16 @@ import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.io.output.ResultListener.{GridResult, ResultEvent}
 import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
+import edu.ie3.util.osm.OsmModel
 
-import scala.jdk.CollectionConverters.*
+import org.locationtech.jts.geom.{
+  Coordinate,
+  LinearRing,
+  Polygon,
+  GeometryFactory
+}
+import org.locationtech.jts.geom.impl.CoordinateArraySequenceFactory
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 object OsmoGridGuardian {
@@ -59,7 +67,22 @@ object OsmoGridGuardian {
               ctx.log.debug("Starting low voltage grid coordinator.")
               val lvCoordinator = ctx.spawn(LvCoordinator(), "LvCoordinator")
               ctx.watchWith(lvCoordinator, LvCoordinatorDied)
-              lvCoordinator ! ReqLvGrids(lvConfig, ctx.self)
+              val osmModel = OsmModel(
+                List.empty,
+                List.empty,
+                None,
+                new Polygon(
+                  new LinearRing(
+                    CoordinateArraySequenceFactory
+                      .instance()
+                      .create(Array.empty[Coordinate]),
+                    new GeometryFactory()
+                  ),
+                  Array.empty[LinearRing],
+                  new GeometryFactory()
+                )
+              ) // TODO
+              lvCoordinator ! ReqLvGrids(lvConfig, osmModel, ctx.self)
               awaitLvGrids(inputProvider, resultEventListener)
             case unsupported =>
               ctx.log.error(
