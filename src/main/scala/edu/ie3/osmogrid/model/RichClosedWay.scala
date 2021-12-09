@@ -39,7 +39,7 @@ object RichClosedWay {
           val coordinates = way.nodes
             .map(_.coordinates.toCoordinate)
             .map(transformCoordinate(_, latMin, lonMin))
-          areaOfPolygon(coordinates)
+          Success(areaOfPolygon(coordinates))
         case _ =>
           Failure(
             IllegalCalculationException(
@@ -104,33 +104,29 @@ object RichClosedWay {
       */
     private def areaOfPolygon(
         coordinates: List[Coordinate]
-    ): Try[ComparableQuantity[Area]] = rotate(coordinates, 1).map {
-      rotatedCoordinates =>
-        val area = coordinates.zip(rotatedCoordinates).foldLeft(0.0) {
-          case (
-                currentArea,
-                (Coordinate(yLeft, xLeft), Coordinate(yRight, xRight))
-              ) =>
-            val partialArea = xLeft * yRight - xRight * yLeft
-            currentArea + partialArea
-        } / 2
-        Quantities.getQuantity(area, Units.SQUARE_METRE)
+    ): ComparableQuantity[Area] = {
+      val rotatedCoordinates = rotate(coordinates, 1)
+      val area = coordinates.zip(rotatedCoordinates).foldLeft(0.0) {
+        case (
+              currentArea,
+              (Coordinate(yLeft, xLeft), Coordinate(yRight, xRight))
+            ) =>
+          val partialArea = xLeft * yRight - xRight * yLeft
+          currentArea + partialArea
+      } / 2
+      Quantities.getQuantity(area, Units.SQUARE_METRE)
     }
 
     /** Rotate a list by the given amount of positions
       */
-    def rotate[A]: (List[A], Int) => Try[List[A]] =
+    def rotate[A]: (List[A], Int) => List[A] =
       (list: List[A], positions: Int) => {
-        if (list.length < positions)
-          Failure(
-            IllegalCalculationException(
-              "Cannot rotate a list for more positions, than it's long."
-            )
-          )
-        else {
-          val (head, tail) = list.splitAt(positions)
-          Success(tail.appendedAll(head))
-        }
+        val shift = positions % list.length
+        val (head, tail) =
+          if (shift >= 0) list.splitAt(shift)
+          else list.splitAt(list.length + shift)
+
+        tail.appendedAll(head)
       }
 
     def center: Coordinate = way.nodes
