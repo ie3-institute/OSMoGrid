@@ -40,6 +40,10 @@ object WayUtils {
           val coordinates = way.nodes
             .map(_.coordinates.toCoordinate)
             .map(WayUtils.transformCoordinate(_, latMin, lonMin))
+            .slice(
+              0,
+              way.nodes.length - 1
+            ) // The last node doubles the first one in closed ways
           Success(
             Quantities.getQuantity(
               GeoUtilScala.enclosedArea(coordinates),
