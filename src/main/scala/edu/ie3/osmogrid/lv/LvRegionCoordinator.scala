@@ -16,7 +16,7 @@ import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.osmogrid.lv.LvCoordinator.LvCoordinatorEvent
 import edu.ie3.osmogrid.lv.LvGenerator.LvGeneratorEvent
 import edu.ie3.osmogrid.model.LoadLocation
-import edu.ie3.osmogrid.model.RichClosedWay.RichClosedWay
+import edu.ie3.osmogrid.model.WayUtils.RichClosedWay
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.OsmEntities.Way
 import edu.ie3.util.osm.{OsmEntities, OsmModel}

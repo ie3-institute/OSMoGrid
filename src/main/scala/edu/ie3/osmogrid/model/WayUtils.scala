@@ -20,7 +20,7 @@ import tech.units.indriya.unit.Units
 import javax.measure.quantity.Area
 import scala.util.{Failure, Success, Try}
 
-object RichClosedWay {
+object WayUtils {
 
   implicit class RichClosedWay(way: ClosedWay) {
 
@@ -39,7 +39,7 @@ object RichClosedWay {
         case (Some(latMin), Some(lonMin)) =>
           val coordinates = way.nodes
             .map(_.coordinates.toCoordinate)
-            .map(transformCoordinate(_, latMin, lonMin))
+            .map(WayUtils.transformCoordinate(_, latMin, lonMin))
           Success(
             Quantities.getQuantity(
               GeoUtilScala.enclosedArea(coordinates),
@@ -69,37 +69,6 @@ object RichClosedWay {
       case (lats, lons) => (lats.minOption, lons.minOption)
     }
 
-    /** Transform the given node from angle description (as of geographical
-      * position) into orthogonal distances from the origin defined by
-      * [[latMin]] and [[lonMin]]
-      *
-      * @param coordinate
-      *   The coordinate to transform
-      * @param originLat
-      *   Latitude of origin
-      * @param originLon
-      *   Longitude of origin
-      * @return
-      *   Coordinate as cartesian description relative to origin
-      */
-    private def transformCoordinate(
-        coordinate: Coordinate,
-        originLat: Double,
-        originLon: Double
-    ) = {
-      val x = GeoUtils
-        .calcHaversine(originLat, originLon, originLat, coordinate.lon)
-        .to(Units.METRE)
-        .getValue
-        .doubleValue()
-      val y = GeoUtils
-        .calcHaversine(originLat, originLon, coordinate.lat, originLon)
-        .to(Units.METRE)
-        .getValue
-        .doubleValue()
-      Coordinate(y, x)
-    }
-
     def center: Coordinate = way.nodes
       .slice(
         0,
@@ -110,5 +79,36 @@ object RichClosedWay {
       .unzip match {
       case (lats, lons) => Coordinate(mean(lats), mean(lons))
     }
+  }
+
+  /** Transform the given node from angle description (as of geographical
+    * position) into orthogonal distances from the origin defined by [[latMin]]
+    * and [[lonMin]]
+    *
+    * @param coordinate
+    *   The coordinate to transform
+    * @param originLat
+    *   Latitude of origin
+    * @param originLon
+    *   Longitude of origin
+    * @return
+    *   Coordinate as cartesian description relative to origin
+    */
+  private def transformCoordinate(
+      coordinate: Coordinate,
+      originLat: Double,
+      originLon: Double
+  ): Coordinate = {
+    val x = GeoUtils
+      .calcHaversine(originLat, originLon, originLat, coordinate.lon)
+      .to(Units.METRE)
+      .getValue
+      .doubleValue()
+    val y = GeoUtils
+      .calcHaversine(originLat, originLon, coordinate.lat, originLon)
+      .to(Units.METRE)
+      .getValue
+      .doubleValue()
+    Coordinate(y, x)
   }
 }

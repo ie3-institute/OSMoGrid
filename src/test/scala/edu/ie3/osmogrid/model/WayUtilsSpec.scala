@@ -7,7 +7,7 @@
 package edu.ie3.osmogrid.model
 
 import edu.ie3.osmogrid.exception.TestPreparationFailedException
-import edu.ie3.osmogrid.model.RichClosedWay.RichClosedWay
+import edu.ie3.osmogrid.model.WayUtils.RichClosedWay
 import edu.ie3.test.common.UnitSpec
 import edu.ie3.util.osm.OsmEntities
 import edu.ie3.util.osm.OsmEntities.{ClosedWay, Node}
@@ -18,11 +18,11 @@ import java.time.ZonedDateTime
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
 
-class RichClosedWaySpec extends UnitSpec {
+class WayUtilsSpec extends UnitSpec {
   "Closed way with enhances functionality" when {
     "calculating the center coordinate" should {
       "provide correct values for a rectangle" in {
-        RichClosedWaySpec.buildClosedWay(
+        WayUtilsSpec.buildClosedWay(
           List((0, 0), (0, 5), (3, 5), (3, 0))
         ) match {
           case Success(rectangle) =>
@@ -36,7 +36,7 @@ class RichClosedWaySpec extends UnitSpec {
       }
 
       "provide correct values for a triangle" in {
-        RichClosedWaySpec.buildClosedWay(
+        WayUtilsSpec.buildClosedWay(
           List((0, 0), (0, 5), (3, 2.5))
         ) match {
           case Success(rectangle) =>
@@ -50,7 +50,7 @@ class RichClosedWaySpec extends UnitSpec {
       }
 
       "provide correct values for a ditched rectangle" in {
-        RichClosedWaySpec.buildClosedWay(
+        WayUtilsSpec.buildClosedWay(
           List((0, 0), (0, 5), (2, 2.5), (3, 5), (3, 0))
         ) match {
           case Success(rectangle) =>
@@ -63,10 +63,40 @@ class RichClosedWaySpec extends UnitSpec {
         }
       }
     }
+
+    "transforming coordinates from geo to distances in metre" should {
+      val (originLon, originLat) = (7.4116482, 51.4843281)
+      val transformCoordinate =
+        PrivateMethod[Coordinate](Symbol("transformCoordinate"))
+
+      "have trivial lat value, if longitudes are same" in {
+        WayUtils invokePrivate transformCoordinate(
+          Coordinate(7.4116483, originLon),
+          originLat,
+          originLon
+        ) match {
+          case Coordinate(lat, lon) =>
+            lon shouldBe 0.0 +- 1e-3
+            lat shouldBe 4906148.2732 +- 1e-3
+        }
+      }
+
+      "have trivial lon value, if longitudes are same" in {
+        WayUtils invokePrivate transformCoordinate(
+          Coordinate(originLat, 51.4843282),
+          originLat,
+          originLon
+        ) match {
+          case Coordinate(lat, lon) =>
+            lon shouldBe 3008237.7976 +- 1e-3
+            lat shouldBe 0.0 +- 1e-3
+        }
+      }
+    }
   }
 }
 
-object RichClosedWaySpec {
+object WayUtilsSpec {
   val geomFactory =
     new GeometryFactory(new PrecisionModel(PrecisionModel.FIXED))
   def buildClosedWay(coordinates: List[(Double, Double)]): Try[ClosedWay] = {
