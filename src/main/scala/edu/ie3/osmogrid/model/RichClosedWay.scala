@@ -11,6 +11,7 @@ import edu.ie3.osmogrid.exception.IllegalCalculationException
 import edu.ie3.osmogrid.model.Coordinate.RichPoint
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.OsmEntities.{ClosedWay, Node}
+import edu.ie3.util.CollectionUtils.RichList
 import org.locationtech.jts.geom.Coordinates
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
@@ -105,7 +106,7 @@ object RichClosedWay {
     private def areaOfPolygon(
         coordinates: List[Coordinate]
     ): ComparableQuantity[Area] = {
-      val rotatedCoordinates = rotate(coordinates, -1)
+      val rotatedCoordinates = coordinates.rotate(-1)
       val area = coordinates.zip(rotatedCoordinates).foldLeft(0.0) {
         case (
               currentArea,
@@ -116,18 +117,6 @@ object RichClosedWay {
       } / 2
       Quantities.getQuantity(area, Units.SQUARE_METRE)
     }
-
-    /** Rotate a list by the given amount of positions
-      */
-    def rotate[A]: (List[A], Int) => List[A] =
-      (list: List[A], positions: Int) => {
-        val shift = positions % list.length
-        val (head, tail) =
-          if (shift >= 0) list.splitAt(shift)
-          else list.splitAt(list.length + shift)
-
-        tail.appendedAll(head)
-      }
 
     def center: Coordinate = way.nodes
       .map(_.coordinates.toCoordinate)
