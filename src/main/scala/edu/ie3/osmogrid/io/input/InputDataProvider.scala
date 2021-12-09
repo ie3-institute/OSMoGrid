@@ -12,7 +12,7 @@ import com.acervera.osm4scala.EntityIterator.fromPbf
 import com.acervera.osm4scala.model.{NodeEntity, RelationEntity, WayEntity}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian.OsmoGridGuardianEvent
-import edu.ie3.osmogrid.io.input.InputDataProvider.readPbf
+import edu.ie3.osmogrid.io.input.OsmoGridModel
 import edu.ie3.util.osm.OsmEntities.{Node, OpenWay, Relation, Way}
 import edu.ie3.util.osm.OsmModel
 import org.locationtech.jts.geom.{Coordinate, LinearRing, Point, Polygon, PrecisionModel}
@@ -26,21 +26,21 @@ import scala.util.{Failure, Using, Success, Try}
 object InputDataProvider {
 
   sealed trait InputDataEvent
-  final case class ReqOsm(replyTo: ActorRef[Response]) extends InputDataEvent
+  final case class ReqOsm(replyTo: ActorRef[Response], highways: Option[Set[String]], buildings: Option[Set[String]], landuses: Option[Set[String]]) extends InputDataEvent
   final case class ReqAssetTypes(replyTo: ActorRef[Response])
       extends InputDataEvent
 
   sealed trait Response
-  final case class RepOsm(osmModel: OsmModel) extends Response
-  final case class RepAssetTypes(osmModel: OsmModel) extends Response
+  final case class RepOsm(osmModel: OsmoGridModel) extends Response
+  final case class RepAssetTypes(osmModel: OsmoGridModel) extends Response
 
   final case class Terminate(replyTo: ActorRef[OsmoGridGuardianEvent])
       extends InputDataEvent
 
   def apply(cfgInput: OsmoGridConfig.Input): Behavior[InputDataEvent] =
     Behaviors.receive[InputDataEvent] {
-      case (ctx, ReqOsm(replyTo)) =>
-        readPbf(cfgInput.osm.pbf.get.file) match {
+      case (ctx, ReqOsm(replyTo, highways, buildings, landuses)) =>
+        readPbf(cfgInput.osm.pbf.get.file, highways, buildings, landuses) match {
           case Success(osmModel) =>
             replyTo ! RepOsm(osmModel)
             Behaviors.same
@@ -61,8 +61,14 @@ object InputDataProvider {
    *
    * @param importPath
    *   path to pbf file
+   * @param highways
+   *   tags to identify highways
+   * @param buildings
+   *   tags to identify buildings
+   * @param landuses
+   *   tags to identify landuses
    */
-  def readPbf(importPath: String): Try[OsmModel] = {
+  def readPbf(importPath: String, highways: Option[Set[String]], buildings: Option[Set[String]], landuses: Option[Set[String]]): Try[OsmoGridModel] = {
       Using(new FileInputStream(importPath)) { pbfIS =>
         // pbfIS = new FileInputStream(importPath)
         fromPbf(pbfIS)
@@ -114,10 +120,10 @@ object InputDataProvider {
             }
           }
       }.map {
-        case (nodeBuffer, lineBuffer, relationsBuffer) =>
-          OsmModel(
+        case (nodeBuffer, wayBuffer, relationsBuffer) =>
+          OsmoGridModel(
             nodeBuffer.toList,
-            lineBuffer.toList,
+            wayBuffer.toList,
             Option(relationsBuffer.toList),
             Polygon(
               LinearRing(
@@ -133,7 +139,10 @@ object InputDataProvider {
               ),
               PrecisionModel(),
               4326
-            )
+            ),
+            OsmModel.extractHighways(wayBuffer.toList, highways),
+            OsmModel.extractBuildings(wayBuffer.toList, buildings),
+            OsmModel.extractLandUses(wayBuffer.toList, landuses)
           )
       }
   }
