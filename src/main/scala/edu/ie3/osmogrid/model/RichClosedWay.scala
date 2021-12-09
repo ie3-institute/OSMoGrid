@@ -119,6 +119,10 @@ object RichClosedWay {
     }
 
     def center: Coordinate = way.nodes
+      .slice(
+        0,
+        way.nodes.length - 1
+      ) // Last node has to be the same as the first one to be a closed way
       .map(_.coordinates.toCoordinate)
       .map { case Coordinate(lat, lon) => (lat, lon) }
       .unzip match {
