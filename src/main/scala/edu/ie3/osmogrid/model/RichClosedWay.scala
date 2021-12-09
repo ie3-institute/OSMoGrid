@@ -105,7 +105,7 @@ object RichClosedWay {
     private def areaOfPolygon(
         coordinates: List[Coordinate]
     ): ComparableQuantity[Area] = {
-      val rotatedCoordinates = rotate(coordinates, 1)
+      val rotatedCoordinates = rotate(coordinates, -1)
       val area = coordinates.zip(rotatedCoordinates).foldLeft(0.0) {
         case (
               currentArea,
