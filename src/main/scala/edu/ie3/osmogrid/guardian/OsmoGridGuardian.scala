@@ -81,7 +81,7 @@ object OsmoGridGuardian {
                   Array.empty[LinearRing],
                   new GeometryFactory()
                 )
-              ) // TODO
+              ) // TODO actually use imported input data
               lvCoordinator ! ReqLvGrids(lvConfig, osmModel, ctx.self)
               awaitLvGrids(inputProvider, resultEventListener)
             case unsupported =>

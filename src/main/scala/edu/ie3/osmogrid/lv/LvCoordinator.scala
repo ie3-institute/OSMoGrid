@@ -16,8 +16,16 @@ import edu.ie3.osmogrid.guardian.OsmoGridGuardian.{
   RepLvGrids
 }
 import edu.ie3.osmogrid.lv.LvGenerator
-
+import edu.ie3.util.osm.OsmEntities.{OpenWay, RelationElement, Way}
 import edu.ie3.util.osm.{OsmEntities, OsmModel}
+import org.locationtech.jts.geom.impl.CoordinateArraySequence
+import org.locationtech.jts.geom.{
+  Coordinate,
+  GeometryFactory,
+  LinearRing,
+  Polygon,
+  PrecisionModel
+}
 
 object LvCoordinator {
   sealed trait LvCoordinatorEvent
@@ -26,6 +34,10 @@ object LvCoordinator {
       osmModel: OsmModel,
       replyTo: ActorRef[OsmoGridGuardianEvent]
   ) extends LvCoordinatorEvent
+
+  // TODO replace with geoutils
+  private val DEFAULT_GEOMETRY_FACTORY: GeometryFactory =
+    new GeometryFactory(new PrecisionModel(), 4326)
 
   def apply(): Behavior[LvCoordinatorEvent] = idle
 
@@ -48,7 +60,25 @@ object LvCoordinator {
               3) Split up osm data at municipality boundaries
               4) start generation */
 
-          val boundaries = extractBoundaries(osmModel)
+          val boundaries = extractBoundaries(osmModel).map { r =>
+            // combine all ways of a boundary relation to one sequence of coordinates
+            val coordinates = r.elements
+              .flatMap { case RelationElement(element, "outer") =>
+                element match {
+                  case way: Way =>
+                    way.nodes
+                  case _ => List.empty
+                }
+              }
+              .map { el =>
+                el.coordinates.getCoordinate
+              }
+              .toArray
+
+            buildPolygon(coordinates)
+          }
+
+          // TODO node can now be partitioned using polygon.covers(node)
 
           /* Spawn a pool of workers to build grids from sub-graphs */
           val lvGeneratorPool =
@@ -77,6 +107,14 @@ object LvCoordinator {
           ctx.log.error(s"Received unsupported message: $unsupported")
           Behaviors.stopped
       }
+  }
+
+  // TODO replace with convenience function in PowerSystemUtils
+  private def buildPolygon(coordinates: Array[Coordinate]): Polygon = {
+    val arrayCoordinates = new CoordinateArraySequence(coordinates)
+    val linearRing =
+      new LinearRing(arrayCoordinates, DEFAULT_GEOMETRY_FACTORY)
+    new Polygon(linearRing, Array[LinearRing](), DEFAULT_GEOMETRY_FACTORY)
   }
 
   /** Returns a list of boundary relations consisting of counties ("Gemeinden")
