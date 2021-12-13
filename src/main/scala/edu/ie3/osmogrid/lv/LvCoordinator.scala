@@ -16,7 +16,6 @@ import edu.ie3.osmogrid.guardian.OsmoGridGuardian.{
   RepLvGrids
 }
 import edu.ie3.osmogrid.lv.LvGenerator
-import edu.ie3.util.osm.OsmEntities.{OpenWay, RelationElement, Way}
 import edu.ie3.util.osm.{OsmEntities, OsmModel}
 import org.locationtech.jts.geom.impl.CoordinateArraySequence
 import org.locationtech.jts.geom.{
@@ -63,9 +62,9 @@ object LvCoordinator {
           val boundaries = extractBoundaries(osmModel).map { r =>
             // combine all ways of a boundary relation to one sequence of coordinates
             val coordinates = r.elements
-              .flatMap { case RelationElement(element, "outer") =>
+              .flatMap { case OsmEntities.RelationElement(element, "outer") =>
                 element match {
-                  case way: Way =>
+                  case way: OsmEntities.Way =>
                     way.nodes
                   case _ => List.empty
                 }
@@ -78,7 +77,49 @@ object LvCoordinator {
             buildPolygon(coordinates)
           }
 
-          // TODO node can now be partitioned using polygon.covers(node)
+          def filterWay(polygon: Polygon, way: OsmEntities.Way) = {
+            val majority = (way.nodes.size + 1) / 2
+            way.nodes
+              .filter { node =>
+                polygon.covers(node.coordinates)
+              }
+              .sizeCompare(majority) > 0
+          }
+
+          def filterRelation(
+              polygon: Polygon,
+              relation: OsmEntities.Relation
+          ): Boolean = {
+            val majority = (relation.elements.size + 1) / 2
+            relation.elements
+              .map(_.element)
+              .filter {
+                case node: OsmEntities.Node =>
+                  polygon.covers(node.coordinates)
+                case way: OsmEntities.Way =>
+                  filterWay(polygon, way)
+                case relation: OsmEntities.Relation =>
+                  filterRelation(polygon, relation)
+              }
+              .sizeCompare(majority) > 0
+          }
+
+          // TODO this scala-esk way is really inefficient, find better way
+          val partitions = boundaries.map { polygon =>
+            val nodes = osmModel.nodes.filter { node =>
+              polygon.covers(node.coordinates)
+            }
+            val ways = osmModel.ways.filter { way =>
+              filterWay(polygon, way)
+            }
+            val relations = osmModel.relations.map {
+              _.filter { relation =>
+                filterRelation(polygon, relation)
+              }
+            }
+
+            (nodes, ways, relations)
+          }
 
           /* Spawn a pool of workers to build grids from sub-graphs */
           val lvGeneratorPool =
