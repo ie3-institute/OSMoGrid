@@ -63,7 +63,7 @@ dependencies {
 
   // logging
   implementation "com.typesafe.scala-logging:scala-logging_${scalaMajorVersion}:3.9.4"
-  implementation 'ch.qos.logback:logback-classic:1.2.9'
+  implementation 'ch.qos.logback:logback-classic:1.2.10'
 
   // testing
   testImplementation "org.scalatest:scalatest_$scalaMajorVersion:3.2.10"
