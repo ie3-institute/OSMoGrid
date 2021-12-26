@@ -30,9 +30,13 @@ object OsmoGridGuardian {
 
   sealed trait OsmoGridGuardianEvent
   final case class Run(cfg: OsmoGridConfig) extends OsmoGridGuardianEvent
-  object InputDataProviderDied extends OsmoGridGuardianEvent
-  object ResultEventListenerDied extends OsmoGridGuardianEvent
-  object LvCoordinatorDied extends OsmoGridGuardianEvent
+
+  sealed trait GuardianWatch extends OsmoGridGuardianEvent
+  private case object InputDataProviderDied extends GuardianWatch
+  private case object ResultEventListenerDied extends GuardianWatch
+  private case object LvCoordinatorDied extends GuardianWatch
+
+
   final case class RepLvGrids(grids: Vector[SubGridContainer])
       extends OsmoGridGuardianEvent
 
@@ -63,18 +67,12 @@ object OsmoGridGuardian {
               awaitLvGrids(inputProvider, resultEventListener)
             case unsupported =>
               ctx.log.error(
-                "Received unsupported grid generation config. Bye, bye."
+                s"Received unsupported grid generation config '$unsupported'. Bye, bye."
               )
               Behaviors.stopped
           }
-        case InputDataProviderDied =>
-          ctx.log.error("Input data provider died. That's bad...")
-          Behaviors.stopped
-        case ResultEventListenerDied =>
-          ctx.log.error("Result event listener died. That's bad...")
-          Behaviors.stopped
-        case LvCoordinatorDied =>
-          ctx.log.error("Lv coordinator died. That's bad...")
+        case watch: GuardianWatch =>
+          ctx.log.error(s"Received $watch! That's bad ...")
           Behaviors.stopped
         case unsupported =>
           ctx.log.error(s"Received unsupported message '$unsupported'.")
@@ -96,7 +94,8 @@ object OsmoGridGuardian {
               awaitShutDown(inputDataProvider)
             case Failure(exception) =>
               ctx.log.error(
-                "Combination of received sub-grids failed. Shutting down."
+                "Combination of received sub-grids failed. Shutting down.",
+                exception
               )
               Behaviors.stopped
           }
