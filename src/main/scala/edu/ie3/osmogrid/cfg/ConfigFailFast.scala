@@ -15,7 +15,7 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
 import edu.ie3.osmogrid.exception.IllegalConfigException
-import edu.ie3.osmogrid.io.output.ResultListener.ResultEvent
+import edu.ie3.osmogrid.io.output.PersistenceResultListener.ResultEvent
 
 object ConfigFailFast extends LazyLogging {
   def check(
@@ -113,10 +113,13 @@ object ConfigFailFast extends LazyLogging {
         )
     }
 
-  private def checkOutputFile(file: OsmoGridConfig.Output.File): Unit =
+  private def checkOutputFile(file: OsmoGridConfig.Output.Csv): Unit =
     file match {
-      case OsmoGridConfig.Output.File(directory, _) if directory.isEmpty =>
-        throw IllegalConfigException("Output directory may be set!")
+      case OsmoGridConfig.Output.Csv(directory, _, separator)
+          if directory.isEmpty || separator.isEmpty =>
+        throw IllegalConfigException(
+          "Output directory and separator must be set when using .csv file sink!"
+        )
       case _ => /* I don't care. Everything is fine. */
     }
 }

@@ -18,8 +18,11 @@ import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Output}
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.input.InputDataProvider.{InputDataEvent, Terminate}
-import edu.ie3.osmogrid.io.output.ResultListener
-import edu.ie3.osmogrid.io.output.ResultListener.{GridResult, ResultEvent}
+import edu.ie3.osmogrid.io.output.PersistenceResultListener
+import edu.ie3.osmogrid.io.output.PersistenceResultListener.{
+  GridResult,
+  ResultEvent
+}
 import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
 import org.slf4j.Logger
@@ -39,6 +42,9 @@ object OsmoGridGuardian {
   ) extends OsmoGridGuardianEvent
 
   final case class RepLvGrids(runId: UUID, grids: Vector[SubGridContainer])
+      extends OsmoGridGuardianEvent
+
+  final case class PersistenceSuccessful(runId: UUID)
       extends OsmoGridGuardianEvent
 
   // dead watch events
@@ -99,6 +105,9 @@ object OsmoGridGuardian {
             s"Received ${lvGrids.length} lv grids for run $runId. Try to join them ..."
           )
           handleLvReply(repl, guardianData, ctx)
+        case PersistenceSuccessful(runId) =>
+          ctx.log.info(s"Successfully persisted grid data from run $runId")
+          Behaviors.same
         case watch: GuardianWatch =>
           ctx.log.error(
             s"Received dead message '$watch' for run ${watch.runId}! " +
@@ -124,7 +133,12 @@ object OsmoGridGuardian {
     val resultEventListener = run.cfg.output match {
       case Output(Some(_)) =>
         log.info("Starting output data listener ...")
-        Vector(ctx.spawn(ResultListener(run.cfg.output), "ResultListener"))
+        Vector(
+          ctx.spawn(
+            PersistenceResultListener(run.runId, run.cfg.output),
+            "PersistenceResultListener"
+          )
+        )
       case Output(None) =>
         Vector.empty
     }
