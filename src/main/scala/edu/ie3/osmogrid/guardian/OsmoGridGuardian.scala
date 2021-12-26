@@ -7,130 +7,184 @@
 package edu.ie3.osmogrid.guardian
 
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.container.{
   JointGridContainer,
   SubGridContainer
 }
 import edu.ie3.datamodel.utils.ContainerUtils
-import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation
+import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Output}
 import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.input.InputDataProvider.InputDataEvent
+import edu.ie3.osmogrid.io.input.InputDataProvider.{InputDataEvent, Terminate}
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.io.output.ResultListener.{GridResult, ResultEvent}
 import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
+import org.slf4j.Logger
 
+import java.util.UUID
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
 object OsmoGridGuardian {
 
   sealed trait OsmoGridGuardianEvent
-  final case class Run(cfg: OsmoGridConfig) extends OsmoGridGuardianEvent
 
-  sealed trait GuardianWatch extends OsmoGridGuardianEvent
-  private case object InputDataProviderDied extends GuardianWatch
-  private case object ResultEventListenerDied extends GuardianWatch
-  private case object LvCoordinatorDied extends GuardianWatch
+  final case class Run(
+      cfg: OsmoGridConfig,
+      additionalListener: Vector[ActorRef[ResultEvent]] = Vector.empty,
+      runId: UUID = UUID.randomUUID()
+  ) extends OsmoGridGuardianEvent
 
-
-  final case class RepLvGrids(grids: Vector[SubGridContainer])
+  final case class RepLvGrids(runId: UUID, grids: Vector[SubGridContainer])
       extends OsmoGridGuardianEvent
 
-  def apply(): Behavior[OsmoGridGuardianEvent] = idle()
-
-  private def idle(): Behavior[OsmoGridGuardianEvent] =
-    Behaviors.receive { (ctx, msg) =>
-      msg match {
-        case Run(cfg) =>
-          ctx.log.info("Initializing grid generation!")
-
-          ctx.log.info("Starting input data provider")
-          val inputProvider =
-            ctx.spawn(InputDataProvider(cfg.input), "InputDataProvider")
-          ctx.watchWith(inputProvider, InputDataProviderDied)
-          ctx.log.debug("Starting output data listener")
-          val resultEventListener =
-            ctx.spawn(ResultListener(cfg.output), "ResultListener")
-          ctx.watchWith(resultEventListener, ResultEventListenerDied)
-
-          /* Check, which voltage level configs are given. Start with lv level, if this is desired for. */
-          cfg.generation match {
-            case Generation(Some(lvConfig)) =>
-              ctx.log.debug("Starting low voltage grid coordinator.")
-              val lvCoordinator = ctx.spawn(LvCoordinator(), "LvCoordinator")
-              ctx.watchWith(lvCoordinator, LvCoordinatorDied)
-              lvCoordinator ! ReqLvGrids(lvConfig, ctx.self)
-              awaitLvGrids(inputProvider, resultEventListener)
-            case unsupported =>
-              ctx.log.error(
-                s"Received unsupported grid generation config '$unsupported'. Bye, bye."
-              )
-              Behaviors.stopped
-          }
-        case watch: GuardianWatch =>
-          ctx.log.error(s"Received $watch! That's bad ...")
-          Behaviors.stopped
-        case unsupported =>
-          ctx.log.error(s"Received unsupported message '$unsupported'.")
-          Behaviors.stopped
-      }
-    }
-
-  private def awaitLvGrids(
-      inputDataProvider: ActorRef[InputDataEvent],
-      resultListener: ActorRef[ResultEvent]
-  ): Behaviors.Receive[OsmoGridGuardianEvent] =
-    Behaviors.receive { (ctx, msg) =>
-      msg match {
-        case RepLvGrids(lvGrids) =>
-          ctx.log.info(s"Received ${lvGrids.length} lv grids. Join them.")
-          Try(ContainerUtils.combineToJointGrid(lvGrids.asJava)) match {
-            case Success(jointGrid) =>
-              resultListener ! GridResult(jointGrid, ctx.self)
-              awaitShutDown(inputDataProvider)
-            case Failure(exception) =>
-              ctx.log.error(
-                "Combination of received sub-grids failed. Shutting down.",
-                exception
-              )
-              Behaviors.stopped
-          }
-        case unsupported =>
-          ctx.log.error(
-            s"Received unsupported message while waiting for lv grids. Unsupported: $unsupported"
-          )
-          Behaviors.stopped
-      }
-    }
-
-  private def awaitShutDown(
-      inputDataProvider: ActorRef[InputDataEvent],
-      resultListenerTerminated: Boolean = false,
-      inputDataProviderTerminated: Boolean = false
-  ): Behaviors.Receive[OsmoGridGuardianEvent] = Behaviors.receive {
-    (ctx, msg) =>
-      msg match {
-        case ResultEventListenerDied =>
-          ctx.log.info("Result listener finished handling the result.")
-          ctx.log.debug("Shut down input data provider.")
-          awaitShutDown(inputDataProvider, resultListenerTerminated = true)
-        case InputDataProviderDied if resultListenerTerminated =>
-          /* That's the fine case */
-          ctx.log.info("Input data provider shut down.")
-          Behaviors.stopped
-        case InputDataProviderDied =>
-          /* That's the malicious case */
-          ctx.log.error(
-            "Input data provider unexpectedly died during shutdown was initiated."
-          )
-          Behaviors.stopped
-        case unsupported =>
-          ctx.log.error(s"Received an unsupported message $unsupported.")
-          Behaviors.stopped
-      }
+  // dead watch events
+  sealed trait GuardianWatch extends OsmoGridGuardianEvent {
+    val runId: UUID
   }
+
+  private final case class InputDataProviderDied(runId: UUID)
+      extends GuardianWatch
+
+  private final case class ResultEventListenerDied(runId: UUID)
+      extends GuardianWatch
+
+  private final case class LvCoordinatorDied(runId: UUID) extends GuardianWatch
+
+  // actor data
+  private final case class GuardianData(runs: Map[UUID, RunData]) {
+    def append(run: RunData): GuardianData =
+      this.copy(runs = runs + (run.runId -> run))
+
+    def remove(runId: UUID): GuardianData =
+      this.copy(runs = runs - runId)
+  }
+
+  private final case class RunData(
+      runId: UUID,
+      cfg: OsmoGridConfig,
+      resultEventListener: Vector[ActorRef[ResultEvent]],
+      inputDataProvider: ActorRef[InputDataEvent]
+  )
+
+  private case object RunData {
+    def apply(
+        run: Run,
+        resultEventListener: Vector[ActorRef[ResultEvent]],
+        inputDataProvider: ActorRef[InputDataEvent]
+    ): RunData =
+      RunData(
+        run.runId,
+        run.cfg,
+        run.additionalListener ++ resultEventListener,
+        inputDataProvider
+      )
+  }
+
+  def apply(): Behavior[OsmoGridGuardianEvent] = idle(GuardianData(Map.empty))
+
+  private def idle(
+      guardianData: GuardianData
+  ): Behavior[OsmoGridGuardianEvent] =
+    Behaviors.receive { (ctx, msg) =>
+      msg match {
+        case run: Run =>
+          val runData = initRun(run, ctx)
+          idle(guardianData.append(runData))
+        case repl @ RepLvGrids(runId, lvGrids) =>
+          ctx.log.info(
+            s"Received ${lvGrids.length} lv grids for run $runId. Try to join them ..."
+          )
+          handleLvReply(repl, guardianData, ctx)
+        case watch: GuardianWatch =>
+          ctx.log.error(
+            s"Received dead message '$watch' for run ${watch.runId}! " +
+              s"Stopping all corresponding children ..."
+          )
+          guardianData.runs.get(watch.runId).foreach(stopChildrenByRun(_, ctx))
+          idle(guardianData.remove(watch.runId))
+      }
+    }
+
+  private def initRun(
+      run: Run,
+      ctx: ActorContext[OsmoGridGuardianEvent]
+  ): RunData = {
+    val log = ctx.log
+    ConfigFailFast.check(run.cfg, run.additionalListener)
+    log.info(s"Initializing grid generation for run with id '${run.runId}'!")
+
+    log.info("Starting input data provider ...")
+    val inputProvider =
+      ctx.spawn(InputDataProvider(run.cfg.input), "InputDataProvider")
+    ctx.watchWith(inputProvider, InputDataProviderDied(run.runId))
+    val resultEventListener = run.cfg.output match {
+      case Output(Some(_)) =>
+        log.info("Starting output data listener ...")
+        Vector(ctx.spawn(ResultListener(run.cfg.output), "ResultListener"))
+      case Output(None) =>
+        Vector.empty
+    }
+    resultEventListener.foreach(
+      ctx.watchWith(_, ResultEventListenerDied(run.runId))
+    )
+
+    /* Check, which voltage level configs are given. Start with lv level, if this is desired for. */
+    run.cfg.generation match {
+      case Generation(Some(lvConfig)) =>
+        ctx.log.info("Starting low voltage grid coordinator ...")
+        val lvCoordinator = ctx.spawn(LvCoordinator(), "LvCoordinator")
+        ctx.watchWith(lvCoordinator, LvCoordinatorDied(run.runId))
+        ctx.log.info("Starting voltage level grid generation ...")
+        lvCoordinator ! ReqLvGrids(run.runId, lvConfig, ctx.self)
+      case unsupported =>
+        ctx.log.error(
+          s"Received unsupported grid generation config '$unsupported'. Stopping run with id '${run.runId}'!"
+        )
+        stopChildrenByRun(
+          RunData.apply(run, resultEventListener, inputProvider),
+          ctx
+        )
+    }
+
+    RunData.apply(run, resultEventListener, inputProvider)
+  }
+
+  private def handleLvReply(
+      reply: RepLvGrids,
+      guardianData: GuardianData,
+      ctx: ActorContext[OsmoGridGuardianEvent]
+  ) = {
+    Try(ContainerUtils.combineToJointGrid(reply.grids.asJava)) match {
+      case Success(jointGrid) =>
+        guardianData.runs
+          .get(reply.runId)
+          .foreach(
+            _.resultEventListener
+              .foreach(_ ! GridResult(jointGrid, ctx.self))
+          )
+        idle(guardianData.remove(reply.runId))
+      case Failure(exception) =>
+        ctx.log.error(
+          s"Combination of received sub-grids failed for run '${reply.runId}'. Shutting down this run!.",
+          exception
+        )
+        guardianData.runs.get(reply.runId).foreach(stopChildrenByRun(_, ctx))
+        idle(guardianData.remove(reply.runId))
+    }
+  }
+
+  private def stopChildrenByRun(
+      runData: RunData,
+      ctx: ActorContext[OsmoGridGuardianEvent]
+  ): Unit = {
+    ctx.unwatch(runData.inputDataProvider)
+    ctx.stop(runData.inputDataProvider)
+    runData.resultEventListener.foreach(ctx.unwatch)
+    runData.resultEventListener.foreach(ctx.stop)
+  }
+
 }

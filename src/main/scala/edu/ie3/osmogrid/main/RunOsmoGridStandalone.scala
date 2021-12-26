@@ -15,7 +15,6 @@ object RunOsmoGridStandalone {
 
   def main(args: Array[String]): Unit = {
     val cfg: OsmoGridConfig = ArgsParser.prepare(args)
-    ConfigFailFast.check(cfg)
 
     val actorSystem: ActorSystem[OsmoGridGuardianEvent] =
       ActorSystem(OsmoGridGuardian(), "OSMoGridGuardian")
