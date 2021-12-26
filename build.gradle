@@ -3,11 +3,11 @@ plugins {
   id 'java' //java support
   id 'groovy' // groovy support
   id 'pmd' // code check, working on source code
-  id 'com.diffplug.spotless' version '6.0.4'//code format
-  id 'com.github.spotbugs' version '5.0.1' // code check, working on byte code
+  id 'com.diffplug.spotless' version '6.0.5'//code format
+  id 'com.github.spotbugs' version '5.0.3' // code check, working on byte code
   id 'de.undercouch.download' version '4.1.2'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
-  id "com.github.maiflai.scalatest" version "0.31" // run scalatest without specific spec task
+  id "com.github.maiflai.scalatest" version "0.32" // run scalatest without specific spec task
   id 'jacoco' // java code coverage plugin
   id "org.sonarqube" version "3.3" // sonarqube
   id 'net.thauvin.erik.gradle.semver' version '1.0.4' // semantic versioning
@@ -19,7 +19,7 @@ ext {
 
   scalaMajorVersion = '3'
   scalaVersion = '3.1.0'
-  akkaVersion = '2.6.17'
+  akkaVersion = '2.6.18'
 
   tscfgVersion = '0.9.995'
 
@@ -64,7 +64,7 @@ dependencies {
 
   // logging
   implementation "com.typesafe.scala-logging:scala-logging_${scalaMajorVersion}:3.9.4"
-  implementation 'ch.qos.logback:logback-classic:1.2.7'
+  implementation 'ch.qos.logback:logback-classic:1.2.10'
 
   // testing
   testImplementation "org.scalatest:scalatest_$scalaMajorVersion:3.2.10"
@@ -117,7 +117,7 @@ dependencies {
   // testing
   testImplementation 'junit:junit:4.13.2'
   testImplementation 'cglib:cglib-nodep:3.3.0' // enables mocking of classes (in addition to interfaces)
-  testImplementation 'org.mockito:mockito-core:4.1.0' // mocking framework
+  testImplementation 'org.mockito:mockito-core:4.2.0' // mocking framework
   testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
   testImplementation 'org.objenesis:objenesis:3.2' // Mock creation with constructor parameters
 }
