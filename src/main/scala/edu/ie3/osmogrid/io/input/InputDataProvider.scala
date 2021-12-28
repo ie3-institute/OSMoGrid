@@ -12,22 +12,33 @@ import com.acervera.osm4scala.EntityIterator.fromPbf
 import com.acervera.osm4scala.model.{NodeEntity, RelationEntity, WayEntity}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian.OsmoGridGuardianEvent
-import edu.ie3.osmogrid.io.input.OsmoGridModel
+import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.util.osm.OsmEntities.{Node, OpenWay, Relation, Way}
 import edu.ie3.util.osm.OsmModel
-import org.locationtech.jts.geom.{Coordinate, LinearRing, Point, Polygon, PrecisionModel}
+import org.locationtech.jts.geom.{
+  Coordinate,
+  LinearRing,
+  Point,
+  Polygon,
+  PrecisionModel
+}
 
 import java.io.{FileInputStream, InputStream}
 import java.time.ZonedDateTime
 import java.util.UUID
 import scala.collection.mutable.ListBuffer
-import scala.util.{Failure, Using, Success, Try}
+import scala.util.{Failure, Success, Try, Using}
 
 object InputDataProvider {
 
   sealed trait InputDataEvent
-  final case class ReqOsm(replyTo: ActorRef[Response], highways: Option[Set[String]], buildings: Option[Set[String]], landuses: Option[Set[String]]) extends InputDataEvent
-  final case class ReqAssetTypes(replyTo: ActorRef[Response])
+  final case class ReqOsm(
+      replyTo: ActorRef[InputDataProvider.Response],
+      highwayTags: Option[Set[String]],
+      buildingTags: Option[Set[String]],
+      landuseTags: Option[Set[String]]
+  ) extends InputDataEvent
+  final case class ReqAssetTypes(replyTo: ActorRef[InputDataProvider.Response])
       extends InputDataEvent
 
   sealed trait Response
@@ -39,13 +50,20 @@ object InputDataProvider {
 
   def apply(cfgInput: OsmoGridConfig.Input): Behavior[InputDataEvent] =
     Behaviors.receive[InputDataEvent] {
-      case (ctx, ReqOsm(replyTo, highways, buildings, landuses)) =>
-        readPbf(cfgInput.osm.pbf.get.file, highways, buildings, landuses) match {
+      case (ctx, ReqOsm(replyTo, highwayTags, buildingTags, landuseTags)) =>
+        readPbf(
+          cfgInput.osm.pbf.get.file,
+          highwayTags,
+          buildingTags,
+          landuseTags
+        ) match {
           case Success(osmModel) =>
             replyTo ! RepOsm(osmModel)
             Behaviors.same
           case Failure(exception) =>
-            ctx.log.error(s"Unable to read osm information from file '${cfgInput.osm.pbf.get.file}'.")
+            ctx.log.error(
+              s"Unable to read osm information from file '${cfgInput.osm.pbf.get.file}'."
+            )
             Behaviors.stopped
         }
       case (ctx, ReqAssetTypes(_)) =>
@@ -58,92 +76,95 @@ object InputDataProvider {
     }
 
   /** Convenience method to extract osmModel from a pbf file
-   *
-   * @param importPath
-   *   path to pbf file
-   * @param highways
-   *   tags to identify highways
-   * @param buildings
-   *   tags to identify buildings
-   * @param landuses
-   *   tags to identify landuses
-   */
-  def readPbf(importPath: String, highways: Option[Set[String]], buildings: Option[Set[String]], landuses: Option[Set[String]]): Try[OsmoGridModel] = {
-      Using(new FileInputStream(importPath)) { pbfIS =>
-        // pbfIS = new FileInputStream(importPath)
-        fromPbf(pbfIS)
-          .foldLeft(
-            (ListBuffer[Node](), ListBuffer[Way](), ListBuffer[Relation]())
-          ) { case ((nodes, ways, relations), e) =>
-            e match {
-              case n: NodeEntity =>
-                (
-                  nodes.addOne(
-                    Node(
-                      UUID.randomUUID(),
-                      n.id.toInt,
-                      ZonedDateTime.now(),
-                      n.tags,
-                      Point(
-                        Coordinate(n.latitude, n.longitude),
-                        PrecisionModel(),
-                        4326
-                      )
+    *
+    * @param importPath
+    *   path to pbf file
+    * @param highways
+    *   tags to identify highways
+    * @param buildings
+    *   tags to identify buildings
+    * @param landuses
+    *   tags to identify landuses
+    */
+  def readPbf(
+      importPath: String,
+      highways: Option[Set[String]],
+      buildings: Option[Set[String]],
+      landuses: Option[Set[String]]
+  ): Try[OsmoGridModel] = {
+    Using(new FileInputStream(importPath)) { pbfIS =>
+      // pbfIS = new FileInputStream(importPath)
+      fromPbf(pbfIS)
+        .foldLeft(
+          (ListBuffer[Node](), ListBuffer[Way](), ListBuffer[Relation]())
+        ) { case ((nodes, ways, relations), e) =>
+          e match {
+            case n: NodeEntity =>
+              (
+                nodes.addOne(
+                  Node(
+                    UUID.randomUUID(),
+                    n.id.toInt,
+                    ZonedDateTime.now(),
+                    n.tags,
+                    Point(
+                      Coordinate(n.latitude, n.longitude),
+                      PrecisionModel(),
+                      4326
                     )
-                  ),
-                  ways,
-                  relations
-                )
-              case r: RelationEntity => (nodes, ways, relations)
-              case w: WayEntity =>
-                (
-                  nodes,
-                  ways.addOne(
-                    OpenWay(
-                      UUID.randomUUID(),
-                      w.id.toInt,
-                      ZonedDateTime.now(),
-                      w.tags,
-                      w.nodes
-                        .foldLeft((ListBuffer[Node]())) {
-                          case ((osmNodes), e) =>
-                            osmNodes.addOne(
-                              nodes.find(Node => Node.osmId == e.toInt).get
-                            )
-                        }
-                        .toList
-                    )
-                  ),
-                  relations
-                )
-              case _ => (nodes, ways, relations)
-            }
-          }
-      }.map {
-        case (nodeBuffer, wayBuffer, relationsBuffer) =>
-          OsmoGridModel(
-            nodeBuffer.toList,
-            wayBuffer.toList,
-            Option(relationsBuffer.toList),
-            Polygon(
-              LinearRing(
-                Array(
-                  Coordinate(1000.0, 1000.0),
-                  Coordinate(1000.0, -1000.0),
-                  Coordinate(-1000.0, -1000.0),
-                  Coordinate(-1000.0, 1000.0),
-                  Coordinate(1000.0, 1000.0)
+                  )
                 ),
-                PrecisionModel(),
-                4326
-              ),
-              PrecisionModel(),
-              4326
+                ways,
+                relations
+              )
+            case r: RelationEntity => (nodes, ways, relations)
+            case w: WayEntity =>
+              (
+                nodes,
+                ways.addOne(
+                  OpenWay(
+                    UUID.randomUUID(),
+                    w.id.toInt,
+                    ZonedDateTime.now(),
+                    w.tags,
+                    w.nodes
+                      .foldLeft((ListBuffer[Node]())) { case ((osmNodes), e) =>
+                        osmNodes.addOne(
+                          nodes.find(Node => Node.osmId == e.toInt).get
+                        )
+                      }
+                      .toList
+                  )
+                ),
+                relations
+              )
+            case _ => (nodes, ways, relations)
+          }
+        }
+    }.map { case (nodeBuffer, wayBuffer, relationsBuffer) =>
+      OsmoGridModel(
+        nodeBuffer.toList,
+        wayBuffer.toList,
+        Option(relationsBuffer.toList),
+        Polygon(
+          LinearRing(
+            Array(
+              Coordinate(1000.0, 1000.0),
+              Coordinate(1000.0, -1000.0),
+              Coordinate(-1000.0, -1000.0),
+              Coordinate(-1000.0, 1000.0),
+              Coordinate(1000.0, 1000.0)
             ),
-            OsmModel.extractHighways(wayBuffer.toList, highways),
-            OsmModel.extractBuildings(wayBuffer.toList, buildings),
-            OsmModel.extractLandUses(wayBuffer.toList, landuses)
-          )
-      }
+            PrecisionModel(),
+            4326
+          ),
+          PrecisionModel(),
+          4326
+        ),
+        OsmModel.extractHighways(wayBuffer.toList, highways),
+        OsmModel.extractBuildings(wayBuffer.toList, buildings),
+        OsmModel.extractLandUses(wayBuffer.toList, landuses)
+      )
+    }
   }
 }
