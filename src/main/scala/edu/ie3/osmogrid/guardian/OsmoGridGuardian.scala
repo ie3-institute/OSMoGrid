@@ -21,6 +21,7 @@ import edu.ie3.osmogrid.io.input.InputDataProvider.{InputDataEvent, Terminate}
 import edu.ie3.osmogrid.io.output.PersistenceResultListener
 import edu.ie3.osmogrid.io.output.PersistenceResultListener.{
   GridResult,
+  PersistenceSuccessful,
   ResultEvent
 }
 import edu.ie3.osmogrid.lv.LvCoordinator
@@ -44,8 +45,10 @@ object OsmoGridGuardian {
   final case class RepLvGrids(runId: UUID, grids: Vector[SubGridContainer])
       extends OsmoGridGuardianEvent
 
-  final case class PersistenceSuccessful(runId: UUID)
-      extends OsmoGridGuardianEvent
+  // external protocol
+  private final case class WrappedListenerResponse(
+      response: PersistenceResultListener.ListenerResponse
+  ) extends OsmoGridGuardianEvent
 
   // dead watch events
   sealed trait GuardianWatch extends OsmoGridGuardianEvent {
@@ -61,7 +64,13 @@ object OsmoGridGuardian {
   private final case class LvCoordinatorDied(runId: UUID) extends GuardianWatch
 
   // actor data
-  private final case class GuardianData(runs: Map[UUID, RunData]) {
+  private final case class GuardianData(
+      runs: Map[UUID, RunData],
+      persistenceResponseMapper: ActorRef[
+        PersistenceResultListener.ListenerResponse
+      ]
+  ) {
+
     def append(run: RunData): GuardianData =
       this.copy(runs = runs + (run.runId -> run))
 
@@ -90,7 +99,14 @@ object OsmoGridGuardian {
       )
   }
 
-  def apply(): Behavior[OsmoGridGuardianEvent] = idle(GuardianData(Map.empty))
+  def apply(): Behavior[OsmoGridGuardianEvent] =
+    Behaviors.setup[OsmoGridGuardianEvent] { ctx =>
+      // register external protocol mapper
+      val persistenceResponseMapper =
+        ctx.messageAdapter(rsp => WrappedListenerResponse(rsp))
+
+      idle(GuardianData(Map.empty, persistenceResponseMapper))
+    }
 
   private def idle(
       guardianData: GuardianData
@@ -105,9 +121,12 @@ object OsmoGridGuardian {
             s"Received ${lvGrids.length} lv grids for run $runId. Try to join them ..."
           )
           handleLvReply(repl, guardianData, ctx)
-        case PersistenceSuccessful(runId) =>
-          ctx.log.info(s"Successfully persisted grid data from run $runId")
-          Behaviors.same
+        case wrapped: WrappedListenerResponse =>
+          wrapped.response match {
+            case PersistenceSuccessful(runId) =>
+              ctx.log.info(s"Successfully persisted grid data from run $runId")
+              Behaviors.same
+          }
         case watch: GuardianWatch =>
           ctx.log.error(
             s"Received dead message '$watch' for run ${watch.runId}! " +
@@ -178,7 +197,12 @@ object OsmoGridGuardian {
           .get(reply.runId)
           .foreach(
             _.resultEventListener
-              .foreach(_ ! GridResult(jointGrid, ctx.self))
+              .foreach(
+                _ ! GridResult(
+                  jointGrid,
+                  guardianData.persistenceResponseMapper
+                )
+              )
           )
         idle(guardianData.remove(reply.runId))
       case Failure(exception) =>

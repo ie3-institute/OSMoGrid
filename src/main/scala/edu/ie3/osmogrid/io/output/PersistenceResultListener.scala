@@ -17,10 +17,8 @@ import edu.ie3.datamodel.models.input.container.{
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Output
 import edu.ie3.osmogrid.exception.IllegalConfigException
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian.{
-  OsmoGridGuardianEvent,
-  PersistenceSuccessful
-}
+import edu.ie3.osmogrid.guardian.OsmoGridGuardian.OsmoGridGuardianEvent
+
 import concurrent.ExecutionContext.Implicits.global
 
 import java.util.UUID
@@ -29,19 +27,28 @@ import scala.util.{Failure, Success}
 
 object PersistenceResultListener {
 
-  sealed trait ResultEvent
+  // external protocol requests
+  sealed trait ListenerRequest
 
   final case class GridResult(
       grid: JointGridContainer,
-      replyTo: ActorRef[OsmoGridGuardianEvent]
-  ) extends ResultEvent
+      replyTo: ActorRef[ListenerResponse]
+  ) extends ListenerRequest
+      with ResultEvent
+
+  // external protocol responses
+  sealed trait ListenerResponse
+  final case class PersistenceSuccessful(runId: UUID)
+      extends ListenerResponse
+      with ResultEvent
+
+  // internal API
+  sealed trait ResultEvent
 
   private final case class InitComplete(stateData: ListenerStateData)
       extends ResultEvent
 
   private final case class InitFailed(cause: Throwable) extends ResultEvent
-
-  private case object PersistenceSuccess extends ResultEvent
 
   private final case class ListenerStateData(
       runId: UUID,
@@ -64,7 +71,7 @@ object PersistenceResultListener {
       .receiveMessagePartial[ResultEvent] {
         case gridResult @ GridResult(grid, replyTo) =>
           stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
-            case Success(_) => PersistenceSuccess
+            case Success(_) => PersistenceSuccessful(stateData.runId)
             case Failure(exception) =>
               stateData.ctx.log.error(
                 s"Error during persistence of grid result: $exception"
@@ -81,11 +88,11 @@ object PersistenceResultListener {
 
   private def save(
       stateData: ListenerStateData,
-      replyTo: ActorRef[OsmoGridGuardianEvent]
+      replyTo: ActorRef[ListenerResponse]
   ): Behavior[ResultEvent] =
     Behaviors.receiveMessage {
-      case PersistenceSuccess =>
-        replyTo ! PersistenceSuccessful(stateData.runId)
+      case PersistenceSuccessful(runId) =>
+        replyTo ! PersistenceSuccessful(runId)
         stateData.buffer.unstashAll(idle(stateData))
       case other =>
         stateData.buffer.stash(other)
