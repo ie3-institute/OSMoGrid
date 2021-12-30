@@ -12,6 +12,7 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
 import edu.ie3.osmogrid.exception.IllegalConfigException
+import edu.ie3.osmogrid.io.input.OsmSource
 
 object ConfigFailFast {
   def check(cfg: OsmoGridConfig): Unit = cfg match {
@@ -54,7 +55,7 @@ object ConfigFailFast {
     input match {
       case Input(asset, osm) =>
         checkAssetInputConfig(asset)
-        checkOsmInputConfig(osm)
+        OsmSource.checkOsmInputConfig(osm)
     }
 
   private def checkAssetInputConfig(asset: OsmoGridConfig.Input.Asset): Unit =
@@ -70,22 +71,6 @@ object ConfigFailFast {
     file match {
       case File(directory, _) if directory.isEmpty =>
         throw IllegalConfigException("Asset input directory may be set!")
-      case _ => /* I don't care. Everything is fine. */
-    }
-
-  private def checkOsmInputConfig(osm: OsmoGridConfig.Input.Osm): Unit =
-    osm match {
-      case Osm(Some(file)) => checkPbfFileDefinition(file)
-      case Osm(None) =>
-        throw IllegalConfigException(
-          "You have to provide at least one input data type for open street map information!"
-        )
-    }
-
-  private def checkPbfFileDefinition(pbf: OsmoGridConfig.Input.Osm.Pbf): Unit =
-    pbf match {
-      case OsmoGridConfig.Input.Osm.Pbf(file) if file.isEmpty =>
-        throw IllegalConfigException("Pbf file may be set!")
       case _ => /* I don't care. Everything is fine. */
     }
 

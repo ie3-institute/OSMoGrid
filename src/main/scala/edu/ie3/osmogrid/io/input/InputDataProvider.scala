@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.io.input
 
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer}
 import akka.actor.typed.{ActorRef, Behavior}
 import com.acervera.osm4scala.EntityIterator.fromPbf
 import com.acervera.osm4scala.model.{NodeEntity, RelationEntity, WayEntity}
@@ -31,140 +31,114 @@ import scala.util.{Failure, Success, Try, Using}
 
 object InputDataProvider {
 
-  sealed trait InputDataEvent
+  // external requests
+  sealed trait InputRequest
+
   final case class ReqOsm(
+      runId: UUID,
       replyTo: ActorRef[InputDataProvider.Response],
       highwayTags: Option[Set[String]],
       buildingTags: Option[Set[String]],
       landuseTags: Option[Set[String]]
-  ) extends InputDataEvent
-  final case class ReqAssetTypes(replyTo: ActorRef[InputDataProvider.Response])
-      extends InputDataEvent
+  ) extends InputRequest
+      with InputDataEvent
 
+  final case class ReqAssetTypes(
+      runId: UUID,
+      replyTo: ActorRef[InputDataProvider.Response]
+  ) extends InputRequest
+      with InputDataEvent
+
+  case object Terminate extends InputRequest with InputDataEvent
+
+  // external responses
   sealed trait Response
-  final case class RepOsm(osmModel: OsmoGridModel) extends Response
+  final case class RepOsm(runId: UUID, osmModel: OsmoGridModel) extends Response
+  final case class InvalidOsmRequest(requestedRunId: UUID, actualRunId: UUID)
+      extends Response
+  final case class OsmReadFailed(reason: Throwable)
+      extends Response
+      with InputDataEvent
   final case class RepAssetTypes(osmModel: OsmoGridModel) extends Response
 
-  final case class Terminate(replyTo: ActorRef[OsmoGridGuardianEvent])
-      extends InputDataEvent
+  // internal api
+  sealed trait InputDataEvent
 
-  def apply(cfgInput: OsmoGridConfig.Input): Behavior[InputDataEvent] =
-    Behaviors.receive[InputDataEvent] {
-      case (ctx, ReqOsm(replyTo, highwayTags, buildingTags, landuseTags)) =>
-        readPbf(
-          cfgInput.osm.pbf.get.file,
-          highwayTags,
-          buildingTags,
-          landuseTags
-        ) match {
-          case Success(osmModel) =>
-            replyTo ! RepOsm(osmModel)
+  private final case class OsmDataReadSuccessful(
+      runId: UUID,
+      osmModel: OsmoGridModel
+  ) extends InputDataEvent
+
+  // actor data
+  private final case class ProviderData(
+      runId: UUID,
+      ctx: ActorContext[InputDataEvent],
+      buffer: StashBuffer[InputDataEvent],
+      osmSource: OsmSource
+  )
+
+  def apply(runId: UUID, osmSource: OsmSource): Behavior[InputDataEvent] = {
+    Behaviors.withStash[InputDataEvent](100) { buffer =>
+      Behaviors.setup[InputDataEvent] { ctx =>
+        idle(ProviderData(runId, ctx, buffer, osmSource))
+      }
+    }
+  }
+
+  private def idle(providerData: ProviderData): Behavior[InputDataEvent] =
+    Behaviors.receive[InputDataEvent] { case (ctx, msg) =>
+      msg match {
+        case ReqOsm(runId, replyTo, highwayTags, buildingTags, landuseTags) =>
+          if (runId != providerData.runId) {
+            replyTo ! InvalidOsmRequest(runId, providerData.runId)
             Behaviors.same
-          case Failure(exception) =>
-            ctx.log.error(
-              s"Unable to read osm information from file '${cfgInput.osm.pbf.get.file}'."
-            )
-            Behaviors.stopped
-        }
-      case (ctx, ReqAssetTypes(_)) =>
-        ctx.log.info("Got request to provide asset types. But do nothing.")
-        Behaviors.same
-      case (ctx, Terminate(_)) =>
-        ctx.log.info("Stopping input data provider")
-        // TODO: Any closing of sources and stuff
-        Behaviors.stopped
+          } else {
+            ctx.pipeToSelf(
+              providerData.osmSource
+                .read(highwayTags, buildingTags, landuseTags)
+            ) {
+              case Success(osmoGridModel: OsmoGridModel) =>
+                OsmDataReadSuccessful(runId, osmoGridModel)
+              case Failure(exception) =>
+                ctx.log.error(
+                  s"Error while reading osm data: $exception"
+                )
+                OsmReadFailed(exception)
+            }
+            readOsmData(providerData, replyTo)
+          }
+        case ReqAssetTypes(_, _) =>
+          ctx.log.info("Got request to provide asset types. But do nothing.")
+          Behaviors.same
+        case Terminate =>
+          ctx.log.info("Stopping input data provider ...")
+          cleanUp(providerData)
+          Behaviors.stopped
+        case invalid: (OsmReadFailed | OsmDataReadSuccessful) =>
+          ctx.log.error(
+            s"Received unexpected message '$invalid' in state Idle! Ignoring!"
+          )
+          Behaviors.same
+      }
     }
 
-  /** Convenience method to extract osmModel from a pbf file
-    *
-    * @param importPath
-    *   path to pbf file
-    * @param highways
-    *   tags to identify highways
-    * @param buildings
-    *   tags to identify buildings
-    * @param landuses
-    *   tags to identify landuses
-    */
-  def readPbf(
-      importPath: String,
-      highways: Option[Set[String]],
-      buildings: Option[Set[String]],
-      landuses: Option[Set[String]]
-  ): Try[OsmoGridModel] = {
-    Using(new FileInputStream(importPath)) { pbfIS =>
-      // pbfIS = new FileInputStream(importPath)
-      fromPbf(pbfIS)
-        .foldLeft(
-          (ListBuffer[Node](), ListBuffer[Way](), ListBuffer[Relation]())
-        ) { case ((nodes, ways, relations), e) =>
-          e match {
-            case n: NodeEntity =>
-              (
-                nodes.addOne(
-                  Node(
-                    UUID.randomUUID(),
-                    n.id.toInt,
-                    ZonedDateTime.now(),
-                    n.tags,
-                    Point(
-                      Coordinate(n.latitude, n.longitude),
-                      PrecisionModel(),
-                      4326
-                    )
-                  )
-                ),
-                ways,
-                relations
-              )
-            case r: RelationEntity => (nodes, ways, relations)
-            case w: WayEntity =>
-              (
-                nodes,
-                ways.addOne(
-                  OpenWay(
-                    UUID.randomUUID(),
-                    w.id.toInt,
-                    ZonedDateTime.now(),
-                    w.tags,
-                    w.nodes
-                      .foldLeft((ListBuffer[Node]())) { case ((osmNodes), e) =>
-                        osmNodes.addOne(
-                          nodes.find(Node => Node.osmId == e.toInt).get
-                        )
-                      }
-                      .toList
-                  )
-                ),
-                relations
-              )
-            case _ => (nodes, ways, relations)
-          }
-        }
-    }.map { case (nodeBuffer, wayBuffer, relationsBuffer) =>
-      OsmoGridModel(
-        nodeBuffer.toList,
-        wayBuffer.toList,
-        Option(relationsBuffer.toList),
-        Polygon(
-          LinearRing(
-            Array(
-              Coordinate(1000.0, 1000.0),
-              Coordinate(1000.0, -1000.0),
-              Coordinate(-1000.0, -1000.0),
-              Coordinate(-1000.0, 1000.0),
-              Coordinate(1000.0, 1000.0)
-            ),
-            PrecisionModel(),
-            4326
-          ),
-          PrecisionModel(),
-          4326
-        ),
-        OsmModel.extractHighways(wayBuffer.toList, highways),
-        OsmModel.extractBuildings(wayBuffer.toList, buildings),
-        OsmModel.extractLandUses(wayBuffer.toList, landuses)
-      )
+  private def readOsmData(
+      providerData: ProviderData,
+      replyTo: ActorRef[InputDataProvider.Response]
+  ): Behaviors.Receive[InputDataEvent] =
+    Behaviors.receiveMessage {
+      case OsmDataReadSuccessful(runId, osmoGriModel) =>
+        replyTo ! RepOsm(runId, osmoGriModel)
+        providerData.buffer.unstashAll(idle(providerData))
+      case OsmReadFailed(exception: Exception) =>
+        replyTo ! OsmReadFailed(exception)
+        providerData.buffer.unstashAll(idle(providerData))
+      case other =>
+        providerData.buffer.stash(other)
+        Behaviors.same
     }
+
+  private def cleanUp(providerData: ProviderData): Unit = {
+    providerData.osmSource.close()
   }
 }

@@ -16,13 +16,14 @@ import edu.ie3.datamodel.models.input.container.{
 import edu.ie3.datamodel.utils.ContainerUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation
-import edu.ie3.osmogrid.io.input.InputDataProvider
+import edu.ie3.osmogrid.io.input.{InputDataProvider, OsmSource}
 import edu.ie3.osmogrid.io.input.InputDataProvider.InputDataEvent
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.io.output.ResultListener.{GridResult, ResultEvent}
 import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
 
+import java.util.UUID
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
@@ -46,7 +47,13 @@ object OsmoGridGuardian {
 
           ctx.log.info("Starting input data provider")
           val inputProvider =
-            ctx.spawn(InputDataProvider(cfg.input), "InputDataProvider")
+            ctx.spawn(
+              InputDataProvider(
+                UUID.randomUUID(), // todo set to valid run id provided in new Guardian implementation
+                OsmSource(cfg.input.osm, ctx)
+              ),
+              "InputDataProvider"
+            )
           ctx.watchWith(inputProvider, InputDataProviderDied)
           ctx.log.debug("Starting output data listener")
           val resultEventListener =

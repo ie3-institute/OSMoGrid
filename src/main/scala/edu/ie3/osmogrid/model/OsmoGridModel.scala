@@ -15,9 +15,9 @@ class OsmoGridModel(
     ways: List[Way],
     relations: Option[List[Relation]],
     capturedArea: Polygon,
-    highways: List[Way],
-    buildings: List[Way],
-    landuses: List[Way]
+    highways: List[Long],
+    buildings: List[Long],
+    landuses: List[Long]
 ) extends OsmModel(nodes, ways, relations, capturedArea) {}
 
 object OsmoGridModel {}
