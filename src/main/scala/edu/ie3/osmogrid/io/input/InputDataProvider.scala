@@ -12,9 +12,8 @@ import com.acervera.osm4scala.EntityIterator.fromPbf
 import com.acervera.osm4scala.model.{NodeEntity, RelationEntity, WayEntity}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian.OsmoGridGuardianEvent
-import edu.ie3.osmogrid.model.OsmoGridModel
-import edu.ie3.util.osm.OsmEntities.{Node, OpenWay, Relation, Way}
-import edu.ie3.util.osm.OsmModel
+import edu.ie3.osmogrid.model.{OsmoGridModel, PbfFilter}
+import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
 import org.locationtech.jts.geom.{
   Coordinate,
   LinearRing,
@@ -37,9 +36,7 @@ object InputDataProvider {
   final case class ReqOsm(
       runId: UUID,
       replyTo: ActorRef[InputDataProvider.Response],
-      highwayTags: Option[Set[String]],
-      buildingTags: Option[Set[String]],
-      landuseTags: Option[Set[String]]
+      filter: PbfFilter
   ) extends InputRequest
       with InputDataEvent
 
@@ -54,7 +51,7 @@ object InputDataProvider {
   // external responses
   sealed trait Response
   final case class RepOsm(runId: UUID, osmModel: OsmoGridModel) extends Response
-  final case class InvalidOsmRequest(requestedRunId: UUID, actualRunId: UUID)
+  final case class InvalidOsmRequest(reqRunId: UUID, actualRunId: UUID)
       extends Response
   final case class OsmReadFailed(reason: Throwable)
       extends Response
@@ -88,14 +85,14 @@ object InputDataProvider {
   private def idle(providerData: ProviderData): Behavior[InputDataEvent] =
     Behaviors.receive[InputDataEvent] { case (ctx, msg) =>
       msg match {
-        case ReqOsm(runId, replyTo, highwayTags, buildingTags, landuseTags) =>
+        case ReqOsm(runId, replyTo, filter) =>
           if (runId != providerData.runId) {
             replyTo ! InvalidOsmRequest(runId, providerData.runId)
             Behaviors.same
           } else {
             ctx.pipeToSelf(
               providerData.osmSource
-                .read(highwayTags, buildingTags, landuseTags)
+                .read(filter)
             ) {
               case Success(osmoGridModel: OsmoGridModel) =>
                 OsmDataReadSuccessful(runId, osmoGridModel)

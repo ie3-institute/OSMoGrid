@@ -14,9 +14,10 @@ import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian.OsmoGridGuardianEvent
 import edu.ie3.osmogrid.io.input.pbf.PbfGuardian
 import edu.ie3.osmogrid.io.input.pbf.PbfGuardian.PbfReaderMsg
-import edu.ie3.osmogrid.model.OsmoGridModel
+import edu.ie3.osmogrid.model.{OsmoGridModel, PbfFilter}
 
 import java.io.{File, FileInputStream}
+import java.util.UUID
 import scala.concurrent.impl.Promise
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Try, Using}
@@ -24,9 +25,7 @@ import scala.util.{Try, Using}
 sealed trait OsmSource {
 
   def read(
-      highwayTags: Option[Set[String]] = None,
-      buildingTags: Option[Set[String]] = None,
-      landuseTags: Option[Set[String]] = None
+      filter: PbfFilter
   ): Future[OsmoGridModel]
 
   def close(): Unit
@@ -41,14 +40,12 @@ object OsmSource {
   ) extends OsmSource {
 
     def read(
-        highwayTags: Option[Set[String]] = None,
-        buildingTags: Option[Set[String]] = None,
-        landuseTags: Option[Set[String]] = None
+        filter: PbfFilter
     ): Future[OsmoGridModel] = {
 
       val pbfReader = ctx.spawn(
         PbfGuardian.apply(new File(filePath)),
-        name = "pbf-reader-guardian"
+        name = s"pbf-reader-guardian-${UUID.randomUUID()}"
       )
 
       import akka.actor.typed.scaladsl.AskPattern._
@@ -61,7 +58,7 @@ object OsmSource {
       implicit val ec: ExecutionContextExecutor = system.executionContext
 
       val result: Future[PbfGuardian.Reply] =
-        pbfReader.ask(sender => PbfGuardian.Run(sender))
+        pbfReader.ask(sender => PbfGuardian.Run(filter, sender))
 
       result.map {
         case PbfGuardian.PbfReadSuccessful(osmoGridModel) =>

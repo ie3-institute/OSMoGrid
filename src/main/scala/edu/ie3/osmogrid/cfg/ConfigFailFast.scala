@@ -39,7 +39,8 @@ object ConfigFailFast {
     case Lv(
           amountOfGridGenerators,
           amountOfRegionCoordinators,
-          distinctHouseConnections
+          distinctHouseConnections,
+          _
         ) =>
       if (amountOfGridGenerators < 1)
         throw IllegalConfigException(

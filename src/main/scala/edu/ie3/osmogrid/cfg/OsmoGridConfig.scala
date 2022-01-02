@@ -1,5 +1,5 @@
 /*
- * © 2021. TU Dortmund University,
+ * © 2022. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
@@ -19,9 +19,52 @@ object OsmoGridConfig {
     final case class Lv(
         amountOfGridGenerators: scala.Int,
         amountOfRegionCoordinators: scala.Int,
-        distinctHouseConnections: scala.Boolean
+        distinctHouseConnections: scala.Boolean,
+        osm: OsmoGridConfig.Generation.Lv.Osm
     )
     object Lv {
+      final case class Osm(
+          filter: OsmoGridConfig.Generation.Lv.Osm.Filter
+      )
+      object Osm {
+        final case class Filter(
+            building: scala.List[java.lang.String],
+            highway: scala.List[java.lang.String],
+            landuse: scala.List[java.lang.String]
+        )
+        object Filter {
+          def apply(
+              c: com.typesafe.config.Config,
+              parentPath: java.lang.String,
+              $tsCfgValidator: $TsCfgValidator
+          ): OsmoGridConfig.Generation.Lv.Osm.Filter = {
+            OsmoGridConfig.Generation.Lv.Osm.Filter(
+              building =
+                $_L$_str(c.getList("building"), parentPath, $tsCfgValidator),
+              highway =
+                $_L$_str(c.getList("highway"), parentPath, $tsCfgValidator),
+              landuse =
+                $_L$_str(c.getList("landuse"), parentPath, $tsCfgValidator)
+            )
+          }
+        }
+
+        def apply(
+            c: com.typesafe.config.Config,
+            parentPath: java.lang.String,
+            $tsCfgValidator: $TsCfgValidator
+        ): OsmoGridConfig.Generation.Lv.Osm = {
+          OsmoGridConfig.Generation.Lv.Osm(
+            filter = OsmoGridConfig.Generation.Lv.Osm.Filter(
+              if (c.hasPathOrNull("filter")) c.getConfig("filter")
+              else com.typesafe.config.ConfigFactory.parseString("filter{}"),
+              parentPath + "filter.",
+              $tsCfgValidator
+            )
+          )
+        }
+      }
+
       def apply(
           c: com.typesafe.config.Config,
           parentPath: java.lang.String,
@@ -35,10 +78,16 @@ object OsmoGridConfig {
           amountOfRegionCoordinators =
             if (c.hasPathOrNull("amountOfRegionCoordinators"))
               c.getInt("amountOfRegionCoordinators")
-            else 50,
+            else 5,
           distinctHouseConnections = c.hasPathOrNull(
             "distinctHouseConnections"
-          ) && c.getBoolean("distinctHouseConnections")
+          ) && c.getBoolean("distinctHouseConnections"),
+          osm = OsmoGridConfig.Generation.Lv.Osm(
+            if (c.hasPathOrNull("osm")) c.getConfig("osm")
+            else com.typesafe.config.ConfigFactory.parseString("osm{}"),
+            parentPath + "osm.",
+            $tsCfgValidator
+          )
         )
       }
     }
@@ -281,6 +330,31 @@ object OsmoGridConfig {
     $tsCfgValidator.validate()
     $result
   }
+
+  private def $_L$_str(
+      cl: com.typesafe.config.ConfigList,
+      parentPath: java.lang.String,
+      $tsCfgValidator: $TsCfgValidator
+  ): scala.List[java.lang.String] = {
+    import scala.jdk.CollectionConverters._
+    cl.asScala.map(cv => $_str(cv)).toList
+  }
+  private def $_expE(
+      cv: com.typesafe.config.ConfigValue,
+      exp: java.lang.String
+  ) = {
+    val u: Any = cv.unwrapped
+    new java.lang.RuntimeException(
+      s"${cv.origin.lineNumber}: " +
+        "expecting: " + exp + " got: " +
+        (if (u.isInstanceOf[java.lang.String]) "\"" + u + "\"" else u)
+    )
+  }
+
+  private def $_str(cv: com.typesafe.config.ConfigValue): java.lang.String = {
+    java.lang.String.valueOf(cv.unwrapped())
+  }
+
   final class $TsCfgValidator {
     private val badPaths =
       scala.collection.mutable.ArrayBuffer[java.lang.String]()

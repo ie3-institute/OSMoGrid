@@ -33,7 +33,8 @@ object LvCoordinator {
               Lv(
                 amountOfGridGenerators,
                 amountOfRegionCoordinators,
-                distinctHouseConnections
+                distinctHouseConnections,
+                _
               ),
               replyTo
             ) =>
