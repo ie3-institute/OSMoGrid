@@ -11,6 +11,7 @@ import akka.actor.typed.scaladsl.{Behaviors, Routers}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
+import edu.ie3.osmogrid.guardian.OsmoGridGuardian
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian.{
   OsmoGridGuardianEvent,
   RepLvGrids
@@ -33,6 +34,8 @@ object LvCoordinator {
       osmModel: OsmModel,
       replyTo: ActorRef[OsmoGridGuardianEvent]
   ) extends LvCoordinatorEvent
+  final case class RepLvGrids(grids: Vector[SubGridContainer])
+      extends LvCoordinatorEvent
 
   // TODO replace with geoutils
   private val DEFAULT_GEOMETRY_FACTORY: GeometryFactory =
@@ -50,7 +53,7 @@ object LvCoordinator {
                 distinctHouseConnections
               ),
               osmModel,
-              replyTo
+              guardian
             ) =>
           ctx.log.info("Starting generation of low voltage grids!")
           /* TODO:
@@ -59,23 +62,28 @@ object LvCoordinator {
               3) Split up osm data at municipality boundaries
               4) start generation */
 
-          val boundaries = extractBoundaries(osmModel).map { r =>
-            // combine all ways of a boundary relation to one sequence of coordinates
-            val coordinates = r.elements
-              .flatMap { case OsmEntities.RelationElement(element, "outer") =>
-                element match {
-                  case way: OsmEntities.Way =>
-                    way.nodes
-                  case _ => List.empty
-                }
-              }
-              .map { el =>
-                el.coordinates.getCoordinate
-              }
-              .toArray
+          /* Spawn a pool of workers to build grids from sub-graphs */
+          val lvGeneratorPool =
+            Routers.pool(poolSize = amountOfGridGenerators) {
+              // Restart workers on failure
+              Behaviors
+                .supervise(LvGenerator())
+                .onFailure(SupervisorStrategy.restart)
+            }
+          val lvGeneratorProxy = ctx.spawn(lvGeneratorPool, "LvGeneratorPool")
 
-            buildPolygon(coordinates)
-          }
+          /* Spawn a pool of workers to build grids for one municipality */
+          val lvRegionCoordinatorPool =
+            Routers.pool(poolSize = amountOfRegionCoordinators) {
+              // Restart workers on failure
+              Behaviors
+                .supervise(LvRegionCoordinator(lvGeneratorProxy))
+                .onFailure(SupervisorStrategy.restart)
+            }
+          val lvRegionCoordinatorProxy =
+            ctx.spawn(lvRegionCoordinatorPool, "LvRegionCoordinatorPool")
+
+          val boundaries = buildBoundaryPolygons(osmModel)
 
           def filterWay(polygon: Polygon, way: OsmEntities.Way) = {
             val majority = (way.nodes.size + 1) / 2
@@ -104,8 +112,8 @@ object LvCoordinator {
               .sizeCompare(majority) > 0
           }
 
-          // TODO this scala-esk way is really inefficient, find better way
-          val partitions = boundaries.map { polygon =>
+          // TODO this scala-esk way might be inefficient, find better way
+          boundaries.foreach { polygon =>
             val nodes = osmModel.nodes.filter { node =>
               polygon.covers(node.coordinates)
             }
@@ -118,44 +126,65 @@ object LvCoordinator {
               }
             }
 
-            (nodes, ways, relations)
+            val model = OsmModel(nodes, ways, relations, polygon)
+
+            lvRegionCoordinatorProxy ! LvRegionCoordinator.ReqLvGrids(
+              model,
+              ctx.self
+            )
           }
 
-          /* Spawn a pool of workers to build grids from sub-graphs */
-          val lvGeneratorPool =
-            Routers.pool(poolSize = amountOfGridGenerators) {
-              // Restart workers on failure
-              Behaviors
-                .supervise(LvGenerator())
-                .onFailure(SupervisorStrategy.restart)
-            }
-          val lvGeneratorProxy = ctx.spawn(lvGeneratorPool, "LvGeneratorPool")
-
-          /* Spawn a pool of workers to build grids for one municipality */
-          val lvRegionCoordinatorPool =
-            Routers.pool(poolSize = amountOfRegionCoordinators) {
-              // Restart workers on failure
-              Behaviors
-                .supervise(LvRegionCoordinator(lvGeneratorProxy))
-                .onFailure(SupervisorStrategy.restart)
-            }
-          val lvRegionCoordinatorProxy =
-            ctx.spawn(lvRegionCoordinatorPool, "LvRegionCoordinatorPool")
-
-          replyTo ! RepLvGrids(Vector.empty[SubGridContainer])
-          Behaviors.stopped
+          /* Wait for the incoming data and check, if all replies are received. */
+          awaitReplies(0, guardian)
         case unsupported =>
           ctx.log.error(s"Received unsupported message: $unsupported")
           Behaviors.stopped
       }
   }
 
-  // TODO replace with convenience function in PowerSystemUtils
-  private def buildPolygon(coordinates: Array[Coordinate]): Polygon = {
-    val arrayCoordinates = new CoordinateArraySequence(coordinates)
-    val linearRing =
-      new LinearRing(arrayCoordinates, DEFAULT_GEOMETRY_FACTORY)
-    new Polygon(linearRing, Array[LinearRing](), DEFAULT_GEOMETRY_FACTORY)
+  private def awaitReplies(
+      awaitedReplies: Int,
+      guardian: ActorRef[OsmoGridGuardianEvent],
+      collectedGrids: Vector[SubGridContainer] = Vector.empty
+  ): Behaviors.Receive[LvCoordinatorEvent] = Behaviors.receive {
+    case (ctx, RepLvGrids(grids)) =>
+      val stillAwaited = awaitedReplies - 1
+      ctx.log.debug(
+        s"Received another ${grids.length} sub grids. ${if (stillAwaited == 0) "All requests are answered."
+        else s"Still awaiting $stillAwaited replies."}."
+      )
+      val updatedGrids = collectedGrids ++ grids
+      if (stillAwaited == 0) {
+        ctx.log.info(
+          s"Received ${updatedGrids.length} sub grid containers in total. Join and send them to the guardian."
+        )
+        guardian ! OsmoGridGuardian.RepLvGrids(updatedGrids)
+        Behaviors.stopped
+      } else
+        awaitReplies(stillAwaited, guardian, updatedGrids)
+    case (ctx, unsupported) =>
+      ctx.log.error(s"Received unsupported message: $unsupported")
+      Behaviors.stopped
+  }
+
+  private def buildBoundaryPolygons(osmModel: OsmModel) = {
+    extractBoundaries(osmModel).map { r =>
+      // combine all ways of a boundary relation to one sequence of coordinates
+      val coordinates = r.elements
+        .flatMap { case OsmEntities.RelationElement(element, "outer") =>
+          element match {
+            case way: OsmEntities.Way =>
+              way.nodes
+            case _ => List.empty
+          }
+        }
+        .map { el =>
+          el.coordinates.getCoordinate
+        }
+        .toArray
+
+      buildPolygon(coordinates)
+    }
   }
 
   /** Returns a list of boundary relations consisting of counties ("Gemeinden")
@@ -187,5 +216,13 @@ object LvCoordinator {
     }
 
     municipalities.appendedAll(independentCities)
+  }
+
+  // TODO replace with convenience function in PowerSystemUtils
+  private def buildPolygon(coordinates: Array[Coordinate]): Polygon = {
+    val arrayCoordinates = new CoordinateArraySequence(coordinates)
+    val linearRing =
+      new LinearRing(arrayCoordinates, DEFAULT_GEOMETRY_FACTORY)
+    new Polygon(linearRing, Array[LinearRing](), DEFAULT_GEOMETRY_FACTORY)
   }
 }
