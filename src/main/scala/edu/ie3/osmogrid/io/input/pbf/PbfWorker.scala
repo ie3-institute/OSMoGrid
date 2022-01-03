@@ -67,7 +67,7 @@ private[pbf] object PbfWorker {
 
       val osmoGridModel = filter match {
         case lvFilter: PbfFilter.LvFilter =>
-          LvOsmoGridModel(osmContainer, lvFilter)
+          LvOsmoGridModel(osmContainer, lvFilter, filterNodes = false)
       }
 
       replyTo ! ReadSuccessful(osmoGridModel)

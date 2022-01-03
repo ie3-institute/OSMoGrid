@@ -12,7 +12,9 @@ import edu.ie3.util.osm.model.{CommonOsmKey, OsmContainer, OsmEntity}
 import org.locationtech.jts.geom.Polygon
 import edu.ie3.util.osm.model.CommonOsmKey.{Building, Highway, Landuse}
 import edu.ie3.util.osm.model.OsmEntity.OsmEntityType
+import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
 
+import scala.collection.parallel.immutable.ParVector
 import scala.collection.parallel.{ParIterable, ParMap, ParSeq}
 
 sealed trait OsmoGridModel {
@@ -73,37 +75,63 @@ object OsmoGridModel {
 
     def apply(
         osmContainer: OsmContainer,
-        lvFilter: LvFilter
+        lvFilter: LvFilter,
+        filterNodes: Boolean = true
     ): OsmoGridModel =
+      val buildings = filter(osmContainer, lvFilter.buildingFilter)
+      val highways = filter(osmContainer, lvFilter.highwayFilter)
+      val landuses = filter(osmContainer, lvFilter.landuseFilter)
+      val substations =
+        filterOr(osmContainer, lvFilter.existingSubstationFilter)
+
+      val nodes = createNodes(
+        osmContainer.nodesMap,
+        ParVector(buildings, highways, landuses, substations),
+        filterNodes
+      )
+
       new LvOsmoGridModel(
-        filter(osmContainer, lvFilter.buildingFilter),
-        filter(osmContainer, lvFilter.highwayFilter),
-        filter(osmContainer, lvFilter.landuseFilter),
-        filterOr(osmContainer, lvFilter.existingSubstationFilter),
-        osmContainer.nodesMap, // todo filter nodes map based on highways, landuses, buildings and existing substations
+        buildings,
+        highways,
+        landuses,
+        substations,
+        nodes,
         lvFilter
       )
 
-    def mergeAll(models: ParSeq[OsmoGridModel]): Option[OsmoGridModel] = {
+    def mergeAll(
+        models: ParSeq[OsmoGridModel],
+        filterNodes: Boolean = true
+    ): Option[OsmoGridModel] = {
       models.headOption.flatMap { case lvHeadModel: LvOsmoGridModel =>
         if (models.forall(_.filter == lvHeadModel.filter)) {
           val (buildings, highways, landuses) = models.map {
             case lvModel: LvOsmoGridModel =>
               (lvModel.buildings, lvModel.highways, lvModel.landuses)
-          }.unzip3
+          }.unzip3 match {
+            case (buildings, highways, landuses) =>
+              (buildings.flatten, highways.flatten, landuses.flatten)
+          }
 
-          val (existingSubstations, nodes) = models.map {
+          val (existingSubstations, unfilteredNodes) = models.map {
             case lvModel: LvOsmoGridModel =>
               (lvModel.existingSubstations, lvModel.nodes)
-          }.unzip
-
+          }.unzip match {
+            case (existingSubstations, unfilteredNodes) =>
+              (existingSubstations.flatten, unfilteredNodes.flatten.toMap)
+          }
+          val nodes = createNodes(
+            unfilteredNodes,
+            ParVector(buildings, highways, landuses, existingSubstations),
+            filterNodes
+          )
           Some(
             LvOsmoGridModel(
-              buildings.flatten,
-              highways.flatten,
-              landuses.flatten,
-              existingSubstations.flatten,
-              nodes.flatten.toMap,
+              buildings,
+              highways,
+              landuses,
+              existingSubstations,
+              nodes,
               lvHeadModel.filter
             )
           )
@@ -113,6 +141,35 @@ object OsmoGridModel {
       }
 
     }
+
+    private def createNodes(
+        nodesMap: ParMap[Long, Node],
+        entitiesWithNodes: ParSeq[ParSeq[OsmEntity]],
+        filterNodes: Boolean
+    ) =
+      if (filterNodes) {
+        val nodeIds: Set[Long] = entitiesWithNodes.flatten
+          .flatMap {
+            case node: Node =>
+              Seq(node.id)
+            case way: Way =>
+              way.nodes
+            case relation: Relation =>
+              relation.relations
+                .filter(_.relationTypes match {
+                  case RelationMemberType.Node =>
+                    true
+                  case _ => false
+                })
+                .map(_.id)
+          }
+          .seq
+          .toSet
+        nodesMap.filterKeys(nodeIds)
+      } else {
+        nodesMap
+      }
+
   }
 
   def filter(osmContainer: OsmContainer, filter: Filter): ParSeq[OsmEntity] =
