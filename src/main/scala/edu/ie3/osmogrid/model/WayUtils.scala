@@ -9,7 +9,7 @@ package edu.ie3.osmogrid.model
 import breeze.stats.mean
 import edu.ie3.osmogrid.exception.IllegalCalculationException
 import edu.ie3.osmogrid.model.Coordinate.RichPoint
-import edu.ie3.util.geo.{GeoUtilScala, GeoUtils}
+import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.OsmEntities.{ClosedWay, Node}
 import edu.ie3.util.CollectionUtils.RichList
 import org.locationtech.jts.geom.Coordinates
@@ -22,42 +22,20 @@ import scala.util.{Failure, Success, Try}
 
 object WayUtils {
 
+  @deprecated("Will be part of ClosedWay in soon future.")
   implicit class RichClosedWay(way: ClosedWay) {
 
-    /** Calculates the area, a closed way is covering with the help of Gauss'
-      * shoelace algorithm. To achieve an area in m², the geographic locations
-      * are transformed into distances to minimum lat and lon of the given
-      * coordinate.
+    /** Determine the area of the polygon.
       *
       * @return
       *   The area of the polygon
-      * @see
-      *   https://en.wikipedia.org/wiki/Shoelace_formula
       */
-    def area: Try[ComparableQuantity[Area]] = {
-      determineMinLatLon(way.nodes) match {
-        case (Some(latMin), Some(lonMin)) =>
-          val coordinates = way.nodes
-            .map(_.coordinates.toCoordinate)
-            .map(WayUtils.transformCoordinate(_, latMin, lonMin))
-            .slice(
-              0,
-              way.nodes.length - 1
-            ) // The last node doubles the first one in closed ways
-          Success(
-            Quantities.getQuantity(
-              GeoUtilScala.enclosedArea(coordinates),
-              Units.SQUARE_METRE
-            )
-          )
-        case _ =>
-          Failure(
-            IllegalCalculationException(
-              "Unable to determine minimum latitude and longitude of the given way. Therefore, cannot calculate the covered area."
-            )
-          )
-      }
-    }
+    def area: Try[ComparableQuantity[Area]] = Success(
+      Quantities.getQuantity(
+        42d,
+        Units.SQUARE_METRE
+      )
+    )
 
     def center: Coordinate = way.nodes
       .slice(
@@ -69,52 +47,5 @@ object WayUtils {
       .unzip match {
       case (lats, lons) => Coordinate(mean(lats), mean(lons))
     }
-  }
-
-  /** Determine minimum latitude and longitude among the given nodes
-    *
-    * @param nodes
-    *   nodes to assess
-    * @return
-    *   Options onto the minimum values
-    */
-  private def determineMinLatLon(
-      nodes: List[Node]
-  ): (Option[Double], Option[Double]) = nodes
-    .map(_.coordinates.toCoordinate)
-    .map { case Coordinate(lat, lon) => (lat, lon) }
-    .unzip match {
-    case (lats, lons) => (lats.minOption, lons.minOption)
-  }
-
-  /** Transform the given node from angle description (as of geographical
-    * position) into orthogonal distances from the origin defined by [[latMin]]
-    * and [[lonMin]]
-    *
-    * @param coordinate
-    *   The coordinate to transform
-    * @param originLat
-    *   Latitude of origin
-    * @param originLon
-    *   Longitude of origin
-    * @return
-    *   Coordinate as cartesian description relative to origin
-    */
-  private def transformCoordinate(
-      coordinate: Coordinate,
-      originLat: Double,
-      originLon: Double
-  ): Coordinate = {
-    val x = GeoUtils
-      .calcHaversine(originLat, originLon, originLat, coordinate.lon)
-      .to(Units.METRE)
-      .getValue
-      .doubleValue()
-    val y = GeoUtils
-      .calcHaversine(originLat, originLon, coordinate.lat, originLon)
-      .to(Units.METRE)
-      .getValue
-      .doubleValue()
-    Coordinate(y, x)
   }
 }

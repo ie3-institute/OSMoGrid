@@ -46,7 +46,7 @@ object LvRegionCoordinator {
       ctx.log.debug("Received osm data for a given region. Start execution.")
 
       /* Determine the loads */
-      val loadLocations = determineLoads(osmModel, loadDensity)
+      val loadLocations = determineLoadLocations(osmModel, loadDensity)
 
       /* TODO
           1) Generate load model in the area of interest
@@ -62,7 +62,7 @@ object LvRegionCoordinator {
       Behaviors.stopped
   }
 
-  private def determineLoads(
+  private def determineLoadLocations(
       osmModel: OsmModel,
       loadDensity: ComparableQuantity[PowerDensity]
   ): Vector[LoadLocation[_]] = {
