@@ -39,7 +39,8 @@ object LvCoordinator {
                 amountOfGridGenerators,
                 amountOfRegionCoordinators,
                 distinctHouseConnections,
-                loadDensity
+                loadDensity,
+                restrictSubgridsToLanduseAreas
               ),
               guardian
             ) =>
@@ -71,7 +72,8 @@ object LvCoordinator {
                     Quantities.getQuantity(
                       loadDensity,
                       OsmoGridUnits.WATT_PER_SQUARE_METRE
-                    )
+                    ),
+                    restrictSubgridsToLanduseAreas
                   )
                 )
                 .onFailure(SupervisorStrategy.restart)

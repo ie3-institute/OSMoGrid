@@ -35,13 +35,15 @@ object LvRegionCoordinator extends LoadCalculation {
 
   def apply(
       lvGeneratorPool: ActorRef[LvGeneratorEvent],
-      loadDensity: ComparableQuantity[PowerDensity]
+      loadDensity: ComparableQuantity[PowerDensity],
+      restrictSubgridsToLanduseAreas: Boolean
   ): Behaviors.Receive[LvRegionCoordinatorEvent] =
-    idle(lvGeneratorPool, loadDensity)
+    idle(lvGeneratorPool, loadDensity, restrictSubgridsToLanduseAreas)
 
   private def idle(
       lvGeneratorPool: ActorRef[LvGeneratorEvent],
-      loadDensity: ComparableQuantity[PowerDensity]
+      loadDensity: ComparableQuantity[PowerDensity],
+      restrictSubgridsToLanduseAreas: Boolean
   ): Behaviors.Receive[LvRegionCoordinatorEvent] = Behaviors.receive {
     case (ctx, ReqLvGrids(osmModel, replyTo)) =>
       implicit val logger: Logger = ctx.log

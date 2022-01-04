@@ -1,5 +1,5 @@
 /*
- * © 2021. TU Dortmund University,
+ * © 2022. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
@@ -20,7 +20,8 @@ object OsmoGridConfig {
         amountOfGridGenerators: scala.Int,
         amountOfRegionCoordinators: scala.Int,
         distinctHouseConnections: scala.Boolean,
-        loadDensity: scala.Double
+        loadDensity: scala.Double,
+        restrictSubgridsToLanduseAreas: scala.Boolean
     )
     object Lv {
       def apply(
@@ -40,7 +41,10 @@ object OsmoGridConfig {
           distinctHouseConnections = c.hasPathOrNull(
             "distinctHouseConnections"
           ) && c.getBoolean("distinctHouseConnections"),
-          loadDensity = $_reqDbl(parentPath, c, "loadDensity", $tsCfgValidator)
+          loadDensity = $_reqDbl(parentPath, c, "loadDensity", $tsCfgValidator),
+          restrictSubgridsToLanduseAreas = c.hasPathOrNull(
+            "restrictSubgridsToLanduseAreas"
+          ) && c.getBoolean("restrictSubgridsToLanduseAreas")
         )
       }
       private def $_reqDbl(
