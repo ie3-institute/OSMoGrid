@@ -36,7 +36,7 @@ trait LoadCalculation {
   protected def determineLoadLocations(
       osmContainer: OsmModel,
       loadDensity: ComparableQuantity[PowerDensity]
-  )(implicit logger: Logger): List[LoadLocation[_]] = {
+  )(implicit logger: Logger): Seq[LoadLocation[_]] = {
     val results =
       loadLocationsFromOsmContainer(osmContainer, loadDensity).groupBy(
         _._2.isSuccess

@@ -26,10 +26,10 @@ import tech.units.indriya.ComparableQuantity
 import javax.measure.quantity.Power
 import scala.util.{Failure, Success, Try}
 
-object LvRegionCoordinator extends LoadCalculation {
+object LvRegionCoordinator extends LoadCalculation with LoadClustering {
   sealed trait LvRegionCoordinatorEvent
   final case class ReqLvGrids(
-      osmModel: OsmModel,
+      osmContainer: OsmModel,
       replyTo: ActorRef[LvCoordinatorEvent]
   ) extends LvRegionCoordinatorEvent
 
@@ -45,12 +45,14 @@ object LvRegionCoordinator extends LoadCalculation {
       loadDensity: ComparableQuantity[PowerDensity],
       restrictSubgridsToLanduseAreas: Boolean
   ): Behaviors.Receive[LvRegionCoordinatorEvent] = Behaviors.receive {
-    case (ctx, ReqLvGrids(osmModel, replyTo)) =>
+    case (ctx, ReqLvGrids(osmContainer, replyTo)) =>
       implicit val logger: Logger = ctx.log
       logger.debug("Received osm data for a given region. Start execution.")
 
       /* Determine the location of loads */
-      val loadLocations = determineLoadLocations(osmModel, loadDensity)
+      val loadLocations = determineLoadLocations(osmContainer, loadDensity)
+
+      clusterLoads(loadLocations, osmContainer, restrictSubgridsToLanduseAreas)
 
       /* TODO
           1) Cluster the given loads
