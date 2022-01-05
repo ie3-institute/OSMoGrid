@@ -7,18 +7,24 @@
 package edu.ie3.osmogrid.lv
 
 import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
-import akka.actor.typed.scaladsl.{Behaviors, Routers}
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors, Routers}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian
 import edu.ie3.osmogrid.lv.LvGridGenerator
+import org.slf4j.Logger
+
+import scala.math.ceil
 
 object LvCoordinator {
   sealed trait Request
   final case class ReqLvGrids(
       cfg: OsmoGridConfig.Generation.Lv,
       replyTo: ActorRef[Response]
+  ) extends Request
+  final case class RegionCoordinatorResponse(
+      response: LvRegionCoordinator.Response
   ) extends Request
 
   sealed trait Response
@@ -72,21 +78,10 @@ object LvCoordinator {
       ctx.log.debug("All awaited data is present. Start processing.")
 
       /* Spawn the needed worker pools */
-      val (
-        municipalityCoordinator,
-        districtCoordinator,
-        subDistrictCoordinator,
-        lvGridGenerator
-      ) = spawnWorkerPools
-
-      /* Check if further partitioning is needed or directly hand over to municipality handling */
-      administrativeBoundaries() match {
-        case maybeBoundaries if isOnMunicipalLevel(maybeBoundaries) =>
-        /* There either is no boundary at all or the area only contains municipal boundaries and less */
-        // TODO: Leave out the splitting logic and directly spawn a handler for municipalities
-        case Some(level) =>
-        /* TODO: Initiate further separation */
-      }
+      val lvRegionCoordinator = spawnWorkerPools(ctx)
+      lvRegionCoordinator ! LvRegionCoordinator.Partition(
+        ctx.messageAdapter(msg => RegionCoordinatorResponse(msg))
+      )
 
       /* Wait in idle for everything to come up */
       idle
@@ -94,62 +89,86 @@ object LvCoordinator {
       Behaviors.same // Wait for missing data
   }
 
-  private def spawnWorkerPools
-      : (ActorRef[_], ActorRef[_], ActorRef[_], ActorRef[_]) = {
-    /* TODO:
-     *   1) MunicipalityCoordinator
-     *   2) DistrictCoordinator
-     *   3) SubDistrictCoordinator
-     *   4) LvGridGenerator */
-
-    //        /* Spawn a pool of workers to build grids from sub-graphs */
-    //        val lvGeneratorPool =
-    //          Routers.pool(poolSize = amountOfGridGenerators) {
-    //            // Restart workers on failure
-    //            Behaviors
-    //              .supervise(LvGenerator())
-    //              .onFailure(SupervisorStrategy.restart)
-    //          }
-    //        val lvGeneratorProxy = ctx.spawn(lvGeneratorPool, "LvGeneratorPool")
-    //
-    //        /* Spawn a pool of workers to build grids for one municipality */
-    //        val lvRegionCoordinatorPool =
-    //          Routers.pool(poolSize = amountOfRegionCoordinators) {
-    //            // Restart workers on failure
-    //            Behaviors
-    //              .supervise(LvRegionCoordinator(lvGeneratorProxy))
-    //              .onFailure(SupervisorStrategy.restart)
-    //          }
-    //        val lvRegionCoordinatorProxy =
-    //          ctx.spawn(lvRegionCoordinatorPool, "LvRegionCoordinatorPool")
-    ???
-  }
-
-  /** Determine available administrative boundaries within given osm data
+  /** Spawn all needed worker pools and hand back the reference to the
+    * [[LvRegionCoordinator]] pool
     *
-    * TODO: Adapt, when data model is fully clear
-    *
+    * @param ctx
+    *   Actor context to spawn in
     * @return
-    *   Option onto the highest administrative boundary level
+    *   Reference to the [[LvRegionCoordinator]] pool
     */
-  private def administrativeBoundaries(): Option[Set[Int]] = None
+  private def spawnWorkerPools(
+      ctx: ActorContext[_]
+  ): ActorRef[LvRegionCoordinator.Request] = {
+    /* Determine the total amount of available processors */
+    val availableProcessors = Runtime.getRuntime.availableProcessors()
+    val lvRegionCoordinatorPoolSize =
+      scala.math.max(ceil(availableProcessors * 0.05), 3).toInt
+    val municipalityCoordinatorPoolSize =
+      scala.math.max(ceil(availableProcessors * 0.05), 3).toInt
+    val districtCoordinatorPoolSize =
+      scala.math.max(ceil(availableProcessors * 0.2), 3).toInt
+    val subDistrictCoordinatorPoolSize =
+      scala.math.max(ceil(availableProcessors * 0.3), 3).toInt
+    val lvGridGeneratorPoolSize =
+      scala.math.max(ceil(availableProcessors * 0.4), 3).toInt
 
-  /** Detect, if the region contains only boundaries beneath the municipality
-    * level. If there is no boundary at all, it is also treated, as if we are on
-    * the municipal level.
-    *
-    * @param maybeBoundaries
-    *   Possible boundaries
-    * @return
-    *   true, if there is nothing above municipalities apparent
-    */
-  private def isOnMunicipalLevel(maybeBoundaries: Option[Set[Int]]) =
-    maybeBoundaries match {
-      case Some(boundaries) =>
-        boundaries.maxOption match {
-          case Some(highestBoundary) => highestBoundary < 6
-          case None                  => true
-        }
-      case None => true
+    ctx.log.debug(s"""Using the following worker pool sizes:
+        |
+        |region coordinator: $lvRegionCoordinatorPoolSize
+        |municipality coordinator: $municipalityCoordinatorPoolSize
+        |district coordinator: $districtCoordinatorPoolSize
+        |sub district coordinator: $subDistrictCoordinatorPoolSize
+        |lv grid generator: $lvGridGeneratorPoolSize
+        |""".stripMargin)
+
+    /* Launching worker pools */
+    val lvGridGeneratorPool = Routers.pool(poolSize = lvGridGeneratorPoolSize) {
+      // Restart workers on failure
+      Behaviors
+        .supervise(LvGridGenerator())
+        .onFailure(SupervisorStrategy.restart)
     }
+    val lvGridGeneratorProxy =
+      ctx.spawn(lvGridGeneratorPool, "LvGridGeneratorPool")
+
+    val subDistrictCoordinatorPool =
+      Routers.pool(poolSize = subDistrictCoordinatorPoolSize) {
+        // Restart workers on failure
+        Behaviors
+          .supervise(SubDistrictCoordinator(lvGridGeneratorProxy))
+          .onFailure(SupervisorStrategy.restart)
+      }
+    val subDistrictCoordinatorProxy =
+      ctx.spawn(subDistrictCoordinatorPool, "SubDistrictCoordinatorPool")
+
+    val districtCoordinatorPool =
+      Routers.pool(poolSize = districtCoordinatorPoolSize) {
+        // Restart workers on failure
+        Behaviors
+          .supervise(DistrictCoordinator(subDistrictCoordinatorProxy))
+          .onFailure(SupervisorStrategy.restart)
+      }
+    val districtCoordinatorProxy =
+      ctx.spawn(districtCoordinatorPool, "DistrictCoordinatorPool")
+
+    val municipalityCoordinatorPool =
+      Routers.pool(poolSize = municipalityCoordinatorPoolSize) {
+        // Restart workers on failure
+        Behaviors
+          .supervise(MunicipalityCoordinator(districtCoordinatorProxy))
+          .onFailure(SupervisorStrategy.restart)
+      }
+    val municipalityCoordinatorProxy =
+      ctx.spawn(municipalityCoordinatorPool, "MunicipalityCoordinatorPool")
+
+    val regionCoordinatorPool =
+      Routers.pool(poolSize = lvRegionCoordinatorPoolSize) {
+        // Restart workers on failure
+        Behaviors
+          .supervise(LvRegionCoordinator(municipalityCoordinatorProxy))
+          .onFailure(SupervisorStrategy.restart)
+      }
+    ctx.spawn(regionCoordinatorPool, "RegionCoordinatorPool")
+  }
 }

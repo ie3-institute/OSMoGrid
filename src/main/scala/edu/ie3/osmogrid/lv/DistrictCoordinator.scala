@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.lv
 
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 
 object DistrictCoordinator {
@@ -14,9 +14,13 @@ object DistrictCoordinator {
 
   sealed trait Response
 
-  def apply(): Behavior[Request] = idle
+  def apply(
+      subDistrictCoordinator: ActorRef[SubDistrictCoordinator.Request]
+  ): Behavior[Request] = idle(subDistrictCoordinator)
 
-  def idle: Behavior[Request] = Behaviors.receive { (ctx, msg) =>
+  def idle(
+      subDistrictCoordinator: ActorRef[SubDistrictCoordinator.Request]
+  ): Behavior[Request] = Behaviors.receive { (ctx, msg) =>
     ctx.log.info(s"Received a message: $msg")
     Behaviors.same
   }
