@@ -76,7 +76,7 @@ dependencies {
 
   // todo CLEANUP following old dependencies
   //	 ie³ power system utils
-  implementation('com.github.ie3-institute:PowerSystemUtils:1.5.3') {
+  implementation('com.github.ie3-institute:PowerSystemUtils:1.6') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
