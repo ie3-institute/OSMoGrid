@@ -14,7 +14,7 @@ import edu.ie3.datamodel.models.input.container.{
   JointGridContainer
 }
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian.OsmoGridGuardianEvent
+import edu.ie3.osmogrid.guardian.OsmoGridGuardian.Request
 
 object ResultListener {
 
@@ -22,7 +22,7 @@ object ResultListener {
 
   final case class GridResult(
       grid: JointGridContainer,
-      replyTo: ActorRef[OsmoGridGuardianEvent]
+      replyTo: ActorRef[Request]
   ) extends ResultEvent
 
   def apply(cfg: OsmoGridConfig.Output): Behavior[ResultEvent] =
