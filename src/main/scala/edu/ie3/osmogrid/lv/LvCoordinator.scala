@@ -26,6 +26,8 @@ object LvCoordinator {
   final case class RegionCoordinatorResponse(
       response: LvRegionCoordinator.Response
   ) extends Request
+  final case class LvGridGeneratorResponse(response: LvGridGenerator.Response)
+      extends Request
 
   sealed trait Response
   final case class RepLvGrids(grids: Vector[SubGridContainer]) extends Response
@@ -174,7 +176,7 @@ object LvCoordinator {
 
   private def awaitResults(
       awaitedGrids: Int = Int.MaxValue,
-      subGrids: Set[SubGridContainer] = Set.empty
+      subGrids: Set[SubGridContainer] = Set.empty[SubGridContainer]
   ): Behavior[Request] = Behaviors.receive {
     case (
           ctx,
@@ -183,7 +185,10 @@ object LvCoordinator {
       ctx.log.info(
         s"Grid generation succeeded. Awaiting $amountOfGrids in total."
       )
-      finalizeIfReady(amountOfGrids, subGrids)
+      finalizeIfReady(amountOfGrids, subGrids, ctx.log)
+    case (ctx, LvGridGeneratorResponse(LvGridGenerator.ReplLvGrid(grid))) =>
+      val updatedGrids = subGrids + grid
+      finalizeIfReady(awaitedGrids, updatedGrids, ctx.log)
     case (ctx, unsupported) =>
       ctx.log.warn(s"Received unsupported message '$unsupported'.")
       Behaviors.stopped

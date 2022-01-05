@@ -7,11 +7,13 @@
 package edu.ie3.osmogrid.lv
 
 import akka.actor.typed.scaladsl.Behaviors
+import edu.ie3.datamodel.models.input.container.SubGridContainer
 
 object LvGridGenerator {
   sealed trait Request
 
   sealed trait Response
+  final case class ReplLvGrid(grid: SubGridContainer) extends Response
 
   def apply(): Behaviors.Receive[Request] = idle
 
