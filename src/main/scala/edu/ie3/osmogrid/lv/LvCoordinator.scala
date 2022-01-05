@@ -12,7 +12,7 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian
-import edu.ie3.osmogrid.lv.LvGenerator
+import edu.ie3.osmogrid.lv.LvGridGenerator
 
 object LvCoordinator {
   sealed trait Request
