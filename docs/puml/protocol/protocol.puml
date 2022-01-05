@@ -58,6 +58,13 @@ DistrictCoordinator -> SubDistrictCoordinator: <font color="red">!</font>HandleS
 SubDistrictCoordinator -> LvGridGenerator: <font color="red">!</font>BuildGridModel(Region)
 
 activate LvGridGenerator
+SubDistrictCoordinator -> DistrictCoordinator: <font color="red">!</font>Done(amountOfGrids)
+DistrictCoordinator -> MunicipalityCoordinator: <font color="red">!</font>Done(amountOfGrids)
+MunicipalityCoordinator -> "LvRegionCoordinator<sub>n-...</sub>": <font color="red">!</font>Done(amountOfGrids)
+"LvRegionCoordinator<sub>n-...</sub>" -> "LvRegionCoordinator<sub>n-...</sub>": <font color="red">!</font>Done(amountOfGrids)
+... **Report recursively until all intermediate levels are passed** ...
+"LvRegionCoordinator<sub>n-...</sub>" -> "LvRegionCoordinator<sub>n</sub>": <font color="red">!</font>Done(amountOfGrids)
+"LvRegionCoordinator<sub>n</sub>" -> LvCoordinator: <font color="red">!</font>Done(amountOfGrids)
 ... ...
 LvGridGenerator -> LvCoordinator: <font color="red">!</font>PepLvGrid(...)
 deactivate LvGridGenerator
