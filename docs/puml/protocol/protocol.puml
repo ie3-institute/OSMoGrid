@@ -9,8 +9,7 @@ database Input
 participant InputDataProvider
 participant OsmoGridGuardian
 participant LvCoordinator
-participant "LvRegionCoordinator<sub>n</sub>"
-participant "LvRegionCoordinator<sub>n-...</sub>"
+collections LvRegionCoordinator
 collections MunicipalityCoordinator
 collections DistrictCoordinator
 collections SubDistrictCoordinator
@@ -34,22 +33,19 @@ InputDataProvider <--> Input: //Read//
 InputDataProvider -> LvCoordinator: <font color="red">!</font>RepOsm(...)
 InputDataProvider -> LvCoordinator: <font color="red">!</font>RepAssetTypes(...)
 note right: Determine the highest\nadministrative boundary //n//
-LvCoordinator --> MunicipalityCoordinator: //Spawn worker pool//
-LvCoordinator --> DistrictCoordinator: //Spawn worker pool//
-LvCoordinator --> SubDistrictCoordinator: //Spawn worker pool//
 LvCoordinator --> LvGridGenerator: //Spawn worker pool//
+LvCoordinator --> SubDistrictCoordinator: //Spawn worker pool//
+LvCoordinator --> DistrictCoordinator: //Spawn worker pool//
+LvCoordinator --> MunicipalityCoordinator: //Spawn worker pool//
+LvCoordinator --> LvRegionCoordinator: //Spawn worker pool//
+note right: Within a worker pool the\n""LvRegionCoordinator"" has\nto maintain a list of regions,\nit awaits completion\nmessages for
 
-==Partition regions==
-LvCoordinator --> "LvRegionCoordinator<sub>n</sub>": //Spawn//
-note right: Needs to know all other worker\npools and the reference to\n""LvCoordinator""
-LvCoordinator -> "LvRegionCoordinator<sub>n</sub>": <font color="red">!</font>Partition(Region, n)
-"LvRegionCoordinator<sub>n</sub>" --> "LvRegionCoordinator<sub>n-...</sub>": //Spawn//
-"LvRegionCoordinator<sub>n</sub>" -> "LvRegionCoordinator<sub>n-...</sub>": <font color="red">!</font>Partition(Region, n-1)
-"LvRegionCoordinator<sub>n-...</sub>" --> "LvRegionCoordinator<sub>n-...</sub>": //Spawn//
-"LvRegionCoordinator<sub>n-...</sub>" -> "LvRegionCoordinator<sub>n-...</sub>": <font color="red">!</font>Partition(Region, n-1)
-... **Recursively spawn new ""RegionCoordinators"" until administrative boundary of a municipality is reached** ...
+LvCoordinator -> LvRegionCoordinator: <font color="red">!</font>Partition(Region, n)
+note right: //n// is the highest apparent\nadministrative boundary\nwithin OSM data
+LvRegionCoordinator -> LvRegionCoordinator: <font color="red">!</font>Partition(Region, n')
+... **Recursively divide regions until administrative boundary of a municipality is reached** ...
 
-"LvRegionCoordinator<sub>n-...</sub>" -> MunicipalityCoordinator: <font color="red">!</font>HandleMunicipality(Region)
+LvRegionCoordinator -> MunicipalityCoordinator: <font color="red">!</font>HandleMunicipality(Region)
 
 MunicipalityCoordinator -> DistrictCoordinator: <font color="red">!</font>HandleDistrict(Region)
 
@@ -60,16 +56,16 @@ SubDistrictCoordinator -> LvGridGenerator: <font color="red">!</font>BuildGridMo
 activate LvGridGenerator
 SubDistrictCoordinator -> DistrictCoordinator: <font color="red">!</font>Done(amountOfGrids)
 DistrictCoordinator -> MunicipalityCoordinator: <font color="red">!</font>Done(amountOfGrids)
-MunicipalityCoordinator -> "LvRegionCoordinator<sub>n-...</sub>": <font color="red">!</font>Done(amountOfGrids)
-"LvRegionCoordinator<sub>n-...</sub>" -> "LvRegionCoordinator<sub>n-...</sub>": <font color="red">!</font>Done(amountOfGrids)
+MunicipalityCoordinator -> LvRegionCoordinator: <font color="red">!</font>Done(amountOfGrids)
+LvRegionCoordinator -> LvRegionCoordinator: <font color="red">!</font>Done(amountOfGrids)
 ... **Report recursively until all intermediate levels are passed** ...
-"LvRegionCoordinator<sub>n-...</sub>" -> "LvRegionCoordinator<sub>n</sub>": <font color="red">!</font>Done(amountOfGrids)
-"LvRegionCoordinator<sub>n</sub>" -> LvCoordinator: <font color="red">!</font>Done(amountOfGrids)
+LvRegionCoordinator -> LvCoordinator: <font color="red">!</font>Done(amountOfGrids)
 ... ...
 LvGridGenerator -> LvCoordinator: <font color="red">!</font>PepLvGrid(...)
 deactivate LvGridGenerator
 
 LvCoordinator -> OsmoGridGuardian: <font color="red">!</font>RepLvGrids(...)
+note right: TODO: Tear down worker pools
 
 == MV generation ==
 ... **To be defined in a later stage** ...
