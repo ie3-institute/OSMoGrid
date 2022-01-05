@@ -15,7 +15,7 @@ object LvRegionCoordinator {
       extends Request // TODO: OSM data needs to be transferred
 
   sealed trait Response
-  object Done
+  final case class Done(amountOfGrids: Int)
       extends Response // TODO: Needs to contain reference to the region!
 
   def apply(

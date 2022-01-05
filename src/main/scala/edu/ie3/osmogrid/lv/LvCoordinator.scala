@@ -171,4 +171,50 @@ object LvCoordinator {
       }
     ctx.spawn(regionCoordinatorPool, "RegionCoordinatorPool")
   }
+
+  private def awaitResults(
+      awaitedGrids: Int = Int.MaxValue,
+      subGrids: Set[SubGridContainer] = Set.empty
+  ): Behavior[Request] = Behaviors.receive {
+    case (
+          ctx,
+          RegionCoordinatorResponse(LvRegionCoordinator.Done(amountOfGrids))
+        ) =>
+      ctx.log.info(
+        s"Grid generation succeeded. Awaiting $amountOfGrids in total."
+      )
+      finalizeIfReady(amountOfGrids, subGrids)
+    case (ctx, unsupported) =>
+      ctx.log.warn(s"Received unsupported message '$unsupported'.")
+      Behaviors.stopped
+  }
+
+  /** Check if all awaited results are there and if yes, finalize their
+    * collection
+    *
+    * @param awaitedGrids
+    *   Amount of awaited grids
+    * @param subGrids
+    *   Yet collected sub grids
+    * @return
+    *   Next state
+    */
+  private def finalizeIfReady(
+      awaitedGrids: Int,
+      subGrids: Set[SubGridContainer],
+      logger: Logger
+  ) = {
+    val missingResponses = awaitedGrids - subGrids.size
+    if (missingResponses > 0) {
+      logger.debug(
+        s"Still ${if (missingResponses != Int.MaxValue) missingResponses
+        else "some results"} pending."
+      )
+      awaitResults(awaitedGrids, subGrids)
+    } else {
+      logger.info(s"All awaited grids received. Good bye!")
+      // TODO: Bring results together!
+      Behaviors.stopped
+    }
+  }
 }
