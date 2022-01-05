@@ -37,38 +37,119 @@ object LvCoordinator {
             replyTo
           ) =>
         ctx.log.info("Starting generation of low voltage grids!")
+        ctx.log.debug("Request input data")
         /* TODO:
               1) Ask for OSM data
-              2) Ask for asset data
-              3) Split up osm data at municipality boundaries
-              4) start generation */
+              2) Ask for asset data */
 
-        /* Spawn a pool of workers to build grids from sub-graphs */
-        val lvGeneratorPool =
-          Routers.pool(poolSize = amountOfGridGenerators) {
-            // Restart workers on failure
-            Behaviors
-              .supervise(LvGenerator())
-              .onFailure(SupervisorStrategy.restart)
-          }
-        val lvGeneratorProxy = ctx.spawn(lvGeneratorPool, "LvGeneratorPool")
-
-        /* Spawn a pool of workers to build grids for one municipality */
-        val lvRegionCoordinatorPool =
-          Routers.pool(poolSize = amountOfRegionCoordinators) {
-            // Restart workers on failure
-            Behaviors
-              .supervise(LvRegionCoordinator(lvGeneratorProxy))
-              .onFailure(SupervisorStrategy.restart)
-          }
-        val lvRegionCoordinatorProxy =
-          ctx.spawn(lvRegionCoordinatorPool, "LvRegionCoordinatorPool")
-
-        replyTo ! RepLvGrids(Vector.empty[SubGridContainer])
-        Behaviors.stopped
+        awaitInputData(osmData = None, assetData = None)
       case unsupported =>
         ctx.log.error(s"Received unsupported message: $unsupported")
         Behaviors.stopped
     }
   }
+
+  /** Await incoming input data and register it
+    *
+    * TODO: Adapt accordingly to have classes that collect the data
+    *
+    * @param osmData
+    *   Osm data to await
+    * @param assetData
+    *   Asset data to await
+    * @return
+    *   Equivalent next state
+    */
+  private def awaitInputData(
+      osmData: Option[Int] = None,
+      assetData: Option[Int] = None
+  ): Behavior[Request] = Behaviors.receive { case (ctx, msg) =>
+    /* TODO: Register data according to message content */
+
+    /* Check, if everything is in place */
+    if (osmData.isDefined && assetData.isDefined) {
+      /* Process the data */
+      ctx.log.debug("All awaited data is present. Start processing.")
+
+      /* Spawn the needed worker pools */
+      val (
+        municipalityCoordinator,
+        districtCoordinator,
+        subDistrictCoordinator,
+        lvGridGenerator
+      ) = spawnWorkerPools
+
+      /* Check if further partitioning is needed or directly hand over to municipality handling */
+      administrativeBoundaries() match {
+        case maybeBoundaries if isOnMunicipalLevel(maybeBoundaries) =>
+        /* There either is no boundary at all or the area only contains municipal boundaries and less */
+        // TODO: Leave out the splitting logic and directly spawn a handler for municipalities
+        case Some(level) =>
+        /* TODO: Initiate further separation */
+      }
+
+      /* Wait in idle for everything to come up */
+      idle
+    } else
+      Behaviors.same // Wait for missing data
+  }
+
+  private def spawnWorkerPools
+      : (ActorRef[_], ActorRef[_], ActorRef[_], ActorRef[_]) = {
+    /* TODO:
+     *   1) MunicipalityCoordinator
+     *   2) DistrictCoordinator
+     *   3) SubDistrictCoordinator
+     *   4) LvGridGenerator */
+
+    //        /* Spawn a pool of workers to build grids from sub-graphs */
+    //        val lvGeneratorPool =
+    //          Routers.pool(poolSize = amountOfGridGenerators) {
+    //            // Restart workers on failure
+    //            Behaviors
+    //              .supervise(LvGenerator())
+    //              .onFailure(SupervisorStrategy.restart)
+    //          }
+    //        val lvGeneratorProxy = ctx.spawn(lvGeneratorPool, "LvGeneratorPool")
+    //
+    //        /* Spawn a pool of workers to build grids for one municipality */
+    //        val lvRegionCoordinatorPool =
+    //          Routers.pool(poolSize = amountOfRegionCoordinators) {
+    //            // Restart workers on failure
+    //            Behaviors
+    //              .supervise(LvRegionCoordinator(lvGeneratorProxy))
+    //              .onFailure(SupervisorStrategy.restart)
+    //          }
+    //        val lvRegionCoordinatorProxy =
+    //          ctx.spawn(lvRegionCoordinatorPool, "LvRegionCoordinatorPool")
+    ???
+  }
+
+  /** Determine available administrative boundaries within given osm data
+    *
+    * TODO: Adapt, when data model is fully clear
+    *
+    * @return
+    *   Option onto the highest administrative boundary level
+    */
+  private def administrativeBoundaries(): Option[Set[Int]] = None
+
+  /** Detect, if the region contains only boundaries beneath the municipality
+    * level. If there is no boundary at all, it is also treated, as if we are on
+    * the municipal level.
+    *
+    * @param maybeBoundaries
+    *   Possible boundaries
+    * @return
+    *   true, if there is nothing above municipalities apparent
+    */
+  private def isOnMunicipalLevel(maybeBoundaries: Option[Set[Int]]) =
+    maybeBoundaries match {
+      case Some(boundaries) =>
+        boundaries.maxOption match {
+          case Some(highestBoundary) => highestBoundary < 6
+          case None                  => true
+        }
+      case None => true
+    }
 }
