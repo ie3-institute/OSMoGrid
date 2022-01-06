@@ -113,6 +113,9 @@ dependencies {
   testImplementation 'org.mockito:mockito-core:4.2.0' // mocking framework
   testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
   testImplementation 'org.objenesis:objenesis:3.2' // Mock creation with constructor parameters
+
+  // TODO: Remove. Only there for backwards compatibility in Java code
+  implementation 'tech.units:indriya:2.1.2'
 }
 
 tasks.withType(JavaCompile) {
