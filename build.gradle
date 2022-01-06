@@ -84,7 +84,7 @@ dependencies {
   }
 
   //	 ie³ power system data model
-  implementation('com.github.ie3-institute:PowerSystemDataModel:2.0.1') {
+  implementation('com.github.ie3-institute:PowerSystemDataModel:2.1.0') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
@@ -116,6 +116,7 @@ dependencies {
 
   // TODO: Remove. Only there for backwards compatibility in Java code
   implementation 'tech.units:indriya:2.1.2'
+  implementation 'org.locationtech.jts:jts-core:1.18.2'
 }
 
 tasks.withType(JavaCompile) {
