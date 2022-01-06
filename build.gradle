@@ -116,6 +116,7 @@ dependencies {
 
   // TODO: Remove. Only there for backwards compatibility in Java code
   implementation 'tech.units:indriya:2.1.2'
+  implementation 'org.locationtech.jts:jts-core:1.18.2'
 }
 
 tasks.withType(JavaCompile) {
