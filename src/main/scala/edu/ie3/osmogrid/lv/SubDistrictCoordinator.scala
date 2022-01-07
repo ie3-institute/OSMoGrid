@@ -14,7 +14,7 @@ object SubDistrictCoordinator {
 
   sealed trait Response
 
-  def apply(): Behavior[Request] = idle(lvGridGenerator)
+  def apply(): Behavior[Request] = idle
 
   def idle: Behavior[Request] = Behaviors.receive { (ctx, msg) =>
     ctx.log.info(s"Received a message: $msg")

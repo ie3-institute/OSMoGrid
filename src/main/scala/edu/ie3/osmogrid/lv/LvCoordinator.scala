@@ -31,7 +31,7 @@ object LvCoordinator {
       extends Request
 
   sealed trait Response
-  final case class RepLvGrids(grids: Vector[SubGridContainer]) extends Response
+  final case class RepLvGrids(grids: Seq[SubGridContainer]) extends Response
 
   def apply(): Behavior[Request] = idle
 
@@ -87,13 +87,13 @@ object LvCoordinator {
       )
 
       /* Wait in idle for everything to come up */
-      awaitResults(Set.empty[SubGridContainer], guardian)
+      awaitResults(Vector.empty[SubGridContainer], guardian)
     } else
       Behaviors.same // Wait for missing data
   }
 
   private def awaitResults(
-      subGrids: Set[SubGridContainer],
+      subGrids: Seq[SubGridContainer],
       guardian: ActorRef[Response]
   ): Behavior[Request] = Behaviors.receive {
     case (
@@ -124,6 +124,6 @@ object LvCoordinator {
     *   Next state
     */
   private def finalize(
-      subGrids: Set[SubGridContainer]
-  ): Set[SubGridContainer] = ???
+      subGrids: Seq[SubGridContainer]
+  ): Seq[SubGridContainer] = ???
 }
