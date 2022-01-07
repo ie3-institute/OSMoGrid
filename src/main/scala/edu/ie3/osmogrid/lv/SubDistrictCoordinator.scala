@@ -14,13 +14,9 @@ object SubDistrictCoordinator {
 
   sealed trait Response
 
-  def apply(
-      lvGridGenerator: ActorRef[LvGridGenerator.Request]
-  ): Behavior[Request] = idle(lvGridGenerator)
+  def apply(): Behavior[Request] = idle(lvGridGenerator)
 
-  def idle(
-      lvGridGenerator: ActorRef[LvGridGenerator.Request]
-  ): Behavior[Request] = Behaviors.receive { (ctx, msg) =>
+  def idle: Behavior[Request] = Behaviors.receive { (ctx, msg) =>
     ctx.log.info(s"Received a message: $msg")
     Behaviors.same
   }

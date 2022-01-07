@@ -13,7 +13,7 @@ object LvGridGenerator {
   sealed trait Request
 
   sealed trait Response
-  final case class ReplLvGrid(grid: SubGridContainer) extends Response
+  final case class RepLvGrid(grid: SubGridContainer) extends Response
 
   def apply(): Behaviors.Receive[Request] = idle
 

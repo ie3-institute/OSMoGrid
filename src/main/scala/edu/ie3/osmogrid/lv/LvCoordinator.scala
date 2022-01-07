@@ -13,7 +13,7 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian
 import edu.ie3.osmogrid.lv.LvGridGenerator
-import edu.ie3.osmogrid.lv.LvGridGenerator.ReplLvGrid
+import edu.ie3.osmogrid.lv.LvGridGenerator.RepLvGrid
 import org.slf4j.Logger
 
 import scala.math.ceil

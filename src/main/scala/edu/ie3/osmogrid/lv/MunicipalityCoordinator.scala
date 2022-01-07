@@ -14,13 +14,9 @@ object MunicipalityCoordinator {
 
   sealed trait Response
 
-  def apply(
-      districtCoordinator: ActorRef[DistrictCoordinator.Request]
-  ): Behavior[Request] = idle(districtCoordinator)
+  def apply(): Behavior[Request] = idle
 
-  def idle(
-      districtCoordinator: ActorRef[DistrictCoordinator.Request]
-  ): Behavior[Request] = Behaviors.receive { (ctx, msg) =>
+  def idle: Behavior[Request] = Behaviors.receive { (ctx, msg) =>
     ctx.log.info(s"Received a message: $msg")
     Behaviors.same
   }
