@@ -15,17 +15,13 @@ object LvRegionCoordinator {
       extends Request // TODO: OSM data needs to be transferred
 
   sealed trait Response
-  final case class Done(amountOfGrids: Int)
-      extends Response // TODO: Needs to contain reference to the region!
+  object Done extends Response
 
-  def apply(
-      municipalityCoordinator: ActorRef[MunicipalityCoordinator.Request]
-  ): Behaviors.Receive[Request] = idle(municipalityCoordinator)
+  def apply(): Behaviors.Receive[Request] = idle
 
-  private def idle(
-      municipalityCoordinator: ActorRef[MunicipalityCoordinator.Request]
-  ): Behaviors.Receive[Request] = Behaviors.receive { case (ctx, unsupported) =>
-    ctx.log.warn(s"Received unsupported message '$unsupported'.")
-    Behaviors.stopped
+  private def idle: Behaviors.Receive[Request] = Behaviors.receive {
+    case (ctx, unsupported) =>
+      ctx.log.warn(s"Received unsupported message '$unsupported'.")
+      Behaviors.stopped
   }
 }
