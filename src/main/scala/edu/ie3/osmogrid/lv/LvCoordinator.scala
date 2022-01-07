@@ -13,6 +13,7 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian
 import edu.ie3.osmogrid.lv.LvGridGenerator
+import edu.ie3.osmogrid.lv.LvGridGenerator.ReplLvGrid
 import org.slf4j.Logger
 
 import scala.math.ceil
@@ -45,7 +46,7 @@ object LvCoordinator {
               1) Ask for OSM data
               2) Ask for asset data */
 
-      awaitInputData(osmData = None, assetData = None)
+      awaitInputData(osmData = None, assetData = None, replyTo)
     case (ctx, unsupported) =>
       ctx.log.error(s"Received unsupported message: $unsupported")
       Behaviors.stopped
@@ -59,12 +60,15 @@ object LvCoordinator {
     *   Osm data to await
     * @param assetData
     *   Asset data to await
+    * @param guardian
+    *   Reference to the guardian
     * @return
     *   Equivalent next state
     */
   private def awaitInputData(
       osmData: Option[Int] = None,
-      assetData: Option[Int] = None
+      assetData: Option[Int] = None,
+      guardian: ActorRef[Response]
   ): Behavior[Request] = Behaviors.receive { case (ctx, msg) =>
     /* TODO: Register data according to message content */
 
@@ -83,13 +87,14 @@ object LvCoordinator {
       )
 
       /* Wait in idle for everything to come up */
-      awaitResults(Set.empty[SubGridContainer])
+      awaitResults(Set.empty[SubGridContainer], guardian)
     } else
       Behaviors.same // Wait for missing data
   }
 
   private def awaitResults(
-      subGrids: Set[SubGridContainer]
+      subGrids: Set[SubGridContainer],
+      guardian: ActorRef[Response]
   ): Behavior[Request] = Behaviors.receive {
     case (
           ctx,
@@ -98,7 +103,11 @@ object LvCoordinator {
       ctx.log.info(
         s"Low voltage grid generation succeeded."
       )
-      finalize(subGrids)
+      val finalizedSubGrids = finalize(subGrids)
+
+      /* Report back the collected grids */
+      guardian ! RepLvGrids(finalizedSubGrids)
+
       Behaviors.stopped
     case (ctx, unsupported) =>
       ctx.log.error(
@@ -116,5 +125,5 @@ object LvCoordinator {
     */
   private def finalize(
       subGrids: Set[SubGridContainer]
-  ) = ???
+  ): Set[SubGridContainer] = ???
 }
