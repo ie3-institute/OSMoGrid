@@ -38,8 +38,6 @@ object LvCoordinator {
     msg match {
       case ReqLvGrids(
             Lv(
-              amountOfGridGenerators,
-              amountOfRegionCoordinators,
               distinctHouseConnections
             ),
             replyTo
