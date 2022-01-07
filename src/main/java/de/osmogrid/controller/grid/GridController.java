@@ -12,7 +12,7 @@ import de.osmogrid.model.graph.OsmGridNode;
 import de.osmogrid.util.OsmoGridUtils;
 import de.osmogrid.util.enums.TypeSourceFormat;
 import edu.ie3.datamodel.exceptions.VoltageLevelException;
-import edu.ie3.datamodel.io.naming.EntityPersistenceNamingStrategy;
+import edu.ie3.datamodel.io.naming.FileNamingStrategy;
 import edu.ie3.datamodel.io.source.TypeSource;
 import edu.ie3.datamodel.io.source.csv.CsvTypeSource;
 import edu.ie3.datamodel.models.BdewLoadProfile;
@@ -127,7 +127,7 @@ public class GridController {
 
     if (osmogridConfig.io.readTypes) {
       if (sourceFormat == TypeSourceFormat.CSV) {
-        typeSource = new CsvTypeSource(";", "", new EntityPersistenceNamingStrategy());
+        typeSource = new CsvTypeSource(";", "", new FileNamingStrategy());
 
         lineType =
             typeSource.getLineTypes().stream()

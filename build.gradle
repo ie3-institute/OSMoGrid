@@ -3,8 +3,8 @@ plugins {
   id 'java' //java support
   id 'groovy' // groovy support
   id 'pmd' // code check, working on source code
-  id 'com.diffplug.spotless' version '6.1.0'//code format
-  id 'com.github.spotbugs' version '5.0.3' // code check, working on byte code
+  id 'com.diffplug.spotless' version '6.1.2'//code format
+  id 'com.github.spotbugs' version '5.0.4' // code check, working on byte code
   id 'de.undercouch.download' version '4.1.2'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.32" // run scalatest without specific spec task
@@ -76,7 +76,7 @@ dependencies {
 
   // todo CLEANUP following old dependencies
   //	 ie³ power system utils
-  implementation('com.github.ie3-institute:PowerSystemUtils:1.5.3') {
+  implementation('com.github.ie3-institute:PowerSystemUtils:1.6') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
@@ -84,7 +84,7 @@ dependencies {
   }
 
   //	 ie³ power system data model
-  implementation('com.github.ie3-institute:PowerSystemDataModel:2.0.1') {
+  implementation('com.github.ie3-institute:PowerSystemDataModel:2.1.0') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
@@ -113,6 +113,10 @@ dependencies {
   testImplementation 'org.mockito:mockito-core:4.2.0' // mocking framework
   testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
   testImplementation 'org.objenesis:objenesis:3.2' // Mock creation with constructor parameters
+
+  // TODO: Remove. Only there for backwards compatibility in Java code
+  implementation 'tech.units:indriya:2.1.2'
+  implementation 'org.locationtech.jts:jts-core:1.18.2'
 }
 
 tasks.withType(JavaCompile) {
