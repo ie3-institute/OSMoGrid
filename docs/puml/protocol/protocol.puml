@@ -55,7 +55,7 @@ SubDistrictCoordinator -> LvGridGenerator: <font color="red">!</font>BuildGridMo
 
 activate LvGridGenerator
 ... ...
-LvGridGenerator -> LvCoordinator: <font color="red">!</font>PepLvGrid(...)
+LvGridGenerator -> LvCoordinator: <font color="red">!</font>RepLvGrid(...)
 LvGridGenerator -> SubDistrictCoordinator: <font color="red">!</font>Done
 note left: Collects completions until\nall secondarysubstation\nregions are handled\n\nCompletion messages can\nbe realized with death watch!
 deactivate LvGridGenerator
