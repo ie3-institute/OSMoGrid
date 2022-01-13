@@ -26,7 +26,7 @@ import java.util.UUID
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
-object OsmoGridGuardian extends RunSupport {
+object OsmoGridGuardian extends RunSupport with SubGridHandling {
 
   /* Messages, that are understood and sent */
   sealed trait Request
@@ -38,8 +38,6 @@ object OsmoGridGuardian extends RunSupport {
   ) extends Request
 
   sealed trait Response
-  final case class RepLvGrids(runId: UUID, grids: Seq[SubGridContainer])
-      extends Response
 
   /* dead watch events */
   sealed trait GuardianWatch extends Request {
@@ -62,7 +60,7 @@ object OsmoGridGuardian extends RunSupport {
     * @param runs
     *   Currently active conversion runs
     */
-  private final case class GuardianData(
+  private[guardian] final case class GuardianData(
       msgAdapters: MessageAdapters,
       runs: Map[UUID, RunData]
   ) {
@@ -81,7 +79,7 @@ object OsmoGridGuardian extends RunSupport {
     * @param resultListener
     *   Adapter for messages from [[ResultEventListener]]
     */
-  private final case class MessageAdapters(
+  private[guardian] final case class MessageAdapters(
       lvCoordinator: ActorRef[LvCoordinator.Response],
       resultListener: ActorRef[ResultListener.Response]
   )
@@ -146,6 +144,12 @@ object OsmoGridGuardian extends RunSupport {
       case (ctx, run: Run) =>
         val runData = initRun(run, ctx, guardianData.msgAdapters.lvCoordinator)
         idle(guardianData.append(runData))
+      case (ctx, MessageAdapters.WrappedLvCoordinatorResponse(response)) =>
+        response match {
+          case LvCoordinator.RepLvGrids(runId, grids) =>
+            handleLvResults(runId, grids, guardianData, ctx)
+            Behaviors.same
+        }
       case (ctx, watch: GuardianWatch) =>
         ctx.log.error(
           s"Received dead message '$watch' for run ${watch.runId}! " +

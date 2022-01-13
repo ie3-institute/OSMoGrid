@@ -11,7 +11,6 @@ import akka.actor.typed.scaladsl.{Behaviors, Routers}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian.RepLvGrids
 import edu.ie3.osmogrid.lv.LvGenerator
 
 import java.util.UUID
@@ -25,7 +24,8 @@ object LvCoordinator {
   ) extends Request
 
   sealed trait Response
-  final case class RepLvGrids(grids: Seq[SubGridContainer]) extends Response
+  final case class RepLvGrids(runId: UUID, grids: Seq[SubGridContainer])
+      extends Response
 
   def apply(): Behavior[Request] = idle
 
@@ -68,7 +68,7 @@ object LvCoordinator {
         val lvRegionCoordinatorProxy =
           ctx.spawn(lvRegionCoordinatorPool, "LvRegionCoordinatorPool")
 
-        replyTo ! RepLvGrids(Vector.empty[SubGridContainer])
+        replyTo ! RepLvGrids(runId, Vector.empty[SubGridContainer])
         Behaviors.stopped
       case unsupported =>
         ctx.log.error(s"Received unsupported message: $unsupported")

@@ -21,8 +21,8 @@ import java.util.UUID
 object ResultListener {
   sealed trait Request
   final case class GridResult(
-      grid: JointGridContainer,
-      replyTo: ActorRef[OsmoGridGuardian.Request]
+      grid: GridContainer,
+      replyTo: ActorRef[Response]
   ) extends Request
       with ResultEvent
 
@@ -33,7 +33,7 @@ object ResultListener {
 
   def apply(runId: UUID, cfg: OsmoGridConfig.Output): Behavior[ResultEvent] =
     Behaviors.receive { case (ctx, GridResult(grid, _)) =>
-      ctx.log.info(s"Received grid result for grid '${grid.getGridName}'")
+      ctx.log.info(s"Received grid result for run id '${runId.toString}'")
       // TODO: Actual persistence and stuff, closing sinks, ...
       Behaviors.stopped
     }
