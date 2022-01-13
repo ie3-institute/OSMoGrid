@@ -14,9 +14,12 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian.RepLvGrids
 import edu.ie3.osmogrid.lv.LvGenerator
 
+import java.util.UUID
+
 object LvCoordinator {
   sealed trait Request
   final case class ReqLvGrids(
+      runId: UUID,
       cfg: OsmoGridConfig.Generation.Lv,
       replyTo: ActorRef[Response]
   ) extends Request
@@ -29,6 +32,7 @@ object LvCoordinator {
   private def idle: Behavior[Request] = Behaviors.receive { (ctx, msg) =>
     msg match {
       case ReqLvGrids(
+            runId,
             Lv(
               amountOfGridGenerators,
               amountOfRegionCoordinators,

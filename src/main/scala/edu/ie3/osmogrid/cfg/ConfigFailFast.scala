@@ -6,18 +6,25 @@
 
 package edu.ie3.osmogrid.cfg
 
+import akka.actor.typed.ActorRef
+import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Input, Output}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
 import edu.ie3.osmogrid.exception.IllegalConfigException
+import edu.ie3.osmogrid.io.output.ResultListener
 
-object ConfigFailFast {
-  def check(cfg: OsmoGridConfig): Unit = cfg match {
+object ConfigFailFast extends LazyLogging {
+  def check(
+      cfg: OsmoGridConfig,
+      additionalListener: Vector[ActorRef[ResultListener.ResultEvent]] =
+        Vector.empty
+  ): Unit = cfg match {
     case OsmoGridConfig(generation, input, output) =>
       checkInputConfig(input)
-      checkOutputConfig(output)
+      checkOutputConfig(output, additionalListener)
       checkGenerationConfig(generation)
   }
 
@@ -89,20 +96,30 @@ object ConfigFailFast {
       case _ => /* I don't care. Everything is fine. */
     }
 
-  private def checkOutputConfig(output: OsmoGridConfig.Output): Unit =
+  private def checkOutputConfig(
+      output: OsmoGridConfig.Output,
+      additionalListener: Vector[ActorRef[ResultListener.ResultEvent]]
+  ): Unit =
     output match {
       case Output(Some(file)) =>
         checkOutputFile(file)
+      case Output(None) if additionalListener.nonEmpty =>
+        logger.info(
+          "No output data type defined, but other listener provided. Will use them accordingly!"
+        )
       case Output(None) =>
         throw IllegalConfigException(
           "You have to provide at least one output data type!"
         )
     }
 
-  private def checkOutputFile(file: OsmoGridConfig.Output.File): Unit =
+  private def checkOutputFile(file: OsmoGridConfig.Output.Csv): Unit =
     file match {
-      case OsmoGridConfig.Output.File(directory, _) if directory.isEmpty =>
-        throw IllegalConfigException("Output directory may be set!")
+      case OsmoGridConfig.Output.Csv(directory, _, separator)
+          if directory.isEmpty || separator.isEmpty =>
+        throw IllegalConfigException(
+          "Output directory and separator must be set when using .csv file sink!"
+        )
       case _ => /* I don't care. Everything is fine. */
     }
 }

@@ -7,15 +7,16 @@
 package edu.ie3.osmogrid.guardian
 
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.container.{
   JointGridContainer,
   SubGridContainer
 }
 import edu.ie3.datamodel.utils.ContainerUtils
-import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation
+import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Output}
+import edu.ie3.osmogrid.guardian.OsmoGridGuardian.stopChildrenByRun
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.io.output.ResultListener.{GridResult, Request}
@@ -36,12 +37,6 @@ object OsmoGridGuardian {
         Vector.empty,
       runId: UUID = UUID.randomUUID()
   ) extends Request
-  @Deprecated("Use child classes of GuardianWatch")
-  object InputDataProviderDied extends Request
-  @Deprecated("Use child classes of GuardianWatch")
-  object ResultEventListenerDied extends Request
-  @Deprecated("Use child classes of GuardianWatch")
-  object LvCoordinatorDied extends Request
 
   sealed trait Response
   final case class RepLvGrids(runId: UUID, grids: Seq[SubGridContainer])
@@ -66,14 +61,10 @@ object OsmoGridGuardian {
     *   Collection of all message adapters
     * @param runs
     *   Currently active conversion runs
-    * @param persistenceResponseMapper
-    *   Adapter for messages from [[ResultListener]]
     */
   private final case class GuardianData(
       msgAdapters: MessageAdapters,
-      runs: Map[UUID, RunData],
-      @Deprecated("Use the entry in msgAdapters")
-      persistenceResponseMapper: ActorRef[ResultListener.Response]
+      runs: Map[UUID, RunData]
   ) {
 
     def append(run: RunData): GuardianData =
@@ -147,94 +138,77 @@ object OsmoGridGuardian {
         )
       )
 
-    idle(messageAdapters)
+    idle(GuardianData(messageAdapters, Map.empty))
   }
 
-  private def idle(msgAdapters: MessageAdapters): Behavior[Request] =
+  private def idle(guardianData: GuardianData): Behavior[Request] =
     Behaviors.receive {
-      case (ctx, Run(cfg, additionalListener, runId)) =>
-        ctx.log.info("Initializing grid generation!")
-
-        ctx.log.info("Starting input data provider")
-        val inputProvider =
-          ctx.spawn(InputDataProvider(cfg.input), "InputDataProvider")
-        ctx.watchWith(inputProvider, InputDataProviderDied)
-        ctx.log.debug("Starting output data listener")
-        val resultEventListener =
-          ctx.spawn(ResultListener(cfg.output), "ResultListener")
-        ctx.watchWith(resultEventListener, ResultEventListenerDied)
-
-        /* Check, which voltage level configs are given. Start with lv level, if this is desired for. */
-        cfg.generation match {
-          case Generation(Some(lvConfig)) =>
-            ctx.log.debug("Starting low voltage grid coordinator.")
-            val lvCoordinator = ctx.spawn(LvCoordinator(), "LvCoordinator")
-            ctx.watchWith(lvCoordinator, LvCoordinatorDied)
-            lvCoordinator ! ReqLvGrids(lvConfig, msgAdapters.lvCoordinator)
-            awaitLvGrids(inputProvider, resultEventListener)
-          case unsupported =>
-            ctx.log.error(
-              "Received unsupported grid generation config. Bye, bye."
-            )
-            Behaviors.stopped
-        }
+      case (ctx, run: Run) =>
+        val runData = initRun(run, ctx, guardianData.msgAdapters.lvCoordinator)
+        idle(guardianData.append(runData))
       case (ctx, unsupported) =>
         ctx.log.error(s"Received unsupported message '$unsupported'.")
         Behaviors.stopped
     }
 
-  private def awaitLvGrids(
-      inputDataProvider: ActorRef[InputDataProvider.Request],
-      resultListener: ActorRef[ResultListener.Request]
-  ): Behaviors.Receive[Request] =
-    Behaviors.receive {
-      case (
-            ctx,
-            MessageAdapters.WrappedLvCoordinatorResponse(
-              LvCoordinator.RepLvGrids(lvGrids)
-            )
-          ) =>
-        ctx.log.info(s"Received ${lvGrids.length} lv grids. Join them.")
-        Try(ContainerUtils.combineToJointGrid(lvGrids.asJava)) match {
-          case Success(jointGrid) =>
-            resultListener ! GridResult(jointGrid, ctx.self)
-            awaitShutDown(inputDataProvider)
-          case Failure(exception) =>
-            ctx.log.error(
-              "Combination of received sub-grids failed. Shutting down."
-            )
-            Behaviors.stopped
-        }
-      case (ctx, unsupported) =>
-        ctx.log.error(
-          s"Received unsupported message while waiting for lv grids. Unsupported: $unsupported"
+  private def initRun(
+      run: Run,
+      ctx: ActorContext[Request],
+      lvCoordinatorAdapter: ActorRef[LvCoordinator.Response]
+  ): RunData = {
+    val log = ctx.log
+    ConfigFailFast.check(run.cfg, run.additionalListener)
+    log.info(s"Initializing grid generation for run with id '${run.runId}'!")
+
+    log.info("Starting input data provider ...")
+    val inputProvider =
+      ctx.spawn(InputDataProvider(run.cfg.input), "InputDataProvider")
+    ctx.watchWith(inputProvider, InputDataProviderDied(run.runId))
+    val resultEventListener = run.cfg.output match {
+      case Output(Some(_)) =>
+        log.info("Starting output data listener ...")
+        Vector(
+          ctx.spawn(
+            ResultListener(run.runId, run.cfg.output),
+            "PersistenceResultListener"
+          )
         )
-        Behaviors.stopped
+      case Output(None) =>
+        Vector.empty
+    }
+    resultEventListener.foreach(
+      ctx.watchWith(_, ResultEventListenerDied(run.runId))
+    )
+
+    /* Check, which voltage level configs are given. Start with lv level, if this is desired for. */
+    run.cfg.generation match {
+      case Generation(Some(lvConfig)) =>
+        ctx.log.info("Starting low voltage grid coordinator ...")
+        val lvCoordinator = ctx.spawn(LvCoordinator(), "LvCoordinator")
+        ctx.watchWith(lvCoordinator, LvCoordinatorDied(run.runId))
+        ctx.log.info("Starting voltage level grid generation ...")
+        lvCoordinator ! ReqLvGrids(run.runId, lvConfig, lvCoordinatorAdapter)
+      case unsupported =>
+        ctx.log.error(
+          s"Received unsupported grid generation config '$unsupported'. Stopping run with id '${run.runId}'!"
+        )
+        stopChildrenByRun(
+          RunData(run, resultEventListener, inputProvider),
+          ctx
+        )
     }
 
-  private def awaitShutDown(
-      inputDataProvider: ActorRef[InputDataProvider.Request],
-      resultListenerTerminated: Boolean = false,
-      inputDataProviderTerminated: Boolean = false
-  ): Behaviors.Receive[Request] = Behaviors.receive { (ctx, msg) =>
-    msg match {
-      case ResultEventListenerDied =>
-        ctx.log.info("Result listener finished handling the result.")
-        ctx.log.debug("Shut down input data provider.")
-        awaitShutDown(inputDataProvider, resultListenerTerminated = true)
-      case InputDataProviderDied if resultListenerTerminated =>
-        /* That's the fine case */
-        ctx.log.info("Input data provider shut down.")
-        Behaviors.stopped
-      case InputDataProviderDied =>
-        /* That's the malicious case */
-        ctx.log.error(
-          "Input data provider unexpectedly died during shutdown was initiated."
-        )
-        Behaviors.stopped
-      case unsupported =>
-        ctx.log.error(s"Received an unsupported message $unsupported.")
-        Behaviors.stopped
-    }
+    RunData(run, resultEventListener, inputProvider)
   }
+
+  private def stopChildrenByRun(
+      runData: RunData,
+      ctx: ActorContext[Request]
+  ): Unit = {
+    ctx.unwatch(runData.inputDataProvider)
+    ctx.stop(runData.inputDataProvider)
+    runData.resultEventListener.foreach(ctx.unwatch)
+    runData.resultEventListener.foreach(ctx.stop)
+  }
+
 }
