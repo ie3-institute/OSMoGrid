@@ -27,15 +27,17 @@ object ResultListener {
       with ResultEvent
 
   sealed trait Response
+  final case class ResultHandled(runId: UUID) extends Response
 
   /* internal API */
   sealed trait ResultEvent
 
   def apply(runId: UUID, cfg: OsmoGridConfig.Output): Behavior[ResultEvent] =
-    Behaviors.receive { case (ctx, GridResult(grid, _)) =>
+    Behaviors.receive { case (ctx, GridResult(grid, replyTo)) =>
       ctx.log.info(s"Received grid result for run id '${runId.toString}'")
       // TODO: Actual persistence and stuff, closing sinks, ...
-      Behaviors.stopped
+      replyTo ! ResultHandled(runId)
+      Behaviors.same
     }
 
 }

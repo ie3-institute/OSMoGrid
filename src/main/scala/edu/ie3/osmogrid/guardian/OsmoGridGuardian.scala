@@ -150,15 +150,32 @@ object OsmoGridGuardian extends RunSupport with SubGridHandling {
             handleLvResults(runId, grids, guardianData, ctx)
             Behaviors.same
         }
+      case (ctx, MessageAdapters.WrappedListenerResponse(response)) =>
+        response match {
+          case ResultListener.ResultHandled(runId) =>
+            ctx.log.info(
+              s"Results for run $runId handled successfully. Shutting down processes for this run."
+            )
+            idle(stopRunProcesses(guardianData, runId, ctx))
+        }
       case (ctx, watch: GuardianWatch) =>
         ctx.log.error(
           s"Received dead message '$watch' for run ${watch.runId}! " +
             s"Stopping all corresponding children ..."
         )
-        guardianData.runs.get(watch.runId).foreach(stopChildrenByRun(_, ctx))
-        idle(guardianData.remove(watch.runId))
+
+        idle(stopRunProcesses(guardianData, watch.runId, ctx))
       case (ctx, unsupported) =>
         ctx.log.error(s"Received unsupported message '$unsupported'.")
         Behaviors.stopped
     }
+
+  private def stopRunProcesses(
+      guardianData: GuardianData,
+      runId: UUID,
+      ctx: ActorContext[Request]
+  ): GuardianData = {
+    guardianData.runs.get(runId).foreach(stopChildrenByRun(_, ctx))
+    guardianData.remove(runId)
+  }
 }
