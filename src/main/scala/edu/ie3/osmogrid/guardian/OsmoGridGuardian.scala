@@ -6,6 +6,7 @@
 
 package edu.ie3.osmogrid.guardian
 
+import akka.actor.Terminated
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.ActorRef
@@ -17,7 +18,7 @@ import edu.ie3.datamodel.utils.ContainerUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation
 import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.input.InputDataProvider.InputDataEvent
+import edu.ie3.osmogrid.io.input.InputDataProvider.Request
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.io.output.ResultListener.{GridResult, ResultEvent}
 import edu.ie3.osmogrid.lv.LvCoordinator
@@ -28,22 +29,38 @@ import scala.util.{Failure, Success, Try}
 
 object OsmoGridGuardian {
 
+  /* Messages, that are understood and sent */
   sealed trait Request
   final case class Run(cfg: OsmoGridConfig) extends Request
   object InputDataProviderDied extends Request
   object ResultEventListenerDied extends Request
   object LvCoordinatorDied extends Request
-  final case class LvCoordinatorResponse(response: LvCoordinator.Response)
-      extends Request
 
-  def apply(): Behavior[Request] = idle
-  private def idle: Behavior[Request] = Behaviors.receive { (ctx, msg) =>
+  /* Adapters to understand messages from others */
+  private final case class MessageAdapters(
+      lvCoordinator: ActorRef[LvCoordinator.Response]
+  )
+  private object MessageAdapters {
+    final case class WrappedLvCoordinatorResponse(
+        response: LvCoordinator.Response
+    ) extends Request
+  }
+
+  def apply(): Behavior[Request] = Behaviors.setup { context =>
     /* Define message adapters */
-    val lvCoordinatorAdapter =
-      ctx.messageAdapter(msg => LvCoordinatorResponse(msg))
+    val messageAdapters =
+      MessageAdapters(
+        context.messageAdapter(msg =>
+          MessageAdapters.WrappedLvCoordinatorResponse(msg)
+        )
+      )
 
-    msg match {
-      case Run(cfg) =>
+    idle(messageAdapters)
+  }
+
+  private def idle(msgAdapters: MessageAdapters): Behavior[Request] =
+    Behaviors.receive {
+      case (ctx, Run(cfg)) =>
         ctx.log.info("Initializing grid generation!")
 
         ctx.log.info("Starting input data provider")
@@ -61,7 +78,7 @@ object OsmoGridGuardian {
             ctx.log.debug("Starting low voltage grid coordinator.")
             val lvCoordinator = ctx.spawn(LvCoordinator(), "LvCoordinator")
             ctx.watchWith(lvCoordinator, LvCoordinatorDied)
-            lvCoordinator ! ReqLvGrids(lvConfig, lvCoordinatorAdapter)
+            lvCoordinator ! ReqLvGrids(lvConfig, msgAdapters.lvCoordinator)
             awaitLvGrids(inputProvider, resultEventListener)
           case unsupported =>
             ctx.log.error(
@@ -69,49 +86,40 @@ object OsmoGridGuardian {
             )
             Behaviors.stopped
         }
-      case InputDataProviderDied =>
-        ctx.log.error("Input data provider died. That's bad...")
-        Behaviors.stopped
-      case ResultEventListenerDied =>
-        ctx.log.error("Result event listener died. That's bad...")
-        Behaviors.stopped
-      case LvCoordinatorDied =>
-        ctx.log.error("Lv coordinator died. That's bad...")
-        Behaviors.stopped
-      case unsupported =>
+      case (ctx, unsupported) =>
         ctx.log.error(s"Received unsupported message '$unsupported'.")
         Behaviors.stopped
     }
-  }
 
   private def awaitLvGrids(
-      inputDataProvider: ActorRef[InputDataEvent],
-      resultListener: ActorRef[ResultEvent]
+      inputDataProvider: ActorRef[InputDataProvider.Request],
+      resultListener: ActorRef[ResultListener.ResultEvent]
   ): Behaviors.Receive[Request] =
-    Behaviors.receive { (ctx, msg) =>
-      msg match {
-        case LvCoordinatorResponse(RepLvGrids(lvGrids)) =>
-          ctx.log.info(s"Received ${lvGrids.length} lv grids. Join them.")
-          Try(ContainerUtils.combineToJointGrid(lvGrids.asJava)) match {
-            case Success(jointGrid) =>
-              resultListener ! GridResult(jointGrid, ctx.self)
-              awaitShutDown(inputDataProvider)
-            case Failure(exception) =>
-              ctx.log.error(
-                "Combination of received sub-grids failed. Shutting down."
-              )
-              Behaviors.stopped
-          }
-        case unsupported =>
-          ctx.log.error(
-            s"Received unsupported message while waiting for lv grids. Unsupported: $unsupported"
-          )
-          Behaviors.stopped
-      }
+    Behaviors.receive {
+      case (
+            ctx,
+            MessageAdapters.WrappedLvCoordinatorResponse(RepLvGrids(lvGrids))
+          ) =>
+        ctx.log.info(s"Received ${lvGrids.length} lv grids. Join them.")
+        Try(ContainerUtils.combineToJointGrid(lvGrids.asJava)) match {
+          case Success(jointGrid) =>
+            resultListener ! GridResult(jointGrid, ctx.self)
+            awaitShutDown(inputDataProvider)
+          case Failure(exception) =>
+            ctx.log.error(
+              "Combination of received sub-grids failed. Shutting down."
+            )
+            Behaviors.stopped
+        }
+      case (ctx, unsupported) =>
+        ctx.log.error(
+          s"Received unsupported message while waiting for lv grids. Unsupported: $unsupported"
+        )
+        Behaviors.stopped
     }
 
   private def awaitShutDown(
-      inputDataProvider: ActorRef[InputDataEvent],
+      inputDataProvider: ActorRef[InputDataProvider.Request],
       resultListenerTerminated: Boolean = false,
       inputDataProviderTerminated: Boolean = false
   ): Behaviors.Receive[Request] = Behaviors.receive { (ctx, msg) =>

@@ -14,12 +14,12 @@ import edu.ie3.osmogrid.guardian.OsmoGridGuardian.Request
 
 object InputDataProvider {
 
-  sealed trait InputDataEvent
+  sealed trait Request
   final case class Read()
-      extends InputDataEvent // todo this read method should contain configuration parameters for the actual source + potential filter options
-  final case class Terminate(replyTo: ActorRef[Request]) extends InputDataEvent
+      extends Request // todo this read method should contain configuration parameters for the actual source + potential filter options
+  final case class Terminate(replyTo: ActorRef[Request]) extends Request
 
-  def apply(cfg: OsmoGridConfig.Input): Behavior[InputDataEvent] =
+  def apply(cfg: OsmoGridConfig.Input): Behavior[Request] =
     Behaviors.receive { (ctx, msg) =>
       msg match {
         case _: Read =>
