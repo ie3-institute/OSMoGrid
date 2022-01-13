@@ -25,7 +25,7 @@ import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
 
 import java.util.UUID
 
-trait InitRunSupport {
+trait RunSupport {
 
   /** Initiate a generation run and return the updated run meta data
     *
@@ -167,7 +167,7 @@ trait InitRunSupport {
     * @param ctx
     *   Current actor context
     */
-  private def stopChildrenByRun(
+  protected def stopChildrenByRun(
       runData: RunData,
       ctx: ActorContext[Request]
   ): Unit = {

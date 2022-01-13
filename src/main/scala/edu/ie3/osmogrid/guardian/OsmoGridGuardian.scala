@@ -26,7 +26,7 @@ import java.util.UUID
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
-object OsmoGridGuardian extends InitRunSupport {
+object OsmoGridGuardian extends RunSupport {
 
   /* Messages, that are understood and sent */
   sealed trait Request
@@ -146,6 +146,13 @@ object OsmoGridGuardian extends InitRunSupport {
       case (ctx, run: Run) =>
         val runData = initRun(run, ctx, guardianData.msgAdapters.lvCoordinator)
         idle(guardianData.append(runData))
+      case (ctx, watch: GuardianWatch) =>
+        ctx.log.error(
+          s"Received dead message '$watch' for run ${watch.runId}! " +
+            s"Stopping all corresponding children ..."
+        )
+        guardianData.runs.get(watch.runId).foreach(stopChildrenByRun(_, ctx))
+        idle(guardianData.remove(watch.runId))
       case (ctx, unsupported) =>
         ctx.log.error(s"Received unsupported message '$unsupported'.")
         Behaviors.stopped
