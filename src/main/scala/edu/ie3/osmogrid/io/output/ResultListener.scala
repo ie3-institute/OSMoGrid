@@ -17,6 +17,8 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian
 
 object ResultListener {
+  /* internal API */
+  sealed trait ResultEvent
 
   sealed trait Request
   final case class GridResult(

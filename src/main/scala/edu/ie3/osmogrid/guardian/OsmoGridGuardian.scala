@@ -22,6 +22,7 @@ import edu.ie3.osmogrid.io.output.ResultListener.{GridResult, Request}
 import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
 
+import java.util.UUID
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
@@ -29,13 +30,22 @@ object OsmoGridGuardian {
 
   /* Messages, that are understood and sent */
   sealed trait Request
-  final case class Run(cfg: OsmoGridConfig) extends Request
+  final case class Run(
+      cfg: OsmoGridConfig,
+      additionalListener: Vector[ActorRef[ResultListener.ResultEvent]] =
+        Vector.empty,
+      runId: UUID = UUID.randomUUID()
+  ) extends Request
+  @Deprecated("Use child classes of GuardianWatch")
   object InputDataProviderDied extends Request
+  @Deprecated("Use child classes of GuardianWatch")
   object ResultEventListenerDied extends Request
+  @Deprecated("Use child classes of GuardianWatch")
   object LvCoordinatorDied extends Request
 
   sealed trait Response
-  final case class RepLvGrids(grids: Seq[SubGridContainer]) extends Response
+  final case class RepLvGrids(runId: UUID, grids: Seq[SubGridContainer])
+      extends Response
 
   /* Container class for message adapters as well as wrapping classes themselves */
   private final case class MessageAdapters(
@@ -46,6 +56,19 @@ object OsmoGridGuardian {
         response: LvCoordinator.Response
     ) extends Request
   }
+
+  // dead watch events
+  sealed trait GuardianWatch extends Request {
+    val runId: UUID
+  }
+
+  private final case class InputDataProviderDied(runId: UUID)
+      extends GuardianWatch
+
+  private final case class ResultEventListenerDied(runId: UUID)
+      extends GuardianWatch
+
+  private final case class LvCoordinatorDied(runId: UUID) extends GuardianWatch
 
   def apply(): Behavior[Request] = Behaviors.setup { context =>
     /* Define message adapters */
@@ -61,7 +84,7 @@ object OsmoGridGuardian {
 
   private def idle(msgAdapters: MessageAdapters): Behavior[Request] =
     Behaviors.receive {
-      case (ctx, Run(cfg)) =>
+      case (ctx, Run(cfg, additionalListener, runId)) =>
         ctx.log.info("Initializing grid generation!")
 
         ctx.log.info("Starting input data provider")
