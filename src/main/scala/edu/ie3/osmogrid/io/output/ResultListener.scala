@@ -17,14 +17,16 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian
 
 object ResultListener {
-  /* internal API */
-  sealed trait ResultEvent
-
   sealed trait Request
   final case class GridResult(
       grid: JointGridContainer,
       replyTo: ActorRef[OsmoGridGuardian.Request]
   ) extends Request
+
+  sealed trait Response
+
+  /* internal API */
+  sealed trait ResultEvent
 
   def apply(cfg: OsmoGridConfig.Output): Behavior[Request] =
     Behaviors.receive { (ctx, msg) =>

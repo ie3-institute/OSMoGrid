@@ -47,17 +47,7 @@ object OsmoGridGuardian {
   final case class RepLvGrids(runId: UUID, grids: Seq[SubGridContainer])
       extends Response
 
-  /* Container class for message adapters as well as wrapping classes themselves */
-  private final case class MessageAdapters(
-      lvCoordinator: ActorRef[LvCoordinator.Response]
-  )
-  private object MessageAdapters {
-    final case class WrappedLvCoordinatorResponse(
-        response: LvCoordinator.Response
-    ) extends Request
-  }
-
-  // dead watch events
+  /* dead watch events */
   sealed trait GuardianWatch extends Request {
     val runId: UUID
   }
@@ -70,12 +60,90 @@ object OsmoGridGuardian {
 
   private final case class LvCoordinatorDied(runId: UUID) extends GuardianWatch
 
+  /** Relevant, state-independent data, the the actor needs to know
+    *
+    * @param msgAdapters
+    *   Collection of all message adapters
+    * @param runs
+    *   Currently active conversion runs
+    * @param persistenceResponseMapper
+    *   Adapter for messages from [[ResultListener]]
+    */
+  private final case class GuardianData(
+      msgAdapters: MessageAdapters,
+      runs: Map[UUID, RunData],
+      @Deprecated("Use the entry in msgAdapters")
+      persistenceResponseMapper: ActorRef[ResultListener.Response]
+  ) {
+
+    def append(run: RunData): GuardianData =
+      this.copy(runs = runs + (run.runId -> run))
+
+    def remove(runId: UUID): GuardianData =
+      this.copy(runs = runs - runId)
+  }
+
+  /** Container object with all available adapters for outside protocol messages
+    *
+    * @param lvCoordinator
+    *   Adapter for messages from [[LvCoordinator]]
+    * @param resultListener
+    *   Adapter for messages from [[ResultEventListener]]
+    */
+  private final case class MessageAdapters(
+      lvCoordinator: ActorRef[LvCoordinator.Response],
+      resultListener: ActorRef[ResultListener.Response]
+  )
+  private object MessageAdapters {
+    final case class WrappedLvCoordinatorResponse(
+        response: LvCoordinator.Response
+    ) extends Request
+
+    final case class WrappedListenerResponse(
+        response: ResultListener.Response
+    ) extends Request
+  }
+
+  /** Meta data regarding a certain given generation run
+    *
+    * @param runId
+    *   Identifier of the run
+    * @param cfg
+    *   Configuration for that given run
+    * @param resultEventListener
+    *   Listeners to inform about results
+    * @param inputDataProvider
+    *   Reference to the input data provider
+    */
+  private final case class RunData(
+      runId: UUID,
+      cfg: OsmoGridConfig,
+      resultEventListener: Vector[ActorRef[ResultListener.ResultEvent]],
+      inputDataProvider: ActorRef[InputDataProvider.Request]
+  )
+  private case object RunData {
+    def apply(
+        run: Run,
+        resultEventListener: Vector[ActorRef[ResultListener.ResultEvent]],
+        inputDataProvider: ActorRef[InputDataProvider.Request]
+    ): RunData =
+      RunData(
+        run.runId,
+        run.cfg,
+        run.additionalListener ++ resultEventListener,
+        inputDataProvider
+      )
+  }
+
   def apply(): Behavior[Request] = Behaviors.setup { context =>
-    /* Define message adapters */
+    /* Define and register message adapters */
     val messageAdapters =
       MessageAdapters(
         context.messageAdapter(msg =>
           MessageAdapters.WrappedLvCoordinatorResponse(msg)
+        ),
+        context.messageAdapter(msg =>
+          MessageAdapters.WrappedListenerResponse(msg)
         )
       )
 
