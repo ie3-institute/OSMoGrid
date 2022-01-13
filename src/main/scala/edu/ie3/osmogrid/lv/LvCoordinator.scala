@@ -12,6 +12,7 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian
+import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.lv.LvGridGenerator
 import edu.ie3.osmogrid.lv.LvGridGenerator.RepLvGrid
 import org.slf4j.Logger
@@ -24,33 +25,61 @@ object LvCoordinator {
       cfg: OsmoGridConfig.Generation.Lv,
       replyTo: ActorRef[Response]
   ) extends Request
-  final case class RegionCoordinatorResponse(
-      response: LvRegionCoordinator.Response
-  ) extends Request
-  final case class LvGridGeneratorResponse(response: LvGridGenerator.Response)
-      extends Request
 
   sealed trait Response
   final case class RepLvGrids(grids: Seq[SubGridContainer]) extends Response
 
-  def apply(): Behavior[Request] = idle
+  /* Container class for message adapters as well as wrapping classes themselves */
+  private final case class MessageAdapters(
+      inputDataProvider: ActorRef[InputDataProvider.Response],
+      regionCoordinator: ActorRef[LvRegionCoordinator.Response],
+      gridGenerator: ActorRef[LvGridGenerator.Response]
+  )
+  private object MessageAdapters {
+    final case class WrappedInputDataResponse(
+        response: InputDataProvider.Response
+    ) extends Request
 
-  private def idle: Behavior[Request] = Behaviors.receive {
-    case (
-          ctx,
-          ReqLvGrids(Lv(distinctHouseConnections), replyTo)
-        ) =>
-      ctx.log.info("Starting generation of low voltage grids!")
-      ctx.log.debug("Request input data")
-      /* TODO:
+    final case class WrappedRegionResponse(
+        response: LvRegionCoordinator.Response
+    ) extends Request
+    final case class WrappedGridResponse(response: LvGridGenerator.Response)
+        extends Request
+  }
+
+  def apply(): Behavior[Request] = Behaviors.setup[Request] { context =>
+    /* Define message adapters */
+    val messageAdapters =
+      MessageAdapters(
+        context.messageAdapter(msg =>
+          MessageAdapters.WrappedInputDataResponse(msg)
+        ),
+        context.messageAdapter(msg =>
+          MessageAdapters.WrappedRegionResponse(msg)
+        ),
+        context.messageAdapter(msg => MessageAdapters.WrappedGridResponse(msg))
+      )
+
+    idle(messageAdapters)
+  }
+
+  private def idle(msgAdapters: MessageAdapters): Behavior[Request] =
+    Behaviors.receive {
+      case (
+            ctx,
+            ReqLvGrids(Lv(distinctHouseConnections), replyTo)
+          ) =>
+        ctx.log.info("Starting generation of low voltage grids!")
+        ctx.log.debug("Request input data")
+        /* TODO:
               1) Ask for OSM data
               2) Ask for asset data */
 
-      awaitInputData(osmData = None, assetData = None, replyTo)
-    case (ctx, unsupported) =>
-      ctx.log.error(s"Received unsupported message: $unsupported")
-      Behaviors.stopped
-  }
+        awaitInputData(osmData = None, assetData = None, replyTo)
+      case (ctx, unsupported) =>
+        ctx.log.error(s"Received unsupported message: $unsupported")
+        Behaviors.stopped
+    }
 
   /** Await incoming input data and register it
     *
@@ -83,7 +112,7 @@ object LvCoordinator {
         "LvRegionCoordinator"
       ) // TODO: Add run id to name
       lvRegionCoordinator ! LvRegionCoordinator.Partition(
-        ctx.messageAdapter(msg => RegionCoordinatorResponse(msg))
+        ctx.messageAdapter(msg => MessageAdapters.WrappedRegionResponse(msg))
       )
 
       /* Wait in idle for everything to come up */
@@ -98,7 +127,7 @@ object LvCoordinator {
   ): Behavior[Request] = Behaviors.receive {
     case (
           ctx,
-          RegionCoordinatorResponse(LvRegionCoordinator.Done)
+          MessageAdapters.WrappedRegionResponse(LvRegionCoordinator.Done)
         ) =>
       ctx.log.info(
         s"Low voltage grid generation succeeded."

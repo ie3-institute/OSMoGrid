@@ -19,6 +19,8 @@ object InputDataProvider {
       extends Request // todo this read method should contain configuration parameters for the actual source + potential filter options
   final case class Terminate(replyTo: ActorRef[Request]) extends Request
 
+  sealed trait Response
+
   def apply(cfg: OsmoGridConfig.Input): Behavior[Request] =
     Behaviors.receive { (ctx, msg) =>
       msg match {

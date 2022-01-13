@@ -36,7 +36,7 @@ object OsmoGridGuardian {
   object ResultEventListenerDied extends Request
   object LvCoordinatorDied extends Request
 
-  /* Adapters to understand messages from others */
+  /* Container class for message adapters as well as wrapping classes themselves */
   private final case class MessageAdapters(
       lvCoordinator: ActorRef[LvCoordinator.Response]
   )
