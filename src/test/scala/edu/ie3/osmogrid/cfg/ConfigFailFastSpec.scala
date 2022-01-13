@@ -88,7 +88,7 @@ class ConfigFailFastSpec extends UnitSpec {
           """input.osm.pbf.file = "input_file_path"
             |input.asset.file.directory = "asset_input_dir"
             |input.asset.file.hierarchic = false
-            |output.file.directory = "output_file_path"""".stripMargin
+            |output.csv.directory = "output_file_path"""".stripMargin
         } match {
           case Success(cfg) =>
             val exc =
@@ -106,7 +106,7 @@ class ConfigFailFastSpec extends UnitSpec {
           """input.osm.pbf.file = "input_file_path"
             |input.asset.file.directory = "asset_input_dir"
             |input.asset.file.hierarchic = false
-            |output.file.directory = "output_file_path"
+            |output.csv.directory = "output_file_path"
             |generation.lv.amountOfGridGenerators = 0
             |generation.lv.amountOfRegionCoordinators = 5
             |generation.lv.distinctHouseConnections = false""".stripMargin
@@ -125,7 +125,7 @@ class ConfigFailFastSpec extends UnitSpec {
           """input.osm.pbf.file = "input_file_path"
             |input.asset.file.directory = "asset_input_dir"
             |input.asset.file.hierarchic = false
-            |output.file.directory = "output_file_path"
+            |output.csv.directory = "output_file_path"
             |generation.lv.amountOfGridGenerators = -42
             |generation.lv.amountOfRegionCoordinators = 5
             |generation.lv.distinctHouseConnections = false""".stripMargin
@@ -144,7 +144,7 @@ class ConfigFailFastSpec extends UnitSpec {
           """input.osm.pbf.file = "input_file_path"
             |input.asset.file.directory = "asset_input_dir"
             |input.asset.file.hierarchic = false
-            |output.file.directory = "output_file_path"
+            |output.csv.directory = "output_file_path"
             |generation.lv.amountOfGridGenerators = 10
             |generation.lv.amountOfRegionCoordinators = 0
             |generation.lv.distinctHouseConnections = false""".stripMargin
@@ -163,7 +163,7 @@ class ConfigFailFastSpec extends UnitSpec {
           """input.osm.pbf.file = "input_file_path"
             |input.asset.file.directory = "asset_input_dir"
             |input.asset.file.hierarchic = false
-            |output.file.directory = "output_file_path"
+            |output.csv.directory = "output_file_path"
             |generation.lv.amountOfGridGenerators = 10
             |generation.lv.amountOfRegionCoordinators = -42
             |generation.lv.distinctHouseConnections = false""".stripMargin
@@ -184,7 +184,7 @@ class ConfigFailFastSpec extends UnitSpec {
           """input.osm.pbf.file = "input_file_path"
           |input.asset.file.directory = "asset_input_dir"
           |input.asset.file.hierarchic = false
-          |output.file.directory = "output_file_path"
+          |output.csv.directory = "output_file_path"
           |generation.lv.distinctHouseConnections = true""".stripMargin
         } match {
           case Success(cfg) =>
