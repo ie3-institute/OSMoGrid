@@ -14,18 +14,17 @@ import edu.ie3.datamodel.models.input.container.{
   JointGridContainer
 }
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian.OsmoGridGuardianEvent
+import edu.ie3.osmogrid.guardian.OsmoGridGuardian
 
 object ResultListener {
 
-  sealed trait ResultEvent
-
+  sealed trait Request
   final case class GridResult(
       grid: JointGridContainer,
-      replyTo: ActorRef[OsmoGridGuardianEvent]
-  ) extends ResultEvent
+      replyTo: ActorRef[OsmoGridGuardian.Request]
+  ) extends Request
 
-  def apply(cfg: OsmoGridConfig.Output): Behavior[ResultEvent] =
+  def apply(cfg: OsmoGridConfig.Output): Behavior[Request] =
     Behaviors.receive { (ctx, msg) =>
       msg match {
         case GridResult(grid, _) =>

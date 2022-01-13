@@ -10,17 +10,19 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian.OsmoGridGuardianEvent
+import edu.ie3.osmogrid.guardian.OsmoGridGuardian
 
 object InputDataProvider {
 
-  sealed trait InputDataEvent
+  sealed trait Request
   final case class Read()
-      extends InputDataEvent // todo this read method should contain configuration parameters for the actual source + potential filter options
-  final case class Terminate(replyTo: ActorRef[OsmoGridGuardianEvent])
-      extends InputDataEvent
+      extends Request // todo this read method should contain configuration parameters for the actual source + potential filter options
+  final case class Terminate(replyTo: ActorRef[OsmoGridGuardian.Request])
+      extends Request
 
-  def apply(cfg: OsmoGridConfig.Input): Behavior[InputDataEvent] =
+  sealed trait Response
+
+  def apply(cfg: OsmoGridConfig.Input): Behavior[Request] =
     Behaviors.receive { (ctx, msg) =>
       msg match {
         case _: Read =>

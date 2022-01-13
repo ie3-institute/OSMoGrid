@@ -9,11 +9,11 @@ package edu.ie3.osmogrid.lv
 import akka.actor.typed.scaladsl.Behaviors
 
 object LvGenerator {
-  sealed trait LvGeneratorEvent
+  sealed trait Request
 
-  def apply(): Behaviors.Receive[LvGeneratorEvent] = idle
+  def apply(): Behaviors.Receive[Request] = idle
 
-  private def idle: Behaviors.Receive[LvGeneratorEvent] = Behaviors.receive {
+  private def idle: Behaviors.Receive[Request] = Behaviors.receive {
     case (ctx, unsupported) =>
       ctx.log.warn(s"Received unsupported message '$unsupported'.")
       Behaviors.stopped

@@ -9,20 +9,18 @@ package edu.ie3.osmogrid.lv
 import akka.actor.typed.scaladsl.Behaviors
 
 import akka.actor.typed.ActorRef
-import edu.ie3.osmogrid.lv.LvGenerator.LvGeneratorEvent
 
 object LvRegionCoordinator {
-  sealed trait LvRegionCoordinatorEvent
+  sealed trait Request
 
   def apply(
-      lvGeneratorPool: ActorRef[LvGeneratorEvent]
-  ): Behaviors.Receive[LvRegionCoordinatorEvent] = idle(lvGeneratorPool)
+      lvGeneratorPool: ActorRef[LvGenerator.Request]
+  ): Behaviors.Receive[Request] = idle(lvGeneratorPool)
 
   private def idle(
-      lvGeneratorPool: ActorRef[LvGeneratorEvent]
-  ): Behaviors.Receive[LvRegionCoordinatorEvent] = Behaviors.receive {
-    case (ctx, unsupported) =>
-      ctx.log.warn(s"Received unsupported message '$unsupported'.")
-      Behaviors.stopped
+      lvGeneratorPool: ActorRef[LvGenerator.Request]
+  ): Behaviors.Receive[Request] = Behaviors.receive { case (ctx, unsupported) =>
+    ctx.log.warn(s"Received unsupported message '$unsupported'.")
+    Behaviors.stopped
   }
 }
