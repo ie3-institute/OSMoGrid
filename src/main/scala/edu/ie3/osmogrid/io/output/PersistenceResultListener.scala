@@ -43,7 +43,7 @@ object PersistenceResultListener {
       with ResultEvent
 
   // internal API
-  sealed trait ResultEvent
+  private sealed trait ResultEvent
 
   private final case class InitComplete(stateData: ListenerStateData)
       extends ResultEvent
