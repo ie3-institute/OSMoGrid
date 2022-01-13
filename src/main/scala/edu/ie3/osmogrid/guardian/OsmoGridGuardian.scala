@@ -16,7 +16,6 @@ import edu.ie3.datamodel.models.input.container.{
 import edu.ie3.datamodel.utils.ContainerUtils
 import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Output}
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian.stopChildrenByRun
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.io.output.ResultListener.{GridResult, Request}
@@ -27,7 +26,7 @@ import java.util.UUID
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
-object OsmoGridGuardian {
+object OsmoGridGuardian extends InitRunSupport {
 
   /* Messages, that are understood and sent */
   sealed trait Request
@@ -47,13 +46,14 @@ object OsmoGridGuardian {
     val runId: UUID
   }
 
-  private final case class InputDataProviderDied(runId: UUID)
+  private[guardian] final case class InputDataProviderDied(runId: UUID)
       extends GuardianWatch
 
-  private final case class ResultEventListenerDied(runId: UUID)
+  private[guardian] final case class ResultEventListenerDied(runId: UUID)
       extends GuardianWatch
 
-  private final case class LvCoordinatorDied(runId: UUID) extends GuardianWatch
+  private[guardian] final case class LvCoordinatorDied(runId: UUID)
+      extends GuardianWatch
 
   /** Relevant, state-independent data, the the actor needs to know
     *
@@ -106,13 +106,13 @@ object OsmoGridGuardian {
     * @param inputDataProvider
     *   Reference to the input data provider
     */
-  private final case class RunData(
+  private[guardian] final case class RunData(
       runId: UUID,
       cfg: OsmoGridConfig,
       resultEventListener: Vector[ActorRef[ResultListener.ResultEvent]],
       inputDataProvider: ActorRef[InputDataProvider.Request]
   )
-  private case object RunData {
+  private[guardian] case object RunData {
     def apply(
         run: Run,
         resultEventListener: Vector[ActorRef[ResultListener.ResultEvent]],
@@ -150,65 +150,4 @@ object OsmoGridGuardian {
         ctx.log.error(s"Received unsupported message '$unsupported'.")
         Behaviors.stopped
     }
-
-  private def initRun(
-      run: Run,
-      ctx: ActorContext[Request],
-      lvCoordinatorAdapter: ActorRef[LvCoordinator.Response]
-  ): RunData = {
-    val log = ctx.log
-    ConfigFailFast.check(run.cfg, run.additionalListener)
-    log.info(s"Initializing grid generation for run with id '${run.runId}'!")
-
-    log.info("Starting input data provider ...")
-    val inputProvider =
-      ctx.spawn(InputDataProvider(run.cfg.input), "InputDataProvider")
-    ctx.watchWith(inputProvider, InputDataProviderDied(run.runId))
-    val resultEventListener = run.cfg.output match {
-      case Output(Some(_)) =>
-        log.info("Starting output data listener ...")
-        Vector(
-          ctx.spawn(
-            ResultListener(run.runId, run.cfg.output),
-            "PersistenceResultListener"
-          )
-        )
-      case Output(None) =>
-        Vector.empty
-    }
-    resultEventListener.foreach(
-      ctx.watchWith(_, ResultEventListenerDied(run.runId))
-    )
-
-    /* Check, which voltage level configs are given. Start with lv level, if this is desired for. */
-    run.cfg.generation match {
-      case Generation(Some(lvConfig)) =>
-        ctx.log.info("Starting low voltage grid coordinator ...")
-        val lvCoordinator = ctx.spawn(LvCoordinator(), "LvCoordinator")
-        ctx.watchWith(lvCoordinator, LvCoordinatorDied(run.runId))
-        ctx.log.info("Starting voltage level grid generation ...")
-        lvCoordinator ! ReqLvGrids(run.runId, lvConfig, lvCoordinatorAdapter)
-      case unsupported =>
-        ctx.log.error(
-          s"Received unsupported grid generation config '$unsupported'. Stopping run with id '${run.runId}'!"
-        )
-        stopChildrenByRun(
-          RunData(run, resultEventListener, inputProvider),
-          ctx
-        )
-    }
-
-    RunData(run, resultEventListener, inputProvider)
-  }
-
-  private def stopChildrenByRun(
-      runData: RunData,
-      ctx: ActorContext[Request]
-  ): Unit = {
-    ctx.unwatch(runData.inputDataProvider)
-    ctx.stop(runData.inputDataProvider)
-    runData.resultEventListener.foreach(ctx.unwatch)
-    runData.resultEventListener.foreach(ctx.stop)
-  }
-
 }
