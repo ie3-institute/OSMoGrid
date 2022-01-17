@@ -1,17 +1,15 @@
 plugins {
   // todo revise
   id 'java' //java support
-  id 'groovy' // groovy support
+  id 'scala'
   id 'pmd' // code check, working on source code
   id 'com.diffplug.spotless' version '6.2.0'//code format
   id 'com.github.spotbugs' version '5.0.4' // code check, working on byte code
   id 'de.undercouch.download' version '4.1.2'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.32" // run scalatest without specific spec task
-  id 'jacoco' // java code coverage plugin
   id "org.sonarqube" version "3.3" // sonarqube
   id 'net.thauvin.erik.gradle.semver' version '1.0.4' // semantic versioning
-  id 'scala'
 }
 
 ext {
@@ -41,7 +39,6 @@ apply from: scriptsLocation + 'spotbugs.gradle'
 apply from: scriptsLocation + 'spotless.gradle'
 apply from: scriptsLocation + 'checkJavaVersion.gradle'
 apply from: scriptsLocation + 'documentation.gradle'
-apply from: scriptsLocation + 'jacoco.gradle' // jacoco java code coverage
 apply from: scriptsLocation + 'sonarqube.gradle'
 apply from: scriptsLocation + 'vcs.gradle'
 apply from: scriptsLocation + 'semVer.gradle'

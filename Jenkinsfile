@@ -112,8 +112,7 @@ node {
 
         sh 'java -version'
 
-        gradle('--refresh-dependencies clean spotlessCheck pmdMain pmdTest spotbugsMain ' +
-            'spotbugsTest test jacocoTestReport jacocoTestCoverageVerification', projectName)
+        gradle('--refresh-dependencies clean spotlessCheck pmdMain pmdTest spotbugsMain spotbugsTest test', projectName)
 
         // due to an issue with openjdk-8 we use openjdk-11 for javadocs generation
         sh(script: """set +x && cd $projectName""" + ''' set +x; ./gradlew clean javadoc''', returnStdout: true)
@@ -457,9 +456,6 @@ def determineDisplayName(String currentBranchName, String commitHash, String org
 def publishReports(String relativeProjectDir) {
   // publish test reports
   publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, escapeUnderscores: false, keepAll: true, reportDir: relativeProjectDir + '/build/reports/tests/test', reportFiles: 'index.html', reportName: "${relativeProjectDir}_java_tests_report", reportTitles: ''])
-
-  // publish jacoco report for main project only
-  publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, escapeUnderscores: false, keepAll: true, reportDir: relativeProjectDir + '/build/reports/jacoco', reportFiles: 'index.html', reportName: "${relativeProjectDir}_jacoco_report", reportTitles: ''])
 
   // publish pmd report for main project only
   publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, escapeUnderscores: false, keepAll: true, reportDir: relativeProjectDir + '/build/reports/pmd', reportFiles: 'main.html', reportName: "${relativeProjectDir}_pmd_report", reportTitles: ''])
