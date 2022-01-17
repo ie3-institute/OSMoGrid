@@ -30,12 +30,43 @@ object OsmoGridGuardian extends RunSupport with SubGridHandling {
 
   /* Messages, that are understood and sent */
   sealed trait Request
+
+  /** Message to initiate a grid generation run
+    *
+    * @param cfg
+    *   Configuration for the tool
+    * @param additionalListener
+    *   Addresses of additional listeners to be informed about results
+    * @param runId
+    *   Unique identifier for that generation run
+    */
   final case class Run(
       cfg: OsmoGridConfig,
       additionalListener: Vector[ActorRef[ResultListener.ResultEvent]] =
         Vector.empty,
       runId: UUID = UUID.randomUUID()
   ) extends Request
+
+  /** Container object with all available adapters for outside protocol messages
+    *
+    * @param lvCoordinator
+    *   Adapter for messages from [[LvCoordinator]]
+    * @param resultListener
+    *   Adapter for messages from [[ResultEventListener]]
+    */
+  private[guardian] final case class MessageAdapters(
+      lvCoordinator: ActorRef[LvCoordinator.Response],
+      resultListener: ActorRef[ResultListener.Response]
+  )
+  private object MessageAdapters {
+    final case class WrappedLvCoordinatorResponse(
+        response: LvCoordinator.Response
+    ) extends Request
+
+    final case class WrappedListenerResponse(
+        response: ResultListener.Response
+    ) extends Request
+  }
 
   sealed trait Response
 
@@ -72,27 +103,6 @@ object OsmoGridGuardian extends RunSupport with SubGridHandling {
       this.copy(runs = runs - runId)
   }
 
-  /** Container object with all available adapters for outside protocol messages
-    *
-    * @param lvCoordinator
-    *   Adapter for messages from [[LvCoordinator]]
-    * @param resultListener
-    *   Adapter for messages from [[ResultEventListener]]
-    */
-  private[guardian] final case class MessageAdapters(
-      lvCoordinator: ActorRef[LvCoordinator.Response],
-      resultListener: ActorRef[ResultListener.Response]
-  )
-  private object MessageAdapters {
-    final case class WrappedLvCoordinatorResponse(
-        response: LvCoordinator.Response
-    ) extends Request
-
-    final case class WrappedListenerResponse(
-        response: ResultListener.Response
-    ) extends Request
-  }
-
   /** Meta data regarding a certain given generation run
     *
     * @param runId
@@ -107,13 +117,13 @@ object OsmoGridGuardian extends RunSupport with SubGridHandling {
   private[guardian] final case class RunData(
       runId: UUID,
       cfg: OsmoGridConfig,
-      resultEventListener: Vector[ActorRef[ResultListener.ResultEvent]],
+      resultEventListener: Seq[ActorRef[ResultListener.ResultEvent]],
       inputDataProvider: ActorRef[InputDataProvider.Request]
   )
   private[guardian] case object RunData {
     def apply(
         run: Run,
-        resultEventListener: Vector[ActorRef[ResultListener.ResultEvent]],
+        resultEventListener: Seq[ActorRef[ResultListener.ResultEvent]],
         inputDataProvider: ActorRef[InputDataProvider.Request]
     ): RunData =
       RunData(
@@ -142,8 +152,15 @@ object OsmoGridGuardian extends RunSupport with SubGridHandling {
   private def idle(guardianData: GuardianData): Behavior[Request] =
     Behaviors.receive {
       case (ctx, run: Run) =>
-        val runData = initRun(run, ctx, guardianData.msgAdapters.lvCoordinator)
-        idle(guardianData.append(runData))
+        initRun(run, ctx, guardianData.msgAdapters.lvCoordinator) match {
+          case Success(runData) => idle(guardianData.append(runData))
+          case Failure(exception) =>
+            ctx.log.error(
+              "Issuing of run failed. Keep on going without that run.",
+              exception
+            )
+            idle(guardianData)
+        }
       case (ctx, MessageAdapters.WrappedLvCoordinatorResponse(response)) =>
         response match {
           case LvCoordinator.RepLvGrids(runId, grids) =>
@@ -165,9 +182,6 @@ object OsmoGridGuardian extends RunSupport with SubGridHandling {
         )
 
         idle(stopRunProcesses(guardianData, watch.runId, ctx))
-      case (ctx, unsupported) =>
-        ctx.log.error(s"Received unsupported message '$unsupported'.")
-        Behaviors.stopped
     }
 
   private def stopRunProcesses(
