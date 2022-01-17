@@ -22,7 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rely on Java 17
   - Workaround for `spotless`: Add module exports to `gradle.properties`
 
-### Fixed
--  ...
+### Removed
+- Legacy Java code
+  - Jacoco gradle pluginfgc 
 
 [Unreleased]: https://github.com/ie3-institute/OSMoGrid/compare/7e598e53e333c9c1a7b19906584f0357ddf07990...HEAD
