@@ -20,7 +20,6 @@ import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.test.common.{GridSupport, UnitSpec}
-import org.influxdb.annotation.Measurement
 import org.mockito.Mockito.when
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.PrivateMethodTester.PrivateMethod
