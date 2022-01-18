@@ -68,7 +68,7 @@ object LvCoordinator {
         val lvRegionCoordinatorProxy =
           ctx.spawn(lvRegionCoordinatorPool, "LvRegionCoordinatorPool")
 
-        replyTo ! RepLvGrids(runId, Vector.empty[SubGridContainer])
+        replyTo ! RepLvGrids(runId, Seq.empty[SubGridContainer])
         Behaviors.stopped
       case unsupported =>
         ctx.log.error(s"Received unsupported message: $unsupported")

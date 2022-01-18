@@ -47,8 +47,7 @@ object OsmoGridGuardian
     */
   final case class Run(
       cfg: OsmoGridConfig,
-      additionalListener: Vector[ActorRef[ResultListener.ResultEvent]] =
-        Vector.empty,
+      additionalListener: Seq[ActorRef[ResultListener.ResultEvent]] = Seq.empty,
       runId: UUID = UUID.randomUUID()
   ) extends Request
 

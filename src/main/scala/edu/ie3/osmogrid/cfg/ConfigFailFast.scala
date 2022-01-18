@@ -19,8 +19,7 @@ import edu.ie3.osmogrid.io.output.ResultListener
 object ConfigFailFast extends LazyLogging {
   def check(
       cfg: OsmoGridConfig,
-      additionalListener: Vector[ActorRef[ResultListener.ResultEvent]] =
-        Vector.empty
+      additionalListener: Seq[ActorRef[ResultListener.ResultEvent]] = Seq.empty
   ): Unit = cfg match {
     case OsmoGridConfig(generation, input, output) =>
       checkInputConfig(input)
@@ -100,7 +99,7 @@ object ConfigFailFast extends LazyLogging {
 
   private def checkOutputConfig(
       output: OsmoGridConfig.Output,
-      additionalListener: Vector[ActorRef[ResultListener.ResultEvent]]
+      additionalListener: Seq[ActorRef[ResultListener.ResultEvent]]
   ): Unit =
     output match {
       case Output(Some(file)) =>
