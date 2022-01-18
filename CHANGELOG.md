@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Spawn worker pools of `LvRegionCoordinator`s and `LvGridGenerator`s
 - Forward results to `ResultEventListener`
 - Coordinated shut down phase
+  - Only terminate OSMoGrid internal result event listener and let additional listeners alive
   - Post stop phase for terminated children (to shut down data connections, ...)
   - Await response from terminated children
 

@@ -44,7 +44,7 @@ trait SubGridHandling {
 
     guardianData.runs.get(runId) match {
       case Some(
-            RunData.Running(runId, cfg, resultEventListener, inputDataProvider)
+            runData @ RunData.Running(runId, cfg, _, _, inputDataProvider)
           ) =>
         // TODO: Check for mv config and issue run there, if applicable
         ctx.log.debug(
@@ -53,7 +53,7 @@ trait SubGridHandling {
         /* Bundle grid result and inform interested listeners */
         val jointGrid =
           ContainerUtils.combineToJointGrid(updatedSubGrids.asJava)
-        resultEventListener.foreach { listener =>
+        runData.resultListener.foreach { listener =>
           listener ! ResultListener.GridResult(
             jointGrid,
             guardianData.msgAdapters.resultListener

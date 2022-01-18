@@ -117,13 +117,16 @@ object OsmoGridGuardian
   private[guardian] case object RunData {
     def apply(
         run: Run,
-        resultEventListener: Seq[ActorRef[ResultListener.ResultEvent]],
+        osmoGridResultEventListener: Option[ActorRef[
+          ResultListener.ResultEvent
+        ]],
         inputDataProvider: ActorRef[InputDataProvider.Request]
     ): RunData =
       Running(
         run.runId,
         run.cfg,
-        run.additionalListener ++ resultEventListener,
+        osmoGridResultEventListener,
+        run.additionalListener,
         inputDataProvider
       )
 
@@ -133,19 +136,31 @@ object OsmoGridGuardian
       *   Identifier of the run
       * @param cfg
       *   Configuration for that given run
-      * @param resultEventListener
-      *   Listeners to inform about results
+      * @param osmoGridResultEventListener
+      *   Reference to internal [[ResultListener]]
+      * @param additionalResultListener
+      *   References to additional [[ResultListener]]
       * @param inputDataProvider
       *   Reference to the input data provider
       */
     private[guardian] final case class Running(
         override val runId: UUID,
         override val cfg: OsmoGridConfig,
-        resultEventListener: Seq[ActorRef[ResultListener.ResultEvent]],
+        osmoGridResultEventListener: Option[ActorRef[
+          ResultListener.ResultEvent
+        ]],
+        private val additionalResultListener: Seq[
+          ActorRef[ResultListener.ResultEvent]
+        ],
         inputDataProvider: ActorRef[InputDataProvider.Request]
     ) extends RunData {
       def toStopping: Stopping =
         Stopping(runId, cfg)
+
+      def resultListener: Seq[ActorRef[ResultListener.ResultEvent]] =
+        osmoGridResultEventListener
+          .map(Seq(_))
+          .getOrElse(Seq.empty) ++ additionalResultListener
     }
 
     /** Meta data regarding a certain given generation run, that is scheduled to

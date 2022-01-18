@@ -48,7 +48,8 @@ trait StopSupport {
       guardianData
     }
 
-  /** Stop all children for the given run
+  /** Stop all children for the given run. The additional listeners are not
+    * asked to be stopped!
     *
     * @param runData
     *   Current run meta data
@@ -60,7 +61,7 @@ trait StopSupport {
       ctx: ActorContext[Request]
   ): RunData.Stopping = {
     ctx.stop(runData.inputDataProvider)
-    runData.resultEventListener.foreach(ctx.stop)
+    runData.osmoGridResultEventListener.foreach(ctx.stop)
     runData.toStopping
   }
 

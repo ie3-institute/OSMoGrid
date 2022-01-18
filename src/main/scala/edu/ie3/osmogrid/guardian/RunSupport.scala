@@ -91,6 +91,9 @@ trait RunSupport {
       inputConfig: OsmoGridConfig.Input,
       outputConfig: OsmoGridConfig.Output,
       ctx: ActorContext[Request]
+  ): (
+      ActorRef[InputDataProvider.Request],
+      Option[ActorRef[ResultListener.ResultEvent]]
   ) = (
     spawnInputDataProvider(runId, inputConfig, ctx),
     spawnResultListener(runId, outputConfig, ctx)
@@ -137,11 +140,11 @@ trait RunSupport {
       runId: UUID,
       outputConfig: OsmoGridConfig.Output,
       ctx: ActorContext[Request]
-  ): Seq[ActorRef[ResultListener.ResultEvent]] = {
+  ): Option[ActorRef[ResultListener.ResultEvent]] = {
     val resultListener = outputConfig match {
       case Output(Some(_)) =>
         ctx.log.info("Starting output data listener ...")
-        Seq(
+        Some(
           ctx.spawn(
             ResultListener(runId, outputConfig),
             s"PersistenceResultListener_${runId.toString}"
@@ -149,7 +152,7 @@ trait RunSupport {
         )
       case Output(None) =>
         ctx.log.warn(s"No result listener configured for run $runId.")
-        Seq.empty
+        None
     }
     resultListener.foreach(
       ctx.watchWith(_, ResultEventListenerDied(runId))
