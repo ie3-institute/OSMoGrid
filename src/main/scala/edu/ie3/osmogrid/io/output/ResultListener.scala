@@ -6,8 +6,7 @@
 
 package edu.ie3.osmogrid.io.output
 
-import akka.actor.typed.Behavior
-import akka.actor.typed.ActorRef
+import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import akka.actor.typed.scaladsl.Behaviors
 import edu.ie3.datamodel.models.input.container.{
   GridContainer,
@@ -33,11 +32,17 @@ object ResultListener {
   sealed trait ResultEvent
 
   def apply(runId: UUID, cfg: OsmoGridConfig.Output): Behavior[ResultEvent] =
-    Behaviors.receive { case (ctx, GridResult(grid, replyTo)) =>
-      ctx.log.info(s"Received grid result for run id '${runId.toString}'")
-      // TODO: Actual persistence and stuff, closing sinks, ...
-      replyTo ! ResultHandled(runId)
-      Behaviors.same
-    }
+    Behaviors
+      .receive[ResultEvent] { case (ctx, GridResult(grid, replyTo)) =>
+        ctx.log.info(s"Received grid result for run id '${runId.toString}'")
+        // TODO: Actual persistence and stuff, closing sinks, ...
+        replyTo ! ResultHandled(runId)
+        Behaviors.same
+      }
+      .receiveSignal { case (ctx, PostStop) =>
+        ctx.log.info("Requested to stop.")
+        // TODO: Any closing of sources and stuff
+        Behaviors.same
+      }
 
 }
