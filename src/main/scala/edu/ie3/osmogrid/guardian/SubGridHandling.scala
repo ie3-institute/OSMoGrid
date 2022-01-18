@@ -9,6 +9,7 @@ package edu.ie3.osmogrid.guardian
 import akka.actor.typed.scaladsl.ActorContext
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.datamodel.utils.ContainerUtils
+import edu.ie3.osmogrid.guardian.OsmoGridGuardian.RunData.Running
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian.{
   GuardianData,
   Request,
@@ -43,7 +44,7 @@ trait SubGridHandling {
 
     guardianData.runs.get(runId) match {
       case Some(
-            RunData(runId, cfg, resultEventListener, inputDataProvider)
+            RunData.Running(runId, cfg, resultEventListener, inputDataProvider)
           ) =>
         // TODO: Check for mv config and issue run there, if applicable
         ctx.log.debug(

@@ -182,21 +182,4 @@ trait RunSupport {
     ctx.log.info("Starting voltage level grid generation ...")
     lvCoordinator ! ReqLvGrids(runId, lvConfig, lvCoordinatorAdapter)
   }
-
-  /** Stop all children for the given run
-    *
-    * @param runData
-    *   Current run meta data
-    * @param ctx
-    *   Current actor context
-    */
-  protected def stopChildrenByRun(
-      runData: RunData,
-      ctx: ActorContext[Request]
-  ): Unit = {
-    ctx.unwatch(runData.inputDataProvider)
-    ctx.stop(runData.inputDataProvider)
-    runData.resultEventListener.foreach(ctx.unwatch)
-    runData.resultEventListener.foreach(ctx.stop)
-  }
 }

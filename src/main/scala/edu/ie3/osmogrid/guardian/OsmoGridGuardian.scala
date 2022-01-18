@@ -16,17 +16,22 @@ import edu.ie3.datamodel.models.input.container.{
 import edu.ie3.datamodel.utils.ContainerUtils
 import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Output}
+import edu.ie3.osmogrid.guardian.OsmoGridGuardian.RunData.Stopping
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.io.output.ResultListener.{GridResult, Request}
 import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
+import org.slf4j.Logger
 
 import java.util.UUID
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
-object OsmoGridGuardian extends RunSupport with SubGridHandling {
+object OsmoGridGuardian
+    extends RunSupport
+    with StopSupport
+    with SubGridHandling {
 
   /* Messages, that are understood and sent */
   sealed trait Request
@@ -99,39 +104,71 @@ object OsmoGridGuardian extends RunSupport with SubGridHandling {
     def append(run: RunData): GuardianData =
       this.copy(runs = runs + (run.runId -> run))
 
+    def replace(run: RunData): GuardianData = append(run)
+
     def remove(runId: UUID): GuardianData =
       this.copy(runs = runs - runId)
   }
 
-  /** Meta data regarding a certain given generation run
-    *
-    * @param runId
-    *   Identifier of the run
-    * @param cfg
-    *   Configuration for that given run
-    * @param resultEventListener
-    *   Listeners to inform about results
-    * @param inputDataProvider
-    *   Reference to the input data provider
-    */
-  private[guardian] final case class RunData(
-      runId: UUID,
-      cfg: OsmoGridConfig,
-      resultEventListener: Seq[ActorRef[ResultListener.ResultEvent]],
-      inputDataProvider: ActorRef[InputDataProvider.Request]
-  )
+  private[guardian] sealed trait RunData {
+    val runId: UUID
+    val cfg: OsmoGridConfig
+  }
   private[guardian] case object RunData {
     def apply(
         run: Run,
         resultEventListener: Seq[ActorRef[ResultListener.ResultEvent]],
         inputDataProvider: ActorRef[InputDataProvider.Request]
     ): RunData =
-      RunData(
+      Running(
         run.runId,
         run.cfg,
         run.additionalListener ++ resultEventListener,
         inputDataProvider
       )
+
+    /** Meta data regarding a certain given generation run, that yet is active
+      *
+      * @param runId
+      *   Identifier of the run
+      * @param cfg
+      *   Configuration for that given run
+      * @param resultEventListener
+      *   Listeners to inform about results
+      * @param inputDataProvider
+      *   Reference to the input data provider
+      */
+    private[guardian] final case class Running(
+        override val runId: UUID,
+        override val cfg: OsmoGridConfig,
+        resultEventListener: Seq[ActorRef[ResultListener.ResultEvent]],
+        inputDataProvider: ActorRef[InputDataProvider.Request]
+    ) extends RunData {
+      def toStopping: Stopping =
+        Stopping(runId, cfg)
+    }
+
+    /** Meta data regarding a certain given generation run, that is scheduled to
+      * be stopped
+      *
+      * @param runId
+      *   Identifier of the run
+      * @param cfg
+      *   Configuration for that given run
+      * @param resultListenerTerminated
+      *   If the result listener yet has terminated
+      * @param inputDataProviderTerminated
+      *   If the input data provider yet has terminated
+      */
+    private[guardian] final case class Stopping(
+        override val runId: UUID,
+        override val cfg: OsmoGridConfig,
+        resultListenerTerminated: Boolean = false,
+        inputDataProviderTerminated: Boolean = false
+    ) extends RunData {
+      def successfullyTerminated: Boolean =
+        resultListenerTerminated && inputDataProviderTerminated
+    }
   }
 
   def apply(): Behavior[Request] = Behaviors.setup { context =>
@@ -149,7 +186,7 @@ object OsmoGridGuardian extends RunSupport with SubGridHandling {
     idle(GuardianData(messageAdapters, Map.empty))
   }
 
-  private def idle(guardianData: GuardianData): Behavior[Request] =
+  private[guardian] def idle(guardianData: GuardianData): Behavior[Request] =
     Behaviors.receive {
       case (ctx, run: Run) =>
         initRun(run, ctx, guardianData.msgAdapters.lvCoordinator) match {
@@ -176,20 +213,7 @@ object OsmoGridGuardian extends RunSupport with SubGridHandling {
             idle(stopRunProcesses(guardianData, runId, ctx))
         }
       case (ctx, watch: GuardianWatch) =>
-        ctx.log.error(
-          s"Received dead message '$watch' for run ${watch.runId}! " +
-            s"Stopping all corresponding children ..."
-        )
-
-        idle(stopRunProcesses(guardianData, watch.runId, ctx))
+        /* Somebody died. Let's see, what we can do. */
+        handleGuardianWatchEvent(watch, guardianData, ctx)
     }
-
-  private def stopRunProcesses(
-      guardianData: GuardianData,
-      runId: UUID,
-      ctx: ActorContext[Request]
-  ): GuardianData = {
-    guardianData.runs.get(runId).foreach(stopChildrenByRun(_, ctx))
-    guardianData.remove(runId)
-  }
 }
