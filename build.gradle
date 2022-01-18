@@ -60,6 +60,8 @@ dependencies {
 
   // akka
   implementation "com.typesafe.akka:akka-actor-typed_${scalaMajorVersion}:${akkaVersion}"
+  implementation platform("com.typesafe.akka:akka-bom_$scalaMajorVersion:2.6.18")
+  testImplementation "com.typesafe.akka:akka-actor-testkit-typed_$scalaMajorVersion:2.6.18"
 
   // logging
   implementation "com.typesafe.scala-logging:scala-logging_${scalaMajorVersion}:3.9.4"
@@ -106,11 +108,13 @@ dependencies {
   implementation 'info.picocli:picocli:4.6.2' // command line interface
 
   spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.11.0'
+  spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.11.0'
 
   // testing
   testImplementation 'junit:junit:4.13.2'
   testImplementation 'cglib:cglib-nodep:3.3.0' // enables mocking of classes (in addition to interfaces)
   testImplementation 'org.mockito:mockito-core:4.2.0' // mocking framework
+  testImplementation 'org.scalatestplus:mockito-3-12_3:3.2.10.0' // syntactic sugar
   testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
   testImplementation 'org.objenesis:objenesis:3.2' // Mock creation with constructor parameters
 

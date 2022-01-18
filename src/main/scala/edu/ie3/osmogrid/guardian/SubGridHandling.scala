@@ -15,7 +15,9 @@ import edu.ie3.osmogrid.guardian.OsmoGridGuardian.{
   Request,
   RunData
 }
+import edu.ie3.osmogrid.guardian.SubGridHandling.assignSubnetNumbers
 import edu.ie3.osmogrid.io.output.ResultListener
+import org.slf4j.Logger
 
 import java.util.UUID
 import scala.jdk.CollectionConverters.*
@@ -30,16 +32,13 @@ trait SubGridHandling {
     *   Received grids
     * @param guardianData
     *   Relevant, state-independent data, the the actor needs to know
-    * @param ctx
-    *   Current actor context
     */
   protected def handleLvResults(
       runId: UUID,
       grids: Seq[SubGridContainer],
-      guardianData: GuardianData,
-      ctx: ActorContext[Request]
-  ): Unit = {
-    ctx.log.info("All lv grids successfully generated.")
+      guardianData: GuardianData
+  )(implicit log: Logger): Unit = {
+    log.info("All lv grids successfully generated.")
     val updatedSubGrids = assignSubnetNumbers(grids)
 
     guardianData.runs.get(runId) match {
@@ -47,7 +46,7 @@ trait SubGridHandling {
             runData @ RunData.Running(runId, cfg, _, _, inputDataProvider)
           ) =>
         // TODO: Check for mv config and issue run there, if applicable
-        ctx.log.debug(
+        log.debug(
           "No further generation steps intended. Hand over results to result handler."
         )
         /* Bundle grid result and inform interested listeners */
@@ -60,16 +59,18 @@ trait SubGridHandling {
           )
         }
       case Some(stopping: Stopping) =>
-        ctx.log.warn(
+        log.warn(
           s"Received results for run $runId, which is in coordinated shutdown phase. Ignore the results"
         )
       case None =>
-        ctx.log.error(
+        log.error(
           s"Cannot find run information for '$runId', although it is supposed to be active. No further actions taken."
         )
     }
   }
+}
 
+object SubGridHandling {
   private def assignSubnetNumbers(
       subnets: Seq[SubGridContainer]
   ): Seq[SubGridContainer] = subnets.zipWithIndex.map {

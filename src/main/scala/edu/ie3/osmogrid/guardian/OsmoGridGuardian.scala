@@ -216,7 +216,7 @@ object OsmoGridGuardian
       case (ctx, MessageAdapters.WrappedLvCoordinatorResponse(response)) =>
         response match {
           case LvCoordinator.RepLvGrids(runId, grids) =>
-            handleLvResults(runId, grids, guardianData, ctx)
+            handleLvResults(runId, grids, guardianData)(ctx.log)
             Behaviors.same
         }
       case (ctx, MessageAdapters.WrappedListenerResponse(response)) =>
