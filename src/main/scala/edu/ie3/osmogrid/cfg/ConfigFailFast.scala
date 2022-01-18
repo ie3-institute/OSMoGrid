@@ -77,10 +77,8 @@ object ConfigFailFast extends LazyLogging {
     file match {
       case File(directory, _) if directory.isEmpty =>
         throw IllegalConfigException("Asset input directory may be set!")
-      case unsupported =>
-        throw IllegalConfigException(
-          s"Unable to run sanity checks on unsupported asset input file config '$unsupported'."
-        )
+      case _: File =>
+      /* Everything is fine */
     }
 
   private def checkOsmInputConfig(osm: OsmoGridConfig.Input.Osm): Unit =
@@ -96,10 +94,8 @@ object ConfigFailFast extends LazyLogging {
     pbf match {
       case OsmoGridConfig.Input.Osm.Pbf(file) if file.isEmpty =>
         throw IllegalConfigException("Pbf file may be set!")
-      case unsupported =>
-        throw IllegalConfigException(
-          s"Unable to run sanity checks on unsupported input file config '$unsupported'."
-        )
+      case OsmoGridConfig.Input.Osm.Pbf(_) =>
+      /* Everything is fine */
     }
 
   private def checkOutputConfig(
@@ -126,9 +122,7 @@ object ConfigFailFast extends LazyLogging {
         throw IllegalConfigException(
           "Output directory and separator must be set when using .csv file sink!"
         )
-      case unsupported =>
-        throw IllegalConfigException(
-          s"Unable to run sanity checks on unsupported output file config '$unsupported'."
-        )
+      case _: OsmoGridConfig.Output.Csv =>
+      /* Everything is fine */
     }
 }
