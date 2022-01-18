@@ -9,7 +9,7 @@ package edu.ie3.osmogrid.guardian
 import akka.actor.typed.scaladsl.ActorContext
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.datamodel.utils.ContainerUtils
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian.RunData.Running
+import edu.ie3.osmogrid.guardian.OsmoGridGuardian.RunData.{Running, Stopping}
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian.{
   GuardianData,
   Request,
@@ -59,6 +59,10 @@ trait SubGridHandling {
             guardianData.msgAdapters.resultListener
           )
         }
+      case Some(stopping: Stopping) =>
+        ctx.log.warn(
+          s"Received results for run $runId, which is in coordinated shutdown phase. Ignore the results"
+        )
       case None =>
         ctx.log.error(
           s"Cannot find run information for '$runId', although it is supposed to be active. No further actions taken."
