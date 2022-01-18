@@ -26,7 +26,10 @@ object ResultListener {
       with ResultEvent
 
   sealed trait Response
-  final case class ResultHandled(runId: UUID) extends Response
+  final case class ResultHandled(
+      runId: UUID,
+      replyTo: ActorRef[ResultListener.ResultEvent]
+  ) extends Response
 
   /* internal API */
   sealed trait ResultEvent
@@ -36,7 +39,7 @@ object ResultListener {
       .receive[ResultEvent] { case (ctx, GridResult(grid, replyTo)) =>
         ctx.log.info(s"Received grid result for run id '${runId.toString}'")
         // TODO: Actual persistence and stuff, closing sinks, ...
-        replyTo ! ResultHandled(runId)
+        replyTo ! ResultHandled(runId, ctx.self)
         Behaviors.same
       }
       .receiveSignal { case (ctx, PostStop) =>

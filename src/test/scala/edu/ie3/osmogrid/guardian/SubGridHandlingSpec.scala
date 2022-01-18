@@ -10,12 +10,6 @@ import akka.actor.testkit.typed.Effect.MessageAdapter
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian.{
-  GuardianData,
-  MessageAdapters,
-  RunData
-}
-import edu.ie3.osmogrid.guardian.SubGridHandling
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.lv.LvCoordinator
@@ -87,7 +81,7 @@ class SubGridHandlingSpec
 
       val runId = UUID.randomUUID()
       val grids = Range(1, 10).map(mockSubGrid)
-      val messageAdapters = new OsmoGridGuardian.MessageAdapters(
+      val messageAdapters = new RunGuardian.MessageAdapters(
         lvCoordinatorAdapter.ref,
         resultListenerAdapter.ref
       )
@@ -100,20 +94,13 @@ class SubGridHandlingSpec
       }.get
 
       "having an active run" should {
-        val guardianData = GuardianData(
-          messageAdapters,
-          Map(
-            runId -> RunData.Running(
-              runId,
-              cfg,
-              Some(resultListener.ref),
-              Seq(additionalResultListener.ref),
-              inputDataProvider.ref
-            )
-          )
-        )
         "inform the right parties about correct information" in new SubGridHandling {
-          handleLvResults(runId, grids, guardianData)
+          handleLvResults(
+            grids,
+            cfg.generation,
+            Seq(resultListener.ref, additionalResultListener.ref),
+            messageAdapters
+          )
 
           resultListener.receiveMessage() match {
             case ResultListener.GridResult(grid, _) =>
@@ -125,39 +112,6 @@ class SubGridHandlingSpec
               grid.getGridName shouldBe "DummyGrid"
               grid.getRawGrid.getNodes.size() shouldBe 0
           }
-          inputDataProvider.expectNoMessage()
-          lvCoordinatorAdapter.expectNoMessage()
-          resultListenerAdapter.expectNoMessage()
-        }
-      }
-
-      "having a run in coordinated shutdown phase" should {
-        val guardianData = GuardianData(
-          messageAdapters,
-          Map(
-            runId -> RunData.Stopping(
-              runId,
-              cfg
-            )
-          )
-        )
-        "inform nobody about anything" in new SubGridHandling {
-          resultListener.expectNoMessage()
-          additionalResultListener.expectNoMessage()
-          inputDataProvider.expectNoMessage()
-          lvCoordinatorAdapter.expectNoMessage()
-          resultListenerAdapter.expectNoMessage()
-        }
-      }
-
-      "having no matching run" should {
-        val guardianData = GuardianData(
-          messageAdapters,
-          Map.empty[UUID, RunData]
-        )
-        "inform nobody about anything" in new SubGridHandling {
-          resultListener.expectNoMessage()
-          additionalResultListener.expectNoMessage()
           inputDataProvider.expectNoMessage()
           lvCoordinatorAdapter.expectNoMessage()
           resultListenerAdapter.expectNoMessage()
