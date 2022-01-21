@@ -82,7 +82,7 @@ class SubGridHandlingSpec
 
       val runId = UUID.randomUUID()
       val grids = Range(1, 10).map(mockSubGrid)
-      val messageAdapters = new RunGuardian.MessageAdapters(
+      val messageAdapters = new MessageAdapters(
         lvCoordinatorAdapter.ref,
         resultListenerAdapter.ref
       )

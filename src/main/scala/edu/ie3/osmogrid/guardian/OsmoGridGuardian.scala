@@ -16,6 +16,7 @@ import edu.ie3.datamodel.models.input.container.{
 import edu.ie3.datamodel.utils.ContainerUtils
 import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Output}
+import edu.ie3.osmogrid.guardian.run.Run
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
@@ -82,7 +83,7 @@ object OsmoGridGuardian {
           s"RunGuardian_$runId"
         )
         ctx.watchWith(runGuardian, RunGuardianDied(runId))
-        runGuardian ! RunGuardian.Run
+        runGuardian ! run.Run
         idle(guardianData.append(runId))
 
       case (ctx, watch: Watch) =>

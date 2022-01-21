@@ -8,7 +8,6 @@ package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.guardian.run.RunGuardian
-import edu.ie3.osmogrid.guardian.run.RunGuardian.{ChildReferences, StoppingData}
 
 import java.util.UUID
 
@@ -23,8 +22,8 @@ trait StopSupport {
     *   Current actor context
     */
   protected def stopChildren(
-      childReferences: RunGuardian.ChildReferences,
-      ctx: ActorContext[RunGuardian.Request]
+      childReferences: ChildReferences,
+      ctx: ActorContext[Request]
   ): StoppingData = {
     ctx.stop(childReferences.inputDataProvider)
     childReferences.resultListener.foreach(ctx.stop)
@@ -42,14 +41,14 @@ trait StopSupport {
     *   Next state with updated [[GuardianData]]
     */
   protected def registerCoordinatedShutDown(
-      watchMsg: RunGuardian.Watch,
+      watchMsg: Watch,
       stoppingData: StoppingData
   ): StoppingData = watchMsg match {
-    case RunGuardian.InputDataProviderDied =>
+    case InputDataProviderDied =>
       stoppingData.copy(inputDataProviderTerminated = true)
-    case RunGuardian.ResultEventListenerDied =>
+    case ResultEventListenerDied =>
       stoppingData.copy(resultListenerTerminated = true)
-    case RunGuardian.LvCoordinatorDied =>
+    case LvCoordinatorDied =>
       stoppingData.copy(lvCoordinatorTerminated =
         stoppingData.lvCoordinatorTerminated.map(_ => true)
       )
@@ -72,21 +71,21 @@ trait StopSupport {
   protected def handleUnexpectedShutDown(
       runId: UUID,
       childReferences: ChildReferences,
-      watchMsg: RunGuardian.Watch,
-      ctx: ActorContext[RunGuardian.Request]
+      watchMsg: Watch,
+      ctx: ActorContext[Request]
   ): StoppingData = {
     (stopChildren(childReferences, ctx), watchMsg) match {
-      case (stoppingData, RunGuardian.InputDataProviderDied) =>
+      case (stoppingData, InputDataProviderDied) =>
         ctx.log.warn(
           s"Input data provider for run $runId unexpectedly died. Start coordinated shut down phase for this run."
         )
         stoppingData.copy(inputDataProviderTerminated = true)
-      case (stoppingData, RunGuardian.ResultEventListenerDied) =>
+      case (stoppingData, ResultEventListenerDied) =>
         ctx.log.warn(
           s"One of the result listener for run $runId unexpectedly died. Start coordinated shut down phase for this run."
         )
         stoppingData.copy(resultListenerTerminated = true)
-      case (stoppingData, RunGuardian.LvCoordinatorDied) =>
+      case (stoppingData, LvCoordinatorDied) =>
         ctx.log.warn(
           s"Lv coordinator for run $runId unexpectedly died. Start coordinated shut down phase for this run."
         )

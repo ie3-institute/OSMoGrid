@@ -35,7 +35,7 @@ trait SubGridHandling {
       grids: Seq[SubGridContainer],
       cfg: OsmoGridConfig.Generation,
       resultListener: Seq[ActorRef[ResultListener.ResultEvent]],
-      msgAdapters: RunGuardian.MessageAdapters
+      msgAdapters: MessageAdapters
   )(implicit log: Logger): Unit = {
     log.info("All lv grids successfully generated.")
     val updatedSubGrids = assignSubnetNumbers(grids)

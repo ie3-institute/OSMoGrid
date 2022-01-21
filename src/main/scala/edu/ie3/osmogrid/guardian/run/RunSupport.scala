@@ -41,9 +41,9 @@ trait RunSupport {
       runId: UUID,
       cfg: OsmoGridConfig,
       additionalListener: Seq[ActorRef[ResultListener.ResultEvent]],
-      msgAdapters: RunGuardian.MessageAdapters,
-      ctx: ActorContext[RunGuardian.Request]
-  ): Try[RunGuardian.ChildReferences] = {
+      msgAdapters: MessageAdapters,
+      ctx: ActorContext[Request]
+  ): Try[ChildReferences] = {
     val log = ctx.log
     ConfigFailFast.check(cfg, additionalListener)
     log.info(s"Initializing grid generation for run with id '$runId'!")
@@ -61,7 +61,7 @@ trait RunSupport {
           ctx
         )
         Success(
-          RunGuardian.ChildReferences(
+          ChildReferences(
             inputProvider,
             resultEventListener,
             additionalListener,
@@ -97,7 +97,7 @@ trait RunSupport {
       runId: UUID,
       inputConfig: OsmoGridConfig.Input,
       outputConfig: OsmoGridConfig.Output,
-      ctx: ActorContext[RunGuardian.Request]
+      ctx: ActorContext[Request]
   ): (
       ActorRef[InputDataProvider.Request],
       Option[ActorRef[ResultListener.ResultEvent]]
@@ -120,7 +120,7 @@ trait RunSupport {
   private def spawnInputDataProvider(
       runId: UUID,
       inputConfig: OsmoGridConfig.Input,
-      ctx: ActorContext[RunGuardian.Request]
+      ctx: ActorContext[Request]
   ): ActorRef[InputDataProvider.Request] = {
     ctx.log.info("Starting input data provider ...")
     val inputProvider =
@@ -128,7 +128,7 @@ trait RunSupport {
         InputDataProvider(inputConfig),
         s"InputDataProvider_${runId.toString}"
       )
-    ctx.watchWith(inputProvider, RunGuardian.InputDataProviderDied)
+    ctx.watchWith(inputProvider, InputDataProviderDied)
     inputProvider
   }
 
@@ -146,7 +146,7 @@ trait RunSupport {
   private def spawnResultListener(
       runId: UUID,
       outputConfig: OsmoGridConfig.Output,
-      ctx: ActorContext[RunGuardian.Request]
+      ctx: ActorContext[Request]
   ): Option[ActorRef[ResultListener.ResultEvent]] = {
     val resultListener = outputConfig match {
       case Output(Some(_)) =>
@@ -162,7 +162,7 @@ trait RunSupport {
         None
     }
     resultListener.foreach(
-      ctx.watchWith(_, RunGuardian.ResultEventListenerDied)
+      ctx.watchWith(_, ResultEventListenerDied)
     )
     resultListener
   }
@@ -183,11 +183,11 @@ trait RunSupport {
       runId: UUID,
       lvConfig: OsmoGridConfig.Generation.Lv,
       lvCoordinatorAdapter: ActorRef[LvCoordinator.Response],
-      ctx: ActorContext[RunGuardian.Request]
+      ctx: ActorContext[Request]
   ): ActorRef[LvCoordinator.Request] = {
     val lvCoordinator =
       ctx.spawn(LvCoordinator(), s"LvCoordinator_${runId.toString}")
-    ctx.watchWith(lvCoordinator, RunGuardian.LvCoordinatorDied)
+    ctx.watchWith(lvCoordinator, LvCoordinatorDied)
 
     ctx.log.info("Starting voltage level grid generation ...")
     lvCoordinator ! ReqLvGrids(runId, lvConfig, lvCoordinatorAdapter)
