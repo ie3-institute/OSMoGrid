@@ -4,12 +4,13 @@
  * Research group Distribution grid planning and operation
  */
 
-package edu.ie3.osmogrid.guardian
+package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.testkit.typed.Effect.MessageAdapter
 import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
+import edu.ie3.osmogrid.guardian.run.{RunGuardian, SubGridHandling}
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.lv.LvCoordinator

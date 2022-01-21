@@ -4,12 +4,11 @@
  * Research group Distribution grid planning and operation
  */
 
-package edu.ie3.osmogrid.guardian
+package edu.ie3.osmogrid.guardian.run
 
-import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.ActorContext
-import edu.ie3.osmogrid.guardian.RunGuardian.{ChildReferences, StoppingData}
-import org.slf4j.Logger
+import edu.ie3.osmogrid.guardian.run.RunGuardian
+import edu.ie3.osmogrid.guardian.run.RunGuardian.{ChildReferences, StoppingData}
 
 import java.util.UUID
 

@@ -4,16 +4,13 @@
  * Research group Distribution grid planning and operation
  */
 
-package edu.ie3.osmogrid.guardian
+package edu.ie3.osmogrid.guardian.run
 
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import akka.actor.typed.scaladsl.{Behaviors, StashBuffer}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian.Request
-import edu.ie3.osmogrid.guardian.RunGuardian.MessageAdapters.{
-  WrappedListenerResponse,
-  WrappedLvCoordinatorResponse
-}
+import edu.ie3.osmogrid.guardian.run.RunGuardian.MessageAdapters.{WrappedListenerResponse, WrappedLvCoordinatorResponse}
+import edu.ie3.osmogrid.guardian.run.{RunSupport, StopSupport, SubGridHandling}
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.lv.LvCoordinator
@@ -25,6 +22,7 @@ import scala.util.{Failure, Success}
   */
 object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
   sealed trait Request
+
   object Run extends Request
 
   /** Container object with all available adapters for outside protocol messages
@@ -34,11 +32,12 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
     * @param resultListener
     *   Adapter for messages from [[ResultEventListener]]
     */
-  private[guardian] final case class MessageAdapters(
+  private[run] final case class MessageAdapters(
       lvCoordinator: ActorRef[LvCoordinator.Response],
       resultListener: ActorRef[ResultListener.Response]
   )
-  private[guardian] object MessageAdapters {
+
+  private[run] object MessageAdapters {
     final case class WrappedLvCoordinatorResponse(
         response: LvCoordinator.Response
     ) extends Request
@@ -49,14 +48,16 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
   }
 
   sealed trait Response
+
   final case class Done(runId: UUID) extends Response
 
   sealed trait Watch extends Request
-  private[guardian] object InputDataProviderDied extends Watch
 
-  private[guardian] object ResultEventListenerDied extends Watch
+  private[run] object InputDataProviderDied extends Watch
 
-  private[guardian] object LvCoordinatorDied extends Watch
+  private[run] object ResultEventListenerDied extends Watch
+
+  private[run] object LvCoordinatorDied extends Watch
 
   final case class RunGuardianData(
       runId: UUID,
@@ -65,7 +66,7 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
       msgAdapters: MessageAdapters
   )
 
-  private[guardian] final case class ChildReferences(
+  private[run] final case class ChildReferences(
       inputDataProvider: ActorRef[InputDataProvider.Request],
       resultListener: Option[ActorRef[ResultListener.ResultEvent]],
       additionalResultListeners: Seq[ActorRef[ResultListener.ResultEvent]],
@@ -87,7 +88,7 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
     * @param lvCoordinatorTerminated
     *   Optional information, if the [[LvCoordinator]] has stopped
     */
-  private[guardian] final case class StoppingData(
+  private[run] final case class StoppingData(
       inputDataProviderTerminated: Boolean,
       resultListenerTerminated: Boolean,
       lvCoordinatorTerminated: Option[Boolean]
@@ -135,7 +136,7 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
     * @return
     *   the next state
     */
-  private[guardian] def idle(
+  private[run] def idle(
       runId: UUID,
       cfg: OsmoGridConfig,
       additionalListener: Seq[ActorRef[ResultListener.ResultEvent]],
@@ -159,6 +160,7 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
     }
 
   /** Behavior to indicate, that a simulation run is currently active
+    *
     * @param runId
     *   Identifier of the run
     * @param cfg
