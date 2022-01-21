@@ -16,19 +16,27 @@ trait StopSupport {
   /** Stop all children for the given run. The additional listeners are not
     * asked to be stopped!
     *
+    * @param runId
+    *   Identifier of the current run
     * @param childReferences
     *   References to children
     * @param ctx
     *   Current actor context
     */
   protected def stopChildren(
+      runId: UUID,
       childReferences: ChildReferences,
       ctx: ActorContext[Request]
   ): StoppingData = {
     ctx.stop(childReferences.inputDataProvider)
     childReferences.resultListener.foreach(ctx.stop)
 
-    StoppingData(false, false, childReferences.lvCoordinator.map(_ => false))
+    StoppingData(
+      runId,
+      false,
+      false,
+      childReferences.lvCoordinator.map(_ => false)
+    )
   }
 
   /** Register [[Watch]] messages within the coordinated shutdown phase of a run
@@ -74,7 +82,7 @@ trait StopSupport {
       watchMsg: Watch,
       ctx: ActorContext[Request]
   ): StoppingData = {
-    (stopChildren(childReferences, ctx), watchMsg) match {
+    (stopChildren(runId, childReferences, ctx), watchMsg) match {
       case (stoppingData, InputDataProviderDied) =>
         ctx.log.warn(
           s"Input data provider for run $runId unexpectedly died. Start coordinated shut down phase for this run."

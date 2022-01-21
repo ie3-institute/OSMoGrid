@@ -7,6 +7,7 @@
 package edu.ie3.osmogrid.guardian
 
 import akka.actor.typed.ActorRef
+import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.lv.LvCoordinator
@@ -64,9 +65,19 @@ package object run {
         .getOrElse(Seq.empty) ++ additionalResultListeners
   }
 
+  private sealed trait StateData
+  private final case class RunGuardianData(
+      runId: UUID,
+      cfg: OsmoGridConfig,
+      additionalListener: Seq[ActorRef[ResultListener.ResultEvent]],
+      msgAdapters: MessageAdapters
+  ) extends StateData
+
   /** Meta data to keep track of which children already terminated during the
     * coordinated shutdown phase
     *
+    * @param runId
+    *   Identifier of the run
     * @param inputDataProviderTerminated
     *   If the [[InputDataProvider]] has stopped
     * @param resultListenerTerminated
@@ -75,10 +86,11 @@ package object run {
     *   Optional information, if the [[LvCoordinator]] has stopped
     */
   private final case class StoppingData(
+      runId: UUID,
       inputDataProviderTerminated: Boolean,
       resultListenerTerminated: Boolean,
       lvCoordinatorTerminated: Option[Boolean]
-  ) {
+  ) extends StateData {
     def allChildrenTerminated: Boolean =
       inputDataProviderTerminated && resultListenerTerminated && lvCoordinatorTerminated
         .contains(true)

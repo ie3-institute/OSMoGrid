@@ -24,57 +24,58 @@ trait RunSupport {
 
   /** Initiate a generation run and return the updated run meta data
     *
-    * @param runId
-    *   Identifier of the run
-    * @param cfg
-    *   Configuration for the run
-    * @param additionalListener
-    *   References to additional listeners
-    * @param msgAdapters
-    *   Collection of all message adapters
+    * @param runGuardianData
+    *   Meta information describing the current actor's state
     * @param ctx
     *   Current actor context
     * @return
     *   Updated run meta data
     */
   protected def initRun(
-      runId: UUID,
-      cfg: OsmoGridConfig,
-      additionalListener: Seq[ActorRef[ResultListener.ResultEvent]],
-      msgAdapters: MessageAdapters,
+      runGuardianData: RunGuardianData,
       ctx: ActorContext[Request]
   ): Try[ChildReferences] = {
     val log = ctx.log
-    ConfigFailFast.check(cfg, additionalListener)
-    log.info(s"Initializing grid generation for run with id '$runId'!")
+    ConfigFailFast.check(
+      runGuardianData.cfg,
+      runGuardianData.additionalListener
+    )
+    log.info(
+      s"Initializing grid generation for run with id '${runGuardianData.runId}'!"
+    )
 
     /* Check, which voltage level configs are given. Start with lv level, if this is desired for. */
-    cfg.generation match {
+    runGuardianData.cfg.generation match {
       case Generation(Some(lvConfig)) =>
         ctx.log.info("Starting low voltage grid coordinator ...")
         val (inputProvider, resultEventListener) =
-          spawnIoActors(runId, cfg.input, cfg.output, ctx)
+          spawnIoActors(
+            runGuardianData.runId,
+            runGuardianData.cfg.input,
+            runGuardianData.cfg.output,
+            ctx
+          )
         val lvCoordinator = startLvGridGeneration(
-          runId,
+          runGuardianData.runId,
           lvConfig,
-          msgAdapters.lvCoordinator,
+          runGuardianData.msgAdapters.lvCoordinator,
           ctx
         )
         Success(
           ChildReferences(
             inputProvider,
             resultEventListener,
-            additionalListener,
+            runGuardianData.additionalListener,
             Some(lvCoordinator)
           )
         )
       case unsupported =>
         ctx.log.error(
-          s"Received unsupported grid generation config '$unsupported'. Stopping run with id '$runId'!"
+          s"Received unsupported grid generation config '$unsupported'. Stopping run with id '${runGuardianData.runId}'!"
         )
         Failure(
           UnsupportedRequestException(
-            s"Unable to issue a generation run with the given parameters: '${cfg.generation}'"
+            s"Unable to issue a generation run with the given parameters: '${runGuardianData.cfg.generation}'"
           )
         )
     }
