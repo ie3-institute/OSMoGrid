@@ -10,6 +10,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Output}
+import edu.ie3.osmogrid.exception.UnsupportedRequestException
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.lv.LvCoordinator
@@ -71,7 +72,7 @@ trait RunSupport {
           s"Received unsupported grid generation config '$unsupported'. Stopping run with id '$runId'!"
         )
         Failure(
-          UnsupportedOperationException(
+          UnsupportedRequestException(
             s"Unable to issue a generation run with the given parameters: '${cfg.generation}'"
           )
         )

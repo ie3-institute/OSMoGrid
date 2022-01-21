@@ -106,7 +106,6 @@ dependencies {
   implementation 'info.picocli:picocli:4.6.2' // command line interface
 
   spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.11.0'
-  spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.11.0'
 
   // testing
   testImplementation 'junit:junit:4.13.2'

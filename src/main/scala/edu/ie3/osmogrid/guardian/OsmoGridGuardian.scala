@@ -29,7 +29,6 @@ import scala.util.{Failure, Success, Try}
 
 object OsmoGridGuardian {
 
-  /* Messages, that are understood and sent */
   sealed trait Request
 
   /** Message to initiate a grid generation run

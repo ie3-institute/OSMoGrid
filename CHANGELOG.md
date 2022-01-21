@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Generation
 - Let `OsmoGridGuardian` handle multiple runs and spawn children accordingly
 - A `RunGuardian` takes care of a distinct simulation run and spawns all its needed services
-  - Spawn an `InputDataProvider` and a `ResultListener`(if need be) per run
+  - Spawn an `InputDataProvider` and a `ResultListener`(if required) per run
   - Spawn `LvCoordinator` and trigger it
 - Coordinated shut down phase
   - Only terminate OSMoGrid internal result event listener and let additional listeners alive

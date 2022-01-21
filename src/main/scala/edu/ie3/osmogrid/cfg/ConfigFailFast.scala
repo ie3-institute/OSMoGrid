@@ -110,7 +110,7 @@ object ConfigFailFast extends LazyLogging {
         )
       case Output(None) =>
         throw IllegalConfigException(
-          "You have to provide at least one output data type!"
+          "You have to provide at least one output data sink, e.g. to .csv-files!"
         )
     }
 
