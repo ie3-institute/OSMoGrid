@@ -190,7 +190,7 @@ trait RunSupport {
     ctx.watchWith(lvCoordinator, LvCoordinatorDied)
 
     ctx.log.info("Starting voltage level grid generation ...")
-    lvCoordinator ! ReqLvGrids(runId, lvConfig, lvCoordinatorAdapter)
+    lvCoordinator ! ReqLvGrids(lvConfig, lvCoordinatorAdapter)
 
     lvCoordinator
   }

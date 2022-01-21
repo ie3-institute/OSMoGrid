@@ -18,21 +18,18 @@ import java.util.UUID
 object LvCoordinator {
   sealed trait Request
   final case class ReqLvGrids(
-      runId: UUID,
       cfg: OsmoGridConfig.Generation.Lv,
       replyTo: ActorRef[Response]
   ) extends Request
 
   sealed trait Response
-  final case class RepLvGrids(runId: UUID, grids: Seq[SubGridContainer])
-      extends Response
+  final case class RepLvGrids(grids: Seq[SubGridContainer]) extends Response
 
   def apply(): Behavior[Request] = idle
 
   private def idle: Behavior[Request] = Behaviors.receive { (ctx, msg) =>
     msg match {
       case ReqLvGrids(
-            runId,
             Lv(
               amountOfGridGenerators,
               amountOfRegionCoordinators,
@@ -68,7 +65,7 @@ object LvCoordinator {
         val lvRegionCoordinatorProxy =
           ctx.spawn(lvRegionCoordinatorPool, "LvRegionCoordinatorPool")
 
-        replyTo ! RepLvGrids(runId, Seq.empty[SubGridContainer])
+        replyTo ! RepLvGrids(Seq.empty[SubGridContainer])
         Behaviors.stopped
       case unsupported =>
         ctx.log.error(s"Received unsupported message: $unsupported")
