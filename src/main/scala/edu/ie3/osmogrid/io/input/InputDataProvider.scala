@@ -18,8 +18,7 @@ object InputDataProvider {
   sealed trait Request
   final case class Read()
       extends Request // todo this read method should contain configuration parameters for the actual source + potential filter options
-  final case class Terminate(replyTo: ActorRef[OsmoGridGuardian.Request])
-      extends Request
+  object Terminate extends Request
 
   sealed trait Response
 
@@ -29,14 +28,15 @@ object InputDataProvider {
         case (ctx, _: Read) =>
           ctx.log.warn("Reading of data not yet implemented.")
           Behaviors.same
-        case (ctx, Terminate(_)) =>
+        case (ctx, Terminate) =>
           ctx.log.info("Stopping input data provider")
-          // TODO: Any closing of sources and stuff
-          Behaviors.stopped
+          Behaviors.stopped { () => cleanUp() }
       }
       .receiveSignal { case (ctx, PostStop) =>
         ctx.log.info("Requested to stop.")
-        // TODO: Any closing of sources and stuff
+        cleanUp()
         Behaviors.same
       }
+
+  private def cleanUp(): Unit = ???
 }

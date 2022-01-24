@@ -24,6 +24,7 @@ object ResultListener {
       replyTo: ActorRef[Response]
   ) extends Request
       with ResultEvent
+  object Terminate extends Request with ResultEvent
 
   sealed trait Response
   final case class ResultHandled(
@@ -36,16 +37,19 @@ object ResultListener {
 
   def apply(runId: UUID, cfg: OsmoGridConfig.Output): Behavior[ResultEvent] =
     Behaviors
-      .receive[ResultEvent] { case (ctx, GridResult(grid, replyTo)) =>
-        ctx.log.info(s"Received grid result for run id '${runId.toString}'")
-        // TODO: Actual persistence and stuff, closing sinks, ...
-        replyTo ! ResultHandled(runId, ctx.self)
-        Behaviors.same
+      .receive[ResultEvent] {
+        case (ctx, GridResult(grid, replyTo)) =>
+          ctx.log.info(s"Received grid result for run id '${runId.toString}'")
+          // TODO: Actual persistence and stuff, ...
+          replyTo ! ResultHandled(runId, ctx.self)
+          Behaviors.stopped { () => cleanUp() }
+        case (ctx, Terminate) => Behaviors.stopped { () => cleanUp() }
       }
       .receiveSignal { case (ctx, PostStop) =>
         ctx.log.info("Requested to stop.")
-        // TODO: Any closing of sources and stuff
+        cleanUp()
         Behaviors.same
       }
 
+  private def cleanUp(): Unit = ???
 }

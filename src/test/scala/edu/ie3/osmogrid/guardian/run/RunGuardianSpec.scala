@@ -140,6 +140,22 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           s"Received a message, that I don't understand during active run $runId.\n\tMessage: $Run"
         )
       }
+
+      "initiate coordinated shutdown, if somebody unexpectedly dies" in {
+        runningTestKit.run(LvCoordinatorDied)
+
+        /* Event is logged */
+        runningTestKit.logEntries() should contain(
+          CapturedLogEvent(
+            Level.WARN,
+            s"Lv coordinator for run $runId unexpectedly died. Start coordinated shut down phase for this run."
+          )
+        )
+        /* All children are sent a termination request */
+        lvCoordinator.expectMessage(LvCoordinator.Terminate)
+        inputDataProvider.expectMessage(InputDataProvider.Terminate)
+        resultListener.expectMessage(ResultListener.Terminate)
+      }
     }
   }
 }
