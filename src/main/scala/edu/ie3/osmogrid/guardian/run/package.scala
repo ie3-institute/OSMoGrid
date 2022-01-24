@@ -93,6 +93,6 @@ package object run {
   ) extends StateData {
     def allChildrenTerminated: Boolean =
       inputDataProviderTerminated && resultListenerTerminated && lvCoordinatorTerminated
-        .forall(x => x)
+        .forall(terminated => terminated)
   }
 }
