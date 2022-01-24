@@ -93,6 +93,6 @@ package object run {
   ) extends StateData {
     def allChildrenTerminated: Boolean =
       inputDataProviderTerminated && resultListenerTerminated && lvCoordinatorTerminated
-        .contains(true)
+        .forall(x => x)
   }
 }

@@ -180,5 +180,68 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         resultListener.expectMessage(ResultListener.Terminate)
       }
     }
+
+    "being in stopping state without a LvCoordinator" should {
+      val stopping = PrivateMethod[Behavior[Request]](Symbol("stopping"))
+
+      val stoppingData = StoppingData(
+        runId,
+        inputDataProviderTerminated = false,
+        resultListenerTerminated = false,
+        lvCoordinatorTerminated = None
+      )
+
+      val stoppingTestKit = BehaviorTestKit(
+        RunGuardian invokePrivate stopping(stoppingData)
+      )
+
+      "log an error if faced to not supported request" in {
+        stoppingTestKit.run(Run)
+
+        stoppingTestKit.logEntries() should contain only CapturedLogEvent(
+          Level.ERROR,
+          s"Received a message, that I don't understand during coordinated shutdown phase of run $runId.\n\tMessage: $Run"
+        )
+      }
+
+      "stop itself only once all awaited termination messages have been received" in {
+        stoppingTestKit.run(ResultEventListenerDied)
+
+        stoppingTestKit.isAlive shouldBe true
+
+        stoppingTestKit.run(InputDataProviderDied)
+
+        stoppingTestKit.isAlive shouldBe false
+      }
+    }
+
+    "being in stopping state with a LvCoordinator" should {
+      val stopping = PrivateMethod[Behavior[Request]](Symbol("stopping"))
+
+      val stoppingData = StoppingData(
+        runId,
+        inputDataProviderTerminated = false,
+        resultListenerTerminated = false,
+        lvCoordinatorTerminated = Some(false)
+      )
+
+      val stoppingTestKit = BehaviorTestKit(
+        RunGuardian invokePrivate stopping(stoppingData)
+      )
+
+      "stop itself only once all awaited termination messages have been received" in {
+        stoppingTestKit.run(InputDataProviderDied)
+
+        stoppingTestKit.isAlive shouldBe true
+
+        stoppingTestKit.run(ResultEventListenerDied)
+
+        stoppingTestKit.isAlive shouldBe true
+
+        stoppingTestKit.run(LvCoordinatorDied)
+
+        stoppingTestKit.isAlive shouldBe false
+      }
+    }
   }
 }
