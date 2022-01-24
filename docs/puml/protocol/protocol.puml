@@ -9,8 +9,11 @@ database Input
 participant InputDataProvider
 participant OsmoGridGuardian
 participant LvCoordinator
-collections LvRegionCoordinator
-collections LvGridGenerator
+participant LvRegionCoordinator
+participant MunicipalityCoordinator
+participant DistrictCoordinator
+participant SubDistrictCoordinator
+participant LvGridGenerator
 participant ResultListener
 
 == Init ==
@@ -22,43 +25,65 @@ note right: Death watch of\n""ResultListener""
 
 == LV generation ==
 OsmoGridGuardian --> LvCoordinator: //Spawn//
-OsmoGridGuardian -> LvCoordinator: !ReqLvGrids(...)
-LvCoordinator -> InputDataProvider: !ReqOsm(...)
+OsmoGridGuardian -> LvCoordinator: <font color="red">!</font>ReqLvGrids(...)
+LvCoordinator -> InputDataProvider: <font color="red">!</font>ReqOsm(...)
 InputDataProvider <--> Input: //Read//
-LvCoordinator -> InputDataProvider: !ReqAssetTypes(...)
+LvCoordinator -> InputDataProvider: <font color="red">!</font>ReqAssetTypes(...)
 InputDataProvider <--> Input: //Read//
-InputDataProvider -> LvCoordinator: !RepOsm(...)
-InputDataProvider -> LvCoordinator: !RepAssetTypes(...)
-activate LvCoordinator
-note right: Partition OSM data\nby municipal boundaries
-LvCoordinator --> LvGridGenerator: //Spawn worker pool//
-LvCoordinator --> LvRegionCoordinator: //Spawn worker pool//
+InputDataProvider -> LvCoordinator: <font color="red">!</font>RepOsm(...)
+InputDataProvider -> LvCoordinator: <font color="red">!</font>RepAssetTypes(...)
+note right: Determine the highest\nadministrative boundary //n//
+LvCoordinator --> LvRegionCoordinator: //Spawn//
 
-LvCoordinator -> LvRegionCoordinator: !ReqLvGrids(...)
-deactivate LvCoordinator
-LvRegionCoordinator -> LvGridGenerator: !ReqLvGrid(...)
+LvCoordinator -> LvRegionCoordinator: <font color="red">!</font>Partition(Region)
+note right: //n// is the highest apparent\nadministrative boundary\nwithin OSM data
+LvRegionCoordinator --> LvRegionCoordinator: //Spawn//
+LvRegionCoordinator -> LvRegionCoordinator: <font color="red">!</font>Partition(Region, n')
+... **Recursively spawn and divide regions until administrative boundary of a municipality is reached** ...
+
+LvRegionCoordinator --> MunicipalityCoordinator: //Spawn one per municipality//
+LvRegionCoordinator -> MunicipalityCoordinator: <font color="red">!</font>HandleMunicipality(Region)
+
+MunicipalityCoordinator --> DistrictCoordinator: //Spawn one per district//
+MunicipalityCoordinator -> DistrictCoordinator: <font color="red">!</font>HandleDistrict(Region)
+
+DistrictCoordinator --> SubDistrictCoordinator: //Spawn one per sub district//
+DistrictCoordinator -> SubDistrictCoordinator: <font color="red">!</font>HandleSubDistrict(Region)
+
+SubDistrictCoordinator --> LvGridGenerator: //Spawn one per secondary//\n//substation region//
+SubDistrictCoordinator -> LvGridGenerator: <font color="red">!</font>BuildGridModel(Region)
+
 activate LvGridGenerator
 ... ...
-LvGridGenerator -> LvRegionCoordinator: !PepLvGrid(...)
+LvGridGenerator -> LvCoordinator: <font color="red">!</font>RepLvGrid(...)
+LvGridGenerator -> SubDistrictCoordinator: <font color="red">!</font>Done
+note left: Collects completions until\nall secondarysubstation\nregions are handled\n\nCompletion messages can\nbe realized with death watch!
 deactivate LvGridGenerator
 
-LvRegionCoordinator -> LvCoordinator: !RepLvGrids(...)
-LvCoordinator -> OsmoGridGuardian: !RepLvGrids(...)
+SubDistrictCoordinator -> DistrictCoordinator: <font color="red">!</font>Done
+DistrictCoordinator -> MunicipalityCoordinator: <font color="red">!</font>Done
+MunicipalityCoordinator -> LvRegionCoordinator: <font color="red">!</font>Done
+LvRegionCoordinator -> LvRegionCoordinator: <font color="red">!</font>Done
+... **Report recursively until all intermediate levels are passed** ...
+LvRegionCoordinator -> LvCoordinator: <font color="red">!</font>Done
+note left: All results are apparent;\nassign sub grid numbers
+
+LvCoordinator -> OsmoGridGuardian: <font color="red">!</font>RepLvGrids(...)
 
 == MV generation ==
 ... **To be defined in a later stage** ...
 
 == Result handling ==
-OsmoGridGuardian -> ResultListener: !GridResult(...)
+OsmoGridGuardian -> ResultListener: <font color="red">!</font>GridResult(...)
 activate ResultListener
 ... ...
-ResultListener -> OsmoGridGuardian: !ResultListenerDied
+ResultListener -> OsmoGridGuardian: <font color="red">!</font>ResultListenerDied
 deactivate ResultListener
-OsmoGridGuardian -> InputDataProvider: !Terminate(...)
+OsmoGridGuardian -> InputDataProvider: <font color="red">!</font>Terminate(...)
 InputDataProvider <--> Input: //Close//
-InputDataProvider -> OsmoGridGuardian: !InputDataProviderDied
+InputDataProvider -> OsmoGridGuardian: <font color="red">!</font>InputDataProviderDied
 
-OsmoGridGuardian -> Main: !Done
+OsmoGridGuardian -> Main: <font color="red">!</font>Done
 
 'TODO: Don't forget to spawn and initialize the ResultListener
 

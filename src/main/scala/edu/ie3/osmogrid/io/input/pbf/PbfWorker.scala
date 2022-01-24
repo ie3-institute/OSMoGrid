@@ -23,6 +23,7 @@ import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.{OsmoGridModel, PbfFilter}
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmContainer
+import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
 import edu.ie3.util.osm.model.OsmEntity.{MetaInformation, Node, Relation, Way}
 import edu.ie3.util.osm.model.OsmEntity.Relation.{
   RelationMember,
@@ -32,6 +33,7 @@ import org.openstreetmap.osmosis.osmbinary.fileformat.{Blob, BlobHeader}
 
 import java.time.ZonedDateTime
 import java.util.UUID
+import scala.collection.parallel.immutable.ParSeq
 
 private[pbf] object PbfWorker {
 
@@ -75,9 +77,9 @@ private[pbf] object PbfWorker {
       Behaviors.same
   }
 
-  private def readBlob(blob: Blob): OsmContainer = {
+  private def readBlob(blob: Blob): ParOsmContainer = {
     val (nodes, ways, relations) = fromBlob(blob).foldLeft(
-      (List.empty[Node], List.empty[Way], List.empty[Relation])
+      (ParSeq.empty[Node], ParSeq.empty[Way], ParSeq.empty[Relation])
     ) { case ((nodes, ways, relations), curOsmEntity) =>
       curOsmEntity match {
         case node: NodeEntity =>
@@ -88,7 +90,7 @@ private[pbf] object PbfWorker {
           (nodes, ways, relations :+ osmRelation(relation))
       }
     }
-    OsmContainer(nodes, ways, relations)
+    ParOsmContainer(nodes, ways, relations)
   }
 
 }

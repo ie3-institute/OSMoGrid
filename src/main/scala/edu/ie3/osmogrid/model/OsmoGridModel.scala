@@ -9,9 +9,9 @@ package edu.ie3.osmogrid.model
 import edu.ie3.osmogrid.model.PbfFilter.{Filter, LvFilter}
 import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
 import edu.ie3.util.osm.model.{CommonOsmKey, OsmContainer, OsmEntity}
+import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
 import org.locationtech.jts.geom.Polygon
 import edu.ie3.util.osm.model.CommonOsmKey.{Building, Highway, Landuse}
-import edu.ie3.util.osm.model.OsmEntity.OsmEntityType
 import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
 
 import scala.collection.parallel.immutable.ParVector
@@ -74,7 +74,7 @@ object OsmoGridModel {
   object LvOsmoGridModel {
 
     def apply(
-        osmContainer: OsmContainer,
+        osmContainer: ParOsmContainer,
         lvFilter: LvFilter,
         filterNodes: Boolean = true
     ): OsmoGridModel =
@@ -85,7 +85,7 @@ object OsmoGridModel {
         filterOr(osmContainer, lvFilter.existingSubstationFilter)
 
       val nodes = createNodes(
-        osmContainer.nodesMap,
+        osmContainer.nodes,
         ParVector(buildings, highways, landuses, substations),
         filterNodes
       )
@@ -155,8 +155,8 @@ object OsmoGridModel {
             case way: Way =>
               way.nodes
             case relation: Relation =>
-              relation.relations
-                .filter(_.relationTypes match {
+              relation.members
+                .filter(_.relationType match {
                   case RelationMemberType.Node =>
                     true
                   case _ => false
@@ -172,16 +172,16 @@ object OsmoGridModel {
 
   }
 
-  def filter(osmContainer: OsmContainer, filter: Filter): ParSeq[OsmEntity] =
+  def filter(osmContainer: ParOsmContainer, filter: Filter): ParSeq[OsmEntity] =
     filterOr(osmContainer, Set(filter))
 
   def filterOr(
-      osmContainer: OsmContainer,
+      osmContainer: ParOsmContainer,
       filter: Set[Filter]
   ): ParSeq[OsmEntity] = {
     val mappedFilter =
       filter.map(filter => (filter.key, filter.tagValues)).toMap
-    (osmContainer.nodes ++ osmContainer.ways ++ osmContainer.relations)
+    (osmContainer.nodes.values ++ osmContainer.ways.values ++ osmContainer.relations.values)
       .foldLeft(ParSeq.empty) {
         case (resEntities, curEntity)
             if curEntity.hasKeysValuesPairOr(mappedFilter) =>
