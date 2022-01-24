@@ -13,14 +13,15 @@ import akka.actor.testkit.typed.scaladsl.{
   ScalaTestWithActorTestKit
 }
 import akka.actor.typed.{ActorRef, Behavior}
+import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
-import edu.ie3.osmogrid.io.output.ResultListener.ResultEvent
+import edu.ie3.osmogrid.io.output.ResultListener.{GridResult, ResultEvent}
 import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
-import edu.ie3.test.common.UnitSpec
+import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.slf4j.event.Level
 
 import java.util.UUID
@@ -95,8 +96,10 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         idleTestKit
           .childInbox[LvCoordinator.Request](s"LvCoordinator_$runId")
           .receiveAll()
-          .exists { case ReqLvGrids(cfg, replyTo) =>
-            validConfig.generation.lv.contains(cfg)
+          .exists {
+            case ReqLvGrids(cfg, replyTo) =>
+              validConfig.generation.lv.contains(cfg)
+            case _ => false
           } shouldBe true
       }
     }
@@ -139,6 +142,26 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           Level.ERROR,
           s"Received a message, that I don't understand during active run $runId.\n\tMessage: $Run"
         )
+      }
+
+      "handles an incoming result" in new GridSupport {
+        runningTestKit.run(
+          MessageAdapters.WrappedLvCoordinatorResponse(
+            LvCoordinator.RepLvGrids(Seq(mockSubGrid(1)))
+          )
+        )
+
+        /* Event is logged */
+        runningTestKit.logEntries() should contain allOf (CapturedLogEvent(
+          Level.INFO,
+          "All lv grids successfully generated."
+        ), CapturedLogEvent(
+          Level.DEBUG,
+          "No further generation steps intended. Hand over results to result handler."
+        ))
+
+        /* Result is forwarded to listener */
+        resultListener.expectMessageType[GridResult]
       }
 
       "initiate coordinated shutdown, if somebody unexpectedly dies" in {
