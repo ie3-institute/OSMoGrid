@@ -8,11 +8,15 @@ package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.testkit.typed.CapturedLogEvent
 import akka.actor.testkit.typed.Effect.{MessageAdapter, Spawned, WatchedWith}
-import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
+import akka.actor.testkit.typed.scaladsl.{
+  BehaviorTestKit,
+  ScalaTestWithActorTestKit
+}
 import akka.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input.InputDataProvider
+import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.io.output.ResultListener.ResultEvent
 import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
@@ -21,12 +25,12 @@ import org.slf4j.event.Level
 
 import java.util.UUID
 
-class RunGuardianSpec extends UnitSpec {
+class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
   "Having a run guardian" when {
     val runId = UUID.randomUUID()
     val validConfig = OsmoGridConfigFactory.defaultTestConfig
 
-    "being idle" should {
+    "being idle state" should {
       val idleTestKit = BehaviorTestKit(
         RunGuardian(validConfig, Seq.empty[ActorRef[ResultEvent]], runId)
       )
@@ -94,6 +98,47 @@ class RunGuardianSpec extends UnitSpec {
           .exists { case ReqLvGrids(cfg, replyTo) =>
             validConfig.generation.lv.contains(cfg)
           } shouldBe true
+      }
+    }
+
+    "being in running state" should {
+      val running = PrivateMethod[Behavior[Request]](Symbol("running"))
+
+      /* Test probes */
+      val lvCoordinatorAdapter =
+        testKit.createTestProbe[LvCoordinator.Response]()
+      val resultListenerAdapter =
+        testKit.createTestProbe[ResultListener.Response]()
+      val inputDataProvider =
+        testKit.createTestProbe[InputDataProvider.Request]()
+      val resultListener = testKit.createTestProbe[ResultEvent]()
+      val lvCoordinator = testKit.createTestProbe[LvCoordinator.Request]()
+
+      /* State data */
+      val runGuardianData = RunGuardianData(
+        runId,
+        validConfig,
+        Seq.empty[ActorRef[ResultEvent]],
+        MessageAdapters(lvCoordinatorAdapter.ref, resultListenerAdapter.ref)
+      )
+      val childReferences = ChildReferences(
+        inputDataProvider.ref,
+        Some(resultListener.ref),
+        Seq.empty,
+        Some(lvCoordinator.ref)
+      )
+
+      val runningTestKit = BehaviorTestKit(
+        RunGuardian invokePrivate running(runGuardianData, childReferences)
+      )
+
+      "log an error if faced to not supported request" in {
+        runningTestKit.run(Run)
+
+        runningTestKit.logEntries() should contain only CapturedLogEvent(
+          Level.ERROR,
+          s"Received a message, that I don't understand during active run $runId.\n\tMessage: $Run"
+        )
       }
     }
   }

@@ -96,7 +96,7 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
     * @return
     *   The next state
     */
-  private def running(
+  protected def running(
       runGuardianData: RunGuardianData,
       childReferences: ChildReferences
   ): Behavior[Request] = Behaviors.receive {
