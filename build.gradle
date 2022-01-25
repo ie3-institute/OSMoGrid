@@ -1,24 +1,22 @@
 plugins {
   // todo revise
   id 'java' //java support
-  id 'groovy' // groovy support
+  id 'scala'
   id 'pmd' // code check, working on source code
-  id 'com.diffplug.spotless' version '6.0.5'//code format
-  id 'com.github.spotbugs' version '5.0.3' // code check, working on byte code
+  id 'com.diffplug.spotless' version '6.2.0'//code format
+  id 'com.github.spotbugs' version '5.0.5' // code check, working on byte code
   id 'de.undercouch.download' version '4.1.2'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.32" // run scalatest without specific spec task
-  id 'jacoco' // java code coverage plugin
   id "org.sonarqube" version "3.3" // sonarqube
   id 'net.thauvin.erik.gradle.semver' version '1.0.4' // semantic versioning
-  id 'scala'
 }
 
 ext {
-  javaVersion = JavaVersion.VERSION_11
+  javaVersion = JavaVersion.VERSION_17
 
   scalaMajorVersion = '3'
-  scalaVersion = '3.1.0'
+  scalaVersion = '3.1.1'
   akkaVersion = '2.6.18'
 
   tscfgVersion = '0.9.995'
@@ -41,7 +39,6 @@ apply from: scriptsLocation + 'spotbugs.gradle'
 apply from: scriptsLocation + 'spotless.gradle'
 apply from: scriptsLocation + 'checkJavaVersion.gradle'
 apply from: scriptsLocation + 'documentation.gradle'
-apply from: scriptsLocation + 'jacoco.gradle' // jacoco java code coverage
 apply from: scriptsLocation + 'sonarqube.gradle'
 apply from: scriptsLocation + 'vcs.gradle'
 apply from: scriptsLocation + 'semVer.gradle'
@@ -49,7 +46,8 @@ apply from: scriptsLocation + 'tscfg.gradle'
 
 repositories {
   mavenCentral() //searches in bintray's repository 'jCenter', which contains Maven Central
-  maven { url 'https://www.jitpack.io' } // allows github repos as dependencies
+  maven { url 'https://www.jitpack.io' } // allows github repos as dependencies// sonatype snapshot repo
+  maven { url 'https://oss.sonatype.org/content/repositories/snapshots' } // Snapshot-Repository
 }
 
 dependencies {
@@ -76,7 +74,7 @@ dependencies {
 
   // todo CLEANUP following old dependencies
   //	 ie³ power system utils
-  implementation('com.github.ie3-institute:PowerSystemUtils:1.5.3') {
+  implementation('com.github.ie3-institute:PowerSystemUtils:2.0-SNAPSHOT') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
@@ -84,7 +82,7 @@ dependencies {
   }
 
   //	 ie³ power system data model
-  implementation('com.github.ie3-institute:PowerSystemDataModel:2.0.1') {
+  implementation('com.github.ie3-institute:PowerSystemDataModel:2.1.0') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
@@ -110,9 +108,13 @@ dependencies {
   // testing
   testImplementation 'junit:junit:4.13.2'
   testImplementation 'cglib:cglib-nodep:3.3.0' // enables mocking of classes (in addition to interfaces)
-  testImplementation 'org.mockito:mockito-core:4.2.0' // mocking framework
+  testImplementation 'org.mockito:mockito-core:4.3.0' // mocking framework
   testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
   testImplementation 'org.objenesis:objenesis:3.2' // Mock creation with constructor parameters
+
+  // TODO: Remove. Only there for backwards compatibility in Java code
+  implementation 'tech.units:indriya:2.1.2'
+  implementation 'org.locationtech.jts:jts-core:1.18.2'
 }
 
 tasks.withType(JavaCompile) {
