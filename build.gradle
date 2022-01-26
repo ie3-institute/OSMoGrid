@@ -66,7 +66,7 @@ dependencies {
   implementation 'ch.qos.logback:logback-classic:1.2.10'
 
   // testing
-  testImplementation "org.scalatest:scalatest_$scalaMajorVersion:3.2.10"
+  testImplementation "org.scalatest:scalatest_$scalaMajorVersion:3.2.11"
   testRuntimeClasspath 'com.vladsch.flexmark:flexmark-all:0.62.2'
   testImplementation 'org.pegdown:pegdown:1.6.0'
 
@@ -110,8 +110,9 @@ dependencies {
   // testing
   testImplementation 'junit:junit:4.13.2'
   testImplementation 'cglib:cglib-nodep:3.3.0' // enables mocking of classes (in addition to interfaces)
-  testImplementation 'org.mockito:mockito-core:4.2.0' // mocking framework
+  testImplementation 'org.mockito:mockito-core:4.3.0' // mocking framework
   testImplementation 'org.scalatestplus:mockito-3-12_3:3.2.10.0' // syntactic sugar
+
   testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
   testImplementation 'org.objenesis:objenesis:3.2' // Mock creation with constructor parameters
 
