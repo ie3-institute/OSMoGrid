@@ -108,7 +108,7 @@ dependencies {
   // testing
   testImplementation 'junit:junit:4.13.2'
   testImplementation 'cglib:cglib-nodep:3.3.0' // enables mocking of classes (in addition to interfaces)
-  testImplementation 'org.mockito:mockito-core:4.3.0' // mocking framework
+  testImplementation 'org.mockito:mockito-core:4.3.1' // mocking framework
   testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
   testImplementation 'org.objenesis:objenesis:3.2' // Mock creation with constructor parameters
 
