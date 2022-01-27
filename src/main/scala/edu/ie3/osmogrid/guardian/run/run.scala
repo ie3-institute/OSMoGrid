@@ -94,5 +94,5 @@ private final case class StoppingData(
 ) extends StateData {
   def allChildrenTerminated: Boolean =
     inputDataProviderTerminated && resultListenerTerminated && lvCoordinatorTerminated
-      .contains(true)
+      .forall(terminated => terminated)
 }
