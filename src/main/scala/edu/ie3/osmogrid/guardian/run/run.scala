@@ -16,6 +16,7 @@ import java.util.UUID
 
 /* This file only contains package-level definitions */
 
+/* Received requests */
 sealed trait Request
 
 object Run extends Request
@@ -42,17 +43,19 @@ private object MessageAdapters {
   ) extends Request
 }
 
+/* Death watch messages */
+sealed trait Watch extends Request
+
+object InputDataProviderDied extends Watch
+
+object ResultEventListenerDied extends Watch
+
+object LvCoordinatorDied extends Watch
+
+/* Sent out responses */
 sealed trait Response
 
 final case class Done(runId: UUID) extends Response
-
-sealed trait Watch extends Request
-
-private object InputDataProviderDied extends Watch
-
-private object ResultEventListenerDied extends Watch
-
-private object LvCoordinatorDied extends Watch
 
 private final case class ChildReferences(
     inputDataProvider: ActorRef[InputDataProvider.Request],
