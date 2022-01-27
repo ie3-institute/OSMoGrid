@@ -73,12 +73,8 @@ object ConfigFailFast extends LazyLogging {
     }
 
   private def checkAssetInputFile(file: OsmoGridConfig.Input.Asset.File): Unit =
-    file match {
-      case File(directory, _) if directory.isEmpty =>
-        throw IllegalConfigException("Asset input directory may be set!")
-      case _: File =>
-      /* Everything is fine */
-    }
+    if (file.directory.isEmpty)
+      throw IllegalConfigException("Asset input directory may be set!")
 
   private def checkOsmInputConfig(osm: OsmoGridConfig.Input.Osm): Unit =
     osm match {
@@ -90,12 +86,7 @@ object ConfigFailFast extends LazyLogging {
     }
 
   private def checkPbfFileDefinition(pbf: OsmoGridConfig.Input.Osm.Pbf): Unit =
-    pbf match {
-      case OsmoGridConfig.Input.Osm.Pbf(file) if file.isEmpty =>
-        throw IllegalConfigException("Pbf file may be set!")
-      case OsmoGridConfig.Input.Osm.Pbf(_) =>
-      /* Everything is fine */
-    }
+    if (pbf.file.isEmpty) throw IllegalConfigException("Pbf file may be set!")
 
   private def checkOutputConfig(
       output: OsmoGridConfig.Output,
