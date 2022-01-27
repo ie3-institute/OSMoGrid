@@ -16,15 +16,20 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.output.ResultListener
 
+import scala.util.Try
+
 object ConfigFailFast extends LazyLogging {
   def check(
       cfg: OsmoGridConfig,
       additionalListener: Seq[ActorRef[ResultListener.ResultEvent]] = Seq.empty
-  ): Unit = cfg match {
-    case OsmoGridConfig(generation, input, output) =>
-      checkInputConfig(input)
-      checkOutputConfig(output, additionalListener)
-      checkGenerationConfig(generation)
+  ): Try[OsmoGridConfig] = Try {
+    cfg match {
+      case OsmoGridConfig(generation, input, output) =>
+        checkInputConfig(input)
+        checkOutputConfig(output, additionalListener)
+        checkGenerationConfig(generation)
+    }
+    cfg
   }
 
   private def checkGenerationConfig(generation: Generation): Unit =
@@ -105,14 +110,10 @@ object ConfigFailFast extends LazyLogging {
         )
     }
 
-  private def checkOutputFile(file: OsmoGridConfig.Output.Csv): Unit =
-    file match {
-      case OsmoGridConfig.Output.Csv(directory, _, separator)
-          if directory.isEmpty || separator.isEmpty =>
-        throw IllegalConfigException(
-          "Output directory and separator must be set when using .csv file sink!"
-        )
-      case _: OsmoGridConfig.Output.Csv =>
-      /* Everything is fine */
-    }
+  private def checkOutputFile(file: OsmoGridConfig.Output.Csv): Unit = if (
+    file.directory.isEmpty || file.separator.isEmpty
+  )
+    throw IllegalConfigException(
+      "Output directory and separator must be set when using .csv file sink!"
+    )
 }

@@ -40,7 +40,6 @@ trait SubGridHandling {
     log.info("All lv grids successfully generated.")
     val updatedSubGrids = assignSubnetNumbers(grids)
 
-    // TODO: Check for mv config and issue run there, if applicable
     log.debug(
       "No further generation steps intended. Hand over results to result handler."
     )

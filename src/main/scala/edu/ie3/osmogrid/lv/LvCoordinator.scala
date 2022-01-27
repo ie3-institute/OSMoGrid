@@ -69,10 +69,10 @@ object LvCoordinator {
             ctx.spawn(lvRegionCoordinatorPool, "LvRegionCoordinatorPool")
 
           replyTo ! RepLvGrids(Seq.empty[SubGridContainer])
-          Behaviors.stopped { () => cleanUp() }
+          Behaviors.stopped(cleanUp())
         case unsupported =>
           ctx.log.error(s"Received unsupported message: $unsupported")
-          Behaviors.stopped { () => cleanUp() }
+          Behaviors.stopped(cleanUp())
       }
     }
     .receiveSignal { case (ctx, PostStop) =>
@@ -81,5 +81,5 @@ object LvCoordinator {
       Behaviors.same
     }
 
-  private def cleanUp(): Unit = ???
+  private def cleanUp(): () => Unit = ???
 }

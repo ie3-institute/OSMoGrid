@@ -15,12 +15,5 @@ object LvRegionCoordinator {
 
   def apply(
       lvGeneratorPool: ActorRef[LvGenerator.Request]
-  ): Behaviors.Receive[Request] = idle(lvGeneratorPool)
-
-  private def idle(
-      lvGeneratorPool: ActorRef[LvGenerator.Request]
-  ): Behaviors.Receive[Request] = Behaviors.receive { case (ctx, unsupported) =>
-    ctx.log.warn(s"Received unsupported message '$unsupported'.")
-    Behaviors.stopped
-  }
+  ): Behaviors.Receive[Request] = ???
 }

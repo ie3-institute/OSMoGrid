@@ -24,9 +24,12 @@ class ConfigFailFastSpec extends UnitSpec {
             |generation.lv.distinctHouseConnections = true""".stripMargin
         } match {
           case Success(cfg) =>
-            val exc =
-              intercept[IllegalConfigException](ConfigFailFast.check(cfg))
-            exc.msg shouldBe "You have to provide at least one input data type for open street map information!"
+            ConfigFailFast.check(cfg) match {
+              case Failure(exception) =>
+                exception.getMessage shouldBe "You have to provide at least one input data type for open street map information!"
+              case Success(_) =>
+                fail("Config check succeeded, but was meant to fail.")
+            }
           case Failure(exception) =>
             fail(s"Config generation failed with an exception: '$exception'")
         }
@@ -41,9 +44,12 @@ class ConfigFailFastSpec extends UnitSpec {
             |generation.lv.distinctHouseConnections = true""".stripMargin
         } match {
           case Success(cfg) =>
-            val exc =
-              intercept[IllegalConfigException](ConfigFailFast.check(cfg))
-            exc.msg shouldBe "Pbf file may be set!"
+            ConfigFailFast.check(cfg) match {
+              case Failure(exception) =>
+                exception.getMessage shouldBe "Pbf file may be set!"
+              case Success(_) =>
+                fail("Config check succeeded, but was meant to fail.")
+            }
           case Failure(exception) =>
             fail(s"Config generation failed with an exception: '$exception'")
         }
@@ -56,9 +62,12 @@ class ConfigFailFastSpec extends UnitSpec {
             |generation.lv.distinctHouseConnections = true""".stripMargin
         } match {
           case Success(cfg) =>
-            val exc =
-              intercept[IllegalConfigException](ConfigFailFast.check(cfg))
-            exc.msg shouldBe "You have to provide at least one input data type for asset information!"
+            ConfigFailFast.check(cfg) match {
+              case Failure(exception) =>
+                exception.getMessage shouldBe "You have to provide at least one input data type for asset information!"
+              case Success(_) =>
+                fail("Config check succeeded, but was meant to fail.")
+            }
           case Failure(exception) =>
             fail(s"Config generation failed with an exception: '$exception'")
         }
@@ -73,9 +82,12 @@ class ConfigFailFastSpec extends UnitSpec {
             |generation.lv.distinctHouseConnections = true""".stripMargin
         } match {
           case Success(cfg) =>
-            val exc =
-              intercept[IllegalConfigException](ConfigFailFast.check(cfg))
-            exc.msg shouldBe "Asset input directory may be set!"
+            ConfigFailFast.check(cfg) match {
+              case Failure(exception) =>
+                exception.getMessage shouldBe "Asset input directory may be set!"
+              case Success(_) =>
+                fail("Config check succeeded, but was meant to fail.")
+            }
           case Failure(exception) =>
             fail(s"Config generation failed with an exception: '$exception'")
         }
@@ -91,9 +103,12 @@ class ConfigFailFastSpec extends UnitSpec {
             |output.csv.directory = "output_file_path"""".stripMargin
         } match {
           case Success(cfg) =>
-            val exc =
-              intercept[IllegalConfigException](ConfigFailFast.check(cfg))
-            exc.msg shouldBe "At least one voltage level generation config has to be defined."
+            ConfigFailFast.check(cfg) match {
+              case Failure(exception) =>
+                exception.getMessage shouldBe "At least one voltage level generation config has to be defined."
+              case Success(_) =>
+                fail("Config check succeeded, but was meant to fail.")
+            }
           case Failure(exception) =>
             fail(s"Config generation failed with an exception: '$exception'")
         }
@@ -112,9 +127,12 @@ class ConfigFailFastSpec extends UnitSpec {
             |generation.lv.distinctHouseConnections = false""".stripMargin
         } match {
           case Success(cfg) =>
-            val exc =
-              intercept[IllegalConfigException](ConfigFailFast.check(cfg))
-            exc.msg shouldBe "The amount of lv grid generation actors needs to be at least 1 (provided: 0)."
+            ConfigFailFast.check(cfg) match {
+              case Failure(exception) =>
+                exception.getMessage shouldBe "The amount of lv grid generation actors needs to be at least 1 (provided: 0)."
+              case Success(_) =>
+                fail("Config check succeeded, but was meant to fail.")
+            }
           case Failure(exception) =>
             fail(s"Config generation failed with an exception: '$exception'")
         }
@@ -131,9 +149,12 @@ class ConfigFailFastSpec extends UnitSpec {
             |generation.lv.distinctHouseConnections = false""".stripMargin
         } match {
           case Success(cfg) =>
-            val exc =
-              intercept[IllegalConfigException](ConfigFailFast.check(cfg))
-            exc.msg shouldBe "The amount of lv grid generation actors needs to be at least 1 (provided: -42)."
+            ConfigFailFast.check(cfg) match {
+              case Failure(exception) =>
+                exception.getMessage shouldBe "The amount of lv grid generation actors needs to be at least 1 (provided: -42)."
+              case Success(_) =>
+                fail("Config check succeeded, but was meant to fail.")
+            }
           case Failure(exception) =>
             fail(s"Config generation failed with an exception: '$exception'")
         }
@@ -150,9 +171,12 @@ class ConfigFailFastSpec extends UnitSpec {
             |generation.lv.distinctHouseConnections = false""".stripMargin
         } match {
           case Success(cfg) =>
-            val exc =
-              intercept[IllegalConfigException](ConfigFailFast.check(cfg))
-            exc.msg shouldBe "The amount of lv region coordination actors needs to be at least 1 (provided: 0)."
+            ConfigFailFast.check(cfg) match {
+              case Failure(exception) =>
+                exception.getMessage shouldBe "The amount of lv region coordination actors needs to be at least 1 (provided: 0)."
+              case Success(_) =>
+                fail("Config check succeeded, but was meant to fail.")
+            }
           case Failure(exception) =>
             fail(s"Config generation failed with an exception: '$exception'")
         }
@@ -169,9 +193,12 @@ class ConfigFailFastSpec extends UnitSpec {
             |generation.lv.distinctHouseConnections = false""".stripMargin
         } match {
           case Success(cfg) =>
-            val exc =
-              intercept[IllegalConfigException](ConfigFailFast.check(cfg))
-            exc.msg shouldBe "The amount of lv region coordination actors needs to be at least 1 (provided: -42)."
+            ConfigFailFast.check(cfg) match {
+              case Failure(exception) =>
+                exception.getMessage shouldBe "The amount of lv region coordination actors needs to be at least 1 (provided: -42)."
+              case Success(_) =>
+                fail("Config check succeeded, but was meant to fail.")
+            }
           case Failure(exception) =>
             fail(s"Config generation failed with an exception: '$exception'")
         }
@@ -187,10 +214,7 @@ class ConfigFailFastSpec extends UnitSpec {
           |output.csv.directory = "output_file_path"
           |generation.lv.distinctHouseConnections = true""".stripMargin
         } match {
-          case Success(cfg) =>
-            noException shouldBe thrownBy {
-              ConfigFailFast.check(cfg)
-            }
+          case Success(cfg) => ConfigFailFast.check(cfg) shouldBe Success(cfg)
           case Failure(exception) =>
             fail(s"Config generation failed with an exception: '$exception'")
         }
