@@ -6,10 +6,11 @@
 
 package edu.ie3.osmogrid.io.output
 
-import edu.ie3.datamodel.io.csv.DefaultDirectoryHierarchy
 import edu.ie3.datamodel.io.naming.{
+  DefaultDirectoryHierarchy,
   EntityPersistenceNamingStrategy,
-  HierarchicFileNamingStrategy
+  FileNamingStrategy,
+  FlatDirectoryHierarchy
 }
 import edu.ie3.datamodel.io.processor.ProcessorProvider
 import edu.ie3.datamodel.io.sink.CsvFileSink
@@ -23,20 +24,17 @@ import scala.concurrent.Future
 final case class ResultCsvSink(
     runId: UUID,
     saveFolderPath: String,
-    csvSeparator: String,
-    hierarchic: Boolean
+    csvSeparator: String
+    // todo JH add support for hierarchic persistence
 ) extends ResultSink {
 
   private val csvFileSink = new CsvFileSink(
     saveFolderPath,
     new ProcessorProvider(),
-    if (hierarchic)
-      new HierarchicFileNamingStrategy(
-        "",
-        "",
-        new DefaultDirectoryHierarchy(runId.toString, runId.toString)
-      )
-    else new EntityPersistenceNamingStrategy(),
+    new FileNamingStrategy(
+      new EntityPersistenceNamingStrategy(),
+      new FlatDirectoryHierarchy()
+    ),
     false,
     csvSeparator
   )

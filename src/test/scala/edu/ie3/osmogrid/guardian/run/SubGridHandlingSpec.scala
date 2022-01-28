@@ -107,11 +107,15 @@ class SubGridHandlingSpec
             case ResultListener.GridResult(grid, _) =>
               grid.getGridName shouldBe "DummyGrid"
               grid.getRawGrid.getNodes.size() shouldBe 0
+            case unknown =>
+              fail(s"Received $unknown when expecting GridResult!")
           }
           additionalResultListener.receiveMessage() match {
             case ResultListener.GridResult(grid, _) =>
               grid.getGridName shouldBe "DummyGrid"
               grid.getRawGrid.getNodes.size() shouldBe 0
+            case unknown =>
+              fail(s"Received $unknown when expecting GridResult!")
           }
           inputDataProvider.expectNoMessage()
           lvCoordinatorAdapter.expectNoMessage()

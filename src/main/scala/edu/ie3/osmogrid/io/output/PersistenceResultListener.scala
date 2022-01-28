@@ -17,7 +17,6 @@ import edu.ie3.datamodel.models.input.container.{
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Output
 import edu.ie3.osmogrid.exception.IllegalConfigException
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian.OsmoGridGuardianEvent
 
 import concurrent.ExecutionContext.Implicits.global
 
@@ -43,7 +42,7 @@ object PersistenceResultListener {
       with ResultEvent
 
   // internal API
-  private sealed trait ResultEvent
+  sealed trait ResultEvent
 
   private final case class InitComplete(stateData: ListenerStateData)
       extends ResultEvent
@@ -131,7 +130,7 @@ object PersistenceResultListener {
     cfg match {
       case Output(Some(csv)) =>
         Future(
-          ResultCsvSink(runId, csv.directory, csv.separator, csv.hierarchic)
+          ResultCsvSink(runId, csv.directory, csv.separator)
         )
       case unsupported =>
         Future.failed(
