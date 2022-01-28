@@ -17,11 +17,7 @@ import edu.ie3.datamodel.models.input.container.{
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Output
 import edu.ie3.osmogrid.exception.IllegalConfigException
-import edu.ie3.osmogrid.io.output.ResultListenerProtocol.{
-  GridResult,
-  Response,
-  ResultHandled
-}
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol._
 
 import concurrent.ExecutionContext.Implicits.global
 import java.util.UUID
@@ -30,31 +26,18 @@ import scala.util.{Failure, Success}
 
 object PersistenceResultListener {
 
-  private sealed trait PersistenceListenerEvent extends ResultListenerProtocol
-
-  // internal API
-  private final case class InitComplete(stateData: ListenerStateData)
-      extends PersistenceListenerEvent
-
-  private final case class InitFailed(cause: Throwable)
-      extends PersistenceListenerEvent
-
-  // todo JH internal persistence handling w/o external protocol (HandledResult)
-
-  private final case class ListenerStateData(
-      runId: UUID,
-      cfg: OsmoGridConfig.Output,
-      ctx: ActorContext[ResultListenerProtocol],
-      buffer: StashBuffer[ResultListenerProtocol],
-      sink: ResultSink
-  )
-
   def apply(
       runId: UUID,
       cfg: OsmoGridConfig.Output
   ): Behavior[ResultListenerProtocol] = {
     Behaviors.withStash[ResultListenerProtocol](100) { buffer =>
       Behaviors.setup[ResultListenerProtocol] { ctx =>
+        ctx.pipeToSelf(initSinks(runId, cfg)) {
+          case Success(sink) =>
+            InitComplete(ListenerStateData(runId, cfg, ctx, buffer, sink))
+          case Failure(cause) =>
+            InitFailed(cause)
+        }
         init(runId, cfg, ctx, buffer)
       }
     }
@@ -68,19 +51,18 @@ object PersistenceResultListener {
         case gridResult @ GridResult(grid, replyTo) =>
           stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
             case Success(_) =>
-              ResultHandled(stateData.runId, stateData.ctx.self)
-            case Failure(exception) =>
-              stateData.ctx.log.error(
-                s"Error during persistence of grid result: $exception"
+              ResultHandlingSucceeded(
+                ResultHandled(stateData.runId, stateData.ctx.self)
               )
-              throw exception
+            case Failure(exception) =>
+              ResultHandlingFailed(exception)
           }
           save(stateData, replyTo)
       }
       .receiveSignal { case (context, PostStop) =>
         stateData.sink.close()
         context.log.info(s"$this stopped!")
-        Behaviors.same
+        Behaviors.stopped
       }
 
   private def save(
@@ -88,8 +70,14 @@ object PersistenceResultListener {
       replyTo: ActorRef[Response]
   ): Behavior[ResultListenerProtocol] =
     Behaviors.receiveMessage {
-      case ResultHandled(runId, self) =>
-        replyTo ! ResultHandled(runId, self)
+      case ResultHandlingFailed(cause) =>
+        stateData.ctx.log.error(
+          s"Error during persistence of grid result. Shutting down!!",
+          cause
+        )
+        Behaviors.stopped
+      case ResultHandlingSucceeded(resultHandled) =>
+        replyTo ! resultHandled
         stateData.buffer.unstashAll(idle(stateData))
       case other =>
         stateData.buffer.stash(other)
@@ -102,20 +90,14 @@ object PersistenceResultListener {
       ctx: ActorContext[ResultListenerProtocol],
       buffer: StashBuffer[ResultListenerProtocol]
   ): Behavior[ResultListenerProtocol] = {
-    ctx.pipeToSelf(initSinks(runId, cfg)) {
-      case Success(sink) =>
-        InitComplete(ListenerStateData(runId, cfg, ctx, buffer, sink))
-      case Failure(cause) =>
-        InitFailed(cause)
-    }
     Behaviors.receiveMessage {
       case InitComplete(stateData) =>
         stateData.buffer.unstashAll(idle(stateData))
       case InitFailed(cause) =>
         ctx.log.error(s"Cannot instantiate $this!", cause)
-        throw cause
+        Behaviors.stopped
       case other =>
-        // stash all other messages for later processing
+        // stash all other messages for later processing,
         buffer.stash(other)
         Behaviors.same
     }
