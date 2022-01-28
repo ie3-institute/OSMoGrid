@@ -6,28 +6,31 @@
 
 package edu.ie3.osmogrid.lv
 
-import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
+import akka.actor.typed.{ActorRef, Behavior, PostStop, SupervisorStrategy}
 import akka.actor.typed.scaladsl.{Behaviors, Routers}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian.{
-  OsmoGridGuardianEvent,
-  RepLvGrids
-}
 import edu.ie3.osmogrid.lv.LvGenerator
 
+import java.util.UUID
+
 object LvCoordinator {
-  sealed trait LvCoordinatorEvent
+  sealed trait Request
   final case class ReqLvGrids(
       cfg: OsmoGridConfig.Generation.Lv,
-      replyTo: ActorRef[OsmoGridGuardianEvent]
-  ) extends LvCoordinatorEvent
+      replyTo: ActorRef[Response]
+  ) extends Request
 
-  def apply(): Behavior[LvCoordinatorEvent] = idle
+  object Terminate extends Request
 
-  private def idle: Behavior[LvCoordinatorEvent] = Behaviors.receive {
-    (ctx, msg) =>
+  sealed trait Response
+  final case class RepLvGrids(grids: Seq[SubGridContainer]) extends Response
+
+  def apply(): Behavior[Request] = idle
+
+  private def idle: Behavior[Request] = Behaviors
+    .receive[Request] { (ctx, msg) =>
       msg match {
         case ReqLvGrids(
               Lv(
@@ -65,11 +68,18 @@ object LvCoordinator {
           val lvRegionCoordinatorProxy =
             ctx.spawn(lvRegionCoordinatorPool, "LvRegionCoordinatorPool")
 
-          replyTo ! RepLvGrids(Vector.empty[SubGridContainer])
-          Behaviors.stopped
+          replyTo ! RepLvGrids(Seq.empty[SubGridContainer])
+          Behaviors.stopped(cleanUp())
         case unsupported =>
           ctx.log.error(s"Received unsupported message: $unsupported")
-          Behaviors.stopped
+          Behaviors.stopped(cleanUp())
       }
-  }
+    }
+    .receiveSignal { case (ctx, PostStop) =>
+      ctx.log.info("Got terminated by ActorSystem.")
+      cleanUp()
+      Behaviors.same
+    }
+
+  private def cleanUp(): () => Unit = ???
 }

@@ -6,19 +6,30 @@
 
 package edu.ie3.osmogrid.cfg
 
+import akka.actor.typed.ActorRef
+import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Input, Output}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
 import edu.ie3.osmogrid.exception.IllegalConfigException
+import edu.ie3.osmogrid.io.output.ResultListener
 
-object ConfigFailFast {
-  def check(cfg: OsmoGridConfig): Unit = cfg match {
-    case OsmoGridConfig(generation, input, output) =>
-      checkInputConfig(input)
-      checkOutputConfig(output)
-      checkGenerationConfig(generation)
+import scala.util.Try
+
+object ConfigFailFast extends LazyLogging {
+  def check(
+      cfg: OsmoGridConfig,
+      additionalListener: Seq[ActorRef[ResultListener.ResultEvent]] = Seq.empty
+  ): Try[OsmoGridConfig] = Try {
+    cfg match {
+      case OsmoGridConfig(generation, input, output) =>
+        checkInputConfig(input)
+        checkOutputConfig(output, additionalListener)
+        checkGenerationConfig(generation)
+    }
+    cfg
   }
 
   private def checkGenerationConfig(generation: Generation): Unit =
@@ -67,11 +78,8 @@ object ConfigFailFast {
     }
 
   private def checkAssetInputFile(file: OsmoGridConfig.Input.Asset.File): Unit =
-    file match {
-      case File(directory, _) if directory.isEmpty =>
-        throw IllegalConfigException("Asset input directory may be set!")
-      case _ => /* I don't care. Everything is fine. */
-    }
+    if (file.directory.isEmpty)
+      throw IllegalConfigException("Asset input directory may be set!")
 
   private def checkOsmInputConfig(osm: OsmoGridConfig.Input.Osm): Unit =
     osm match {
@@ -83,26 +91,29 @@ object ConfigFailFast {
     }
 
   private def checkPbfFileDefinition(pbf: OsmoGridConfig.Input.Osm.Pbf): Unit =
-    pbf match {
-      case OsmoGridConfig.Input.Osm.Pbf(file) if file.isEmpty =>
-        throw IllegalConfigException("Pbf file may be set!")
-      case _ => /* I don't care. Everything is fine. */
-    }
+    if (pbf.file.isEmpty) throw IllegalConfigException("Pbf file may be set!")
 
-  private def checkOutputConfig(output: OsmoGridConfig.Output): Unit =
+  private def checkOutputConfig(
+      output: OsmoGridConfig.Output,
+      additionalListener: Seq[ActorRef[ResultListener.ResultEvent]]
+  ): Unit =
     output match {
       case Output(Some(file)) =>
         checkOutputFile(file)
+      case Output(None) if additionalListener.nonEmpty =>
+        logger.info(
+          "No output data type defined, but other listener provided. Will use them accordingly!"
+        )
       case Output(None) =>
         throw IllegalConfigException(
-          "You have to provide at least one output data type!"
+          "You have to provide at least one output data sink, e.g. to .csv-files!"
         )
     }
 
-  private def checkOutputFile(file: OsmoGridConfig.Output.File): Unit =
-    file match {
-      case OsmoGridConfig.Output.File(directory, _) if directory.isEmpty =>
-        throw IllegalConfigException("Output directory may be set!")
-      case _ => /* I don't care. Everything is fine. */
-    }
+  private def checkOutputFile(file: OsmoGridConfig.Output.Csv): Unit = if (
+    file.directory.isEmpty || file.separator.isEmpty
+  )
+    throw IllegalConfigException(
+      "Output directory and separator must be set when using .csv file sink!"
+    )
 }
