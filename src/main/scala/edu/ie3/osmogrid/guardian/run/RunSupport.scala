@@ -14,7 +14,6 @@ import edu.ie3.osmogrid.exception.UnsupportedRequestException
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.{
-  PersistenceResultListener,
   ResultListener,
   ResultListenerProtocol
 }
@@ -161,7 +160,7 @@ private trait RunSupport {
         ctx.log.info("Starting output data listener ...")
         Some(
           ctx.spawn(
-            PersistenceResultListener(runId, outputConfig),
+            ResultListener(runId, outputConfig),
             s"PersistenceResultListener_${runId.toString}"
           )
         )

@@ -56,7 +56,6 @@ object ResultListenerProtocol {
 
   private[output] final case class ListenerStateData(
       runId: UUID,
-      cfg: OsmoGridConfig.Output,
       ctx: ActorContext[ResultListenerProtocol],
       buffer: StashBuffer[ResultListenerProtocol],
       sink: ResultSink
