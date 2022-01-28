@@ -16,7 +16,7 @@ import edu.ie3.osmogrid.guardian.run.MessageAdapters.{
 }
 import edu.ie3.osmogrid.guardian.run.{RunSupport, StopSupport, SubGridHandling}
 import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.output.ResultListener
+import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.LvCoordinator
 
 import java.util.UUID
@@ -37,7 +37,8 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
     */
   def apply(
       cfg: OsmoGridConfig,
-      additionalListener: Seq[ActorRef[ResultListener.ResultEvent]] = Seq.empty,
+      additionalListener: Seq[ActorRef[ResultListenerProtocol.Request]] =
+        Seq.empty,
       runId: UUID
   ): Behavior[Request] = Behaviors.setup { ctx =>
     idle(
@@ -116,7 +117,9 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
       Behaviors.same
     case (
           ctx,
-          WrappedListenerResponse(ResultListener.ResultHandled(_, sender))
+          WrappedListenerResponse(
+            ResultListenerProtocol.ResultHandled(_, sender)
+          )
         ) =>
       ctx.log.debug(
         s"The listener $sender has successfully handled the result event of run ${runGuardianData.runId}."

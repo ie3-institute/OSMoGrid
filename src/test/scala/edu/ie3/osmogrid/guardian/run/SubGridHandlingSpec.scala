@@ -12,7 +12,7 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
 import edu.ie3.osmogrid.guardian.run.{RunGuardian, SubGridHandling}
 import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.output.ResultListener
+import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.mockito.Mockito.when
@@ -70,13 +70,15 @@ class SubGridHandlingSpec
       val lvCoordinatorAdapter =
         testKit.createTestProbe[LvCoordinator.Response]("LvCoordinatorAdapter")
       val resultListener =
-        testKit.createTestProbe[ResultListener.ResultEvent]("ResultListener")
+        testKit.createTestProbe[ResultListenerProtocol.Request](
+          "ResultListener"
+        )
       val resultListenerAdapter =
-        testKit.createTestProbe[ResultListener.Response](
+        testKit.createTestProbe[ResultListenerProtocol.Response](
           "ResultListenerAdapter"
         )
       val additionalResultListener =
-        testKit.createTestProbe[ResultListener.ResultEvent](
+        testKit.createTestProbe[ResultListenerProtocol.Request](
           "AdditionalResultListener"
         )
 
@@ -104,14 +106,14 @@ class SubGridHandlingSpec
           )
 
           resultListener.receiveMessage() match {
-            case ResultListener.GridResult(grid, _) =>
+            case ResultListenerProtocol.GridResult(grid, _) =>
               grid.getGridName shouldBe "DummyGrid"
               grid.getRawGrid.getNodes.size() shouldBe 0
             case unknown =>
               fail(s"Received $unknown when expecting GridResult!")
           }
           additionalResultListener.receiveMessage() match {
-            case ResultListener.GridResult(grid, _) =>
+            case ResultListenerProtocol.GridResult(grid, _) =>
               grid.getGridName shouldBe "DummyGrid"
               grid.getRawGrid.getNodes.size() shouldBe 0
             case unknown =>

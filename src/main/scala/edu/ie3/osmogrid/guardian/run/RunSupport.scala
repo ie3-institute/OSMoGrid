@@ -13,7 +13,11 @@ import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
 import edu.ie3.osmogrid.exception.UnsupportedRequestException
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.output.ResultListener
+import edu.ie3.osmogrid.io.output.{
+  PersistenceResultListener,
+  ResultListener,
+  ResultListenerProtocol
+}
 import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
 
@@ -56,7 +60,7 @@ private trait RunSupport {
                 validConfig.input,
                 validConfig.output,
                 ctx
-              )
+              ) // todo JH shift to process after generation!
             val lvCoordinator = startLvGridGeneration(
               runGuardianData.runId,
               lvConfig,
@@ -104,7 +108,7 @@ private trait RunSupport {
       ctx: ActorContext[Request]
   ): (
       ActorRef[InputDataProvider.Request],
-      Option[ActorRef[ResultListener.ResultEvent]]
+      Option[ActorRef[ResultListenerProtocol.Request]]
   ) = (
     spawnInputDataProvider(runId, inputConfig, ctx),
     spawnResultListener(runId, outputConfig, ctx)
@@ -151,13 +155,13 @@ private trait RunSupport {
       runId: UUID,
       outputConfig: OsmoGridConfig.Output,
       ctx: ActorContext[Request]
-  ): Option[ActorRef[ResultListener.ResultEvent]] = {
+  ): Option[ActorRef[ResultListenerProtocol.Request]] = {
     val resultListener = outputConfig match {
       case Output(Some(_)) =>
         ctx.log.info("Starting output data listener ...")
         Some(
           ctx.spawn(
-            ResultListener(runId, outputConfig),
+            PersistenceResultListener(runId, outputConfig),
             s"PersistenceResultListener_${runId.toString}"
           )
         )

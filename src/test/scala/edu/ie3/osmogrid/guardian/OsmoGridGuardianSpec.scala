@@ -17,7 +17,7 @@ import edu.ie3.osmogrid.guardian.OsmoGridGuardian.{
 }
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.guardian.run.Request
-import edu.ie3.osmogrid.io.output.ResultListener.ResultEvent
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.test.common.UnitSpec
 import org.slf4j.event.Level
 
@@ -28,7 +28,8 @@ class OsmoGridGuardianSpec extends UnitSpec {
     "being idle" should {
       val guardianData = OsmoGridGuardian.GuardianData(Seq.empty[UUID])
       val config = OsmoGridConfigFactory.defaultTestConfig
-      val additionalListeners = Seq.empty[ActorRef[ResultEvent]]
+      val additionalListeners =
+        Seq.empty[ActorRef[ResultListenerProtocol.Request]]
       val runId = UUID.randomUUID()
 
       val idleTestKit = BehaviorTestKit(OsmoGridGuardian.idle(guardianData))

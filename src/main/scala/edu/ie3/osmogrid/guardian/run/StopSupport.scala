@@ -10,7 +10,7 @@ import akka.actor.typed.SupervisorStrategy.Stop
 import akka.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.output.ResultListener
+import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.osmogrid.lv.LvCoordinator.Terminate
 
@@ -35,7 +35,7 @@ trait StopSupport {
   ): StoppingData = {
     childReferences.lvCoordinator.foreach(_ ! LvCoordinator.Terminate)
     childReferences.inputDataProvider ! InputDataProvider.Terminate
-    childReferences.resultListener.foreach(_ ! ResultListener.Terminate)
+    childReferences.resultListener.foreach(_ ! ResultListenerProtocol.Terminate)
 
     StoppingData(
       runId,

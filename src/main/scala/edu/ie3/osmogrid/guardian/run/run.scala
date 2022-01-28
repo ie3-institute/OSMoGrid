@@ -9,7 +9,7 @@ package edu.ie3.osmogrid.guardian.run
 import akka.actor.typed.ActorRef
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.output.ResultListener
+import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.LvCoordinator
 
 import java.util.UUID
@@ -30,7 +30,7 @@ object Run extends Request
   */
 private final case class MessageAdapters(
     lvCoordinator: ActorRef[LvCoordinator.Response],
-    resultListener: ActorRef[ResultListener.Response]
+    resultListener: ActorRef[ResultListenerProtocol.Response]
 )
 
 private object MessageAdapters {
@@ -39,7 +39,7 @@ private object MessageAdapters {
   ) extends Request
 
   final case class WrappedListenerResponse(
-      response: ResultListener.Response
+      response: ResultListenerProtocol.Response
   ) extends Request
 }
 
@@ -59,11 +59,11 @@ final case class Done(runId: UUID) extends Response
 
 private final case class ChildReferences(
     inputDataProvider: ActorRef[InputDataProvider.Request],
-    resultListener: Option[ActorRef[ResultListener.ResultEvent]],
-    additionalResultListeners: Seq[ActorRef[ResultListener.ResultEvent]],
+    resultListener: Option[ActorRef[ResultListenerProtocol.Request]],
+    additionalResultListeners: Seq[ActorRef[ResultListenerProtocol.Request]],
     lvCoordinator: Option[ActorRef[LvCoordinator.Request]]
 ) {
-  def resultListeners: Seq[ActorRef[ResultListener.ResultEvent]] =
+  def resultListeners: Seq[ActorRef[ResultListenerProtocol.Request]] =
     resultListener
       .map(Seq(_))
       .getOrElse(Seq.empty) ++ additionalResultListeners
@@ -73,7 +73,7 @@ private sealed trait StateData
 private final case class RunGuardianData(
     runId: UUID,
     cfg: OsmoGridConfig,
-    additionalListener: Seq[ActorRef[ResultListener.ResultEvent]],
+    additionalListener: Seq[ActorRef[ResultListenerProtocol.Request]],
     msgAdapters: MessageAdapters
 ) extends StateData
 

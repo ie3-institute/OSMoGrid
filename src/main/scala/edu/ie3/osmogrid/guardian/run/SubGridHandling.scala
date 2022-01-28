@@ -12,7 +12,7 @@ import edu.ie3.datamodel.utils.ContainerUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.guardian.run.SubGridHandling.assignSubnetNumbers
-import edu.ie3.osmogrid.io.output.ResultListener
+import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import org.slf4j.Logger
 
 import java.util.UUID
@@ -34,7 +34,7 @@ trait SubGridHandling {
   protected def handleLvResults(
       grids: Seq[SubGridContainer],
       cfg: OsmoGridConfig.Generation,
-      resultListener: Seq[ActorRef[ResultListener.ResultEvent]],
+      resultListener: Seq[ActorRef[ResultListenerProtocol.Request]],
       msgAdapters: MessageAdapters
   )(implicit log: Logger): Unit = {
     log.info("All lv grids successfully generated.")
@@ -47,7 +47,7 @@ trait SubGridHandling {
     val jointGrid =
       ContainerUtils.combineToJointGrid(updatedSubGrids.asJava)
     resultListener.foreach { listener =>
-      listener ! ResultListener.GridResult(
+      listener ! ResultListenerProtocol.GridResult(
         jointGrid,
         msgAdapters.resultListener
       )

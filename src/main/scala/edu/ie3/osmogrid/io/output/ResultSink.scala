@@ -8,7 +8,7 @@ package edu.ie3.osmogrid.io.output
 
 import edu.ie3.datamodel.models.result.ResultEntity
 import edu.ie3.osmogrid.exception.ProcessResultException
-import edu.ie3.osmogrid.io.output.PersistenceResultListener.GridResult
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol.GridResult
 
 import scala.concurrent.Future
 

@@ -19,8 +19,7 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Output}
 import edu.ie3.osmogrid.guardian.run.Run
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.output.ResultListener
-import edu.ie3.osmogrid.io.output.ResultListener.{GridResult, Request}
+import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
 import org.slf4j.Logger
@@ -44,7 +43,8 @@ object OsmoGridGuardian {
     */
   final case class Run(
       cfg: OsmoGridConfig,
-      additionalListener: Seq[ActorRef[ResultListener.ResultEvent]] = Seq.empty,
+      additionalListener: Seq[ActorRef[ResultListenerProtocol.Request]] =
+        Seq.empty,
       runId: UUID = UUID.randomUUID()
   ) extends Request
 

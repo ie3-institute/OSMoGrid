@@ -17,60 +17,58 @@ import edu.ie3.datamodel.models.input.container.{
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Output
 import edu.ie3.osmogrid.exception.IllegalConfigException
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol.{
+  GridResult,
+  Response,
+  ResultHandled
+}
 
 import concurrent.ExecutionContext.Implicits.global
-
 import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 object PersistenceResultListener {
 
-  // external protocol requests
-  sealed trait ListenerRequest
-
-  final case class GridResult(
-      grid: JointGridContainer,
-      replyTo: ActorRef[ListenerResponse]
-  ) extends ListenerRequest
-      with ResultEvent
-
-  // external protocol responses
-  sealed trait ListenerResponse
-  final case class PersistenceSuccessful(runId: UUID)
-      extends ListenerResponse
-      with ResultEvent
+  private sealed trait PersistenceListenerEvent extends ResultListenerProtocol
 
   // internal API
-  sealed trait ResultEvent
-
   private final case class InitComplete(stateData: ListenerStateData)
-      extends ResultEvent
+      extends PersistenceListenerEvent
 
-  private final case class InitFailed(cause: Throwable) extends ResultEvent
+  private final case class InitFailed(cause: Throwable)
+      extends PersistenceListenerEvent
+
+  // todo JH internal persistence handling w/o external protocol (HandledResult)
 
   private final case class ListenerStateData(
       runId: UUID,
       cfg: OsmoGridConfig.Output,
-      ctx: ActorContext[ResultEvent],
-      buffer: StashBuffer[ResultEvent],
+      ctx: ActorContext[ResultListenerProtocol],
+      buffer: StashBuffer[ResultListenerProtocol],
       sink: ResultSink
   )
 
-  def apply(runId: UUID, cfg: OsmoGridConfig.Output): Behavior[ResultEvent] = {
-    Behaviors.withStash[ResultEvent](100) { buffer =>
-      Behaviors.setup[ResultEvent] { ctx =>
+  def apply(
+      runId: UUID,
+      cfg: OsmoGridConfig.Output
+  ): Behavior[ResultListenerProtocol] = {
+    Behaviors.withStash[ResultListenerProtocol](100) { buffer =>
+      Behaviors.setup[ResultListenerProtocol] { ctx =>
         init(runId, cfg, ctx, buffer)
       }
     }
   }
 
-  private def idle(stateData: ListenerStateData): Behavior[ResultEvent] =
+  private def idle(
+      stateData: ListenerStateData
+  ): Behavior[ResultListenerProtocol] =
     Behaviors
-      .receiveMessagePartial[ResultEvent] {
+      .receiveMessagePartial[ResultListenerProtocol] {
         case gridResult @ GridResult(grid, replyTo) =>
           stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
-            case Success(_) => PersistenceSuccessful(stateData.runId)
+            case Success(_) =>
+              ResultHandled(stateData.runId, stateData.ctx.self)
             case Failure(exception) =>
               stateData.ctx.log.error(
                 s"Error during persistence of grid result: $exception"
@@ -87,11 +85,11 @@ object PersistenceResultListener {
 
   private def save(
       stateData: ListenerStateData,
-      replyTo: ActorRef[ListenerResponse]
-  ): Behavior[ResultEvent] =
+      replyTo: ActorRef[Response]
+  ): Behavior[ResultListenerProtocol] =
     Behaviors.receiveMessage {
-      case PersistenceSuccessful(runId) =>
-        replyTo ! PersistenceSuccessful(runId)
+      case ResultHandled(runId, self) =>
+        replyTo ! ResultHandled(runId, self)
         stateData.buffer.unstashAll(idle(stateData))
       case other =>
         stateData.buffer.stash(other)
@@ -101,9 +99,9 @@ object PersistenceResultListener {
   private def init(
       runId: UUID,
       cfg: OsmoGridConfig.Output,
-      ctx: ActorContext[ResultEvent],
-      buffer: StashBuffer[ResultEvent]
-  ): Behavior[ResultEvent] = {
+      ctx: ActorContext[ResultListenerProtocol],
+      buffer: StashBuffer[ResultListenerProtocol]
+  ): Behavior[ResultListenerProtocol] = {
     ctx.pipeToSelf(initSinks(runId, cfg)) {
       case Success(sink) =>
         InitComplete(ListenerStateData(runId, cfg, ctx, buffer, sink))
