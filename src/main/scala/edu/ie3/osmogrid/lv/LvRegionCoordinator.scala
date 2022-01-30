@@ -19,26 +19,33 @@ import org.locationtech.jts.geom.impl.CoordinateArraySequence
 import scala.collection.parallel.immutable.ParMap
 
 object LvRegionCoordinator {
-  sealed trait Request
+
+  // TODO make config parameter
+  private val maxAdminLevel = 8
+
+  sealed trait LvRcMessage
+
+  sealed trait Request extends LvRcMessage
   final case class Partition(
       osmContainer: OsmContainer,
       administrativeLevel: Int,
       replyTo: ActorRef[Response]
   ) extends Request
 
-  sealed trait Response
-  object Done extends Response
+  sealed trait Response extends LvRcMessage
+  case object Done extends Response
 
   def apply(
       lvGeneratorPool: ActorRef[LvGenerator.Request]
-  ): Behaviors.Receive[Request] = idle
+  ): Behaviors.Receive[LvRcMessage] = idle(lvGeneratorPool)
 
-  private def idle: Behaviors.Receive[Request] = Behaviors.receive {
+  private def idle(
+      lvGeneratorPool: ActorRef[LvGenerator.Request]
+  ): Behaviors.Receive[LvRcMessage] = Behaviors.receive {
     case (ctx, Partition(container, administrativeLevel, replyTo)) =>
       val osmContainer = container.par()
 
-      // TODO only extract boundaries for given administrativeLevel
-      val boundaries = buildBoundaryPolygons(osmContainer)
+      val boundaries = buildBoundaryPolygons(osmContainer, administrativeLevel)
 
       def filterNode(polygon: Polygon, node: OsmEntity.Node) = {
         val point = GeoUtils.buildPoint(node.latitude, node.longitude)
@@ -84,35 +91,59 @@ object LvRegionCoordinator {
           .sizeCompare(majority) > 0
       }
 
-      // TODO this way might be inefficient, find better way
-      // for example: resolve ids and build geographic objects at first,
-      // then compare to all provided polygons
-      boundaries.foreach { polygon =>
-        val nodes = osmContainer.nodes.filter { case (_, node) =>
-          filterNode(polygon, node)
-        }
-        val ways = osmContainer.ways.filter { case (_, way) =>
-          filterWay(polygon, way)
-        }
-        val relations = osmContainer.relations.filter { case (_, relation) =>
-          filterRelation(polygon, relation)
-        }
+      val newContainers =
+        if boundaries.isEmpty then
+          // if no containers have been found at this level, we continue with container of previous level
+          Iterable.single(osmContainer)
+        else
+          // TODO this way might be inefficient, find better way
+          // for example: resolve ids and build geographic objects at first,
+          // then compare to all provided polygons
+          boundaries.map { polygon =>
+            val nodes = osmContainer.nodes.filter { case (_, node) =>
+              filterNode(polygon, node)
+            }
+            val ways = osmContainer.ways.filter { case (_, way) =>
+              filterWay(polygon, way)
+            }
+            val relations = osmContainer.relations.filter {
+              case (_, relation) =>
+                filterRelation(polygon, relation)
+            }
 
-        val container = ParOsmContainer(nodes, ways, relations)
+            ParOsmContainer(nodes, ways, relations)
+          }.iterator
 
-        ctx.spawnAnonymous(MunicipalityCoordinator.apply(container))
+      newContainers.foreach { container =>
+        // boundaries in Germany: https://wiki.openstreetmap.org/wiki/DE:Grenze#Innerstaatliche_Grenzen
+        if administrativeLevel < maxAdminLevel then
+          val ref = ctx.spawnAnonymous(LvRegionCoordinator(lvGeneratorPool))
+          ref ! Partition(container, administrativeLevel + 1, ctx.self)
+        else ctx.spawnAnonymous(MunicipalityCoordinator.apply(container))
       }
 
-      /* TODO Wait for the incoming data and check, if all replies are received. */
-      Behaviors.same
+      waiting
 
     case (ctx, unsupported) =>
       ctx.log.warn(s"Received unsupported message '$unsupported'.")
       Behaviors.stopped
   }
 
-  private def buildBoundaryPolygons(osmContainer: ParOsmContainer) = {
-    extractBoundaries(osmContainer).map { case (_, r) =>
+  private def waiting: Behaviors.Receive[LvRcMessage] = Behaviors.receive {
+    case (ctx, Done) =>
+      // TODO forward done msg
+
+      Behaviors.stopped
+    case (ctx, unsupported) =>
+      ctx.log.warn(s"Received unsupported message '$unsupported'.")
+      Behaviors.stopped
+  }
+
+  private def buildBoundaryPolygons(
+      osmContainer: ParOsmContainer,
+      administrativeLevel: Int
+  ) = {
+    extractBoundaries(osmContainer, administrativeLevel).map { case (_, r) =>
       // combine all ways of a boundary relation to one sequence of coordinates
       val coordinates = r.members
         .flatMap {
@@ -136,37 +167,21 @@ object LvRegionCoordinator {
     }
   }
 
-  /** Returns a list of boundary relations consisting of counties ("Gemeinden")
-    * and independent towns ("Kreisfreie Städte").
-    *
-    * Should work in most places in Germany.
-    * @param osmContainer
+  /** @param osmContainer
     *   the OSM model
+    * @param administrativeLevel
+    *   the administrative level of the boundary to extract
     * @return
     *   list of boundary relations
     */
   private def extractBoundaries(
-      osmContainer: ParOsmContainer
+      osmContainer: ParOsmContainer,
+      administrativeLevel: Int
   ) = {
-    val relations = osmContainer.relations
-
-    val boundaries = relations.filter { case (id, relation) =>
-      relation.tags.get("boundary").contains("administrative")
+    osmContainer.relations.filter { case (id, relation) =>
+      relation.tags.get("boundary").contains("administrative") &&
+        relation.tags.get("admin_level").contains(administrativeLevel.toString)
     }
-
-    val municipalities =
-      boundaries.filter { case (id, relation) =>
-        relation.tags.get("admin_level").contains("8")
-      }
-
-    // independent towns with tag de:place=city https://forum.openstreetmap.org/viewtopic.php?id=21788
-    val independentCities = boundaries.filter { case (id, relation) =>
-      relation.tags.get("admin_level").contains("6") && relation.tags
-        .get("de:place")
-        .contains("city")
-    }
-
-    municipalities ++ independentCities
   }
 
 }
