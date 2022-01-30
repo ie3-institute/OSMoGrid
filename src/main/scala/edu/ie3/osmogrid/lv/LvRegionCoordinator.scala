@@ -29,7 +29,7 @@ object LvRegionCoordinator {
   final case class Partition(
       osmContainer: OsmContainer,
       administrativeLevel: Int,
-      replyTo: ActorRef[Response]
+      lvRegionCoordinatorPool: ActorRef[LvRcMessage]
   ) extends Request
 
   sealed trait Response extends LvRcMessage
@@ -42,7 +42,10 @@ object LvRegionCoordinator {
   private def idle(
       lvGeneratorPool: ActorRef[LvGenerator.Request]
   ): Behaviors.Receive[LvRcMessage] = Behaviors.receive {
-    case (ctx, Partition(container, administrativeLevel, replyTo)) =>
+    case (
+          ctx,
+          Partition(container, administrativeLevel, lvRegionCoordinatorPool)
+        ) =>
       val osmContainer = container.par()
 
       val boundaries = buildBoundaryPolygons(osmContainer, administrativeLevel)
@@ -117,23 +120,16 @@ object LvRegionCoordinator {
       newContainers.foreach { container =>
         // boundaries in Germany: https://wiki.openstreetmap.org/wiki/DE:Grenze#Innerstaatliche_Grenzen
         if administrativeLevel < maxAdminLevel then
-          val ref = ctx.spawnAnonymous(LvRegionCoordinator(lvGeneratorPool))
-          ref ! Partition(container, administrativeLevel + 1, ctx.self)
+          lvRegionCoordinatorPool ! Partition(
+            container,
+            administrativeLevel + 1,
+            lvRegionCoordinatorPool
+          )
         else ctx.spawnAnonymous(MunicipalityCoordinator.apply(container))
       }
 
-      waiting
+      Behaviors.same
 
-    case (ctx, unsupported) =>
-      ctx.log.warn(s"Received unsupported message '$unsupported'.")
-      Behaviors.stopped
-  }
-
-  private def waiting: Behaviors.Receive[LvRcMessage] = Behaviors.receive {
-    case (ctx, Done) =>
-      // TODO forward done msg
-
-      Behaviors.stopped
     case (ctx, unsupported) =>
       ctx.log.warn(s"Received unsupported message '$unsupported'.")
       Behaviors.stopped
