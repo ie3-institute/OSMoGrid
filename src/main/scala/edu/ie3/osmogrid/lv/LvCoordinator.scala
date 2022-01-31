@@ -163,10 +163,9 @@ object LvCoordinator {
           ctx.log.debug("All awaited data is present. Start processing.")
 
           /* Spawn an coordinator for the region */
-          val lvRegionCoordinator = ctx.spawn(
-            LvRegionCoordinator(),
-            "LvRegionCoordinator"
-          ) // TODO: Add run id to name
+          val lvRegionCoordinator = ctx.spawnAnonymous(
+            LvRegionCoordinator()
+          )
           lvRegionCoordinator ! LvRegionCoordinator.Partition(
             ctx.messageAdapter(msg =>
               MessageAdapters.WrappedRegionResponse(msg)
