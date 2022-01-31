@@ -7,7 +7,10 @@
 package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.ActorRef
-import edu.ie3.datamodel.models.input.container.SubGridContainer
+import edu.ie3.datamodel.models.input.container.{
+  JointGridContainer,
+  SubGridContainer
+}
 import edu.ie3.datamodel.utils.ContainerUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.RunGuardian
@@ -30,7 +33,7 @@ trait SubGridHandling {
   protected def handleLvResults(
       grids: Seq[SubGridContainer],
       cfg: OsmoGridConfig.Generation
-  )(implicit log: Logger): Unit = {
+  )(implicit log: Logger): JointGridContainer = {
     log.info("All lv grids successfully generated.")
     val updatedSubGrids = assignSubnetNumbers(grids)
 
@@ -40,7 +43,7 @@ trait SubGridHandling {
     /* Bundle grid result and inform interested listeners */
     // todo JH spin up listeners
 //    val jointGrid =
-//      ContainerUtils.combineToJointGrid(updatedSubGrids.asJava)
+    ContainerUtils.combineToJointGrid(updatedSubGrids.asJava)
 //    resultListener.foreach { listener =>
 //      listener ! ResultListenerProtocol.GridResult(
 //        jointGrid,

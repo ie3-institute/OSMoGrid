@@ -50,11 +50,10 @@ private trait RunSupport {
         validConfig.generation match {
           case Generation(Some(lvConfig)) =>
             ctx.log.info("Starting low voltage grid coordinator ...")
-            val (inputProvider, resultEventListener) =
-              spawnIoActors(
+            val inputProvider =
+              spawnInputDataProvider(
                 runGuardianData.runId,
                 validConfig.input,
-                validConfig.output,
                 ctx
               ) // todo JH shift to process after generation!
             val lvCoordinator = startLvGridGeneration(
@@ -81,32 +80,6 @@ private trait RunSupport {
         }
       }
   }
-
-  /** Spawns both the input and the output actor for the given specific run
-    *
-    * @param runId
-    *   Identifier for the targeted run
-    * @param inputConfig
-    *   Configuration for the input behavior
-    * @param outputConfig
-    *   Configuration of the output behavior
-    * @param ctx
-    *   Current actor context
-    * @return
-    *   Reference to an [[InputDataProvider]] as well as [[ResultListener]]
-    */
-  private def spawnIoActors(
-      runId: UUID,
-      inputConfig: OsmoGridConfig.Input,
-      outputConfig: OsmoGridConfig.Output,
-      ctx: ActorContext[Request]
-  ): (
-      ActorRef[InputDataProvider.Request],
-      Option[ActorRef[ResultListenerProtocol.Request]]
-  ) = (
-    spawnInputDataProvider(runId, inputConfig, ctx),
-    spawnResultListener(runId, outputConfig, ctx)
-  )
 
   /** Spawn an input data provider for this run
     *
@@ -145,7 +118,7 @@ private trait RunSupport {
     * @return
     *   References to [[ResultListener]]
     */
-  private def spawnResultListener(
+  protected def spawnResultListener(
       runId: UUID,
       outputConfig: OsmoGridConfig.Output,
       ctx: ActorContext[Request]

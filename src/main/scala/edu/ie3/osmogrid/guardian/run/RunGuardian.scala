@@ -6,12 +6,11 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.MessageAdapters
 import edu.ie3.osmogrid.guardian.run.MessageAdapters.WrappedLvCoordinatorResponse
-
 import edu.ie3.osmogrid.guardian.run.{RunSupport, StopSupport, SubGridHandling}
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
@@ -105,34 +104,26 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
           )
         ) =>
       /* Handle the grid results and wait for the listener to report back */
-      handleLvResults(
+      val resultingGrid = handleLvResults(
         subGridContainers,
         runGuardianData.cfg.generation
       )(ctx.log)
+
+      // spin up listeners, watch them and wait until they terminate in this state
+      spawnResultListener(
+        runGuardianData.runId,
+        runGuardianData.cfg.output,
+        ctx
+      ).foreach(_ ! ResultListenerProtocol.GridResult(resultingGrid))
       Behaviors.same
-//    case (
-//          ctx,
-//          WrappedListenerResponse(
-//            ResultListenerProtocol.ResultHandled(_, sender)
-//          )
-//        ) =>
-//      ctx.log.debug(
-//        s"The listener $sender has successfully handled the result event of run ${runGuardianData.runId}."
-//      )
-//      if (
-//        childReferences.resultListener.contains(
-//          sender
-//        ) || childReferences.resultListener.isEmpty
-//      ) {
-//        /* Start coordinated shutdown */
-//        ctx.log.info(
-//          s"Run ${runGuardianData.runId} successfully finished. Stop all run-related processes."
-//        )
-//        stopping(stopChildren(runGuardianData.runId, childReferences, ctx))
-//      } else {
-//        /* Somebody did something great, but nothing, that affects us */
-//        Behaviors.same
-//      }
+
+    case (ctx, ResultEventListenerDied) =>
+      // we wait for exact one listener as we only started one
+      /* Start coordinated shutdown */
+      ctx.log.info(
+        s"Run ${runGuardianData.runId} finished. Stop all run-related processes."
+      )
+      stopping(stopChildren(runGuardianData.runId, childReferences, ctx))
     case (ctx, watch: Watch) =>
       /* Somebody died unexpectedly. Start coordinated shutdown */
       stopping(
