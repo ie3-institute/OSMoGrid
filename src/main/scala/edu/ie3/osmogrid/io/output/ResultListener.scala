@@ -61,7 +61,7 @@ object ResultListener {
       .receiveSignal { case (context, PostStop) =>
         if (!stateData.buffer.isEmpty)
           context.log.warn(
-            s"Stash of ResultListener is not empty! This indicates an invalid system status!"
+            s"Stash of ResultListener is not empty! This indicates an invalid system state!"
           )
         stateData.sink.close()
         context.log.info(s"ResultListener stopped!")
@@ -90,7 +90,7 @@ object ResultListener {
       cfg: OsmoGridConfig.Output,
       ctx: ActorContext[ResultListenerProtocol],
       buffer: StashBuffer[ResultListenerProtocol]
-  ): Behavior[ResultListenerProtocol] = {
+  ): Behavior[ResultListenerProtocol] =
     Behaviors.receiveMessage {
       case InitComplete(stateData) =>
         stateData.buffer.unstashAll(idle(stateData))
@@ -102,12 +102,11 @@ object ResultListener {
         buffer.stash(other)
         Behaviors.same
     }
-  }
 
   private def initSinks(
       runId: UUID,
       cfg: OsmoGridConfig.Output
-  ): Future[ResultSink] = {
+  ): Future[ResultSink] =
     cfg match {
       case Output(Some(csv)) =>
         Future(
@@ -120,6 +119,5 @@ object ResultListener {
           )
         )
     }
-  }
 
 }
