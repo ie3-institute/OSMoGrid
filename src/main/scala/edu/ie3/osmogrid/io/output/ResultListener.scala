@@ -17,7 +17,8 @@ import edu.ie3.datamodel.models.input.container.{
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Output
 import edu.ie3.osmogrid.exception.IllegalConfigException
-import edu.ie3.osmogrid.io.output.ResultListenerProtocol._
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol.*
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol.PersistenceListenerEvent.*
 
 import concurrent.ExecutionContext.Implicits.global
 import java.util.UUID
@@ -48,16 +49,14 @@ object ResultListener {
   ): Behavior[ResultListenerProtocol] =
     Behaviors
       .receiveMessagePartial[ResultListenerProtocol] {
-        case gridResult @ GridResult(grid, replyTo) =>
+        case gridResult @ GridResult(grid) =>
           stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
             case Success(_) =>
-              ResultHandlingSucceeded(
-                ResultHandled(stateData.runId, stateData.ctx.self)
-              )
+              ResultHandlingSucceeded
             case Failure(exception) =>
               ResultHandlingFailed(exception)
           }
-          save(stateData, replyTo)
+          save(stateData)
       }
       .receiveSignal { case (context, PostStop) =>
         if (!stateData.buffer.isEmpty)
@@ -70,8 +69,7 @@ object ResultListener {
       }
 
   private def save(
-      stateData: ListenerStateData,
-      replyTo: ActorRef[Response]
+      stateData: ListenerStateData
   ): Behavior[ResultListenerProtocol] =
     Behaviors.receiveMessage {
       case ResultHandlingFailed(cause) =>
@@ -80,8 +78,7 @@ object ResultListener {
           cause
         )
         Behaviors.stopped
-      case ResultHandlingSucceeded(resultHandled) =>
-        replyTo ! resultHandled
+      case ResultHandlingSucceeded =>
         Behaviors.stopped
       case other =>
         stateData.buffer.stash(other)

@@ -25,12 +25,9 @@ object Run extends Request
   *
   * @param lvCoordinator
   *   Adapter for messages from [[LvCoordinator]]
-  * @param resultListener
-  *   Adapter for messages from [[ResultEventListener]]
   */
 private final case class MessageAdapters(
-    lvCoordinator: ActorRef[LvCoordinator.Response],
-    resultListener: ActorRef[ResultListenerProtocol.Response]
+    lvCoordinator: ActorRef[LvCoordinator.Response]
 )
 
 private object MessageAdapters {
@@ -38,9 +35,6 @@ private object MessageAdapters {
       response: LvCoordinator.Response
   ) extends Request
 
-  final case class WrappedListenerResponse(
-      response: ResultListenerProtocol.Response
-  ) extends Request
 }
 
 /* Death watch messages */
@@ -59,15 +53,8 @@ final case class Done(runId: UUID) extends Response
 
 private final case class ChildReferences(
     inputDataProvider: ActorRef[InputDataProvider.Request],
-    resultListener: Option[ActorRef[ResultListenerProtocol.Request]],
-    additionalResultListeners: Seq[ActorRef[ResultListenerProtocol.Request]],
     lvCoordinator: Option[ActorRef[LvCoordinator.Request]]
-) {
-  def resultListeners: Seq[ActorRef[ResultListenerProtocol.Request]] =
-    resultListener
-      .map(Seq(_))
-      .getOrElse(Seq.empty) ++ additionalResultListeners
-}
+)
 
 private sealed trait StateData
 private final case class RunGuardianData(

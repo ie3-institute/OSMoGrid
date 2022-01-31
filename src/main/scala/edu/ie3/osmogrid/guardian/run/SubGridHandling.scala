@@ -26,16 +26,10 @@ trait SubGridHandling {
     *   Received grids
     * @param cfg
     *   Grid generation config
-    * @param resultListener
-    *   References to the responsible result listener
-    * @param msgAdapters
-    *   Collection of all message adapters
     */
   protected def handleLvResults(
       grids: Seq[SubGridContainer],
-      cfg: OsmoGridConfig.Generation,
-      resultListener: Seq[ActorRef[ResultListenerProtocol.Request]],
-      msgAdapters: MessageAdapters
+      cfg: OsmoGridConfig.Generation
   )(implicit log: Logger): Unit = {
     log.info("All lv grids successfully generated.")
     val updatedSubGrids = assignSubnetNumbers(grids)
@@ -44,14 +38,15 @@ trait SubGridHandling {
       "No further generation steps intended. Hand over results to result handler."
     )
     /* Bundle grid result and inform interested listeners */
-    val jointGrid =
-      ContainerUtils.combineToJointGrid(updatedSubGrids.asJava)
-    resultListener.foreach { listener =>
-      listener ! ResultListenerProtocol.GridResult(
-        jointGrid,
-        msgAdapters.resultListener
-      )
-    }
+    // todo JH spin up listeners
+//    val jointGrid =
+//      ContainerUtils.combineToJointGrid(updatedSubGrids.asJava)
+//    resultListener.foreach { listener =>
+//      listener ! ResultListenerProtocol.GridResult(
+//        jointGrid,
+//        msgAdapters.resultListener
+//      )
+//    }
   }
 }
 

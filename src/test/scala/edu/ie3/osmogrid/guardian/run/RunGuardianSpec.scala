@@ -124,12 +124,8 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
       /* Test probes */
       val lvCoordinatorAdapter =
         testKit.createTestProbe[LvCoordinator.Response]()
-      val resultListenerAdapter =
-        testKit.createTestProbe[ResultListenerProtocol.Response]()
       val inputDataProvider =
         testKit.createTestProbe[InputDataProvider.Request]()
-      val resultListener =
-        testKit.createTestProbe[ResultListenerProtocol.Request]()
       val lvCoordinator = testKit.createTestProbe[LvCoordinator.Request]()
 
       /* State data */
@@ -137,12 +133,10 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         runId,
         validConfig,
         Seq.empty[ActorRef[ResultListenerProtocol.Request]],
-        MessageAdapters(lvCoordinatorAdapter.ref, resultListenerAdapter.ref)
+        MessageAdapters(lvCoordinatorAdapter.ref)
       )
       val childReferences = ChildReferences(
         inputDataProvider.ref,
-        Some(resultListener.ref),
-        Seq.empty,
         Some(lvCoordinator.ref)
       )
 
@@ -157,42 +151,6 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           Level.ERROR,
           s"Received a message, that I don't understand during active run $runId.\n\tMessage: $Run"
         )
-      }
-
-      "handles an incoming result" in new GridSupport {
-        runningTestKit.run(
-          MessageAdapters.WrappedLvCoordinatorResponse(
-            LvCoordinator.RepLvGrids(Seq(mockSubGrid(1)))
-          )
-        )
-
-        /* Event is logged */
-        runningTestKit.logEntries() should contain allOf (CapturedLogEvent(
-          Level.INFO,
-          "All lv grids successfully generated."
-        ), CapturedLogEvent(
-          Level.DEBUG,
-          "No further generation steps intended. Hand over results to result handler."
-        ))
-
-        /* Result is forwarded to listener */
-        resultListener.expectMessageType[ResultListenerProtocol.GridResult]
-      }
-
-      "initiate coordinated shutdown, if somebody unexpectedly dies" in {
-        runningTestKit.run(LvCoordinatorDied)
-
-        /* Event is logged */
-        runningTestKit.logEntries() should contain(
-          CapturedLogEvent(
-            Level.WARN,
-            s"Lv coordinator for run $runId unexpectedly died. Start coordinated shut down phase for this run."
-          )
-        )
-        /* All children are sent a termination request */
-        lvCoordinator.expectMessage(LvCoordinator.Terminate)
-        inputDataProvider.expectMessage(InputDataProvider.Terminate)
-        resultListener.expectMessage(ResultListenerProtocol.Terminate)
       }
     }
 

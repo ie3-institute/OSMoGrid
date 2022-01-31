@@ -73,20 +73,11 @@ class SubGridHandlingSpec
         testKit.createTestProbe[ResultListenerProtocol.Request](
           "ResultListener"
         )
-      val resultListenerAdapter =
-        testKit.createTestProbe[ResultListenerProtocol.Response](
-          "ResultListenerAdapter"
-        )
-      val additionalResultListener =
-        testKit.createTestProbe[ResultListenerProtocol.Request](
-          "AdditionalResultListener"
-        )
 
       val runId = UUID.randomUUID()
       val grids = Range(1, 10).map(mockSubGrid)
       val messageAdapters = new MessageAdapters(
-        lvCoordinatorAdapter.ref,
-        resultListenerAdapter.ref
+        lvCoordinatorAdapter.ref
       )
       val cfg = OsmoGridConfigFactory.parse {
         """
@@ -96,34 +87,6 @@ class SubGridHandlingSpec
           |generation.lv.distinctHouseConnections=true""".stripMargin
       }.get
 
-      "having an active run" should {
-        "inform the right parties about correct information" in new SubGridHandling {
-          handleLvResults(
-            grids,
-            cfg.generation,
-            Seq(resultListener.ref, additionalResultListener.ref),
-            messageAdapters
-          )
-
-          resultListener.receiveMessage() match {
-            case ResultListenerProtocol.GridResult(grid, _) =>
-              grid.getGridName shouldBe "DummyGrid"
-              grid.getRawGrid.getNodes.size() shouldBe 0
-            case unknown =>
-              fail(s"Received $unknown when expecting GridResult!")
-          }
-          additionalResultListener.receiveMessage() match {
-            case ResultListenerProtocol.GridResult(grid, _) =>
-              grid.getGridName shouldBe "DummyGrid"
-              grid.getRawGrid.getNodes.size() shouldBe 0
-            case unknown =>
-              fail(s"Received $unknown when expecting GridResult!")
-          }
-          inputDataProvider.expectNoMessage()
-          lvCoordinatorAdapter.expectNoMessage()
-          resultListenerAdapter.expectNoMessage()
-        }
-      }
     }
   }
 

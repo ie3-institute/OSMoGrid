@@ -10,10 +10,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.MessageAdapters
-import edu.ie3.osmogrid.guardian.run.MessageAdapters.{
-  WrappedListenerResponse,
-  WrappedLvCoordinatorResponse
-}
+import edu.ie3.osmogrid.guardian.run.MessageAdapters.WrappedLvCoordinatorResponse
+
 import edu.ie3.osmogrid.guardian.run.{RunSupport, StopSupport, SubGridHandling}
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
@@ -47,8 +45,7 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
         cfg,
         additionalListener,
         MessageAdapters(
-          ctx.messageAdapter(msg => WrappedLvCoordinatorResponse(msg)),
-          ctx.messageAdapter(msg => WrappedListenerResponse(msg))
+          ctx.messageAdapter(msg => WrappedLvCoordinatorResponse(msg))
         )
       )
     )
@@ -110,34 +107,32 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
       /* Handle the grid results and wait for the listener to report back */
       handleLvResults(
         subGridContainers,
-        runGuardianData.cfg.generation,
-        childReferences.resultListeners,
-        runGuardianData.msgAdapters
+        runGuardianData.cfg.generation
       )(ctx.log)
       Behaviors.same
-    case (
-          ctx,
-          WrappedListenerResponse(
-            ResultListenerProtocol.ResultHandled(_, sender)
-          )
-        ) =>
-      ctx.log.debug(
-        s"The listener $sender has successfully handled the result event of run ${runGuardianData.runId}."
-      )
-      if (
-        childReferences.resultListener.contains(
-          sender
-        ) || childReferences.resultListener.isEmpty
-      ) {
-        /* Start coordinated shutdown */
-        ctx.log.info(
-          s"Run ${runGuardianData.runId} successfully finished. Stop all run-related processes."
-        )
-        stopping(stopChildren(runGuardianData.runId, childReferences, ctx))
-      } else {
-        /* Somebody did something great, but nothing, that affects us */
-        Behaviors.same
-      }
+//    case (
+//          ctx,
+//          WrappedListenerResponse(
+//            ResultListenerProtocol.ResultHandled(_, sender)
+//          )
+//        ) =>
+//      ctx.log.debug(
+//        s"The listener $sender has successfully handled the result event of run ${runGuardianData.runId}."
+//      )
+//      if (
+//        childReferences.resultListener.contains(
+//          sender
+//        ) || childReferences.resultListener.isEmpty
+//      ) {
+//        /* Start coordinated shutdown */
+//        ctx.log.info(
+//          s"Run ${runGuardianData.runId} successfully finished. Stop all run-related processes."
+//        )
+//        stopping(stopChildren(runGuardianData.runId, childReferences, ctx))
+//      } else {
+//        /* Somebody did something great, but nothing, that affects us */
+//        Behaviors.same
+//      }
     case (ctx, watch: Watch) =>
       /* Somebody died unexpectedly. Start coordinated shutdown */
       stopping(

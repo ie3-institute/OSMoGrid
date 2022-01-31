@@ -13,10 +13,7 @@ import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
 import edu.ie3.osmogrid.exception.UnsupportedRequestException
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.output.{
-  ResultListener,
-  ResultListenerProtocol
-}
+import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
 
@@ -69,8 +66,6 @@ private trait RunSupport {
             Success(
               ChildReferences(
                 inputProvider,
-                resultEventListener,
-                runGuardianData.additionalListener,
                 Some(lvCoordinator)
               )
             )

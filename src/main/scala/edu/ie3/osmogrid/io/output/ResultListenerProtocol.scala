@@ -21,39 +21,28 @@ object ResultListenerProtocol {
   sealed trait Request extends ResultListenerProtocol
 
   final case class GridResult(
-      grid: JointGridContainer,
-      replyTo: ActorRef[ResultListenerProtocol.Response]
+      grid: JointGridContainer
   ) extends Request
       with ResultListenerProtocol
-
-  object Terminate extends Request // todo JH check if this can be removed
-
-  // external protocol responses
-  sealed trait Response
-
-  final case class ResultHandled(
-      runId: UUID,
-      replyTo: ActorRef[ResultListenerProtocol.Request]
-  ) // todo JH remove UUID, todo check if replyTo can be removed
-      extends Response
 
   // internal API
   private[output] sealed trait PersistenceListenerEvent
       extends ResultListenerProtocol
 
-  private[output] final case class InitComplete(stateData: ListenerStateData)
-      extends PersistenceListenerEvent
+  private[output] object PersistenceListenerEvent {
 
-  private[output] final case class InitFailed(cause: Throwable)
-      extends PersistenceListenerEvent
+    final case class InitComplete(stateData: ListenerStateData)
+        extends PersistenceListenerEvent
 
-  private[output] final case class ResultHandlingSucceeded(
-      resultHandled: ResultHandled
-  ) extends PersistenceListenerEvent
+    final case class InitFailed(cause: Throwable)
+        extends PersistenceListenerEvent
 
-  private[output] final case class ResultHandlingFailed(cause: Throwable)
-      extends PersistenceListenerEvent
+    case object ResultHandlingSucceeded extends PersistenceListenerEvent
+    final case class ResultHandlingFailed(cause: Throwable)
+        extends PersistenceListenerEvent
+  }
 
+  // state data
   private[output] final case class ListenerStateData(
       runId: UUID,
       ctx: ActorContext[ResultListenerProtocol],

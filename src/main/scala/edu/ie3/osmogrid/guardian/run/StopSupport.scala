@@ -35,7 +35,6 @@ trait StopSupport {
   ): StoppingData = {
     childReferences.lvCoordinator.foreach(_ ! LvCoordinator.Terminate)
     childReferences.inputDataProvider ! InputDataProvider.Terminate
-    childReferences.resultListener.foreach(_ ! ResultListenerProtocol.Terminate)
 
     StoppingData(
       runId,
