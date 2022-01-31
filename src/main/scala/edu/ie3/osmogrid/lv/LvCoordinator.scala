@@ -25,6 +25,7 @@ object LvCoordinator extends ActorStopSupport[Request] {
   sealed trait Request
 
   final case class ReqLvGrids(
+      inputDataProvider: ActorRef[InputDataProvider.Request],
       cfg: OsmoGridConfig.Generation.Lv,
       replyTo: ActorRef[Response]
   ) extends Request
@@ -89,6 +90,7 @@ object LvCoordinator extends ActorStopSupport[Request] {
       case (
             ctx,
             ReqLvGrids(
+              inputDataProvider,
               Lv(
                 distinctHouseConnections
               ),

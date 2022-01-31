@@ -59,6 +59,7 @@ private trait RunSupport {
               )
             val lvCoordinator = startLvGridGeneration(
               runGuardianData.runId,
+              inputProvider,
               lvConfig,
               runGuardianData.msgAdapters.lvCoordinator,
               ctx
@@ -176,6 +177,8 @@ private trait RunSupport {
     *
     * @param runId
     *   Identifier for the targeted run
+    * @param inputDataProvider
+    *   Reference to the [[InputDataProvider]] for this run
     * @param lvConfig
     *   Configuration for low voltage grid generation
     * @param lvCoordinatorAdapter
@@ -185,6 +188,7 @@ private trait RunSupport {
     */
   private def startLvGridGeneration(
       runId: UUID,
+      inputDataProvider: ActorRef[InputDataProvider.Request],
       lvConfig: OsmoGridConfig.Generation.Lv,
       lvCoordinatorAdapter: ActorRef[LvCoordinator.Response],
       ctx: ActorContext[Request]
@@ -194,7 +198,11 @@ private trait RunSupport {
     ctx.watchWith(lvCoordinator, LvCoordinatorDied)
 
     ctx.log.info("Starting voltage level grid generation ...")
-    lvCoordinator ! ReqLvGrids(lvConfig, lvCoordinatorAdapter)
+    lvCoordinator ! ReqLvGrids(
+      inputDataProvider,
+      lvConfig,
+      lvCoordinatorAdapter
+    )
 
     lvCoordinator
   }
