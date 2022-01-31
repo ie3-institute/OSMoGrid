@@ -95,7 +95,7 @@ object ResultListener {
       case InitComplete(stateData) =>
         stateData.buffer.unstashAll(idle(stateData))
       case InitFailed(cause) =>
-        ctx.log.error(s"Cannot instantiate $this!", cause)
+        ctx.log.error(s"Cannot instantiate ResultListener!", cause)
         Behaviors.stopped
       case other =>
         // stash all other messages for later processing,
