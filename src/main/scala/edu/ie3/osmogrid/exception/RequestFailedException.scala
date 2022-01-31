@@ -4,10 +4,9 @@
  * Research group Distribution grid planning and operation
  */
 
-package edu.ie3.osmogrid.model
+package edu.ie3.osmogrid.exception
 
-sealed trait PbfFilter
-
-object PbfFilter {
-  object DummyFilter extends PbfFilter
-}
+case class RequestFailedException(
+    msg: String = "",
+    cause: Throwable = None.orNull
+) extends Exception(msg, cause)

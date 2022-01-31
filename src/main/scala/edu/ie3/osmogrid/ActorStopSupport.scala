@@ -19,10 +19,10 @@ trait ActorStopSupport[T] {
 
   /** Specific stop state with clean up actions issued
     */
-  protected val stopState: Behavior[T] = Behaviors.stopped(cleanUp)
+  protected val stopBehavior: Behavior[T] = Behaviors.stopped(cleanUp)
 
   protected def postStopCleanUp(log: Logger): Behavior[T] = {
     log.info("Got terminated by ActorSystem.")
-    stopState
+    stopBehavior
   }
 }

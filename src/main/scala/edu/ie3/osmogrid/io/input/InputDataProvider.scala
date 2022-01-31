@@ -10,11 +10,15 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.ActorRef
 import akka.actor.typed.PostStop
 import akka.actor.typed.scaladsl.Behaviors
+import edu.ie3.datamodel.models.input.connector.`type`.{
+  LineTypeInput,
+  Transformer2WTypeInput
+}
 import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider.Request
-import edu.ie3.osmogrid.lv.LvCoordinator.stopState
+import edu.ie3.osmogrid.lv.LvCoordinator.stopBehavior
 import edu.ie3.osmogrid.model.{OsmoGridModel, PbfFilter}
 import org.slf4j.Logger
 
@@ -43,7 +47,14 @@ object InputDataProvider extends ActorStopSupport[Request] {
   final case class InvalidOsmRequest(reqRunId: UUID, actualRunId: UUID)
       extends Response
   final case class OsmReadFailed(reason: Throwable) extends Response
-  final case class RepAssetTypes(osmModel: OsmoGridModel) extends Response
+  final case class RepAssetTypes(
+      assetInformation: AssetInformation
+  ) extends Response
+
+  final case class AssetInformation(
+      lineTypes: Seq[LineTypeInput],
+      transformerTypes: Seq[Transformer2WTypeInput]
+  )
 
   def apply(cfg: OsmoGridConfig.Input): Behavior[Request] =
     Behaviors
@@ -56,7 +67,7 @@ object InputDataProvider extends ActorStopSupport[Request] {
           Behaviors.same
         case (ctx, Terminate) =>
           ctx.log.info("Stopping input data provider")
-          stopState
+          stopBehavior
       }
       .receiveSignal { case (ctx, PostStop) => postStopCleanUp(ctx.log) }
 
