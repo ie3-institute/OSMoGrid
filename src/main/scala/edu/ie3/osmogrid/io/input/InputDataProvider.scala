@@ -10,15 +10,17 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.ActorRef
 import akka.actor.typed.PostStop
 import akka.actor.typed.scaladsl.Behaviors
+import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian
+import edu.ie3.osmogrid.io.input.InputDataProvider.Request
 import edu.ie3.osmogrid.lv.LvCoordinator.stopState
 import edu.ie3.osmogrid.model.{OsmoGridModel, PbfFilter}
 import org.slf4j.Logger
 
 import java.util.UUID
 
-object InputDataProvider {
+object InputDataProvider extends ActorStopSupport[Request] {
 
   sealed trait Request
 
@@ -60,14 +62,5 @@ object InputDataProvider {
 
   /** Partial function to perform cleanup tasks while shutting down
     */
-  private val cleanUp: () => Unit = ???
-
-  /** Specific stop state with clean up actions issued
-    */
-  private val stopState: Behavior[Request] = Behaviors.stopped(cleanUp)
-
-  private def postStopCleanUp(log: Logger) = {
-    log.info("Got terminated by ActorSystem.")
-    stopState
-  }
+  override protected val cleanUp: () => Unit = ???
 }

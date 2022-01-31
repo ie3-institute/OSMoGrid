@@ -9,10 +9,11 @@ package edu.ie3.osmogrid.lv
 import akka.actor.typed.{ActorRef, Behavior, PostStop, SupervisorStrategy}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, Routers}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
+import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.lv.LvCoordinator.cleanUp
+import edu.ie3.osmogrid.lv.LvCoordinator.{Request, cleanUp}
 import edu.ie3.osmogrid.lv.LvGridGenerator
 import org.slf4j.Logger
 
@@ -20,7 +21,7 @@ import java.util.UUID
 
 /** Actor to take care of the overall generation process for low voltage grids
   */
-object LvCoordinator {
+object LvCoordinator extends ActorStopSupport[Request] {
   sealed trait Request
 
   final case class ReqLvGrids(
@@ -29,8 +30,6 @@ object LvCoordinator {
   ) extends Request
 
   object Terminate extends Request
-
-  /* Container class for message adapters as well as wrapping classes themselves */
 
   /** Container class for message adapters
     *
@@ -221,23 +220,7 @@ object LvCoordinator {
       postStopCleanUp(ctx.log)
     }
 
-  /** Do clean-up after (forced) stop has been issued.
-    *
-    * @param log
-    *   Logger to use
-    * @return
-    *   The next state
-    */
-  private def postStopCleanUp(log: Logger): Behavior[Request] = {
-    log.info("Got terminated by ActorSystem.")
-    stopState
-  }
-
   /** Partial function to perform cleanup tasks while shutting down
     */
-  private val cleanUp: () => Unit = ???
-
-  /** Specific stop state with clean up actions issued
-    */
-  private val stopState: Behavior[Request] = Behaviors.stopped(cleanUp)
+  override protected val cleanUp: () => Unit = ???
 }
