@@ -8,6 +8,7 @@ package edu.ie3.osmogrid.lv
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
+import edu.ie3.datamodel.models.input.container.SubGridContainer
 
 object LvRegionCoordinator {
   sealed trait Request
@@ -15,7 +16,7 @@ object LvRegionCoordinator {
       extends Request // TODO: OSM data needs to be transferred
 
   sealed trait Response
-  object Done extends Response
+  final case class RepLvGrids(subGrids: Seq[SubGridContainer]) extends Response
 
   def apply(): Behaviors.Receive[Request] = idle
 
