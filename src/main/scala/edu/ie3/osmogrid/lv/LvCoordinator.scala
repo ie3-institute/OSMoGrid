@@ -6,18 +6,16 @@
 
 package edu.ie3.osmogrid.lv
 
-import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors, Routers}
+import akka.actor.typed.{ActorRef, Behavior, PostStop, SupervisorStrategy}
+import akka.actor.typed.scaladsl.{Behaviors, Routers}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider
+import edu.ie3.osmogrid.lv.LvCoordinator.cleanUp
 import edu.ie3.osmogrid.lv.LvGridGenerator
-import edu.ie3.osmogrid.lv.LvGridGenerator.RepLvGrid
-import org.slf4j.Logger
 
-import scala.math.ceil
+import java.util.UUID
 
 object LvCoordinator {
   sealed trait Request
@@ -26,9 +24,7 @@ object LvCoordinator {
       replyTo: ActorRef[Response]
   ) extends Request
 
-  sealed trait Response
-  final case class RepLvGrids(grids: Seq[SubGridContainer]) extends Response
-
+  object Terminate extends Request
   /* Container class for message adapters as well as wrapping classes themselves */
   private final case class MessageAdapters(
       inputDataProvider: ActorRef[InputDataProvider.Response],
@@ -47,6 +43,9 @@ object LvCoordinator {
         extends Request
   }
 
+  sealed trait Response
+  final case class RepLvGrids(grids: Seq[SubGridContainer]) extends Response
+
   def apply(): Behavior[Request] = Behaviors.setup[Request] { context =>
     /* Define message adapters */
     val messageAdapters =
@@ -63,11 +62,16 @@ object LvCoordinator {
     idle(messageAdapters)
   }
 
-  private def idle(msgAdapters: MessageAdapters): Behavior[Request] =
-    Behaviors.receive {
+  private def idle(msgAdapters: MessageAdapters): Behavior[Request] = Behaviors
+    .receive[Request] {
       case (
             ctx,
-            ReqLvGrids(Lv(distinctHouseConnections), replyTo)
+            ReqLvGrids(
+              Lv(
+                distinctHouseConnections
+              ),
+              replyTo
+            )
           ) =>
         ctx.log.info("Starting generation of low voltage grids!")
         ctx.log.debug("Request input data")
@@ -78,7 +82,12 @@ object LvCoordinator {
         awaitInputData(osmData = None, assetData = None, replyTo)
       case (ctx, unsupported) =>
         ctx.log.error(s"Received unsupported message: $unsupported")
-        Behaviors.stopped
+        Behaviors.stopped(cleanUp())
+    }
+    .receiveSignal { case (ctx, PostStop) =>
+      ctx.log.info("Got terminated by ActorSystem.")
+      cleanUp()()
+      Behaviors.same
     }
 
   /** Await incoming input data and register it
@@ -108,7 +117,7 @@ object LvCoordinator {
 
       /* Spawn an coordinator for the region */
       val lvRegionCoordinator = ctx.spawn(
-        LvRegionCoordinator.apply(),
+        LvRegionCoordinator(),
         "LvRegionCoordinator"
       ) // TODO: Add run id to name
       lvRegionCoordinator ! LvRegionCoordinator.Partition(
@@ -155,4 +164,6 @@ object LvCoordinator {
   private def finalize(
       subGrids: Seq[SubGridContainer]
   ): Seq[SubGridContainer] = ???
+
+  private def cleanUp(): () => Unit = ???
 }

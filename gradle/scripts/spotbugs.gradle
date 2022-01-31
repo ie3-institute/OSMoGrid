@@ -8,14 +8,14 @@ spotbugs{
 
 spotbugsMain{
   reports{
-    html.enabled = false
-    xml.enabled = true
+    html.enabled false
+    xml.enabled true
   }
 }
 
 spotbugsTest{
   reports{
-    html.enabled = false
-    xml.enabled = true
+    html.enabled false
+    xml.enabled true
   }
 }

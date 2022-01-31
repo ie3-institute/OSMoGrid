@@ -4,16 +4,9 @@
  * Research group Distribution grid planning and operation
  */
 
-package de.osmogrid.util.enums;
+package edu.ie3.osmogrid.exception
 
-/**
- * Defines the supported voltage levels.
- *
- * @author Mahr
- * @since 17.12.2018
- */
-public enum VoltageLevel {
-  LV,
-  MV,
-  HV
-}
+case class UnsupportedRequestException(
+    msg: String = "",
+    cause: Throwable = None.orNull
+) extends Exception(msg, cause)

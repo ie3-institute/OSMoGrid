@@ -11,7 +11,7 @@
 ////////////////////////////////
 
 /* project configuration */
-String javaVersionId = 'jdk-11' // id that matches the java tool with the java version that should be used set as jenkins property
+String javaVersionId = 'jdk-17' // id that matches the java tool with the java version that should be used set as jenkins property
 
 /* git configuration */
 String projectName = 'OSMoGrid' // name of the repository, is case insensitive
@@ -112,11 +112,10 @@ node {
 
         sh 'java -version'
 
-        gradle('--refresh-dependencies clean spotlessCheck pmdMain pmdTest spotbugsMain ' +
-            'spotbugsTest test jacocoTestReport jacocoTestCoverageVerification', projectName)
+        gradle('--refresh-dependencies clean spotlessCheck pmdMain pmdTest spotbugsMain spotbugsTest test', projectName)
 
         // due to an issue with openjdk-8 we use openjdk-11 for javadocs generation
-        sh(script: """set +x && cd $projectName""" + ''' set +x; ./gradlew clean javadoc -Dorg.gradle.java.home=/opt/java/openjdk''', returnStdout: true)
+        sh(script: """set +x && cd $projectName""" + ''' set +x; ./gradlew clean javadoc''', returnStdout: true)
       }
 
       // sonarqube analysis
@@ -159,7 +158,7 @@ node {
              */
             sh(
                 script: """set +x && cd $projectName""" +
-                ''' set +x; ./gradlew clean javadoc -Dorg.gradle.java.home=/opt/java/openjdk''',
+                ''' set +x; ./gradlew clean javadoc''',
                 returnStdout: true
                 )
 
@@ -389,7 +388,7 @@ def deployJavaDocs(String projectName, String sshCredentialsId, String gitChecko
       "git config user.name 'Johannes Hiry' && " +
       "git fetch --depth=1 origin api-docs && " +
       "git checkout api-docs && " +
-      "cd .. && ./gradlew clean javadoc -Dorg.gradle.java.home=/opt/java/openjdk && " +
+      "cd .. && ./gradlew clean javadoc && " +
       "cp -R build/docs/javadoc/* tmp-api-docs && " +
       "cd tmp-api-docs &&" +
       "git add --all && git commit -m 'updated api-docs' && git push origin api-docs:api-docs" +
@@ -457,9 +456,6 @@ def determineDisplayName(String currentBranchName, String commitHash, String org
 def publishReports(String relativeProjectDir) {
   // publish test reports
   publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, escapeUnderscores: false, keepAll: true, reportDir: relativeProjectDir + '/build/reports/tests/test', reportFiles: 'index.html', reportName: "${relativeProjectDir}_java_tests_report", reportTitles: ''])
-
-  // publish jacoco report for main project only
-  publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, escapeUnderscores: false, keepAll: true, reportDir: relativeProjectDir + '/build/reports/jacoco', reportFiles: 'index.html', reportName: "${relativeProjectDir}_jacoco_report", reportTitles: ''])
 
   // publish pmd report for main project only
   publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, escapeUnderscores: false, keepAll: true, reportDir: relativeProjectDir + '/build/reports/pmd', reportFiles: 'main.html', reportName: "${relativeProjectDir}_pmd_report", reportTitles: ''])

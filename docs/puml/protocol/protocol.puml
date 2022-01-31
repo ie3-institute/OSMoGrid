@@ -8,6 +8,7 @@ boundary Main
 database Input
 participant InputDataProvider
 participant OsmoGridGuardian
+participant RunGuardian
 participant LvCoordinator
 participant LvRegionCoordinator
 participant MunicipalityCoordinator
@@ -17,15 +18,17 @@ participant LvGridGenerator
 participant ResultListener
 
 == Init ==
-Main -> OsmoGridGuardian: Run(cfg)
-OsmoGridGuardian --> InputDataProvider: //Spawn//
+Main -> OsmoGridGuardian: <font color="red">!</font>Run(cfg, ...)
+OsmoGridGuardian --> RunGuardian: //Spawn//
+OsmoGridGuardian -> RunGuardian: <font color="red">!</font>Run(cfg, ...)
+RunGuardian --> InputDataProvider: //Spawn//
 
-OsmoGridGuardian --> ResultListener: //Spawn//
+RunGuardian --> ResultListener: //Spawn//
 note right: Death watch of\n""ResultListener""
 
 == LV generation ==
-OsmoGridGuardian --> LvCoordinator: //Spawn//
-OsmoGridGuardian -> LvCoordinator: <font color="red">!</font>ReqLvGrids(...)
+RunGuardian --> LvCoordinator: //Spawn//
+RunGuardian -> LvCoordinator: <font color="red">!</font>ReqLvGrids(...)
 LvCoordinator -> InputDataProvider: <font color="red">!</font>ReqOsm(...)
 InputDataProvider <--> Input: //Read//
 LvCoordinator -> InputDataProvider: <font color="red">!</font>ReqAssetTypes(...)
@@ -68,21 +71,22 @@ LvRegionCoordinator -> LvRegionCoordinator: <font color="red">!</font>Done
 LvRegionCoordinator -> LvCoordinator: <font color="red">!</font>Done
 note left: All results are apparent;\nassign sub grid numbers
 
-LvCoordinator -> OsmoGridGuardian: <font color="red">!</font>RepLvGrids(...)
+LvCoordinator -> RunGuardian: <font color="red">!</font>RepLvGrids(...)
 
 == MV generation ==
 ... **To be defined in a later stage** ...
 
 == Result handling ==
-OsmoGridGuardian -> ResultListener: <font color="red">!</font>GridResult(...)
+RunGuardian -> ResultListener: <font color="red">!</font>GridResult(...)
 activate ResultListener
 ... ...
-ResultListener -> OsmoGridGuardian: <font color="red">!</font>ResultListenerDied
+ResultListener -> RunGuardian: <font color="red">!</font>ResultListenerDied
 deactivate ResultListener
-OsmoGridGuardian -> InputDataProvider: <font color="red">!</font>Terminate(...)
+RunGuardian -> InputDataProvider: <font color="red">!</font>Terminate(...)
 InputDataProvider <--> Input: //Close//
-InputDataProvider -> OsmoGridGuardian: <font color="red">!</font>InputDataProviderDied
+InputDataProvider -> RunGuardian: <font color="red">!</font>InputDataProviderDied
 
+RunGuardian -> OsmoGridGuardian: <font color="red">!</font>Done
 OsmoGridGuardian -> Main: <font color="red">!</font>Done
 
 'TODO: Don't forget to spawn and initialize the ResultListener
