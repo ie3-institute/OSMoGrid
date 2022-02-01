@@ -194,15 +194,14 @@ private trait RunSupport {
       ctx: ActorContext[Request]
   ): ActorRef[LvCoordinator.Request] = {
     val lvCoordinator =
-      ctx.spawn(LvCoordinator(), s"LvCoordinator_${runId.toString}")
+      ctx.spawn(
+        LvCoordinator(lvConfig, inputDataProvider, lvCoordinatorAdapter),
+        s"LvCoordinator_${runId.toString}"
+      )
     ctx.watchWith(lvCoordinator, LvCoordinatorDied)
 
     ctx.log.info("Starting voltage level grid generation ...")
-    lvCoordinator ! ReqLvGrids(
-      inputDataProvider,
-      lvConfig,
-      lvCoordinatorAdapter
-    )
+    lvCoordinator ! ReqLvGrids
 
     lvCoordinator
   }

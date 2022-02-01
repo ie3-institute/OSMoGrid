@@ -29,12 +29,7 @@ import scala.util.{Failure, Success, Try}
 object LvCoordinator extends ActorStopSupport[Request] {
   sealed trait Request
 
-  final case class ReqLvGrids(
-      inputDataProvider: ActorRef[InputDataProvider.Request],
-      cfg: OsmoGridConfig.Generation.Lv,
-      replyTo: ActorRef[Response]
-  ) extends Request
-
+  object ReqLvGrids extends Request
   object Terminate extends Request
 
   /** Container class for message adapters
@@ -68,7 +63,22 @@ object LvCoordinator extends ActorStopSupport[Request] {
     */
   final case class RepLvGrids(grids: Seq[SubGridContainer]) extends Response
 
-  def apply(): Behavior[Request] = Behaviors.setup[Request] { context =>
+  /** Build a [[LvCoordinator]] with given additional information
+    *
+    * @param cfg
+    *   Config for the generation process
+    * @param inputDataProvider
+    *   Reference to the [[InputDataProvider]]
+    * @param runGuardian
+    *   Reference to the [[RunGuardian]] to report to
+    * @return
+    *   The idle state
+    */
+  def apply(
+      cfg: OsmoGridConfig.Generation.Lv,
+      inputDataProvider: ActorRef[InputDataProvider.Request],
+      runGuardian: ActorRef[Response]
+  ): Behavior[Request] = Behaviors.setup[Request] { context =>
     /* Define message adapters */
     val messageAdapters =
       MessageAdapters(
@@ -80,43 +90,61 @@ object LvCoordinator extends ActorStopSupport[Request] {
         )
       )
 
-    idle(messageAdapters)
+    idle(
+      IdleData(cfg, inputDataProvider, runGuardian, messageAdapters)
+    )
   }
+
+  /** State data for orientation of the actor
+    *
+    * @param cfg
+    *   Config for the generation process
+    * @param inputDataProvider
+    *   Reference to the [[InputDataProvider]]
+    * @param runGuardian
+    *   Reference to the [[RunGuardian]] to report to
+    * @param msgAdapters
+    *   Collection of all necessary message adapters
+    */
+  private final case class IdleData(
+      cfg: OsmoGridConfig.Generation.Lv,
+      inputDataProvider: ActorRef[InputDataProvider.Request],
+      runGuardian: ActorRef[Response],
+      msgAdapters: MessageAdapters
+  )
 
   /** Idle state to receive any kind of [[Request]]
     *
-    * @param msgAdapters
-    *   Available message adapters to use, when defining to where to reply
+    * @param stateData
+    *   Current orientation of the Actor aka. the applicable state data
     * @return
     *   The next state
     */
-  private def idle(msgAdapters: MessageAdapters): Behavior[Request] = Behaviors
+  private def idle(stateData: IdleData): Behavior[Request] = Behaviors
     .receive[Request] {
       case (
             ctx,
-            ReqLvGrids(
-              inputDataProvider,
-              lvConfig,
-              replyTo
-            )
+            ReqLvGrids
           ) =>
         ctx.log.info("Starting generation of low voltage grids!")
         ctx.log.debug("Request input data")
 
         /* Ask for OSM data */
-        inputDataProvider ! ReqOsm(
+        stateData.inputDataProvider ! ReqOsm(
           runId = UUID.randomUUID(),
-          replyTo = msgAdapters.inputDataProvider,
+          replyTo = stateData.msgAdapters.inputDataProvider,
           filter = PbfFilter.DummyFilter
         )
         /* Ask for grid asset data */
-        inputDataProvider ! ReqAssetTypes(
+        stateData.inputDataProvider ! ReqAssetTypes(
           runId = UUID.randomUUID(),
-          replyTo = msgAdapters.inputDataProvider
+          replyTo = stateData.msgAdapters.inputDataProvider
         )
 
         /* Change state and await incoming data */
-        awaitInputData(AwaitingData.empty(msgAdapters, replyTo), lvConfig)
+        awaitInputData(
+          AwaitingData.empty(stateData, stateData.runGuardian)
+        )
       case (ctx, unsupported) =>
         ctx.log.error(
           s"Received unsupported message '$unsupported' in idle state."
@@ -133,6 +161,8 @@ object LvCoordinator extends ActorStopSupport[Request] {
     *   Current state of information for open street maps data
     * @param assetInformation
     *   Current state of information for asset data
+    * @param cfg
+    *   Config for the generation process
     * @param msgAdapters
     *   Collection of available message adapters
     * @param guardian
@@ -141,6 +171,7 @@ object LvCoordinator extends ActorStopSupport[Request] {
   private final case class AwaitingData(
       osmData: Option[OsmoGridModel],
       assetInformation: Option[InputDataProvider.AssetInformation],
+      cfg: OsmoGridConfig.Generation.Lv,
       msgAdapters: MessageAdapters,
       guardian: ActorRef[Response]
   ) {
@@ -175,30 +206,33 @@ object LvCoordinator extends ActorStopSupport[Request] {
 
   private object AwaitingData {
     def empty(
-        msgAdapters: MessageAdapters,
+        coordinatorData: IdleData,
         guardian: ActorRef[Response]
-    ): AwaitingData = AwaitingData(None, None, msgAdapters, guardian)
+    ): AwaitingData = AwaitingData(
+      None,
+      None,
+      coordinatorData.cfg,
+      coordinatorData.msgAdapters,
+      coordinatorData.runGuardian
+    )
   }
 
   /** Await incoming input data and register it
     *
     * @param awaitingData
     *   State data for the awaiting
-    * @param lvConfig
-    *   Configuration for low voltage grid generation process
     * @return
     *   Equivalent next state
     */
   private def awaitInputData(
-      awaitingData: AwaitingData,
-      lvConfig: OsmoGridConfig.Generation.Lv
+      awaitingData: AwaitingData
   ): Behavior[Request] = Behaviors
     .receive[Request] {
       case (ctx, MessageAdapters.WrappedInputDataResponse(response)) =>
         /* Register what has been responded */
         awaitingData.registerResponse(response, ctx.log) match {
           case Success(updatedStateData) =>
-            handleUpdatedAwaitingData(awaitingData, lvConfig, ctx)
+            handleUpdatedAwaitingData(awaitingData, ctx)
           case Failure(exception) =>
             ctx.log.error(
               "Request of needed input data failed. Stop low voltage grid generation.",
@@ -224,14 +258,11 @@ object LvCoordinator extends ActorStopSupport[Request] {
     *   Updated state data
     * @param ctx
     *   Actor context to use
-    * @param lvConfig
-    *   Configuration for low voltage grid generation process
     * @return
     *   Next state
     */
   private def handleUpdatedAwaitingData(
       awaitingData: AwaitingData,
-      lvConfig: OsmoGridConfig.Generation.Lv,
       ctx: ActorContext[Request]
   ): Behavior[Request] = {
     /* Check, if everything is in place */
@@ -240,11 +271,11 @@ object LvCoordinator extends ActorStopSupport[Request] {
     ) {
       /* Process the data */
       ctx.log.debug("All awaited data is present. Start processing.")
-      initRegionChunkDown(lvConfig, ctx)
+      initRegionChunkDown(awaitingData.cfg, ctx)
       /* Wait for results to come up */
       awaitResults(awaitingData.guardian)
     } else
-      awaitInputData(awaitingData, lvConfig) // Wait for missing data
+      awaitInputData(awaitingData) // Wait for missing data
   }
 
   /** Spawn child actors and start the chunking down of OSM data

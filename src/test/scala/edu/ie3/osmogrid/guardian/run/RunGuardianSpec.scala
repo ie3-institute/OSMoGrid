@@ -96,11 +96,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         idleTestKit
           .childInbox[LvCoordinator.Request](s"LvCoordinator_$runId")
           .receiveAll()
-          .exists {
-            case ReqLvGrids(_, cfg, _) =>
-              validConfig.generation.lv.contains(cfg)
-            case _ => false
-          } shouldBe true
+          .contains(ReqLvGrids) shouldBe true
       }
     }
 
