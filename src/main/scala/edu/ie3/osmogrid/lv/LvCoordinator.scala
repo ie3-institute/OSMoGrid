@@ -145,6 +145,9 @@ object LvCoordinator extends ActorStopSupport[Request] {
         awaitInputData(
           AwaitingData.empty(stateData, stateData.runGuardian)
         )
+      case (ctx, Terminate) =>
+        ctx.log.info("Got request to terminate.")
+        stopBehavior
       case (ctx, unsupported) =>
         ctx.log.error(
           s"Received unsupported message '$unsupported' in idle state."
@@ -240,6 +243,9 @@ object LvCoordinator extends ActorStopSupport[Request] {
             )
             stopBehavior
         }
+      case (ctx, Terminate) =>
+        ctx.log.info("Got request to terminate.")
+        stopBehavior
       case (ctx, unsupported) =>
         ctx.log.warn(
           s"Received unsupported message '$unsupported' in data awaiting state. Keep on going."
@@ -324,6 +330,9 @@ object LvCoordinator extends ActorStopSupport[Request] {
         guardian ! RepLvGrids(subGrids)
 
         stopBehavior
+      case (ctx, Terminate) =>
+        ctx.log.info("Got request to terminate.")
+        stopBehavior
       case (ctx, unsupported) =>
         ctx.log.error(
           s"Received an unsupported message: '$unsupported'. Shutting down."
@@ -336,5 +345,7 @@ object LvCoordinator extends ActorStopSupport[Request] {
 
   /** Partial function to perform cleanup tasks while shutting down
     */
-  override protected val cleanUp: () => Unit = ???
+  override protected val cleanUp: () => Unit = () => {
+    /* Nothing to do here. At least until now. */
+  }
 }
