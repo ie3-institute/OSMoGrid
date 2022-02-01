@@ -128,8 +128,7 @@ private final case class AwaitingData(
 
 private object AwaitingData {
   def empty(
-      coordinatorData: IdleData,
-      guardian: ActorRef[Response]
+      coordinatorData: IdleData
   ): AwaitingData = AwaitingData(
     None,
     None,

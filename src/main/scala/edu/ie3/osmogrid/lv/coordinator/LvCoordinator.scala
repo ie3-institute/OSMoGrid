@@ -87,7 +87,7 @@ object LvCoordinator extends ActorStopSupport[Request] {
 
         /* Change state and await incoming data */
         awaitInputData(
-          AwaitingData.empty(stateData, stateData.runGuardian)
+          AwaitingData.empty(stateData)
         )
       case (ctx, Terminate) =>
         ctx.log.info("Got request to terminate.")
@@ -117,7 +117,7 @@ object LvCoordinator extends ActorStopSupport[Request] {
         /* Register what has been responded */
         awaitingData.registerResponse(response, ctx.log) match {
           case Success(updatedStateData) =>
-            handleUpdatedAwaitingData(awaitingData, ctx)
+            handleUpdatedAwaitingData(updatedStateData, ctx)
           case Failure(exception) =>
             ctx.log.error(
               "Request of needed input data failed. Stop low voltage grid generation.",
@@ -169,7 +169,7 @@ object LvCoordinator extends ActorStopSupport[Request] {
       )
 
       /* Wait for results to come up */
-      awaitResults(awaitingData.guardian)
+      awaitResults(awaitingData.guardian, awaitingData.msgAdapters)
     } else
       awaitInputData(awaitingData) // Wait for missing data
   }
@@ -178,18 +178,21 @@ object LvCoordinator extends ActorStopSupport[Request] {
     *
     * @param guardian
     *   Reference to the guardian actor
+    * @param msgAdapters
+    *   Collection of all apparent message adapters
     * @return
     *   The next state
     */
   private def awaitResults(
-      guardian: ActorRef[Response]
+      guardian: ActorRef[Response],
+      msgAdapters: MessageAdapters
   ): Behavior[Request] = Behaviors
     .receive[Request] {
       case (ctx, StartGeneration(cfg, regionCoordinator)) =>
         /* Forward the generation request */
         regionCoordinator ! LvRegionCoordinator.Partition(
           cfg,
-          ctx.messageAdapter(msg => MessageAdapters.WrappedRegionResponse(msg))
+          msgAdapters.regionCoordinator
         )
         Behaviors.same
       case (

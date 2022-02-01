@@ -7,3 +7,5 @@
 package edu.ie3.osmogrid.model
 
 sealed trait OsmoGridModel
+
+object DummyOsmoGridModel extends OsmoGridModel

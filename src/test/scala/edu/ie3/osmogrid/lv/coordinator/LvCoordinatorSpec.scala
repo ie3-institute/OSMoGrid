@@ -7,21 +7,41 @@
 package edu.ie3.osmogrid.lv.coordinator
 
 import akka.actor.testkit.typed.CapturedLogEvent
-import akka.actor.testkit.typed.Effect.MessageAdapter
+import akka.actor.testkit.typed.Effect.{
+  MessageAdapter,
+  Spawned,
+  SpawnedAnonymous
+}
 import akka.actor.testkit.typed.scaladsl.{
   ActorTestKit,
   BehaviorTestKit,
   ScalaTestWithActorTestKit
 }
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
+import edu.ie3.datamodel.models.input.connector.`type`.{
+  LineTypeInput,
+  Transformer2WTypeInput
+}
+import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
+import edu.ie3.osmogrid.exception.RequestFailedException
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider
+import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
 import edu.ie3.osmogrid.io.output.ResultListener.ResultEvent
+import edu.ie3.osmogrid.lv.LvRegionCoordinator.Partition
+import edu.ie3.osmogrid.lv.coordinator.MessageAdapters.{
+  WrappedInputDataResponse,
+  WrappedRegionResponse
+}
 import edu.ie3.osmogrid.lv.{LvRegionCoordinator, coordinator}
+import edu.ie3.osmogrid.model.{DummyOsmoGridModel, OsmoGridModel}
 import edu.ie3.test.common.UnitSpec
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.event.Level
+
+import java.util.UUID
 
 class LvCoordinatorSpec
     extends ScalaTestWithActorTestKit
@@ -41,6 +61,18 @@ class LvCoordinatorSpec
       asynchronousTestKit.createTestProbe[coordinator.Response](
         "RunGuardian"
       )
+    val inputDataProviderAdapter =
+      asynchronousTestKit.createTestProbe[InputDataProvider.Response](
+        "InputDataProviderAdapter"
+      )
+    val regionCoordinatorAdapter =
+      asynchronousTestKit.createTestProbe[LvRegionCoordinator.Response](
+        "InputDataProviderAdapter"
+      )
+    val msgAdapters = MessageAdapters(
+      inputDataProviderAdapter.ref,
+      regionCoordinatorAdapter.ref
+    )
 
     "being initialized" should {
 
@@ -98,6 +130,194 @@ class LvCoordinatorSpec
             true
           case _ => false
         } shouldBe true
+      }
+    }
+
+    "awaiting input data" should {
+      "terminate if asked to do so" in {
+        val awaitingTestKit = BehaviorTestKit(
+          LvCoordinator invokePrivate PrivateMethod[Behavior[
+            coordinator.Request
+          ]](
+            Symbol(
+              "awaitInputData"
+            )
+          )(
+            AwaitingData.empty(
+              IdleData(
+                cfg,
+                inputDataProvider.ref,
+                lvCoordinatorAdapter.ref,
+                msgAdapters
+              )
+            )
+          )
+        )
+
+        awaitingTestKit.run(coordinator.Terminate)
+
+        awaitingTestKit.logEntries() should contain only CapturedLogEvent(
+          Level.INFO,
+          "Got request to terminate."
+        )
+        awaitingTestKit.isAlive shouldBe false
+      }
+
+      "terminate, if a request has been answered with a failure" in {
+        val awaitingTestKit = BehaviorTestKit(
+          LvCoordinator invokePrivate PrivateMethod[Behavior[
+            coordinator.Request
+          ]](
+            Symbol(
+              "awaitInputData"
+            )
+          )(
+            AwaitingData.empty(
+              IdleData(
+                cfg,
+                inputDataProvider.ref,
+                lvCoordinatorAdapter.ref,
+                msgAdapters
+              )
+            )
+          )
+        )
+
+        /* Send a failed request response */
+        awaitingTestKit.run(
+          WrappedInputDataResponse(
+            InputDataProvider.OsmReadFailed(
+              RuntimeException("Some random failure.")
+            )
+          )
+        )
+
+        awaitingTestKit.logEntries() should contain only CapturedLogEvent(
+          Level.ERROR,
+          "Request of needed input data failed. Stop low voltage grid generation.",
+          Some(
+            RequestFailedException(
+              "The requested OSM data cannot be read. Stop generation."
+            )
+          ),
+          None
+        )
+        awaitingTestKit.isAlive shouldBe false
+      }
+
+      val awaitingData = AwaitingData.empty(
+        IdleData(
+          cfg,
+          inputDataProvider.ref,
+          lvCoordinatorAdapter.ref,
+          msgAdapters
+        )
+      )
+      val runId = UUID.randomUUID()
+      val awaitingTestKit = BehaviorTestKit[Request](
+        LvCoordinator invokePrivate PrivateMethod[Behavior[
+          coordinator.Request
+        ]](
+          Symbol(
+            "awaitInputData"
+          )
+        )(awaitingData)
+      )
+      "spawn a child actor only if all data has arrived" in {
+        val osmData = InputDataProvider.RepOsm(runId, DummyOsmoGridModel)
+
+        awaitingTestKit.run(WrappedInputDataResponse(osmData))
+        awaitingTestKit.hasEffects() shouldBe false
+
+        awaitingTestKit.run(
+          WrappedInputDataResponse(
+            InputDataProvider.RepAssetTypes(
+              AssetInformation(
+                Seq.empty[LineTypeInput],
+                Seq.empty[Transformer2WTypeInput]
+              )
+            )
+          )
+        )
+        /* Test for spawned child */
+        awaitingTestKit.expectEffectPF {
+          case _: SpawnedAnonymous[_] =>
+            succeed
+          case unexpected => fail(s"Unexpected Effect happened: $unexpected")
+          case _          => fail("No child spawned")
+        }
+
+        awaitingTestKit.selfInbox().receiveMessage() match {
+          case StartGeneration(lvConfig, _) => lvConfig shouldBe cfg
+          case unexpected => fail(s"Received unexpected message '$unexpected'.")
+        }
+      }
+    }
+
+    "awaiting results" should {
+      "terminate if asked to do so" in {
+        val awaitingTestKit = BehaviorTestKit(
+          LvCoordinator invokePrivate PrivateMethod[Behavior[
+            coordinator.Request
+          ]](Symbol("awaitResults"))(lvCoordinatorAdapter.ref, msgAdapters)
+        )
+
+        awaitingTestKit.run(coordinator.Terminate)
+
+        awaitingTestKit.logEntries() should contain only CapturedLogEvent(
+          Level.INFO,
+          "Got request to terminate."
+        )
+        awaitingTestKit.isAlive shouldBe false
+      }
+
+      val awaitingTestKit = BehaviorTestKit[Request](
+        LvCoordinator invokePrivate PrivateMethod[Behavior[
+          coordinator.Request
+        ]](Symbol("awaitResults"))(lvCoordinatorAdapter.ref, msgAdapters)
+      )
+      "properly perform generation" in {
+        /* Mocking the lv region generator */
+        val resultMsg =
+          LvRegionCoordinator.RepLvGrids(Seq.empty[SubGridContainer])
+        val mockedBehavior: Behavior[LvRegionCoordinator.Request] =
+          Behaviors.receive[LvRegionCoordinator.Request] { case (ctx, msg) =>
+            msg match {
+              case Partition(_, replyTo) =>
+                ctx.log.info(
+                  s"Received the following message: '$msg'. Send out reply."
+                )
+                replyTo ! resultMsg
+            }
+            Behaviors.same
+          }
+        val probe =
+          asynchronousTestKit.createTestProbe[LvRegionCoordinator.Request]()
+        val mockedLvRegionCoordinator = asynchronousTestKit.spawn(
+          Behaviors.monitor(probe.ref, mockedBehavior)
+        )
+
+        /* Ask the coordinator to start the process */
+        awaitingTestKit.run(StartGeneration(cfg, mockedLvRegionCoordinator))
+        probe.expectMessageType[LvRegionCoordinator.Partition] match {
+          case Partition(config, _) => config shouldBe cfg
+        }
+
+        /* The mocked behavior directly sends a reply -> Check that out */
+        val regionResponse = regionCoordinatorAdapter
+          .expectMessageType[LvRegionCoordinator.RepLvGrids]
+        regionResponse shouldBe resultMsg
+        awaitingTestKit.run(
+          WrappedRegionResponse(regionResponse)
+        ) // Forward from probe to actor
+
+        /* The result is forwarded */
+        lvCoordinatorAdapter.expectMessageType[RepLvGrids] match {
+          case RepLvGrids(grids) =>
+            grids should contain theSameElementsAs resultMsg.subGrids
+        }
+
+        awaitingTestKit.isAlive shouldBe false
       }
     }
   }
