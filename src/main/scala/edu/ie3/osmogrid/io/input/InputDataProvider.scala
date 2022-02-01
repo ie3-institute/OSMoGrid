@@ -18,7 +18,7 @@ import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider.Request
-import edu.ie3.osmogrid.lv.LvCoordinator.stopBehavior
+import edu.ie3.osmogrid.lv.coordinator.LvCoordinator.stopBehavior
 import edu.ie3.osmogrid.model.{OsmoGridModel, PbfFilter}
 import org.slf4j.Logger
 

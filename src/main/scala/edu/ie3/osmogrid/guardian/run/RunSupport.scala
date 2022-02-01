@@ -14,8 +14,7 @@ import edu.ie3.osmogrid.exception.UnsupportedRequestException
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
-import edu.ie3.osmogrid.lv.LvCoordinator
-import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
+import edu.ie3.osmogrid.lv.coordinator
 
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
@@ -190,18 +189,19 @@ private trait RunSupport {
       runId: UUID,
       inputDataProvider: ActorRef[InputDataProvider.Request],
       lvConfig: OsmoGridConfig.Generation.Lv,
-      lvCoordinatorAdapter: ActorRef[LvCoordinator.Response],
+      lvCoordinatorAdapter: ActorRef[coordinator.Response],
       ctx: ActorContext[Request]
-  ): ActorRef[LvCoordinator.Request] = {
+  ): ActorRef[coordinator.Request] = {
     val lvCoordinator =
       ctx.spawn(
-        LvCoordinator(lvConfig, inputDataProvider, lvCoordinatorAdapter),
+        coordinator
+          .LvCoordinator(lvConfig, inputDataProvider, lvCoordinatorAdapter),
         s"LvCoordinator_${runId.toString}"
       )
     ctx.watchWith(lvCoordinator, LvCoordinatorDied)
 
     ctx.log.info("Starting voltage level grid generation ...")
-    lvCoordinator ! ReqLvGrids
+    lvCoordinator ! coordinator.ReqLvGrids
 
     lvCoordinator
   }

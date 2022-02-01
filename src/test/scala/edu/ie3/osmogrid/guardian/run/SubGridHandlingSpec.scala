@@ -13,7 +13,8 @@ import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
 import edu.ie3.osmogrid.guardian.run.{RunGuardian, SubGridHandling}
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
-import edu.ie3.osmogrid.lv.LvCoordinator
+import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.lv.coordinator.LvCoordinator
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.mockito.Mockito.when
 import org.scalatest.BeforeAndAfterAll
@@ -68,7 +69,7 @@ class SubGridHandlingSpec
       val inputDataProvider =
         testKit.createTestProbe[InputDataProvider.Request]("InputDataProvider")
       val lvCoordinatorAdapter =
-        testKit.createTestProbe[LvCoordinator.Response]("LvCoordinatorAdapter")
+        testKit.createTestProbe[coordinator.Response]("LvCoordinatorAdapter")
       val resultListener =
         testKit.createTestProbe[ResultListener.ResultEvent]("ResultListener")
       val resultListenerAdapter =

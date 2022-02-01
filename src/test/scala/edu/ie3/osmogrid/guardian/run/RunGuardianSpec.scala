@@ -19,8 +19,7 @@ import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.io.output.ResultListener.{GridResult, ResultEvent}
-import edu.ie3.osmogrid.lv.LvCoordinator
-import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
+import edu.ie3.osmogrid.lv.coordinator
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.slf4j.event.Level
 
@@ -71,7 +70,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
 
         /* Two message adapters are registered */
         idleTestKit
-          .expectEffectType[MessageAdapter[LvCoordinator.Response, Request]]
+          .expectEffectType[MessageAdapter[coordinator.Response, Request]]
         idleTestKit.expectEffectType[MessageAdapter[ResultEvent, Request]]
 
         /* Check if I/O actors and LvCoordinator are spawned and watched correctly */
@@ -87,16 +86,16 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         }
         idleTestKit.expectEffectType[WatchedWith[ResultEvent, Watch]]
         idleTestKit.expectEffectPF {
-          case Spawned(_: Behavior[LvCoordinator.Request], name, props) =>
+          case Spawned(_: Behavior[coordinator.Request], name, props) =>
             name shouldBe s"LvCoordinator_$runId"
         }
-        idleTestKit.expectEffectType[WatchedWith[LvCoordinator.Request, Watch]]
+        idleTestKit.expectEffectType[WatchedWith[coordinator.Request, Watch]]
 
         /* Check for child messages */
         idleTestKit
-          .childInbox[LvCoordinator.Request](s"LvCoordinator_$runId")
+          .childInbox[coordinator.Request](s"LvCoordinator_$runId")
           .receiveAll()
-          .contains(ReqLvGrids) shouldBe true
+          .contains(coordinator.ReqLvGrids) shouldBe true
       }
     }
 
@@ -105,13 +104,13 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
 
       /* Test probes */
       val lvCoordinatorAdapter =
-        testKit.createTestProbe[LvCoordinator.Response]()
+        testKit.createTestProbe[coordinator.Response]()
       val resultListenerAdapter =
         testKit.createTestProbe[ResultListener.Response]()
       val inputDataProvider =
         testKit.createTestProbe[InputDataProvider.Request]()
       val resultListener = testKit.createTestProbe[ResultEvent]()
-      val lvCoordinator = testKit.createTestProbe[LvCoordinator.Request]()
+      val lvCoordinator = testKit.createTestProbe[coordinator.Request]()
 
       /* State data */
       val runGuardianData = RunGuardianData(
@@ -143,7 +142,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
       "handles an incoming result" in new GridSupport {
         runningTestKit.run(
           MessageAdapters.WrappedLvCoordinatorResponse(
-            LvCoordinator.RepLvGrids(Seq(mockSubGrid(1)))
+            coordinator.RepLvGrids(Seq(mockSubGrid(1)))
           )
         )
 
@@ -171,7 +170,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           )
         )
         /* All children are sent a termination request */
-        lvCoordinator.expectMessage(LvCoordinator.Terminate)
+        lvCoordinator.expectMessage(coordinator.Terminate)
         inputDataProvider.expectMessage(InputDataProvider.Terminate)
         resultListener.expectMessage(ResultListener.Terminate)
       }

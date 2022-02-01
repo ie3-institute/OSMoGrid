@@ -18,7 +18,7 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener.ResultEvent
-import edu.ie3.osmogrid.lv.{LvCoordinator, LvRegionCoordinator, coordinator}
+import edu.ie3.osmogrid.lv.{LvRegionCoordinator, coordinator}
 import edu.ie3.test.common.UnitSpec
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.event.Level
@@ -38,7 +38,7 @@ class LvCoordinatorSpec
         "InputDataProvider"
       )
     val lvCoordinatorAdapter =
-      asynchronousTestKit.createTestProbe[LvCoordinator.Response](
+      asynchronousTestKit.createTestProbe[coordinator.Response](
         "RunGuardian"
       )
 
@@ -46,7 +46,7 @@ class LvCoordinatorSpec
 
       "register the correct amount of message adapters" in {
         val idleTestKit = BehaviorTestKit(
-          LvCoordinator(
+          coordinator.LvCoordinator(
             cfg,
             inputDataProvider.ref,
             lvCoordinatorAdapter.ref
@@ -54,10 +54,10 @@ class LvCoordinatorSpec
         )
 
         idleTestKit.expectEffectType[
-          MessageAdapter[InputDataProvider.Response, LvCoordinator.Request]
+          MessageAdapter[InputDataProvider.Response, coordinator.Request]
         ]
         idleTestKit.expectEffectType[
-          MessageAdapter[LvRegionCoordinator.Response, LvCoordinator.Request]
+          MessageAdapter[LvRegionCoordinator.Response, coordinator.Request]
         ]
       }
     }
@@ -65,13 +65,13 @@ class LvCoordinatorSpec
     "being idle" should {
       "terminate if asked to do so" in {
         val idleTestKit = BehaviorTestKit(
-          LvCoordinator(
+          coordinator.LvCoordinator(
             cfg,
             inputDataProvider.ref,
             lvCoordinatorAdapter.ref
           )
         )
-        idleTestKit.run(LvCoordinator.Terminate)
+        idleTestKit.run(coordinator.Terminate)
 
         idleTestKit.logEntries() should contain only CapturedLogEvent(
           Level.INFO,
@@ -81,14 +81,14 @@ class LvCoordinatorSpec
       }
 
       val idleTestKit = BehaviorTestKit(
-        LvCoordinator(
+        coordinator.LvCoordinator(
           cfg,
           inputDataProvider.ref,
           lvCoordinatorAdapter.ref
         )
       )
       "ask for osm and asset information upon request" in {
-        idleTestKit.run(LvCoordinator.ReqLvGrids)
+        idleTestKit.run(coordinator.ReqLvGrids)
 
         /* Receive exactly two messages, that are requests for OSM and asset data */
         inputDataProvider.receiveMessages(2).forall {

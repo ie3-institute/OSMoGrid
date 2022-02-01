@@ -17,7 +17,7 @@ import edu.ie3.osmogrid.guardian.run.MessageAdapters.{
 import edu.ie3.osmogrid.guardian.run.{RunSupport, StopSupport, SubGridHandling}
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
-import edu.ie3.osmogrid.lv.LvCoordinator
+import edu.ie3.osmogrid.lv.coordinator
 
 import java.util.UUID
 import scala.util.{Failure, Success}
@@ -103,7 +103,7 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
     case (
           ctx,
           WrappedLvCoordinatorResponse(
-            LvCoordinator.RepLvGrids(subGridContainers)
+            coordinator.RepLvGrids(subGridContainers)
           )
         ) =>
       /* Handle the grid results and wait for the listener to report back */
