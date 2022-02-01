@@ -73,5 +73,7 @@ object InputDataProvider extends ActorStopSupport[Request] {
 
   /** Partial function to perform cleanup tasks while shutting down
     */
-  override protected val cleanUp: () => Unit = ???
+  override protected val cleanUp: () => Unit = () => {
+    /* Nothing to do here. At least until now. */
+  }
 }
