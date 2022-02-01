@@ -28,8 +28,11 @@ import scala.util.{Failure, Success, Try}
   */
 object LvCoordinator extends ActorStopSupport[Request] {
   sealed trait Request
-
   object ReqLvGrids extends Request
+  final case class StartGeneration(
+      lvConfig: OsmoGridConfig.Generation.Lv,
+      regionCoordinator: ActorRef[LvRegionCoordinator.Request]
+  ) extends Request
   object Terminate extends Request
 
   /** Container class for message adapters
@@ -277,32 +280,19 @@ object LvCoordinator extends ActorStopSupport[Request] {
     ) {
       /* Process the data */
       ctx.log.debug("All awaited data is present. Start processing.")
-      initRegionChunkDown(awaitingData.cfg, ctx)
+
+      /* Spawn an coordinator for the region */
+      ctx.self ! StartGeneration(
+        awaitingData.cfg,
+        ctx.spawnAnonymous(
+          LvRegionCoordinator()
+        )
+      )
+
       /* Wait for results to come up */
       awaitResults(awaitingData.guardian)
     } else
       awaitInputData(awaitingData) // Wait for missing data
-  }
-
-  /** Spawn child actors and start the chunking down of OSM data
-    *
-    * @param lvConfig
-    *   Configuration for low voltage grid generation process
-    * @param ctx
-    *   [[ActorContext]] to spawn the children in
-    */
-  private def initRegionChunkDown(
-      lvConfig: OsmoGridConfig.Generation.Lv,
-      ctx: ActorContext[Request]
-  ): Unit = {
-    /* Spawn an coordinator for the region */
-    val lvRegionCoordinator = ctx.spawnAnonymous(
-      LvRegionCoordinator()
-    )
-    lvRegionCoordinator ! LvRegionCoordinator.Partition(
-      lvConfig,
-      ctx.messageAdapter(msg => MessageAdapters.WrappedRegionResponse(msg))
-    )
   }
 
   /** State to receive results from subordinate actors
@@ -316,6 +306,13 @@ object LvCoordinator extends ActorStopSupport[Request] {
       guardian: ActorRef[Response]
   ): Behavior[Request] = Behaviors
     .receive[Request] {
+      case (ctx, StartGeneration(cfg, regionCoordinator)) =>
+        /* Forward the generation request */
+        regionCoordinator ! LvRegionCoordinator.Partition(
+          cfg,
+          ctx.messageAdapter(msg => MessageAdapters.WrappedRegionResponse(msg))
+        )
+        Behaviors.same
       case (
             ctx,
             MessageAdapters.WrappedRegionResponse(
