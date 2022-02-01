@@ -90,8 +90,7 @@ object LvCoordinator extends ActorStopSupport[Request] {
           AwaitingData.empty(stateData)
         )
       case (ctx, Terminate) =>
-        ctx.log.info("Got request to terminate.")
-        stopBehavior
+        terminate(ctx.log)
       case (ctx, unsupported) =>
         ctx.log.error(
           s"Received unsupported message '$unsupported' in idle state."
@@ -126,8 +125,7 @@ object LvCoordinator extends ActorStopSupport[Request] {
             stopBehavior
         }
       case (ctx, Terminate) =>
-        ctx.log.info("Got request to terminate.")
-        stopBehavior
+        terminate(ctx.log)
       case (ctx, unsupported) =>
         ctx.log.warn(
           s"Received unsupported message '$unsupported' in data awaiting state. Keep on going."
@@ -210,8 +208,7 @@ object LvCoordinator extends ActorStopSupport[Request] {
 
         stopBehavior
       case (ctx, Terminate) =>
-        ctx.log.info("Got request to terminate.")
-        stopBehavior
+        terminate(ctx.log)
       case (ctx, unsupported) =>
         ctx.log.error(
           s"Received an unsupported message: '$unsupported'. Shutting down."

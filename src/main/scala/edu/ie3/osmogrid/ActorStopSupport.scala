@@ -17,6 +17,11 @@ trait ActorStopSupport[T] {
     */
   protected val cleanUp: () => Unit
 
+  private def terminate(log: Logger) = {
+    log.info("Got request to terminate.")
+    stopBehavior
+  }
+
   /** Specific stop state with clean up actions issued
     */
   protected val stopBehavior: Behavior[T] = Behaviors.stopped(cleanUp)
