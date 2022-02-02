@@ -3,7 +3,7 @@ plugins {
   id 'java' //java support
   id 'scala'
   id 'pmd' // code check, working on source code
-  id 'com.diffplug.spotless' version '6.2.0'//code format
+  id 'com.diffplug.spotless' version '6.2.1'//code format
   id 'com.github.spotbugs' version '5.0.5' // code check, working on byte code
   id 'de.undercouch.download' version '5.0.1'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
