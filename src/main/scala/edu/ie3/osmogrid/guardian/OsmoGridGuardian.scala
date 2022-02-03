@@ -7,21 +7,23 @@
 package edu.ie3.osmogrid.guardian
 
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.container.{
   JointGridContainer,
   SubGridContainer
 }
 import edu.ie3.datamodel.utils.ContainerUtils
-import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation
-import edu.ie3.osmogrid.io.input.{InputDataProvider, OsmSource}
-import edu.ie3.osmogrid.io.input.InputDataProvider.InputDataEvent
+import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Output}
+import edu.ie3.osmogrid.guardian.run.Run
+import edu.ie3.osmogrid.guardian.run.RunGuardian
+import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
-import edu.ie3.osmogrid.io.output.ResultListener.{GridResult, ResultEvent}
+import edu.ie3.osmogrid.io.output.ResultListener.{GridResult, Request}
 import edu.ie3.osmogrid.lv.LvCoordinator
 import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
+import org.slf4j.Logger
 
 import java.util.UUID
 import scala.jdk.CollectionConverters.*
@@ -29,116 +31,66 @@ import scala.util.{Failure, Success, Try}
 
 object OsmoGridGuardian {
 
-  sealed trait OsmoGridGuardianEvent
-  final case class Run(cfg: OsmoGridConfig) extends OsmoGridGuardianEvent
-  object InputDataProviderDied extends OsmoGridGuardianEvent
-  object ResultEventListenerDied extends OsmoGridGuardianEvent
-  object LvCoordinatorDied extends OsmoGridGuardianEvent
-  final case class RepLvGrids(grids: Vector[SubGridContainer])
-      extends OsmoGridGuardianEvent
+  sealed trait Request
 
-  def apply(): Behavior[OsmoGridGuardianEvent] = idle()
+  /** Message to initiate a grid generation run
+    *
+    * @param cfg
+    *   Configuration for the tool
+    * @param additionalListener
+    *   Addresses of additional listeners to be informed about results
+    * @param runId
+    *   Unique identifier for that generation run
+    */
+  final case class Run(
+      cfg: OsmoGridConfig,
+      additionalListener: Seq[ActorRef[ResultListener.ResultEvent]] = Seq.empty,
+      runId: UUID = UUID.randomUUID()
+  ) extends Request
 
-  private def idle(): Behavior[OsmoGridGuardianEvent] =
-    Behaviors.receive { (ctx, msg) =>
-      msg match {
-        case Run(cfg) =>
-          ctx.log.info("Initializing grid generation!")
-
-          ctx.log.info("Starting input data provider")
-          val inputProvider =
-            ctx.spawn(
-              InputDataProvider(
-                UUID.randomUUID(), // todo set to valid run id provided in new Guardian implementation
-                OsmSource(cfg.input.osm, ctx)
-              ),
-              "InputDataProvider"
-            )
-          ctx.watchWith(inputProvider, InputDataProviderDied)
-          ctx.log.debug("Starting output data listener")
-          val resultEventListener =
-            ctx.spawn(ResultListener(cfg.output), "ResultListener")
-          ctx.watchWith(resultEventListener, ResultEventListenerDied)
-
-          /* Check, which voltage level configs are given. Start with lv level, if this is desired for. */
-          cfg.generation match {
-            case Generation(Some(lvConfig)) =>
-              ctx.log.debug("Starting low voltage grid coordinator.")
-              val lvCoordinator = ctx.spawn(LvCoordinator(), "LvCoordinator")
-              ctx.watchWith(lvCoordinator, LvCoordinatorDied)
-              lvCoordinator ! ReqLvGrids(lvConfig, ctx.self)
-              awaitLvGrids(inputProvider, resultEventListener)
-            case unsupported =>
-              ctx.log.error(
-                "Received unsupported grid generation config. Bye, bye."
-              )
-              Behaviors.stopped
-          }
-        case InputDataProviderDied =>
-          ctx.log.error("Input data provider died. That's bad...")
-          Behaviors.stopped
-        case ResultEventListenerDied =>
-          ctx.log.error("Result event listener died. That's bad...")
-          Behaviors.stopped
-        case LvCoordinatorDied =>
-          ctx.log.error("Lv coordinator died. That's bad...")
-          Behaviors.stopped
-        case unsupported =>
-          ctx.log.error(s"Received unsupported message '$unsupported'.")
-          Behaviors.stopped
-      }
-    }
-
-  private def awaitLvGrids(
-      inputDataProvider: ActorRef[InputDataEvent],
-      resultListener: ActorRef[ResultEvent]
-  ): Behaviors.Receive[OsmoGridGuardianEvent] =
-    Behaviors.receive { (ctx, msg) =>
-      msg match {
-        case RepLvGrids(lvGrids) =>
-          ctx.log.info(s"Received ${lvGrids.length} lv grids. Join them.")
-          Try(ContainerUtils.combineToJointGrid(lvGrids.asJava)) match {
-            case Success(jointGrid) =>
-              resultListener ! GridResult(jointGrid, ctx.self)
-              awaitShutDown(inputDataProvider)
-            case Failure(exception) =>
-              ctx.log.error(
-                "Combination of received sub-grids failed. Shutting down."
-              )
-              Behaviors.stopped
-          }
-        case unsupported =>
-          ctx.log.error(
-            s"Received unsupported message while waiting for lv grids. Unsupported: $unsupported"
-          )
-          Behaviors.stopped
-      }
-    }
-
-  private def awaitShutDown(
-      inputDataProvider: ActorRef[InputDataEvent],
-      resultListenerTerminated: Boolean = false,
-      inputDataProviderTerminated: Boolean = false
-  ): Behaviors.Receive[OsmoGridGuardianEvent] = Behaviors.receive {
-    (ctx, msg) =>
-      msg match {
-        case ResultEventListenerDied =>
-          ctx.log.info("Result listener finished handling the result.")
-          ctx.log.debug("Shut down input data provider.")
-          awaitShutDown(inputDataProvider, resultListenerTerminated = true)
-        case InputDataProviderDied if resultListenerTerminated =>
-          /* That's the fine case */
-          ctx.log.info("Input data provider shut down.")
-          Behaviors.stopped
-        case InputDataProviderDied =>
-          /* That's the malicious case */
-          ctx.log.error(
-            "Input data provider unexpectedly died during shutdown was initiated."
-          )
-          Behaviors.stopped
-        case unsupported =>
-          ctx.log.error(s"Received an unsupported message $unsupported.")
-          Behaviors.stopped
-      }
+  /* dead watch events */
+  sealed trait Watch extends Request {
+    val runId: UUID
   }
+
+  private[guardian] final case class RunGuardianDied(override val runId: UUID)
+      extends Watch
+
+  /** Relevant, state-independent data, the the actor needs to know
+    *
+    * @param runs
+    *   Currently active conversion runs
+    */
+  private[guardian] final case class GuardianData(
+      runs: Seq[UUID]
+  ) {
+    def append(run: UUID): GuardianData = this.copy(runs = runs :+ run)
+
+    def remove(run: UUID): GuardianData =
+      this.copy(runs = runs.filterNot(_ == run))
+  }
+  object GuardianData {
+    def empty = new GuardianData(Seq.empty[UUID])
+  }
+
+  def apply(): Behavior[Request] = idle(GuardianData.empty)
+
+  private[guardian] def idle(guardianData: GuardianData): Behavior[Request] =
+    Behaviors.receive {
+      case (ctx, Run(cfg, additionalListener, runId)) =>
+        val runGuardian = ctx.spawn(
+          RunGuardian(cfg, additionalListener, runId),
+          s"RunGuardian_$runId"
+        )
+        ctx.watchWith(runGuardian, RunGuardianDied(runId))
+        runGuardian ! run.Run
+        idle(guardianData.append(runId))
+
+      case (ctx, watch: Watch) =>
+        watch match {
+          case RunGuardianDied(runId) =>
+            ctx.log.info(s"Run $runId terminated.")
+            idle(guardianData.remove(runId))
+        }
+    }
 }

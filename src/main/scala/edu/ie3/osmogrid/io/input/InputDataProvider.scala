@@ -11,7 +11,6 @@ import akka.actor.typed.{ActorRef, Behavior}
 import com.acervera.osm4scala.EntityIterator.fromPbf
 import com.acervera.osm4scala.model.{NodeEntity, RelationEntity, WayEntity}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian.OsmoGridGuardianEvent
 import edu.ie3.osmogrid.model.{OsmoGridModel, PbfFilter}
 import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
 import org.locationtech.jts.geom.{
@@ -74,10 +73,10 @@ object InputDataProvider {
       osmSource: OsmSource
   )
 
-  def apply(runId: UUID, osmSource: OsmSource): Behavior[InputDataEvent] = {
+  def apply(runId: UUID, osmConfig: OsmoGridConfig.Input): Behavior[InputDataEvent] = {
     Behaviors.withStash[InputDataEvent](100) { buffer =>
       Behaviors.setup[InputDataEvent] { ctx =>
-        idle(ProviderData(runId, ctx, buffer, osmSource))
+        idle(ProviderData(runId, ctx, buffer, OsmSource.apply(osmConfig.osm, ctx)))
       }
     }
   }

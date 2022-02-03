@@ -13,6 +13,9 @@ sealed trait PbfFilter
 
 object PbfFilter {
 
+  val standardBoundariesFilter: Filter =
+    Filter("boundary", Set("administrative"))
+
   val substationFilter: Set[Filter] =
     Set(
       Filter(Building.toString, Set("transformer_tower")),
@@ -23,11 +26,12 @@ object PbfFilter {
     def func: OsmEntity => Boolean = (osmEntity: OsmEntity) =>
       osmEntity.hasKeyValuesPairOr(key, tagValues)
   }
-
+  
   final case class LvFilter(
       buildingFilter: Filter,
       highwayFilter: Filter,
       landuseFilter: Filter,
+      boundariesFilter: Filter,
       existingSubstationFilter: Set[Filter]
   ) extends PbfFilter
 

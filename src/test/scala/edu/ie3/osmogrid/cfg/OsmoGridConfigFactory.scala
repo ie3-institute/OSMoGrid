@@ -12,6 +12,11 @@ import java.io.File
 import scala.util.Try
 
 object OsmoGridConfigFactory {
+  lazy val defaultTestConfig: OsmoGridConfig =
+    OsmoGridConfig(
+      ConfigFactory.parseFile(new File("src/test/resources/testConfig.conf"))
+    )
+
   def parse(config: String): Try[OsmoGridConfig] = Try {
     OsmoGridConfig(
       ConfigFactory

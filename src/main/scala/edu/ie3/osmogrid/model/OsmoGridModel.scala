@@ -29,6 +29,7 @@ object OsmoGridModel {
       buildings: ParSeq[OsmEntity],
       highways: ParSeq[OsmEntity],
       landuses: ParSeq[OsmEntity],
+      boundaries: ParSeq[OsmEntity],
       existingSubstations: ParSeq[OsmEntity],
       private val nodes: ParMap[Long, Node],
       protected val filter: LvFilter
@@ -50,6 +51,7 @@ object OsmoGridModel {
               buildings,
               highways,
               landuses,
+              boundaries,
               existingSubstations,
               nodes,
               filter
@@ -59,6 +61,7 @@ object OsmoGridModel {
               this.buildings ++ buildings,
               this.highways ++ highways,
               this.landuses ++ landuses,
+              this.boundaries ++ boundaries,
               this.existingSubstations ++ existingSubstations,
               this.nodes ++ nodes,
               this.filter // filter are the same for both models
@@ -81,12 +84,13 @@ object OsmoGridModel {
       val buildings = filter(osmContainer, lvFilter.buildingFilter)
       val highways = filter(osmContainer, lvFilter.highwayFilter)
       val landuses = filter(osmContainer, lvFilter.landuseFilter)
+      val boundaries = filter(osmContainer, lvFilter.boundariesFilter)
       val substations =
         filterOr(osmContainer, lvFilter.existingSubstationFilter)
 
       val nodes = createNodes(
         osmContainer.nodes,
-        ParVector(buildings, highways, landuses, substations),
+        ParVector(buildings, highways, landuses, boundaries, substations),
         filterNodes
       )
 
@@ -94,6 +98,7 @@ object OsmoGridModel {
         buildings,
         highways,
         landuses,
+        boundaries,
         substations,
         nodes,
         lvFilter
@@ -113,16 +118,16 @@ object OsmoGridModel {
               (buildings.flatten, highways.flatten, landuses.flatten)
           }
 
-          val (existingSubstations, unfilteredNodes) = models.map {
+          val (boundaries, existingSubstations, unfilteredNodes) = models.map {
             case lvModel: LvOsmoGridModel =>
-              (lvModel.existingSubstations, lvModel.nodes)
-          }.unzip match {
-            case (existingSubstations, unfilteredNodes) =>
-              (existingSubstations.flatten, unfilteredNodes.flatten.toMap)
+              (lvModel.boundaries, lvModel.existingSubstations, lvModel.nodes)
+          }.unzip3 match {
+            case (boundaries, existingSubstations, unfilteredNodes) =>
+              (boundaries.flatten, existingSubstations.flatten, unfilteredNodes.flatten.toMap)
           }
           val nodes = createNodes(
             unfilteredNodes,
-            ParVector(buildings, highways, landuses, existingSubstations),
+            ParVector(buildings, highways, landuses, boundaries, existingSubstations),
             filterNodes
           )
           Some(
@@ -130,6 +135,7 @@ object OsmoGridModel {
               buildings,
               highways,
               landuses,
+              boundaries,
               existingSubstations,
               nodes,
               lvHeadModel.filter

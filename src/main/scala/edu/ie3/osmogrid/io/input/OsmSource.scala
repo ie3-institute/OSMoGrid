@@ -11,7 +11,7 @@ import akka.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Osm
 import edu.ie3.osmogrid.exception.IllegalConfigException
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian.OsmoGridGuardianEvent
+import edu.ie3.osmogrid.io.input.InputDataProvider.InputDataEvent
 import edu.ie3.osmogrid.io.input.pbf.PbfGuardian
 import edu.ie3.osmogrid.io.input.pbf.PbfGuardian.PbfReaderMsg
 import edu.ie3.osmogrid.model.{OsmoGridModel, PbfFilter}
@@ -75,13 +75,13 @@ object OsmSource {
 
   def apply(
       osmCfg: OsmoGridConfig.Input.Osm,
-      actorContext: ActorContext[OsmoGridGuardianEvent]
+      actorContext: ActorContext[InputDataEvent]
   ): OsmSource =
     checkOsmInputConfig(osmCfg).apply(actorContext)
 
   def checkOsmInputConfig(
       osm: OsmoGridConfig.Input.Osm
-  ): ActorContext[OsmoGridGuardianEvent] => OsmSource =
+  ): ActorContext[InputDataEvent] => OsmSource =
     osm match {
       case Osm(Some(pbf: OsmoGridConfig.Input.Osm.Pbf)) =>
         checkPbfFileDefinition(pbf)
@@ -93,12 +93,12 @@ object OsmSource {
 
   private def checkPbfFileDefinition(
       pbf: OsmoGridConfig.Input.Osm.Pbf
-  ): ActorContext[OsmoGridGuardianEvent] => PbfFileSource =
+  ): ActorContext[InputDataEvent] => PbfFileSource =
     pbf match {
       case OsmoGridConfig.Input.Osm.Pbf(file) if file.isEmpty =>
         throw IllegalConfigException(s"Pbf file '$file' not found!")
       case pbfFile =>
-        (ctx: ActorContext[OsmoGridGuardianEvent]) =>
+        (ctx: ActorContext[InputDataEvent]) =>
           PbfFileSource(pbfFile.file, ctx)
     }
 

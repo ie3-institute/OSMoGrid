@@ -247,23 +247,26 @@ object OsmoGridConfig {
   }
 
   final case class Output(
-      file: scala.Option[OsmoGridConfig.Output.File]
+      csv: scala.Option[OsmoGridConfig.Output.Csv]
   )
   object Output {
-    final case class File(
+    final case class Csv(
         directory: java.lang.String,
-        hierarchic: scala.Boolean
+        hierarchic: scala.Boolean,
+        separator: java.lang.String
     )
-    object File {
+    object Csv {
       def apply(
           c: com.typesafe.config.Config,
           parentPath: java.lang.String,
           $tsCfgValidator: $TsCfgValidator
-      ): OsmoGridConfig.Output.File = {
-        OsmoGridConfig.Output.File(
+      ): OsmoGridConfig.Output.Csv = {
+        OsmoGridConfig.Output.Csv(
           directory = $_reqStr(parentPath, c, "directory", $tsCfgValidator),
           hierarchic =
-            c.hasPathOrNull("hierarchic") && c.getBoolean("hierarchic")
+            c.hasPathOrNull("hierarchic") && c.getBoolean("hierarchic"),
+          separator =
+            if (c.hasPathOrNull("separator")) c.getString("separator") else ";"
         )
       }
       private def $_reqStr(
@@ -290,14 +293,11 @@ object OsmoGridConfig {
         $tsCfgValidator: $TsCfgValidator
     ): OsmoGridConfig.Output = {
       OsmoGridConfig.Output(
-        file =
-          if (c.hasPathOrNull("file"))
+        csv =
+          if (c.hasPathOrNull("csv"))
             scala.Some(
-              OsmoGridConfig.Output.File(
-                c.getConfig("file"),
-                parentPath + "file.",
-                $tsCfgValidator
-              )
+              OsmoGridConfig.Output
+                .Csv(c.getConfig("csv"), parentPath + "csv.", $tsCfgValidator)
             )
           else None
       )

@@ -8,7 +8,7 @@ package edu.ie3.osmogrid.main
 
 import akka.actor.typed.ActorSystem
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian.{OsmoGridGuardianEvent, Run}
+import edu.ie3.osmogrid.guardian.OsmoGridGuardian.Run
 import edu.ie3.osmogrid.cfg.{ArgsParser, ConfigFailFast, OsmoGridConfig}
 
 object RunOsmoGridStandalone {
@@ -17,7 +17,7 @@ object RunOsmoGridStandalone {
     val cfg: OsmoGridConfig = ArgsParser.prepare(args)
     ConfigFailFast.check(cfg)
 
-    val actorSystem: ActorSystem[OsmoGridGuardianEvent] =
+    val actorSystem: ActorSystem[OsmoGridGuardian.Request] =
       ActorSystem(OsmoGridGuardian(), "OSMoGridGuardian")
     actorSystem ! Run(cfg)
   }
