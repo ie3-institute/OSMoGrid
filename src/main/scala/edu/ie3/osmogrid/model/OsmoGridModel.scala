@@ -123,11 +123,21 @@ object OsmoGridModel {
               (lvModel.boundaries, lvModel.existingSubstations, lvModel.nodes)
           }.unzip3 match {
             case (boundaries, existingSubstations, unfilteredNodes) =>
-              (boundaries.flatten, existingSubstations.flatten, unfilteredNodes.flatten.toMap)
+              (
+                boundaries.flatten,
+                existingSubstations.flatten,
+                unfilteredNodes.flatten.toMap
+              )
           }
           val nodes = createNodes(
             unfilteredNodes,
-            ParVector(buildings, highways, landuses, boundaries, existingSubstations),
+            ParVector(
+              buildings,
+              highways,
+              landuses,
+              boundaries,
+              existingSubstations
+            ),
             filterNodes
           )
           Some(

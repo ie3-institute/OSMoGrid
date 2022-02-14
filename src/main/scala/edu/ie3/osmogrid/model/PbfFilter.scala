@@ -26,7 +26,7 @@ object PbfFilter {
     def func: OsmEntity => Boolean = (osmEntity: OsmEntity) =>
       osmEntity.hasKeyValuesPairOr(key, tagValues)
   }
-  
+
   final case class LvFilter(
       buildingFilter: Filter,
       highwayFilter: Filter,

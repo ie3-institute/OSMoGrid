@@ -66,7 +66,9 @@ class SubGridHandlingSpec
         LoggerFactory.getLogger("SubGridHandlingTestLogger")
 
       val inputDataProvider =
-        testKit.createTestProbe[InputDataProvider.InputDataEvent]("InputDataProvider")
+        testKit.createTestProbe[InputDataProvider.InputDataEvent](
+          "InputDataProvider"
+        )
       val lvCoordinatorAdapter =
         testKit.createTestProbe[LvCoordinator.Response]("LvCoordinatorAdapter")
       val resultListener =

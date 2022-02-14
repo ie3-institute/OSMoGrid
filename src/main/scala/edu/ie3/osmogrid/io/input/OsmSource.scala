@@ -98,8 +98,7 @@ object OsmSource {
       case OsmoGridConfig.Input.Osm.Pbf(file) if file.isEmpty =>
         throw IllegalConfigException(s"Pbf file '$file' not found!")
       case pbfFile =>
-        (ctx: ActorContext[InputDataEvent]) =>
-          PbfFileSource(pbfFile.file, ctx)
+        (ctx: ActorContext[InputDataEvent]) => PbfFileSource(pbfFile.file, ctx)
     }
 
 }

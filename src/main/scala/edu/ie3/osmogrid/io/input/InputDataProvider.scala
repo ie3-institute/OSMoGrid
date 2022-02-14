@@ -73,10 +73,15 @@ object InputDataProvider {
       osmSource: OsmSource
   )
 
-  def apply(runId: UUID, osmConfig: OsmoGridConfig.Input): Behavior[InputDataEvent] = {
+  def apply(
+      runId: UUID,
+      osmConfig: OsmoGridConfig.Input
+  ): Behavior[InputDataEvent] = {
     Behaviors.withStash[InputDataEvent](100) { buffer =>
       Behaviors.setup[InputDataEvent] { ctx =>
-        idle(ProviderData(runId, ctx, buffer, OsmSource.apply(osmConfig.osm, ctx)))
+        idle(
+          ProviderData(runId, ctx, buffer, OsmSource.apply(osmConfig.osm, ctx))
+        )
       }
     }
   }

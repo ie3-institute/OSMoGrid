@@ -76,11 +76,17 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
 
         /* Check if I/O actors and LvCoordinator are spawned and watched correctly */
         idleTestKit.expectEffectPF {
-          case Spawned(_: Behavior[InputDataProvider.InputDataEvent], name, props) =>
+          case Spawned(
+                _: Behavior[InputDataProvider.InputDataEvent],
+                name,
+                props
+              ) =>
             name shouldBe s"InputDataProvider_$runId"
         }
         idleTestKit
-          .expectEffectType[WatchedWith[InputDataProvider.InputDataEvent, Watch]]
+          .expectEffectType[
+            WatchedWith[InputDataProvider.InputDataEvent, Watch]
+          ]
         idleTestKit.expectEffectPF {
           case Spawned(_: Behavior[ResultEvent], name, props) =>
             name shouldBe s"PersistenceResultListener_$runId"
