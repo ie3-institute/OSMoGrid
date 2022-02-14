@@ -3,7 +3,7 @@ plugins {
   id 'java' //java support
   id 'scala'
   id 'pmd' // code check, working on source code
-  id 'com.diffplug.spotless' version '6.2.1'//code format
+  id 'com.diffplug.spotless' version '6.2.2'//code format
   id 'com.github.spotbugs' version '5.0.5' // code check, working on byte code
   id 'de.undercouch.download' version '5.0.1'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
@@ -67,7 +67,7 @@ dependencies {
 
   // testing
   testImplementation "org.scalatest:scalatest_$scalaMajorVersion:3.2.11"
-  testRuntimeClasspath 'com.vladsch.flexmark:flexmark-all:0.62.2'
+  testRuntimeClasspath 'com.vladsch.flexmark:flexmark-all:0.64.0'
   testImplementation 'org.pegdown:pegdown:1.6.0'
 
   // config
@@ -103,7 +103,7 @@ dependencies {
   implementation 'javax.xml.bind:jaxb-api:2.4.0-b180830.0359' // xml parsing
   implementation 'org.apache.commons:commons-lang3:3.12.0' // for HashCodeBuilder
   implementation 'math.geom2d:javaGeom:0.11.1'
-  implementation 'info.picocli:picocli:4.6.2' // command line interface
+  implementation 'info.picocli:picocli:4.6.3' // command line interface
 
   spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.11.0'
 
