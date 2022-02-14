@@ -84,9 +84,9 @@ object OsmoGridModel {
       val buildings = filter(osmContainer, lvFilter.buildingFilter)
       val highways = filter(osmContainer, lvFilter.highwayFilter)
       val landuses = filter(osmContainer, lvFilter.landuseFilter)
-      val boundaries = filter(osmContainer, lvFilter.boundariesFilter)
+      val boundaries = filter(osmContainer, PbfFilter.standardBoundaryFilter)
       val substations =
-        filterOr(osmContainer, lvFilter.existingSubstationFilter)
+        filterOr(osmContainer, PbfFilter.substationFilter)
 
       val nodes = createNodes(
         osmContainer.nodes,

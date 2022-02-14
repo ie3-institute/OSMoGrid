@@ -13,7 +13,7 @@ sealed trait PbfFilter
 
 object PbfFilter {
 
-  val standardBoundariesFilter: Filter =
+  val standardBoundaryFilter: Filter =
     Filter("boundary", Set("administrative"))
 
   val substationFilter: Set[Filter] =
@@ -31,7 +31,7 @@ object PbfFilter {
       buildingFilter: Filter,
       highwayFilter: Filter,
       landuseFilter: Filter,
-      boundariesFilter: Filter,
+      boundaryFilter: Filter,
       existingSubstationFilter: Set[Filter]
   ) extends PbfFilter
 
