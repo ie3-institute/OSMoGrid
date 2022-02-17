@@ -41,98 +41,98 @@ object LvRegionCoordinator {
 
   private def idle(
       lvGeneratorPool: ActorRef[LvGenerator.Request]
-  ): Behaviors.Receive[LvRcMessage] = Behaviors.receive {
-    case (
-          ctx,
-          Partition(container, administrativeLevel, lvRegionCoordinatorPool)
-        ) =>
-      val osmContainer = container.par()
+  ): Behaviors.Receive[LvRcMessage] = Behaviors.receive { (ctx, msg) =>
+    msg match {
+      case Partition(container, administrativeLevel, lvRegionCoordinatorPool) =>
+        val osmContainer = container.par()
 
-      val boundaries = buildBoundaryPolygons(osmContainer, administrativeLevel)
+        val boundaries =
+          buildBoundaryPolygons(osmContainer, administrativeLevel)
 
-      def filterNode(polygon: Polygon, node: OsmEntity.Node) = {
-        val point = GeoUtils.buildPoint(node.latitude, node.longitude)
-        polygon.covers(point)
-      }
+        def filterNode(polygon: Polygon, node: OsmEntity.Node) = {
+          val point = GeoUtils.buildPoint(node.latitude, node.longitude)
+          polygon.covers(point)
+        }
 
-      def filterWay(polygon: Polygon, way: OsmEntity.Way) = {
-        val majority = (way.nodes.size + 1) / 2
-        way.nodes
-          .flatMap(osmContainer.node(_))
-          .filter { node =>
-            filterNode(polygon, node)
-          }
-          .sizeCompare(majority) > 0
-      }
-
-      def filterRelation(
-          polygon: Polygon,
-          relation: OsmEntity.Relation
-      ): Boolean = {
-        val majority = (relation.members.size + 1) / 2
-        relation.members
-          .flatMap { member =>
-            member.relationType match {
-              case RelationMemberType.Node =>
-                osmContainer.node(member.id)
-              case RelationMemberType.Way =>
-                osmContainer.way(member.id)
-              case RelationMemberType.Relation =>
-                osmContainer.relation(member.id)
-              case RelationMemberType.Unrecognized =>
-                None
-            }
-          }
-          .filter {
-            case node: OsmEntity.Node =>
-              filterNode(polygon, node)
-            case way: OsmEntity.Way =>
-              filterWay(polygon, way)
-            case relation: OsmEntity.Relation =>
-              filterRelation(polygon, relation)
-          }
-          .sizeCompare(majority) > 0
-      }
-
-      val newContainers =
-        if boundaries.isEmpty then
-          // if no containers have been found at this level, we continue with container of previous level
-          Iterable.single(osmContainer)
-        else
-          // TODO this way might be inefficient, find better way
-          // for example: resolve ids and build geographic objects at first,
-          // then compare to all provided polygons
-          boundaries.map { polygon =>
-            val nodes = osmContainer.nodes.filter { case (_, node) =>
+        def filterWay(polygon: Polygon, way: OsmEntity.Way) = {
+          val majority = (way.nodes.size + 1) / 2
+          way.nodes
+            .flatMap(osmContainer.node(_))
+            .filter { node =>
               filterNode(polygon, node)
             }
-            val ways = osmContainer.ways.filter { case (_, way) =>
-              filterWay(polygon, way)
+            .sizeCompare(majority) > 0
+        }
+
+        def filterRelation(
+            polygon: Polygon,
+            relation: OsmEntity.Relation
+        ): Boolean = {
+          val majority = (relation.members.size + 1) / 2
+          relation.members
+            .flatMap { member =>
+              member.relationType match {
+                case RelationMemberType.Node =>
+                  osmContainer.node(member.id)
+                case RelationMemberType.Way =>
+                  osmContainer.way(member.id)
+                case RelationMemberType.Relation =>
+                  osmContainer.relation(member.id)
+                case RelationMemberType.Unrecognized =>
+                  None
+              }
             }
-            val relations = osmContainer.relations.filter {
-              case (_, relation) =>
+            .filter {
+              case node: OsmEntity.Node =>
+                filterNode(polygon, node)
+              case way: OsmEntity.Way =>
+                filterWay(polygon, way)
+              case relation: OsmEntity.Relation =>
                 filterRelation(polygon, relation)
             }
+            .sizeCompare(majority) > 0
+        }
 
-            ParOsmContainer(nodes, ways, relations)
-          }.iterator
+        val newContainers =
+          if boundaries.isEmpty then
+            // if no containers have been found at this level, we continue with container of previous level
+            Iterable.single(osmContainer)
+          else
+            // TODO this way might be inefficient, find better way
+            // for example: resolve ids and build geographic objects at first,
+            // then compare to all provided polygons
+            boundaries.map { polygon =>
+              val nodes = osmContainer.nodes.filter { case (_, node) =>
+                filterNode(polygon, node)
+              }
+              val ways = osmContainer.ways.filter { case (_, way) =>
+                filterWay(polygon, way)
+              }
+              val relations = osmContainer.relations.filter {
+                case (_, relation) =>
+                  filterRelation(polygon, relation)
+              }
 
-      newContainers.foreach { container =>
-        // boundaries in Germany: https://wiki.openstreetmap.org/wiki/DE:Grenze#Innerstaatliche_Grenzen
-        if administrativeLevel < maxAdminLevel then
-          lvRegionCoordinatorPool ! Partition(
-            container,
-            administrativeLevel + 1,
-            lvRegionCoordinatorPool
-          )
-        else ctx.spawnAnonymous(MunicipalityCoordinator.apply(container))
-      }
+              ParOsmContainer(nodes, ways, relations)
+            }.iterator
 
-      Behaviors.same
+        newContainers.foreach { container =>
+          // boundaries in Germany: https://wiki.openstreetmap.org/wiki/DE:Grenze#Innerstaatliche_Grenzen
+          if administrativeLevel < maxAdminLevel then
+            lvRegionCoordinatorPool ! Partition(
+              container,
+              administrativeLevel + 1,
+              lvRegionCoordinatorPool
+            )
+          else ctx.spawnAnonymous(MunicipalityCoordinator.apply(container))
+        }
 
-    case (ctx, unsupported) =>
-      ctx.log.warn(s"Received unsupported message '$unsupported'.")
-      Behaviors.stopped
+        Behaviors.same
+
+      case unsupported =>
+        ctx.log.warn(s"Received unsupported message '$unsupported'.")
+        Behaviors.stopped
+    }
   }
 
   private def buildBoundaryPolygons(
