@@ -60,12 +60,12 @@ object OsmSource {
       val result: Future[PbfGuardian.Reply] =
         pbfReader.ask(sender => PbfGuardian.Run(filter, sender))
 
-      result.map {
+      result.flatMap {
         case PbfGuardian.PbfReadSuccessful(osmoGridModel) =>
           Future.successful(osmoGridModel)
         case PbfGuardian.PbfReadFailed(exception) =>
           Future.failed(exception)
-      }.flatten
+      }
     }
 
     def close(): Unit = {
