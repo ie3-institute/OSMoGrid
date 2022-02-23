@@ -96,22 +96,28 @@ class SubGridHandlingSpec
 
       "having an active run" should {
         "inform the right parties about correct information" in new SubGridHandling {
-          handleLvResults(
+          private val result = handleLvResults(
             grids,
             cfg.generation,
             Seq(resultListener.ref, additionalResultListener.ref),
             messageAdapters
           )
 
+          result.isSuccess shouldBe true
+
           resultListener.receiveMessage() match {
             case ResultListener.GridResult(grid, _) =>
               grid.getGridName shouldBe "DummyGrid"
               grid.getRawGrid.getNodes.size() shouldBe 0
+            case unexpected =>
+              fail(s"Received unexpected message '$unexpected'.")
           }
           additionalResultListener.receiveMessage() match {
             case ResultListener.GridResult(grid, _) =>
               grid.getGridName shouldBe "DummyGrid"
               grid.getRawGrid.getNodes.size() shouldBe 0
+            case unexpected =>
+              fail(s"Received unexpected message '$unexpected'.")
           }
           inputDataProvider.expectNoMessage()
           lvCoordinatorAdapter.expectNoMessage()
