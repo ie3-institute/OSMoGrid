@@ -19,7 +19,7 @@ object PbfFilter {
   val substationFilter: Set[Filter] =
     Set(
       Filter(Building.toString, Set("transformer_tower")),
-      Filter("power", Set("sub_station"))
+      Filter("power", Set("substation"))
     )
 
   final case class Filter(key: String, tagValues: Set[String]) {

@@ -6,7 +6,7 @@
 
 package edu.ie3.test.common
 
-import org.scalatest.PrivateMethodTester
+import org.scalatest.{GivenWhenThen, PrivateMethodTester}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -16,3 +16,4 @@ trait UnitSpec
     with Matchers
     with PrivateMethodTester
     with TableDrivenPropertyChecks
+    with GivenWhenThen

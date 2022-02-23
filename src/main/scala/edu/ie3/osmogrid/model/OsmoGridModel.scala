@@ -80,7 +80,7 @@ object OsmoGridModel {
         osmContainer: ParOsmContainer,
         lvFilter: LvFilter,
         filterNodes: Boolean = true
-    ): OsmoGridModel =
+    ): LvOsmoGridModel =
       val buildings = filter(osmContainer, lvFilter.buildingFilter)
       val highways = filter(osmContainer, lvFilter.highwayFilter)
       val landuses = filter(osmContainer, lvFilter.landuseFilter)
