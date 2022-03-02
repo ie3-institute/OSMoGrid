@@ -11,7 +11,7 @@ import akka.actor.typed.scaladsl.{Behaviors, Routers}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
-import edu.ie3.osmogrid.lv.LvGenerator
+import edu.ie3.osmogrid.lv.LvGridGenerator
 
 import java.util.UUID
 
@@ -53,7 +53,7 @@ object LvCoordinator {
             Routers.pool(poolSize = amountOfGridGenerators) {
               // Restart workers on failure
               Behaviors
-                .supervise(LvGenerator())
+                .supervise(LvGridGenerator())
                 .onFailure(SupervisorStrategy.restart)
             }
           val lvGeneratorProxy = ctx.spawn(lvGeneratorPool, "LvGeneratorPool")

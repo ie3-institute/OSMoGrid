@@ -8,7 +8,7 @@ package edu.ie3.osmogrid.lv
 
 import akka.actor.typed.scaladsl.Behaviors
 
-object LvGenerator {
+object LvGridGenerator {
   sealed trait Request
 
   def apply(): Behaviors.Receive[Request] = idle

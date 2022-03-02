@@ -14,6 +14,6 @@ object LvRegionCoordinator {
   sealed trait Request
 
   def apply(
-      lvGeneratorPool: ActorRef[LvGenerator.Request]
+      lvGeneratorPool: ActorRef[LvGridGenerator.Request]
   ): Behaviors.Receive[Request] = ???
 }
