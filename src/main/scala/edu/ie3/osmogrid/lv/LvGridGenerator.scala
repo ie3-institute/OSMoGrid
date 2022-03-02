@@ -7,6 +7,9 @@
 package edu.ie3.osmogrid.lv
 
 import akka.actor.typed.scaladsl.Behaviors
+import edu.ie3.datamodel.graph.{DistanceWeightedEdge, DistanceWeightedGraph}
+import edu.ie3.util.osm.model.OsmEntity.Way.OpenWay
+import org.jgrapht.graph.SimpleWeightedGraph
 
 object LvGridGenerator {
   sealed trait Request
@@ -17,5 +20,15 @@ object LvGridGenerator {
     case (ctx, unsupported) =>
       ctx.log.warn(s"Received unsupported message '$unsupported'.")
       Behaviors.stopped
+  }
+
+  private def buildStreetGraph(ways: Seq[OpenWay]): DistanceWeightedGraph = {
+    val graph = ways.map(way => {
+      val start = way.nodes.head
+      val end = way.nodes(-1)
+      val distance = calcHaversine
+
+    }
+    )
   }
 }
