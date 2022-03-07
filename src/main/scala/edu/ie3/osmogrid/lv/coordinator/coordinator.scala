@@ -26,7 +26,7 @@ object ReqLvGrids extends Request
   * @param lvConfig
   *   Configuration for the generation
   * @param regionCoordinator
-  *   Reference to the [[LvRegionCoordinator]], to report back to
+  *   Reference to the [[LvRegionCoordinator]], to use for region handling
   */
 final case class StartGeneration(
     lvConfig: OsmoGridConfig.Generation.Lv,
@@ -142,6 +142,9 @@ private final case class AwaitingData(
         )
       )
   }
+
+  def isComprehensive(): Boolean =
+    osmData.isDefined && assetInformation.isDefined
 
 }
 

@@ -153,9 +153,7 @@ object LvCoordinator extends ActorStopSupport[Request] {
       ctx: ActorContext[Request]
   ): Behavior[Request] = {
     /* Check, if everything is in place */
-    if (
-      awaitingData.osmData.isDefined && awaitingData.assetInformation.isDefined
-    ) {
+    if (awaitingData.isComprehensive()) {
       /* Process the data */
       ctx.log.debug("All awaited data is present. Start processing.")
 
