@@ -112,14 +112,14 @@ class LvCoordinatorSpec
         idleTestKit.isAlive shouldBe false
       }
 
-      val idleTestKit = BehaviorTestKit(
-        coordinator.LvCoordinator(
-          cfg,
-          inputDataProvider.ref,
-          lvCoordinatorAdapter.ref
-        )
-      )
       "ask for osm and asset information upon request" in {
+        val idleTestKit = BehaviorTestKit(
+          coordinator.LvCoordinator(
+            cfg,
+            inputDataProvider.ref,
+            lvCoordinatorAdapter.ref
+          )
+        )
         idleTestKit.run(coordinator.ReqLvGrids)
 
         /* Receive exactly two messages, that are requests for OSM and asset data */
@@ -213,17 +213,17 @@ class LvCoordinatorSpec
           msgAdapters
         )
       )
-      val runId = UUID.randomUUID()
-      val awaitingTestKit = BehaviorTestKit[Request](
-        LvCoordinator invokePrivate PrivateMethod[Behavior[
-          coordinator.Request
-        ]](
-          Symbol(
-            "awaitInputData"
-          )
-        )(awaitingData)
-      )
       "spawn a child actor only if all data has arrived" in {
+        val runId = UUID.randomUUID()
+        val awaitingTestKit = BehaviorTestKit[Request](
+          LvCoordinator invokePrivate PrivateMethod[Behavior[
+            coordinator.Request
+          ]](
+            Symbol(
+              "awaitInputData"
+            )
+          )(awaitingData)
+        )
         val osmData = InputDataProvider.RepOsm(runId, DummyOsmoGridModel)
 
         awaitingTestKit.run(WrappedInputDataResponse(osmData))
@@ -271,12 +271,12 @@ class LvCoordinatorSpec
         awaitingTestKit.isAlive shouldBe false
       }
 
-      val awaitingTestKit = BehaviorTestKit[Request](
-        LvCoordinator invokePrivate PrivateMethod[Behavior[
-          coordinator.Request
-        ]](Symbol("awaitResults"))(lvCoordinatorAdapter.ref, msgAdapters)
-      )
       "properly perform generation" in {
+        val awaitingTestKit = BehaviorTestKit[Request](
+          LvCoordinator invokePrivate PrivateMethod[Behavior[
+            coordinator.Request
+          ]](Symbol("awaitResults"))(lvCoordinatorAdapter.ref, msgAdapters)
+        )
         /* Mocking the lv region generator */
         val resultMsg =
           LvRegionCoordinator.RepLvGrids(Seq.empty[SubGridContainer])

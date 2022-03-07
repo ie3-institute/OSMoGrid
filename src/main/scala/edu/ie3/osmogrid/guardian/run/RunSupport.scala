@@ -15,6 +15,10 @@ import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.lv.coordinator.{
+  LvCoordinator,
+  Request => LvCoordinatorRequest
+}
 
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
@@ -191,11 +195,10 @@ private trait RunSupport {
       lvConfig: OsmoGridConfig.Generation.Lv,
       lvCoordinatorAdapter: ActorRef[coordinator.Response],
       ctx: ActorContext[Request]
-  ): ActorRef[coordinator.Request] = {
+  ): ActorRef[LvCoordinatorRequest] = {
     val lvCoordinator =
       ctx.spawn(
-        coordinator
-          .LvCoordinator(lvConfig, inputDataProvider, lvCoordinatorAdapter),
+        LvCoordinator(lvConfig, inputDataProvider, lvCoordinatorAdapter),
         s"LvCoordinator_${runId.toString}"
       )
     ctx.watchWith(lvCoordinator, LvCoordinatorDied)

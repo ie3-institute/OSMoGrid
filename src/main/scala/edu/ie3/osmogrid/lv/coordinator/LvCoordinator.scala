@@ -74,14 +74,15 @@ object LvCoordinator extends ActorStopSupport[Request] {
         ctx.log.debug("Request input data")
 
         /* Ask for OSM data */
+        val run = UUID.randomUUID()
         stateData.inputDataProvider ! ReqOsm(
-          runId = UUID.randomUUID(),
+          runId = run,
           replyTo = stateData.msgAdapters.inputDataProvider,
           filter = PbfFilter.DummyFilter
         )
         /* Ask for grid asset data */
         stateData.inputDataProvider ! ReqAssetTypes(
-          runId = UUID.randomUUID(),
+          runId = run,
           replyTo = stateData.msgAdapters.inputDataProvider
         )
 

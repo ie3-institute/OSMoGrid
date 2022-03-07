@@ -21,6 +21,13 @@ sealed trait Request
 
 object ReqLvGrids extends Request
 
+/** Request to start the generation of the low voltage grid level for the region
+  * of interest
+  * @param lvConfig
+  *   Configuration for the generation
+  * @param regionCoordinator
+  *   Reference to the [[LvRegionCoordinator]], to report back to
+  */
 final case class StartGeneration(
     lvConfig: OsmoGridConfig.Generation.Lv,
     regionCoordinator: ActorRef[LvRegionCoordinator.Request]
@@ -97,6 +104,18 @@ private final case class AwaitingData(
     msgAdapters: MessageAdapters,
     guardian: ActorRef[Response]
 ) {
+
+  /** Takes the given response and adds the contained value to the currently
+    * apparent data. The result is handed back as a trial on the result, where
+    * the success contains an adapted copy of the current instance.
+    *
+    * @param response
+    *   The response to obtain data from
+    * @param log
+    *   Instance of a logger to use
+    * @return
+    *   a [[Try]] onto an adapted copy of the current instance
+    */
   def registerResponse(
       response: InputDataProvider.Response,
       log: Logger
