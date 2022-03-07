@@ -41,7 +41,7 @@ task puml2png() {
     /* Get the PlantUML-jar or download it, if it is not available */
     def pumlJarFile = project.file("${project.buildDir}/plantuml.jar")
     if (!pumlJarFile.exists() || !pumlJarFile.isFile()) {
-      download {
+      download.run {
         src 'https://downloads.sourceforge.net/project/plantuml/plantuml.jar'
         dest buildDir
       }
