@@ -41,7 +41,7 @@ Following this concept, the following actor hierarchy is implemented:
 - *Outcome*: Complete region of interest to treat
 
 #### Finite state representation
-![](../_static/figures/puml/LvCoordinator.png)
+![](../_static/figures/puml/LvCoordinator.svg)
 
 ### LvRegionCoordinator
 - Splits up the region of interest according to a given administrative boundary
