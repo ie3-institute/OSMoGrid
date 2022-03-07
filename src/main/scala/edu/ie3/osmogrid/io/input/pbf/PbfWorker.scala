@@ -43,14 +43,13 @@ private[pbf] object PbfWorker {
   final case class ReadBlobMsg(
       blobHeader: BlobHeader,
       blob: Blob,
-      filter: PbfFilter,
       replyTo: ActorRef[PbfWorker.Response]
   ) extends PbfWorkerMsg
 
   // external response protocol
   sealed trait Response
 
-  final case class ReadSuccessful(osmoGridModel: OsmoGridModel) extends Response
+  final case class ReadSuccessful(osmContainer: OsmContainer) extends Response
 
   final case class ReadFailed(
       blobHeader: BlobHeader,
@@ -59,20 +58,11 @@ private[pbf] object PbfWorker {
       exception: Throwable
   ) extends Response
 
-  def apply(
-      highwayTags: Option[Set[String]] = None,
-      buildingTags: Option[Set[String]] = None,
-      landuseTags: Option[Set[String]] = None
-  ): Behavior[PbfWorkerMsg] = Behaviors.receiveMessage[PbfWorkerMsg] {
-    case ReadBlobMsg(_, blob, filter, replyTo) =>
+  def apply(): Behavior[PbfWorkerMsg] = Behaviors.receiveMessage[PbfWorkerMsg] {
+    case ReadBlobMsg(_, blob, replyTo) =>
       val osmContainer = readBlob(blob)
 
-      val osmoGridModel = filter match {
-        case lvFilter: PbfFilter.LvFilter =>
-          LvOsmoGridModel(osmContainer, lvFilter, filterNodes = false)
-      }
-
-      replyTo ! ReadSuccessful(osmoGridModel)
+      replyTo ! ReadSuccessful(osmContainer)
 
       Behaviors.same
   }

@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.model
 
-import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
+import edu.ie3.osmogrid.model.OsmoGridModel.{EnhancedOsmEntity, LvOsmoGridModel}
 import edu.ie3.osmogrid.model.PbfFilter.{Filter, LvFilter}
 import edu.ie3.test.common.UnitSpec
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
@@ -19,6 +19,7 @@ import edu.ie3.util.osm.model.OsmEntity.Way.{ClosedWay, OpenWay}
 import org.scalatest.GivenWhenThen
 
 import scala.collection.parallel.CollectionConverters.*
+import scala.collection.parallel.ParSeq
 
 class OsmoGridModelSpec extends UnitSpec with OsmTestData {
 
@@ -76,28 +77,192 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
 
       Then("the LvOsmoGridModel should have appropriately filtered fields")
       result.buildings.size shouldBe 2
-      result.buildings.seq should contain(ways.building1)
-      result.buildings.seq should contain(nodes.substation)
+      result.buildings.seq should contain(
+        EnhancedOsmEntity(
+          ways.building1,
+          Iterable(
+            nodes.building1Node1,
+            nodes.building1Node2,
+            nodes.building1Node3,
+            nodes.building1Node4
+          )
+        )
+      )
+      result.buildings.seq should contain(
+        EnhancedOsmEntity(nodes.substation, Iterable.empty)
+      )
 
       result.highways.size shouldBe 1
-      result.highways.seq should contain(ways.highway)
+      result.highways.seq should contain(
+        EnhancedOsmEntity(
+          ways.highway,
+          Iterable(
+            nodes.highwayNode1,
+            nodes.highwayNode2
+          )
+        )
+      )
 
       result.landuses.size shouldBe 1
-      result.landuses.seq should contain(ways.landuse)
+      result.landuses.seq should contain(
+        EnhancedOsmEntity(
+          ways.landuse,
+          Iterable(
+            nodes.landuseNode1,
+            nodes.landuseNode2,
+            nodes.landuseNode3,
+            nodes.landuseNode4
+          )
+        )
+      )
 
       result.boundaries.size shouldBe 1
-      result.boundaries.seq should contain(relations.boundary)
+      result.boundaries.seq should contain(
+        EnhancedOsmEntity(
+          relations.boundary,
+          Iterable(
+            ways.boundaryWay1,
+            ways.boundaryWay2,
+            nodes.boundaryNode1,
+            nodes.boundaryNode2,
+            nodes.boundaryNode3,
+            nodes.boundaryNode4
+          )
+        )
+      )
 
       result.existingSubstations.size shouldBe 1
-      result.existingSubstations.seq should contain(nodes.substation)
+      result.existingSubstations.seq should contain(
+        EnhancedOsmEntity(nodes.substation, Iterable.empty)
+      )
+
     }
 
     "be merged correctly" in {
-      // TODO LvOsmoGridModel.+
+      Given("two exemplary LvOsmoGridModels")
+      val highwayEnhanced = EnhancedOsmEntity(
+        ways.highway,
+        Iterable(
+          nodes.highwayNode1,
+          nodes.highwayNode2
+        )
+      )
+
+      val boundaryEnhanced = EnhancedOsmEntity(
+        relations.boundary,
+        Iterable(
+          ways.boundaryWay1,
+          ways.boundaryWay2,
+          nodes.boundaryNode1,
+          nodes.boundaryNode2,
+          nodes.boundaryNode3,
+          nodes.boundaryNode4
+        )
+      )
+
+      val filter = LvFilter(
+        Filter("building", Set.empty),
+        Filter("highway", Set.empty),
+        Filter("landuse", Set.empty),
+        PbfFilter.standardBoundaryFilter,
+        PbfFilter.substationFilter
+      )
+
+      val osmoGridModel1 = LvOsmoGridModel(
+        ParSeq.empty,
+        ParSeq(highwayEnhanced),
+        ParSeq.empty,
+        ParSeq.empty,
+        ParSeq.empty,
+        filter
+      )
+
+      val osmoGridModel2 = LvOsmoGridModel(
+        ParSeq.empty,
+        ParSeq.empty,
+        ParSeq.empty,
+        ParSeq(boundaryEnhanced),
+        ParSeq.empty,
+        filter
+      )
+
+      When("the models are merged")
+      val result = osmoGridModel1 + osmoGridModel2
+
+      Then("the result is correct")
+      result shouldBe Some(
+        LvOsmoGridModel(
+          ParSeq.empty,
+          ParSeq(highwayEnhanced),
+          ParSeq.empty,
+          ParSeq(boundaryEnhanced),
+          ParSeq.empty,
+          filter
+        )
+      )
     }
 
     "not be merged if filters are different" in {
-      // TODO LvOsmoGridModel.+
+      Given("two exemplary LvOsmoGridModels")
+      val highwayEnhanced = EnhancedOsmEntity(
+        ways.highway,
+        Iterable(
+          nodes.highwayNode1,
+          nodes.highwayNode2
+        )
+      )
+
+      val boundaryEnhanced = EnhancedOsmEntity(
+        relations.boundary,
+        Iterable(
+          ways.boundaryWay1,
+          ways.boundaryWay2,
+          nodes.boundaryNode1,
+          nodes.boundaryNode2,
+          nodes.boundaryNode3,
+          nodes.boundaryNode4
+        )
+      )
+
+      val filter1 = LvFilter(
+        Filter("building", Set("test")),
+        Filter("highway", Set.empty),
+        Filter("landuse", Set.empty),
+        PbfFilter.standardBoundaryFilter,
+        PbfFilter.substationFilter
+      )
+
+      val filter2 = LvFilter(
+        Filter("building", Set.empty),
+        Filter("highway", Set.empty),
+        Filter("landuse", Set.empty),
+        PbfFilter.standardBoundaryFilter,
+        PbfFilter.substationFilter
+      )
+
+      val osmoGridModel1 = LvOsmoGridModel(
+        ParSeq.empty,
+        ParSeq(highwayEnhanced),
+        ParSeq.empty,
+        ParSeq.empty,
+        ParSeq.empty,
+        filter1
+      )
+
+      val osmoGridModel2 = LvOsmoGridModel(
+        ParSeq.empty,
+        ParSeq.empty,
+        ParSeq.empty,
+        ParSeq(boundaryEnhanced),
+        ParSeq.empty,
+        filter2
+      )
+
+      When("the models are merged")
+      val result = osmoGridModel1 + osmoGridModel2
+
+      Then("None should be returned")
+      result shouldBe None
     }
 
   }
@@ -135,7 +300,17 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
 
       Then("a properly filtered set of entities should be returned")
       result.size shouldBe 1
-      result.seq should contain(ways.building1)
+      result.seq should contain(
+        EnhancedOsmEntity(
+          ways.building1,
+          Iterable(
+            nodes.building1Node1,
+            nodes.building1Node2,
+            nodes.building1Node3,
+            nodes.building1Node4
+          )
+        )
+      )
 
     }
 
@@ -177,8 +352,28 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
 
       Then("a properly filtered set of entities should be returned")
       result.size shouldBe 2
-      result.seq should contain(ways.building1)
-      result.seq should contain(ways.landuse)
+      result.seq should contain(
+        EnhancedOsmEntity(
+          ways.building1,
+          Iterable(
+            nodes.building1Node1,
+            nodes.building1Node2,
+            nodes.building1Node3,
+            nodes.building1Node4
+          )
+        )
+      )
+      result.seq should contain(
+        EnhancedOsmEntity(
+          ways.landuse,
+          Iterable(
+            nodes.landuseNode1,
+            nodes.landuseNode2,
+            nodes.landuseNode3,
+            nodes.landuseNode4
+          )
+        )
+      )
 
     }
   }

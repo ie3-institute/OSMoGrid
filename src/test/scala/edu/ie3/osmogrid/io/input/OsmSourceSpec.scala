@@ -48,15 +48,24 @@ class OsmSourceSpec extends UnitSpec with BeforeAndAfterAll {
                   landuses,
                   boundaries,
                   existingSubstations,
-                  nodes,
                   filter
                 )
               ) =>
             landuses should have length 38
+            landuses.map(_.allSubEntities.size).sum shouldBe 705
+
             highways should have length 1424
+            highways.map(_.allSubEntities.size).sum shouldBe 3947
+
             buildings should have length 2512
+            buildings.map(_.allSubEntities.size).sum shouldBe 16367
+
             boundaries should have length 7
-            nodes should have size 16765
+            boundaries.map(_.allSubEntities.size).sum shouldBe 0
+
+            existingSubstations should have length 10
+            existingSubstations.map(_.allSubEntities.size).sum shouldBe 40
+
           case unexpected => fail("Found unexpected osm data.")
         }
       }

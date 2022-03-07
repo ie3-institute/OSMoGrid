@@ -44,7 +44,7 @@ object OsmSource {
     ): Future[OsmoGridModel] = {
 
       val pbfReader = ctx.spawn(
-        PbfGuardian.apply(new File(filePath)),
+        PbfGuardian.apply(new File(filePath), filter),
         name = s"pbf-reader-guardian-${UUID.randomUUID()}"
       )
 
@@ -58,7 +58,7 @@ object OsmSource {
       implicit val ec: ExecutionContextExecutor = system.executionContext
 
       val result: Future[PbfGuardian.Reply] =
-        pbfReader.ask(sender => PbfGuardian.Run(filter, sender))
+        pbfReader.ask(sender => PbfGuardian.Run(sender))
 
       result.flatMap {
         case PbfGuardian.PbfReadSuccessful(osmoGridModel) =>
