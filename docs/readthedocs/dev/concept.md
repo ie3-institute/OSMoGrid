@@ -28,7 +28,7 @@ Following this concept, the following actor hierarchy is implemented:
 - Collection of lv grids received from `LvCoordinator` and assigning subnet numbers
 
 #### Finite state representation
-![](../_static/figures/puml/OsmoGridGuardian.png)
+![](../_static/figures/puml/OsmoGridGuardian.svg)
 
 ### InputDataProvider
 - Connects to OpenStreeMap (either via pbf file or API)

@@ -58,3 +58,34 @@ task puml2png() {
     }
   }
 }
+
+/**
+ * Converts the PlantUML diagrams to a svg file, so that those can be used in sphinx documentation
+ *
+ * Important note: you have to install GraphViz Manually before being able to execute this task! -> https://graphviz.org
+ */
+task puml2svg() {
+  description 'Converts plantUML diagrams to svg files.'
+  group 'Documentation'
+
+  doLast {
+    /* Get the PlantUML-jar or download it, if it is not available */
+    def pumlJarFile = project.file("${project.buildDir}/plantuml.jar")
+    if (!pumlJarFile.exists() || !pumlJarFile.isFile()) {
+      download.run {
+        src 'https://downloads.sourceforge.net/project/plantuml/plantuml.jar'
+        dest buildDir
+      }
+    }
+    javaexec {
+      main = "-jar"
+      args = [
+        "build/plantuml.jar",
+        "-svg",
+        "-o",
+        "${docBaseDirPath}readthedocs/_static/figures/puml/",
+        "${docBaseDirPath}puml/**/*.puml"
+      ]
+    }
+  }
+}
