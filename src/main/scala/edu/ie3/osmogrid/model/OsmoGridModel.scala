@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.model
 
-import edu.ie3.osmogrid.model.PbfFilter.{Filter, LvFilter}
+import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
 import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
 import edu.ie3.util.osm.model.{CommonOsmKey, OsmContainer, OsmEntity}
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
@@ -16,7 +16,7 @@ import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
 import scala.collection.parallel.{ParIterable, ParMap, ParSeq}
 
 sealed trait OsmoGridModel {
-  protected val filter: PbfFilter
+  protected val filter: SourceFilter
 
   def +(additional: OsmoGridModel): Option[OsmoGridModel]
 }
@@ -78,9 +78,9 @@ object OsmoGridModel {
       val buildings = filter(osmContainer, lvFilter.buildingFilter)
       val highways = filter(osmContainer, lvFilter.highwayFilter)
       val landuses = filter(osmContainer, lvFilter.landuseFilter)
-      val boundaries = filter(osmContainer, PbfFilter.standardBoundaryFilter)
+      val boundaries = filter(osmContainer, lvFilter.boundaryFilter)
       val substations =
-        filterOr(osmContainer, PbfFilter.substationFilter)
+        filterOr(osmContainer, lvFilter.existingSubstationFilter)
 
       new LvOsmoGridModel(
         buildings,

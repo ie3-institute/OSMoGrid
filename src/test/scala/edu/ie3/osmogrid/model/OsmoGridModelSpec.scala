@@ -7,7 +7,7 @@
 package edu.ie3.osmogrid.model
 
 import edu.ie3.osmogrid.model.OsmoGridModel.{EnhancedOsmEntity, LvOsmoGridModel}
-import edu.ie3.osmogrid.model.PbfFilter.{Filter, LvFilter}
+import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
 import edu.ie3.test.common.UnitSpec
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
 import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
@@ -68,8 +68,8 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
         Filter("building", Set.empty),
         Filter("highway", Set.empty),
         Filter("landuse", Set.empty),
-        PbfFilter.standardBoundaryFilter,
-        PbfFilter.substationFilter
+        SourceFilter.standardBoundaryFilter,
+        SourceFilter.substationFilter
       )
 
       When("a LvOsmoGridModel is created")
@@ -164,8 +164,8 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
         Filter("building", Set.empty),
         Filter("highway", Set.empty),
         Filter("landuse", Set.empty),
-        PbfFilter.standardBoundaryFilter,
-        PbfFilter.substationFilter
+        SourceFilter.standardBoundaryFilter,
+        SourceFilter.substationFilter
       )
 
       val osmoGridModel1 = LvOsmoGridModel(
@@ -228,16 +228,16 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
         Filter("building", Set("test")),
         Filter("highway", Set.empty),
         Filter("landuse", Set.empty),
-        PbfFilter.standardBoundaryFilter,
-        PbfFilter.substationFilter
+        SourceFilter.standardBoundaryFilter,
+        SourceFilter.substationFilter
       )
 
       val filter2 = LvFilter(
         Filter("building", Set.empty),
         Filter("highway", Set.empty),
         Filter("landuse", Set.empty),
-        PbfFilter.standardBoundaryFilter,
-        PbfFilter.substationFilter
+        SourceFilter.standardBoundaryFilter,
+        SourceFilter.substationFilter
       )
 
       val osmoGridModel1 = LvOsmoGridModel(

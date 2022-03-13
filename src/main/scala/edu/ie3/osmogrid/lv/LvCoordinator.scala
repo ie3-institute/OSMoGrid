@@ -11,7 +11,9 @@ import akka.actor.typed.scaladsl.{Behaviors, Routers}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
+import edu.ie3.osmogrid.io.input.InputDataProvider.ReqOsm
 import edu.ie3.osmogrid.lv.LvGenerator
+import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
 
 import java.util.UUID
 
@@ -37,7 +39,7 @@ object LvCoordinator {
                 amountOfGridGenerators,
                 amountOfRegionCoordinators,
                 distinctHouseConnections,
-                _
+                osmCfg
               ),
               replyTo
             ) =>
@@ -47,6 +49,16 @@ object LvCoordinator {
               2) Ask for asset data
               3) Split up osm data at municipality boundaries
               4) start generation */
+
+          val filter = osmCfg.filter
+            .map(cfg =>
+              LvFilter(
+                cfg.building.toSet,
+                cfg.highway.toSet,
+                cfg.landuse.toSet
+              )
+            )
+            .getOrElse(LvFilter())
 
           /* Spawn a pool of workers to build grids from sub-graphs */
           val lvGeneratorPool =

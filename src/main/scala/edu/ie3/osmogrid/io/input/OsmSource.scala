@@ -13,8 +13,8 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Osm
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input.InputDataProvider.InputDataEvent
 import edu.ie3.osmogrid.io.input.pbf.PbfGuardian
-import edu.ie3.osmogrid.io.input.pbf.PbfGuardian.PbfReaderMsg
-import edu.ie3.osmogrid.model.{OsmoGridModel, PbfFilter}
+import edu.ie3.osmogrid.io.input.pbf.PbfGuardian.Request
+import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 
 import java.io.{File, FileInputStream}
 import java.util.UUID
@@ -25,7 +25,7 @@ import scala.util.{Try, Using}
 sealed trait OsmSource {
 
   def read(
-      filter: PbfFilter
+      filter: SourceFilter
   ): Future[OsmoGridModel]
 
   def close(): Unit
@@ -40,7 +40,7 @@ object OsmSource {
   ) extends OsmSource {
 
     def read(
-        filter: PbfFilter
+        filter: SourceFilter
     ): Future[OsmoGridModel] = {
 
       val pbfReader = ctx.spawn(
@@ -57,7 +57,7 @@ object OsmSource {
       implicit val system: ActorSystem[_] = ctx.system
       implicit val ec: ExecutionContextExecutor = system.executionContext
 
-      val result: Future[PbfGuardian.Reply] =
+      val result: Future[PbfGuardian.Response] =
         pbfReader.ask(sender => PbfGuardian.Run(sender))
 
       result.flatMap {

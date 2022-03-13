@@ -20,7 +20,7 @@ import com.acervera.osm4scala.model.{
 import edu.ie3.osmogrid.io.input.pbf.PbfGuardian.stopAndCleanup
 import edu.ie3.osmogrid.model.Osm4ScalaMapper.{osmNode, osmRelation, osmWay}
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
-import edu.ie3.osmogrid.model.{OsmoGridModel, PbfFilter}
+import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmContainer
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
@@ -54,7 +54,7 @@ private[pbf] object PbfWorker {
   final case class ReadFailed(
       blobHeader: BlobHeader,
       blob: Blob,
-      filter: PbfFilter,
+      filter: SourceFilter,
       exception: Throwable
   ) extends Response
 
