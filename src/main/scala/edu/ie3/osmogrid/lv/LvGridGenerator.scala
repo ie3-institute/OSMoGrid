@@ -8,6 +8,8 @@ package edu.ie3.osmogrid.lv
 
 import akka.actor.typed.scaladsl.Behaviors
 import edu.ie3.datamodel.graph.{DistanceWeightedEdge, DistanceWeightedGraph}
+import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
+import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Way.OpenWay
 import org.jgrapht.graph.SimpleWeightedGraph
 
@@ -22,13 +24,12 @@ object LvGridGenerator {
       Behaviors.stopped
   }
 
-  private def buildStreetGraph(ways: Seq[OpenWay]): DistanceWeightedGraph = {
+  private def buildStreetGraph(lvOsmoGridModel: LvOsmoGridModel): DistanceWeightedGraph = {
+
     val graph = ways.map(way => {
       val start = way.nodes.head
       val end = way.nodes(-1)
-      val distance = calcHaversine
-
-    }
-    )
+      val distance = GeoUtils.calcHaversine()
+    })
   }
 }
