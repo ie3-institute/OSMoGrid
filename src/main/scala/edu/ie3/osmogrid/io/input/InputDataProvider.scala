@@ -95,8 +95,7 @@ object InputDataProvider {
             Behaviors.same
           } else {
             ctx.pipeToSelf(
-              providerData.osmSource
-                .read(filter)
+              providerData.osmSource.read(filter)
             ) {
               case Success(osmoGridModel: OsmoGridModel) =>
                 OsmDataReadSuccessful(runId, osmoGridModel)
