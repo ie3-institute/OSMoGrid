@@ -10,7 +10,13 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer}
 import akka.actor.typed.{ActorRef, Behavior}
 import com.acervera.osm4scala.EntityIterator.fromPbf
 import com.acervera.osm4scala.model.{NodeEntity, RelationEntity, WayEntity}
+import edu.ie3.datamodel.models.input.connector.`type`.{
+  LineTypeInput,
+  Transformer2WTypeInput
+}
+import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.io.input.InputDataProvider.InputDataEvent
 import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
 import org.locationtech.jts.geom.{
@@ -26,8 +32,9 @@ import java.time.ZonedDateTime
 import java.util.UUID
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try, Using}
+import java.util.UUID
 
-object InputDataProvider {
+object InputDataProvider extends ActorStopSupport[InputDataEvent] {
 
   // external requests
   sealed trait Request
@@ -54,7 +61,13 @@ object InputDataProvider {
   final case class OsmReadFailed(reason: Throwable)
       extends Response
       with InputDataEvent
-  final case class RepAssetTypes(osmModel: OsmoGridModel) extends Response
+  final case class RepAssetTypes(assetInformation: AssetInformation)
+      extends Response
+
+  final case class AssetInformation(
+      lineTypes: Seq[LineTypeInput],
+      transformerTypes: Seq[Transformer2WTypeInput]
+  )
 
   // internal api
   sealed trait InputDataEvent
@@ -129,5 +142,10 @@ object InputDataProvider {
 
   private def cleanUp(providerData: ProviderData): Unit = {
     providerData.osmSource.close()
+  }
+
+  // TODO this doesn't seem to make too much sense here
+  override protected val cleanUp: () => Unit = () => {
+    /* Nothing to do here. At least until now. */
   }
 }
