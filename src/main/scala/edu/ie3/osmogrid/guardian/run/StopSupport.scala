@@ -11,8 +11,7 @@ import akka.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
-import edu.ie3.osmogrid.lv.LvCoordinator
-import edu.ie3.osmogrid.lv.LvCoordinator.Terminate
+import edu.ie3.osmogrid.lv.coordinator
 
 import java.util.UUID
 
@@ -33,7 +32,7 @@ trait StopSupport {
       childReferences: ChildReferences,
       ctx: ActorContext[Request]
   ): StoppingData = {
-    childReferences.lvCoordinator.foreach(_ ! LvCoordinator.Terminate)
+    childReferences.lvCoordinator.foreach(_ ! coordinator.Terminate)
     childReferences.inputDataProvider ! InputDataProvider.Terminate
     childReferences.resultListener.foreach(_ ! ResultListener.Terminate)
 

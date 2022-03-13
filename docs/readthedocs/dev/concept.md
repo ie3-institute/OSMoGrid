@@ -36,10 +36,12 @@ Following this concept, the following actor hierarchy is implemented:
 
 ### LvCoordinator
 - Coordinates the generation of the whole low voltage level
-- Determines the highest available administrative boundary within the region of interest
-- Spawns an `LvRegionCoordinator` to split up the region of interest according to this administrative level
+- Spawns an `LvRegionCoordinator` to split up the region of interest
 - Collects results and checks completeness
-- *Outcome*: Complete region of interest + the highest available administrative boundary
+- *Outcome*: Complete region of interest to treat
+
+#### Finite state representation
+![](../_static/figures/puml/LvCoordinator.svg)
 
 ### LvRegionCoordinator
 - Splits up the region of interest according to a given administrative boundary

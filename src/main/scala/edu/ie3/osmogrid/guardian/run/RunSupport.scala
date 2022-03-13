@@ -14,8 +14,11 @@ import edu.ie3.osmogrid.exception.UnsupportedRequestException
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
-import edu.ie3.osmogrid.lv.LvCoordinator
-import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
+import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.lv.coordinator.{
+  LvCoordinator,
+  Request => LvCoordinatorRequest
+}
 
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
@@ -59,6 +62,7 @@ private trait RunSupport {
               )
             val lvCoordinator = startLvGridGeneration(
               runGuardianData.runId,
+              inputProvider,
               lvConfig,
               runGuardianData.msgAdapters.lvCoordinator,
               ctx
@@ -176,6 +180,8 @@ private trait RunSupport {
     *
     * @param runId
     *   Identifier for the targeted run
+    * @param inputDataProvider
+    *   Reference to the [[InputDataProvider]] for this run
     * @param lvConfig
     *   Configuration for low voltage grid generation
     * @param lvCoordinatorAdapter
@@ -185,16 +191,20 @@ private trait RunSupport {
     */
   private def startLvGridGeneration(
       runId: UUID,
+      inputDataProvider: ActorRef[InputDataProvider.Request],
       lvConfig: OsmoGridConfig.Generation.Lv,
-      lvCoordinatorAdapter: ActorRef[LvCoordinator.Response],
+      lvCoordinatorAdapter: ActorRef[coordinator.Response],
       ctx: ActorContext[Request]
-  ): ActorRef[LvCoordinator.Request] = {
+  ): ActorRef[LvCoordinatorRequest] = {
     val lvCoordinator =
-      ctx.spawn(LvCoordinator(), s"LvCoordinator_${runId.toString}")
+      ctx.spawn(
+        LvCoordinator(lvConfig, inputDataProvider, lvCoordinatorAdapter),
+        s"LvCoordinator_${runId.toString}"
+      )
     ctx.watchWith(lvCoordinator, LvCoordinatorDied)
 
     ctx.log.info("Starting voltage level grid generation ...")
-    lvCoordinator ! ReqLvGrids(lvConfig, lvCoordinatorAdapter)
+    lvCoordinator ! coordinator.ReqLvGrids
 
     lvCoordinator
   }

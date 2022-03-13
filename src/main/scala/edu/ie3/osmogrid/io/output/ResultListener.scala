@@ -12,12 +12,14 @@ import edu.ie3.datamodel.models.input.container.{
   GridContainer,
   JointGridContainer
 }
+import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.OsmoGridGuardian
+import edu.ie3.osmogrid.io.output.ResultListener.ResultEvent
 
 import java.util.UUID
 
-object ResultListener {
+object ResultListener extends ActorStopSupport[ResultEvent] {
   sealed trait Request
   final case class GridResult(
       grid: GridContainer,
@@ -42,14 +44,14 @@ object ResultListener {
           ctx.log.info(s"Received grid result for run id '${runId.toString}'")
           // TODO: Actual persistence and stuff, ...
           replyTo ! ResultHandled(runId, ctx.self)
-          Behaviors.stopped { () => cleanUp() }
-        case (ctx, Terminate) => Behaviors.stopped { () => cleanUp() }
+          stopBehavior
+        case (ctx, Terminate) => stopBehavior
       }
       .receiveSignal { case (ctx, PostStop) =>
-        ctx.log.info("Requested to stop.")
-        cleanUp()
-        Behaviors.same
+        postStopCleanUp(ctx.log)
       }
 
-  private def cleanUp(): Unit = ???
+  override protected val cleanUp: () => Unit = () => {
+    /* Nothing to do here. At least until now. */
+  }
 }
