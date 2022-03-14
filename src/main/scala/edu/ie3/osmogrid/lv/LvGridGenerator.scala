@@ -7,13 +7,14 @@
 package edu.ie3.osmogrid.lv
 
 import akka.actor.typed.scaladsl.Behaviors
-import edu.ie3.datamodel.graph.DistanceWeightedGraph
+import edu.ie3.datamodel.graph.{DistanceWeightedEdge, DistanceWeightedGraph}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.model.OsmoGridModel.EnhancedOsmEntity
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Way
 import edu.ie3.util.osm.model.OsmEntity.Way.OpenWay
+import edu.ie3.util.osm.model.OsmEntity.Node
 import tech.units.indriya.ComparableQuantity
 
 import javax.measure.quantity.Length
@@ -33,23 +34,26 @@ object LvGridGenerator {
       Behaviors.stopped
   }
 
-  private def buildStreetGraph(ways: Seq[EnhancedOsmEntity]): DistanceWeightedGraph =
+  private def buildStreetGraph(enhancedEntities: Seq[EnhancedOsmEntity]): OsmGraph = {
       val graph = new OsmGraph()
-      ways.map(way =>
-        val nodes = way.nodes
-        for (i <- 1 until nodes.size) {
-          val nodeA = nodes(i - 1)
-          val nodeB = nodes(i)
+      enhancedEntities.foreach(enhancedEntity => {
+        // todo: unsafe
+        val way = enhancedEntity.entity.asInstanceOf[Way]
+        val nodeIds = way.nodes
+        for (i <- 1 until nodeIds.size) {
+          // todo: unsafe
+          val nodeA = enhancedEntity.subEntities(nodeIds(i - 1)).asInstanceOf[Node]
+          val nodeB = enhancedEntity.subEntities(nodeIds(i)).asInstanceOf[Node]
           graph.addVertex(nodeA)
           graph.addVertex(nodeB)
           // calculate edge weight
-          val weight = GeoUtils.calcHaversine(nodeA.getLatlon.getLat, nodeA.getLatlon.getLon, nodeB.getLatlon.getLat, nodeB.getLatlon.getLon)
+          val weight = GeoUtils.calcHaversine(nodeA.latitude, nodeA.longitude, nodeB.latitude, nodeB.longitude)
           // create edge and add edge to rawGraph
-          val e = new DistanceWeightedOsmEdge
-          rawGraph.setEdgeWeight(e, weight.getValue.doubleValue)
-          rawGraph.addEdge(nodeA, nodeB, e) // TODO: consider checking boolean from this method
-        })
-
-    case _ => throw new IllegalArgumentException("We expect ways to be of type way")
+          val e = new DistanceWeightedEdge()
+          graph.setEdgeWeight(e, weight.getValue.doubleValue)
+          graph.addEdge(nodeA, nodeB, e) // TODO: consider checking boolean from this method
+        }})
+    graph
+  }
 
 }
