@@ -256,7 +256,6 @@ def gitCheckout(String relativeTargetDir, String gitCheckoutUrl, String branch, 
     branches                         : [[name: branch]],
     doGenerateSubmoduleConfigurations: false,
     extensions                       : [
-      [$class: 'GitLFSPull'],
       [$class: 'RelativeTargetDirectory', relativeTargetDir: relativeTargetDir]
     ],
     submoduleCfg                     : [],
