@@ -88,7 +88,7 @@ object InputDataProvider
     Behaviors.withStash[InputDataEvent](100) { buffer =>
       Behaviors.setup[InputDataEvent] { ctx =>
         idle(
-          ProviderData(ctx, buffer, OsmSource.apply(osmConfig.osm, ctx))
+          ProviderData(ctx, buffer, OsmSource(osmConfig.osm, ctx))
         )
       }
     }

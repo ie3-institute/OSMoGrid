@@ -23,8 +23,8 @@ import org.scalatest.BeforeAndAfterAll
 import java.nio.file.Paths
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
-import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.util.{Failure, Success, Try}
 
 class OsmSourceSpec extends UnitSpec with BeforeAndAfterAll {
   private val testKit = ActorTestKit("OsmSourceSpec")
@@ -37,17 +37,17 @@ class OsmSourceSpec extends UnitSpec with BeforeAndAfterAll {
         val resourcePath =
           Paths.get(inputResource.toURI).toAbsolutePath.toString
 
-        val testProbe = testKit.createTestProbe[SourceTestActorMsg]()
+        val testProbe = testKit.createTestProbe[Try[OsmoGridModel]]()
         val testActor = testKit.spawn(
           OsmSourceSpec.SourceTestActor(resourcePath)
         )
 
         testActor ! OsmSourceSpec.SourceTestActor.Read(testProbe.ref)
         testProbe
-          .expectMessageType[OsmSourceSpec.SourceTestActor.Provide](
-            FiniteDuration(15L, TimeUnit.SECONDS)
+          .expectMessageType[Try[OsmoGridModel]](
+            FiniteDuration(30L, TimeUnit.SECONDS)
           ) match {
-          case OsmSourceSpec.SourceTestActor.Provide(
+          case Success(
                 LvOsmoGridModel(
                   buildings,
                   highways,
@@ -72,7 +72,7 @@ class OsmSourceSpec extends UnitSpec with BeforeAndAfterAll {
             existingSubstations should have length 10
             existingSubstations.map(_.allSubEntities.size).sum shouldBe 40
 
-          case unexpected => fail("Found unexpected osm data.")
+          case Failure(exception) => fail(s"Failed with exception: $exception")
         }
       }
     }
@@ -87,27 +87,24 @@ class OsmSourceSpec extends UnitSpec with BeforeAndAfterAll {
 private object OsmSourceSpec {
   object SourceTestActor {
     sealed trait SourceTestActorMsg
-    final case class Read(replyTo: ActorRef[SourceTestActorMsg])
+    final case class Read(replyTo: ActorRef[Try[OsmoGridModel]])
         extends SourceTestActorMsg
-    final case class Provide(osm: OsmoGridModel) extends SourceTestActorMsg
+    final case class Result(osm: Try[OsmoGridModel]) extends SourceTestActorMsg
 
     private def idle(source: OsmSource) =
-      Behaviors.receive[SourceTestActorMsg] {
-        case (ctx, Read(replyTo)) =>
-          val result = Await.result(
-            source.read(
-              LvFilter()
-            ),
-            Duration.Inf
+      Behaviors.receive[SourceTestActorMsg] { case (ctx, Read(replyTo)) =>
+        ctx.pipeToSelf(
+          source.read(
+            LvFilter()
           )
+        )(Result.apply)
+        receiveResult(replyTo)
+      }
 
-          replyTo ! Provide(result)
-          Behaviors.stopped
-        case (ctx, unsupported) =>
-          ctx.log.error(
-            s"Received unsupported message '$unsupported'. Stop test actor"
-          )
-          Behaviors.stopped
+    private def receiveResult(replyTo: ActorRef[Try[OsmoGridModel]]) =
+      Behaviors.receive[SourceTestActorMsg] { case (ctx, Result(osm)) =>
+        replyTo ! osm
+        Behaviors.stopped
       }
 
     def apply(pbfFilePath: String): Behavior[SourceTestActorMsg] =
