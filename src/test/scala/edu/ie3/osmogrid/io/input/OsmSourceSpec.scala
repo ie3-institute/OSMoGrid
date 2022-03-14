@@ -45,7 +45,7 @@ class OsmSourceSpec extends UnitSpec with BeforeAndAfterAll {
         testActor ! OsmSourceSpec.SourceTestActor.Read(testProbe.ref)
         testProbe
           .expectMessageType[OsmSourceSpec.SourceTestActor.Provide](
-            FiniteDuration(120L, TimeUnit.SECONDS)
+            FiniteDuration(15L, TimeUnit.SECONDS)
           ) match {
           case OsmSourceSpec.SourceTestActor.Provide(
                 LvOsmoGridModel(

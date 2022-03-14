@@ -6,6 +6,7 @@
 
 package edu.ie3.test.common
 
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.{GivenWhenThen, PrivateMethodTester}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -17,3 +18,4 @@ trait UnitSpec
     with PrivateMethodTester
     with TableDrivenPropertyChecks
     with GivenWhenThen
+    with LogCapturing
