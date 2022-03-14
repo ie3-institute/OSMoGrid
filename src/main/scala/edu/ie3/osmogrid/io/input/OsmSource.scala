@@ -57,10 +57,7 @@ object OsmSource {
       implicit val system: ActorSystem[_] = ctx.system
       implicit val ec: ExecutionContextExecutor = system.executionContext
 
-      val result: Future[PbfGuardian.Response] =
-        pbfReader.ask(sender => PbfGuardian.Run(sender))
-
-      result.flatMap {
+      pbfReader.ask(sender => PbfGuardian.Run(sender)).flatMap {
         case PbfGuardian.PbfReadSuccessful(osmoGridModel) =>
           Future.successful(osmoGridModel)
         case PbfGuardian.PbfReadFailed(exception) =>
