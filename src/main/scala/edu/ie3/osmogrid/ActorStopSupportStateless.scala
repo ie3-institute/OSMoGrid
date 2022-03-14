@@ -11,30 +11,26 @@ import akka.actor.typed.scaladsl.Behaviors
 import org.slf4j.Logger
 
 /** Support trait for executing clean up tasks with stopping an actor
-  *
   * @tparam T
   *   Behavior type
-  * @tparam S
-  *   StateData type. Optional, use [[Any]] if not applicable
   */
-trait ActorStopSupport[T, S] {
+trait ActorStopSupportStateless[T] {
 
   /** Partial function to perform cleanup tasks while shutting down
     */
-  protected def cleanUp(stateData: S): Unit
+  protected val cleanUp: () => Unit
 
   /** Specific stop state with clean up actions issued
-    */
-  protected def stopBehavior(stateData: S): Behavior[T] =
-    Behaviors.stopped(() => cleanUp(stateData))
+   */
+  protected val stopBehavior: Behavior[T] = Behaviors.stopped(cleanUp)
 
-  final protected def terminate(log: Logger, stateData: S): Behavior[T] = {
+  final protected def terminate(log: Logger): Behavior[T] = {
     log.info("Got request to terminate.")
-    stopBehavior(stateData)
+    stopBehavior
   }
 
-  final protected def postStopCleanUp(log: Logger, stateData: S): Behavior[T] = {
+  final protected def postStopCleanUp(log: Logger): Behavior[T] = {
     log.info("Got terminated by ActorSystem.")
-    stopBehavior(stateData)
+    stopBehavior
   }
 }

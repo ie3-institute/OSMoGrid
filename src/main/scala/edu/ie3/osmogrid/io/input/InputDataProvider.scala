@@ -16,7 +16,10 @@ import edu.ie3.datamodel.models.input.connector.`type`.{
 }
 import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.io.input.InputDataProvider.InputDataEvent
+import edu.ie3.osmogrid.io.input.InputDataProvider.{
+  InputDataEvent,
+  ProviderData
+}
 import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
 import org.locationtech.jts.geom.{
@@ -34,7 +37,8 @@ import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try, Using}
 import java.util.UUID
 
-object InputDataProvider extends ActorStopSupport[InputDataEvent] {
+object InputDataProvider
+    extends ActorStopSupport[InputDataEvent, ProviderData] {
 
   // external requests
   sealed trait Request
@@ -73,7 +77,7 @@ object InputDataProvider extends ActorStopSupport[InputDataEvent] {
   sealed trait InputDataEvent
 
   // actor data
-  private final case class ProviderData(
+  protected final case class ProviderData(
       runId: UUID,
       ctx: ActorContext[InputDataEvent],
       buffer: StashBuffer[InputDataEvent],
@@ -140,12 +144,7 @@ object InputDataProvider extends ActorStopSupport[InputDataEvent] {
         Behaviors.same
     }
 
-  private def cleanUp(providerData: ProviderData): Unit = {
+  override protected def cleanUp(providerData: ProviderData): Unit = {
     providerData.osmSource.close()
-  }
-
-  // TODO this doesn't seem to make too much sense here
-  override protected val cleanUp: () => Unit = () => {
-    /* Nothing to do here. At least until now. */
   }
 }
