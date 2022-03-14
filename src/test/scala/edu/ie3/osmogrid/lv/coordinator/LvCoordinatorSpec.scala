@@ -228,7 +228,6 @@ class LvCoordinatorSpec
           )(awaitingData)
         )
         val osmData = InputDataProvider.RepOsm(
-          runId,
           LvOsmoGridModel(
             ParSeq.empty,
             ParSeq.empty,

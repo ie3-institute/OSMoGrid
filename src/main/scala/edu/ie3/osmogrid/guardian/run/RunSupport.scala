@@ -133,7 +133,7 @@ private trait RunSupport {
     ctx.log.info("Starting input data provider ...")
     val inputProvider =
       ctx.spawn(
-        InputDataProvider(runId, inputConfig),
+        InputDataProvider(inputConfig),
         s"InputDataProvider_${runId.toString}"
       )
     ctx.watchWith(inputProvider, InputDataProviderDied)

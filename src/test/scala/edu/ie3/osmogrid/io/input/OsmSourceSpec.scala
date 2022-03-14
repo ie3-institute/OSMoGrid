@@ -20,6 +20,7 @@ import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
 import edu.ie3.test.common.UnitSpec
 import org.scalatest.BeforeAndAfterAll
 
+import java.nio.file.Paths
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
@@ -31,9 +32,14 @@ class OsmSourceSpec extends UnitSpec with BeforeAndAfterAll {
   "Reading input data from pbf file" when {
     "having proper input data" should {
       "provide full data set correctly" in {
+        val inputResource = getClass.getResource("/Witten_Stockum.pbf")
+        assert(inputResource != null)
+        val resourcePath =
+          Paths.get(inputResource.toURI).toAbsolutePath.toString
+
         val testProbe = testKit.createTestProbe[SourceTestActorMsg]()
         val testActor = testKit.spawn(
-          OsmSourceSpec.SourceTestActor("InputData/OsmData/inputTest.pbf")
+          OsmSourceSpec.SourceTestActor(resourcePath)
         )
 
         testActor ! OsmSourceSpec.SourceTestActor.Read(testProbe.ref)

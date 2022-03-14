@@ -7,7 +7,7 @@
 package edu.ie3.osmogrid.io.input
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer}
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import com.acervera.osm4scala.EntityIterator.fromPbf
 import com.acervera.osm4scala.model.{NodeEntity, RelationEntity, WayEntity}
 import edu.ie3.datamodel.models.input.connector.`type`.{
@@ -50,7 +50,6 @@ object InputDataProvider
       with InputDataEvent
 
   final case class ReqAssetTypes(
-      runId: UUID,
       replyTo: ActorRef[InputDataProvider.Response]
   ) extends Request
       with InputDataEvent
@@ -59,7 +58,7 @@ object InputDataProvider
 
   // external responses
   sealed trait Response
-  final case class RepOsm(runId: UUID, osmModel: OsmoGridModel)
+  final case class RepOsm(osmModel: OsmoGridModel)
       extends Response
       with InputDataEvent
   final case class OsmReadFailed(reason: Throwable)
@@ -78,55 +77,55 @@ object InputDataProvider
 
   // actor data
   protected final case class ProviderData(
-      runId: UUID,
       ctx: ActorContext[InputDataEvent],
       buffer: StashBuffer[InputDataEvent],
       osmSource: OsmSource
   )
 
   def apply(
-      runId: UUID,
       osmConfig: OsmoGridConfig.Input
   ): Behavior[InputDataEvent] = {
     Behaviors.withStash[InputDataEvent](100) { buffer =>
       Behaviors.setup[InputDataEvent] { ctx =>
         idle(
-          ProviderData(runId, ctx, buffer, OsmSource.apply(osmConfig.osm, ctx))
+          ProviderData(ctx, buffer, OsmSource.apply(osmConfig.osm, ctx))
         )
       }
     }
   }
 
   private def idle(providerData: ProviderData): Behavior[InputDataEvent] =
-    Behaviors.receive[InputDataEvent] { case (ctx, msg) =>
-      msg match {
-        case ReqOsm(replyTo, filter) =>
-          ctx.pipeToSelf(
-            providerData.osmSource.read(filter)
-          ) {
-            case Success(osmoGridModel: OsmoGridModel) =>
-              RepOsm(providerData.runId, osmoGridModel)
-            case Failure(exception) =>
-              ctx.log.error(
-                s"Error while reading osm data: $exception"
-              )
-              OsmReadFailed(exception)
-          }
-          readOsmData(providerData, replyTo)
-        case ReqAssetTypes(_, _) =>
-          ctx.log.info("Got request to provide asset types. But do nothing.")
-          Behaviors.same
-        case Terminate =>
-          ctx.log.info("Stopping input data provider ...")
-          cleanUp(providerData)
-          Behaviors.stopped
-        case invalid: (OsmReadFailed | RepOsm) =>
-          ctx.log.error(
-            s"Received unexpected message '$invalid' in state Idle! Ignoring!"
-          )
-          Behaviors.same
+    Behaviors
+      .receive[InputDataEvent] { case (ctx, msg) =>
+        msg match {
+          case ReqOsm(replyTo, filter) =>
+            ctx.pipeToSelf(
+              providerData.osmSource.read(filter)
+            ) {
+              case Success(osmoGridModel: OsmoGridModel) =>
+                RepOsm(osmoGridModel)
+              case Failure(exception) =>
+                ctx.log.error(
+                  s"Error while reading osm data: $exception"
+                )
+                OsmReadFailed(exception)
+            }
+            readOsmData(providerData, replyTo)
+          case ReqAssetTypes(_) =>
+            ctx.log.info("Got request to provide asset types. But do nothing.")
+            Behaviors.same
+          case Terminate =>
+            terminate(ctx.log, providerData)
+          case invalid: (OsmReadFailed | RepOsm) =>
+            ctx.log.error(
+              s"Received unexpected message '$invalid' in state Idle! Ignoring!"
+            )
+            Behaviors.same
+        }
       }
-    }
+      .receiveSignal { case (ctx, PostStop) =>
+        postStopCleanUp(ctx.log, providerData)
+      }
 
   private def readOsmData(
       providerData: ProviderData,

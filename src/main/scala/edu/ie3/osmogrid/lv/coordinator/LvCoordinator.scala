@@ -92,7 +92,6 @@ object LvCoordinator extends ActorStopSupportStateless[Request] {
         )
         /* Ask for grid asset data */
         stateData.inputDataProvider ! ReqAssetTypes(
-          runId = run,
           replyTo = stateData.msgAdapters.inputDataProvider
         )
 
@@ -163,7 +162,7 @@ object LvCoordinator extends ActorStopSupportStateless[Request] {
       ctx: ActorContext[Request]
   ): Behavior[Request] = {
     /* Check, if everything is in place */
-    if (awaitingData.isComprehensive()) {
+    if (awaitingData.isComprehensive) {
       /* Process the data */
       ctx.log.debug("All awaited data is present. Start processing.")
 

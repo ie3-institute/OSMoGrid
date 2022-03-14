@@ -120,7 +120,7 @@ private final case class AwaitingData(
       response: InputDataProvider.Response,
       log: Logger
   ): Try[AwaitingData] = response match {
-    case InputDataProvider.RepOsm(_, osmModel) =>
+    case InputDataProvider.RepOsm(osmModel) =>
       log.debug(s"Received OSM data.")
       Success(copy(osmData = Some(osmModel)))
     case InputDataProvider.RepAssetTypes(assetInformation) =>
@@ -137,7 +137,7 @@ private final case class AwaitingData(
       )
   }
 
-  def isComprehensive(): Boolean =
+  def isComprehensive: Boolean =
     osmData.isDefined && assetInformation.isDefined
 
 }

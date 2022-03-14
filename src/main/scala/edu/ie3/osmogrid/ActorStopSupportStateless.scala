@@ -21,7 +21,7 @@ trait ActorStopSupportStateless[T] {
   protected val cleanUp: () => Unit
 
   /** Specific stop state with clean up actions issued
-   */
+    */
   protected val stopBehavior: Behavior[T] = Behaviors.stopped(cleanUp)
 
   final protected def terminate(log: Logger): Behavior[T] = {
