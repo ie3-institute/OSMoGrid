@@ -10,7 +10,7 @@ import akka.actor.typed.ActorRef
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
-import edu.ie3.osmogrid.lv.LvCoordinator
+import edu.ie3.osmogrid.lv.coordinator
 
 import java.util.UUID
 
@@ -29,13 +29,13 @@ object Run extends Request
   *   Adapter for messages from [[ResultEventListener]]
   */
 private final case class MessageAdapters(
-    lvCoordinator: ActorRef[LvCoordinator.Response],
+    lvCoordinator: ActorRef[coordinator.Response],
     resultListener: ActorRef[ResultListener.Response]
 )
 
 private object MessageAdapters {
   final case class WrappedLvCoordinatorResponse(
-      response: LvCoordinator.Response
+      response: coordinator.Response
   ) extends Request
 
   final case class WrappedListenerResponse(
@@ -61,7 +61,7 @@ private final case class ChildReferences(
     inputDataProvider: ActorRef[InputDataProvider.InputDataEvent],
     resultListener: Option[ActorRef[ResultListener.ResultEvent]],
     additionalResultListeners: Seq[ActorRef[ResultListener.ResultEvent]],
-    lvCoordinator: Option[ActorRef[LvCoordinator.Request]]
+    lvCoordinator: Option[ActorRef[coordinator.Request]]
 ) {
   def resultListeners: Seq[ActorRef[ResultListener.ResultEvent]] =
     resultListener

@@ -24,7 +24,7 @@ object OsmoGridConfig {
     )
     object Lv {
       final case class Osm(
-          filter: OsmoGridConfig.Generation.Lv.Osm.Filter
+          filter: scala.Option[OsmoGridConfig.Generation.Lv.Osm.Filter]
       )
       object Osm {
         final case class Filter(
@@ -55,12 +55,16 @@ object OsmoGridConfig {
             $tsCfgValidator: $TsCfgValidator
         ): OsmoGridConfig.Generation.Lv.Osm = {
           OsmoGridConfig.Generation.Lv.Osm(
-            filter = OsmoGridConfig.Generation.Lv.Osm.Filter(
-              if (c.hasPathOrNull("filter")) c.getConfig("filter")
-              else com.typesafe.config.ConfigFactory.parseString("filter{}"),
-              parentPath + "filter.",
-              $tsCfgValidator
-            )
+            filter =
+              if (c.hasPathOrNull("filter"))
+                scala.Some(
+                  OsmoGridConfig.Generation.Lv.Osm.Filter(
+                    c.getConfig("filter"),
+                    parentPath + "filter.",
+                    $tsCfgValidator
+                  )
+                )
+              else None
           )
         }
       }

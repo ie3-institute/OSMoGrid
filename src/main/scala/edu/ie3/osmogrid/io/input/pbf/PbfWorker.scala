@@ -20,7 +20,7 @@ import com.acervera.osm4scala.model.{
 import edu.ie3.osmogrid.io.input.pbf.PbfGuardian.stopAndCleanup
 import edu.ie3.osmogrid.model.Osm4ScalaMapper.{osmNode, osmRelation, osmWay}
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
-import edu.ie3.osmogrid.model.{OsmoGridModel, PbfFilter}
+import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmContainer
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
@@ -43,36 +43,26 @@ private[pbf] object PbfWorker {
   final case class ReadBlobMsg(
       blobHeader: BlobHeader,
       blob: Blob,
-      filter: PbfFilter,
       replyTo: ActorRef[PbfWorker.Response]
   ) extends PbfWorkerMsg
 
   // external response protocol
   sealed trait Response
 
-  final case class ReadSuccessful(osmoGridModel: OsmoGridModel) extends Response
+  final case class ReadSuccessful(osmContainer: OsmContainer) extends Response
 
   final case class ReadFailed(
       blobHeader: BlobHeader,
       blob: Blob,
-      filter: PbfFilter,
+      filter: SourceFilter,
       exception: Throwable
   ) extends Response
 
-  def apply(
-      highwayTags: Option[Set[String]] = None,
-      buildingTags: Option[Set[String]] = None,
-      landuseTags: Option[Set[String]] = None
-  ): Behavior[PbfWorkerMsg] = Behaviors.receiveMessage[PbfWorkerMsg] {
-    case ReadBlobMsg(_, blob, filter, replyTo) =>
+  def apply(): Behavior[PbfWorkerMsg] = Behaviors.receiveMessage[PbfWorkerMsg] {
+    case ReadBlobMsg(_, blob, replyTo) =>
       val osmContainer = readBlob(blob)
 
-      val osmoGridModel = filter match {
-        case lvFilter: PbfFilter.LvFilter =>
-          LvOsmoGridModel(osmContainer, lvFilter, filterNodes = false)
-      }
-
-      replyTo ! ReadSuccessful(osmoGridModel)
+      replyTo ! ReadSuccessful(osmContainer)
 
       Behaviors.same
   }

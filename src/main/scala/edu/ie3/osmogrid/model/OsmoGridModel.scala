@@ -6,45 +6,41 @@
 
 package edu.ie3.osmogrid.model
 
-import edu.ie3.osmogrid.model.PbfFilter.{Filter, LvFilter}
+import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
 import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
 import edu.ie3.util.osm.model.{CommonOsmKey, OsmContainer, OsmEntity}
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
-import org.locationtech.jts.geom.Polygon
 import edu.ie3.util.osm.model.CommonOsmKey.{Building, Highway, Landuse}
 import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
 
-import scala.collection.parallel.immutable.ParVector
 import scala.collection.parallel.{ParIterable, ParMap, ParSeq}
 
 sealed trait OsmoGridModel {
-  protected val filter: PbfFilter
+  protected val filter: SourceFilter
 
   def +(additional: OsmoGridModel): Option[OsmoGridModel]
 }
 
 object OsmoGridModel {
 
-  final case class LvOsmoGridModel private (
-      buildings: ParSeq[OsmEntity],
-      highways: ParSeq[OsmEntity],
-      landuses: ParSeq[OsmEntity],
-      boundaries: ParSeq[OsmEntity],
-      existingSubstations: ParSeq[OsmEntity],
-      private val nodes: ParMap[Long, Node],
+  final case class LvOsmoGridModel(
+      buildings: ParSeq[EnhancedOsmEntity],
+      highways: ParSeq[EnhancedOsmEntity],
+      landuses: ParSeq[EnhancedOsmEntity],
+      boundaries: ParSeq[EnhancedOsmEntity],
+      existingSubstations: ParSeq[EnhancedOsmEntity],
       protected val filter: LvFilter
   ) extends OsmoGridModel {
 
-    def node(osmId: Long): Option[Node] = nodes.get(osmId)
-
-    def nodes(osmIds: Set[Long]): ParIterable[Node] =
-      nodes.filterKeys(osmIds).values
-
-    def allNodes(): ParSeq[Node] = nodes.values.toSeq
-
-    // merges two lv grids, if their filter match
-    // if you want to recombine two lv grids with different filters
-    // you need to recreate them to ensure filter consistency
+    /** Merges two lv grids, if their filter match. To recombine two lv grids
+      * with different filters, they need to be recreated to ensure filter
+      * consistency
+      *
+      * @param additional
+      *   second OsmoGridModel
+      * @return
+      *   combined model
+      */
     override def +(additional: OsmoGridModel): Option[OsmoGridModel] = {
       additional match {
         case LvOsmoGridModel(
@@ -53,7 +49,6 @@ object OsmoGridModel {
               landuses,
               boundaries,
               existingSubstations,
-              nodes,
               filter
             ) if this.filter.equals(additional.filter) =>
           Some(
@@ -63,7 +58,6 @@ object OsmoGridModel {
               this.landuses ++ landuses,
               this.boundaries ++ boundaries,
               this.existingSubstations ++ existingSubstations,
-              this.nodes ++ nodes,
               this.filter // filter are the same for both models
             )
           )
@@ -84,15 +78,9 @@ object OsmoGridModel {
       val buildings = filter(osmContainer, lvFilter.buildingFilter)
       val highways = filter(osmContainer, lvFilter.highwayFilter)
       val landuses = filter(osmContainer, lvFilter.landuseFilter)
-      val boundaries = filter(osmContainer, PbfFilter.standardBoundaryFilter)
+      val boundaries = filter(osmContainer, lvFilter.boundaryFilter)
       val substations =
-        filterOr(osmContainer, PbfFilter.substationFilter)
-
-      val nodes = createNodes(
-        osmContainer.nodes,
-        ParVector(buildings, highways, landuses, boundaries, substations),
-        filterNodes
-      )
+        filterOr(osmContainer, lvFilter.existingSubstationFilter)
 
       new LvOsmoGridModel(
         buildings,
@@ -100,54 +88,22 @@ object OsmoGridModel {
         landuses,
         boundaries,
         substations,
-        nodes,
         lvFilter
       )
 
     def mergeAll(
-        models: ParSeq[OsmoGridModel],
+        models: ParSeq[LvOsmoGridModel],
         filterNodes: Boolean = true
     ): Option[OsmoGridModel] = {
       models.headOption.flatMap { case lvHeadModel: LvOsmoGridModel =>
         if (models.forall(_.filter == lvHeadModel.filter)) {
-          val (buildings, highways, landuses) = models.map {
-            case lvModel: LvOsmoGridModel =>
-              (lvModel.buildings, lvModel.highways, lvModel.landuses)
-          }.unzip3 match {
-            case (buildings, highways, landuses) =>
-              (buildings.flatten, highways.flatten, landuses.flatten)
-          }
-
-          val (boundaries, existingSubstations, unfilteredNodes) = models.map {
-            case lvModel: LvOsmoGridModel =>
-              (lvModel.boundaries, lvModel.existingSubstations, lvModel.nodes)
-          }.unzip3 match {
-            case (boundaries, existingSubstations, unfilteredNodes) =>
-              (
-                boundaries.flatten,
-                existingSubstations.flatten,
-                unfilteredNodes.flatten.toMap
-              )
-          }
-          val nodes = createNodes(
-            unfilteredNodes,
-            ParVector(
-              buildings,
-              highways,
-              landuses,
-              boundaries,
-              existingSubstations
-            ),
-            filterNodes
-          )
           Some(
             LvOsmoGridModel(
-              buildings,
-              highways,
-              landuses,
-              boundaries,
-              existingSubstations,
-              nodes,
+              models.flatMap(_.buildings),
+              models.flatMap(_.highways),
+              models.flatMap(_.landuses),
+              models.flatMap(_.boundaries),
+              models.flatMap(_.existingSubstations),
               lvHeadModel.filter
             )
           )
@@ -158,53 +114,93 @@ object OsmoGridModel {
 
     }
 
-    private def createNodes(
-        nodesMap: ParMap[Long, Node],
-        entitiesWithNodes: ParSeq[ParSeq[OsmEntity]],
-        filterNodes: Boolean
-    ) =
-      if (filterNodes) {
-        val nodeIds: Set[Long] = entitiesWithNodes.flatten
-          .flatMap {
-            case node: Node =>
-              Seq(node.id)
-            case way: Way =>
-              way.nodes
-            case relation: Relation =>
-              relation.members
-                .filter(_.relationType match {
-                  case RelationMemberType.Node =>
-                    true
-                  case _ => false
-                })
-                .map(_.id)
-          }
-          .seq
-          .toSet
-        nodesMap.filterKeys(nodeIds)
-      } else {
-        nodesMap
-      }
-
   }
 
-  def filter(osmContainer: ParOsmContainer, filter: Filter): ParSeq[OsmEntity] =
+  case class EnhancedOsmEntity(
+      entity: OsmEntity,
+      subEntities: Map[Long, OsmEntity]
+  ) {
+    def allSubEntities: Iterable[OsmEntity] = subEntities.values
+  }
+
+  object EnhancedOsmEntity {
+    def apply(
+        entity: OsmEntity,
+        subEntities: Iterable[OsmEntity]
+    ): EnhancedOsmEntity =
+      EnhancedOsmEntity(
+        entity,
+        subEntities.map(ent => ent.id -> ent).toMap
+      )
+  }
+
+  def filter(
+      osmContainer: ParOsmContainer,
+      filter: Filter
+  ): ParSeq[EnhancedOsmEntity] =
     filterOr(osmContainer, Set(filter))
 
   def filterOr(
       osmContainer: ParOsmContainer,
-      filter: Set[Filter]
-  ): ParSeq[OsmEntity] = {
+      filters: Set[Filter]
+  ): ParSeq[EnhancedOsmEntity] = {
     val mappedFilter =
-      filter.map(filter => (filter.key, filter.tagValues)).toMap
+      filters.map(filter => (filter.key, filter.tagValues)).toMap
     (osmContainer.nodes.values ++ osmContainer.ways.values ++ osmContainer.relations.values)
       .foldLeft(ParSeq.empty) {
         case (resEntities, curEntity)
             if curEntity.hasKeysValuesPairOr(mappedFilter) =>
-          resEntities :+ curEntity
+          val subEntities = curEntity match {
+            case node: Node =>
+              Iterable.empty
+            case way: Way =>
+              getSubEntities(osmContainer, way)
+            case relation: Relation =>
+              getSubEntities(osmContainer, relation)
+          }
+          resEntities :+ EnhancedOsmEntity(curEntity, subEntities)
         case (resEntities, _) =>
           resEntities
       }
+  }
+
+  private def getSubEntities(
+      osmContainer: OsmContainer,
+      way: Way
+  ): Iterable[OsmEntity] = {
+    osmContainer.nodes(way.nodes).flatten
+  }
+
+  private def getSubEntities(
+      osmContainer: OsmContainer,
+      relation: Relation
+  ): Iterable[OsmEntity] = {
+    relation.members.flatMap { member =>
+      member.relationType match {
+        case RelationMemberType.Node =>
+          osmContainer
+            .node(member.id)
+            .map(node => Iterable.single(node))
+            .getOrElse(Iterable.empty)
+        case RelationMemberType.Way =>
+          osmContainer
+            .way(member.id)
+            .map { way =>
+              Iterable.single(way) ++ getSubEntities(osmContainer, way)
+            }
+            .getOrElse(Iterable.empty)
+        case RelationMemberType.Relation =>
+          osmContainer
+            .relation(member.id)
+            .map { relation =>
+              Iterable
+                .single(relation) ++ getSubEntities(osmContainer, relation)
+            }
+            .getOrElse(Iterable.empty)
+        case RelationMemberType.Unrecognized =>
+          Iterable.empty
+      }
+    }
   }
 
 }

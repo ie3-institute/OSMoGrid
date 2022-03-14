@@ -15,8 +15,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import edu.ie3.osmogrid.io.input.OsmSource.PbfFileSource
 import edu.ie3.osmogrid.io.input.OsmSourceSpec.SourceTestActor.SourceTestActorMsg
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
-import edu.ie3.osmogrid.model.{OsmoGridModel, PbfFilter}
-import edu.ie3.osmogrid.model.PbfFilter.{Filter, LvFilter}
+import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
+import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
 import edu.ie3.test.common.UnitSpec
 import org.scalatest.BeforeAndAfterAll
 
@@ -48,15 +48,24 @@ class OsmSourceSpec extends UnitSpec with BeforeAndAfterAll {
                   landuses,
                   boundaries,
                   existingSubstations,
-                  nodes,
                   filter
                 )
               ) =>
             landuses should have length 38
+            landuses.map(_.allSubEntities.size).sum shouldBe 705
+
             highways should have length 1424
+            highways.map(_.allSubEntities.size).sum shouldBe 3947
+
             buildings should have length 2512
+            buildings.map(_.allSubEntities.size).sum shouldBe 16367
+
             boundaries should have length 7
-            nodes should have size 16765
+            boundaries.map(_.allSubEntities.size).sum shouldBe 0
+
+            existingSubstations should have length 10
+            existingSubstations.map(_.allSubEntities.size).sum shouldBe 40
+
           case unexpected => fail("Found unexpected osm data.")
         }
       }
@@ -76,22 +85,12 @@ private object OsmSourceSpec {
         extends SourceTestActorMsg
     final case class Provide(osm: OsmoGridModel) extends SourceTestActorMsg
 
-    private val buildingFilter = Filter("building", Set.empty)
-    private val highwayFilter = Filter("highway", Set.empty)
-    private val landuseFilter = Filter("landuse", Set.empty)
-
     private def idle(source: OsmSource) =
       Behaviors.receive[SourceTestActorMsg] {
         case (ctx, Read(replyTo)) =>
           val result = Await.result(
             source.read(
-              LvFilter(
-                buildingFilter,
-                highwayFilter,
-                landuseFilter,
-                PbfFilter.standardBoundaryFilter,
-                PbfFilter.substationFilter
-              )
+              LvFilter()
             ),
             Duration.Inf
           )
