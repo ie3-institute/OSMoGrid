@@ -10,24 +10,24 @@ import akka.actor.testkit.typed.scaladsl.{
   ActorTestKit,
   ScalaTestWithActorTestKit
 }
-import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.io.input.OsmSource.PbfFileSource
-import edu.ie3.osmogrid.io.input.OsmSourceSpec.SourceTestActor.SourceTestActorMsg
+import edu.ie3.osmogrid.io.input.OsmSourceIT.SourceTestActor.SourceTestActorMsg
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
-import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
-import edu.ie3.test.common.UnitSpec
+import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
+import edu.ie3.test.common.{InputDataCheck, UnitSpec}
 import org.scalatest.BeforeAndAfterAll
 
 import java.nio.file.Paths
 import java.time.temporal.ChronoUnit
-import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.DurationInt
+import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
-class OsmSourceSpec extends UnitSpec with BeforeAndAfterAll {
-  private val testKit = ActorTestKit("OsmSourceSpec")
+class OsmSourceIT extends UnitSpec with BeforeAndAfterAll with InputDataCheck {
+  private val testKit = ActorTestKit("OsmSourceIT")
 
   "Reading input data from pbf file" when {
     "having proper input data" should {
@@ -37,40 +37,18 @@ class OsmSourceSpec extends UnitSpec with BeforeAndAfterAll {
         val resourcePath =
           Paths.get(inputResource.toURI).toAbsolutePath.toString
 
-        val testProbe = testKit.createTestProbe[Try[OsmoGridModel]]()
+        val requestProbe = testKit.createTestProbe[Try[OsmoGridModel]]()
         val testActor = testKit.spawn(
-          OsmSourceSpec.SourceTestActor(resourcePath)
+          OsmSourceIT.SourceTestActor(resourcePath)
         )
 
-        testActor ! OsmSourceSpec.SourceTestActor.Read(testProbe.ref)
-        testProbe
+        testActor ! OsmSourceIT.SourceTestActor.Read(requestProbe.ref)
+        requestProbe
           .expectMessageType[Try[OsmoGridModel]](
-            FiniteDuration(30L, TimeUnit.SECONDS)
+            30 seconds
           ) match {
-          case Success(
-                LvOsmoGridModel(
-                  buildings,
-                  highways,
-                  landuses,
-                  boundaries,
-                  existingSubstations,
-                  filter
-                )
-              ) =>
-            landuses should have length 38
-            landuses.map(_.allSubEntities.size).sum shouldBe 705
-
-            highways should have length 1424
-            highways.map(_.allSubEntities.size).sum shouldBe 3947
-
-            buildings should have length 2512
-            buildings.map(_.allSubEntities.size).sum shouldBe 16367
-
-            boundaries should have length 7
-            boundaries.map(_.allSubEntities.size).sum shouldBe 0
-
-            existingSubstations should have length 10
-            existingSubstations.map(_.allSubEntities.size).sum shouldBe 40
+          case Success(lvModel: LvOsmoGridModel) =>
+            checkInputDataResult(lvModel)
 
           case Failure(exception) => fail(s"Failed with exception: $exception")
         }
@@ -80,11 +58,10 @@ class OsmSourceSpec extends UnitSpec with BeforeAndAfterAll {
 
   override protected def afterAll(): Unit = {
     testKit.shutdownTestKit()
-    super.afterAll()
   }
 }
 
-private object OsmSourceSpec {
+private object OsmSourceIT {
   object SourceTestActor {
     sealed trait SourceTestActorMsg
     final case class Read(replyTo: ActorRef[Try[OsmoGridModel]])
