@@ -17,6 +17,7 @@ ext {
 
   scalaMajorVersion = '3'
   scalaVersion = '3.1.1'
+  akkaVersion = '2.6.19'
 
   tscfgVersion = '0.9.995'
 
@@ -56,9 +57,8 @@ dependencies {
   implementation 'org.scala-lang.modules:scala-parallel-collections_3:1.0.4'
 
   // akka
-  implementation platform("com.typesafe.akka:akka-bom_$scalaMajorVersion:2.6.19")
-  implementation "com.typesafe.akka:akka-actor-typed_${scalaMajorVersion}"
-  testImplementation "com.typesafe.akka:akka-actor-testkit-typed_$scalaMajorVersion"
+  implementation "com.typesafe.akka:akka-actor-typed_${scalaMajorVersion}:${akkaVersion}"
+  testImplementation "com.typesafe.akka:akka-actor-testkit-typed_$scalaMajorVersion:${akkaVersion}"
 
   // logging
   implementation "com.typesafe.scala-logging:scala-logging_${scalaMajorVersion}:3.9.4"
