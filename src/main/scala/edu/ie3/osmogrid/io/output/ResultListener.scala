@@ -51,7 +51,7 @@ object ResultListener extends ActorStopSupportStateless[ResultEvent] {
         postStopCleanUp(ctx.log)
       }
 
-  override protected val cleanUp: () => Unit = () => {
+  override protected def cleanUp(): Unit = {
     /* Nothing to do here. At least until now. */
   }
 }

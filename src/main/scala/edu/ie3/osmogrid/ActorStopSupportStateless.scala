@@ -16,9 +16,9 @@ import org.slf4j.Logger
   */
 trait ActorStopSupportStateless[T] {
 
-  /** Partial function to perform cleanup tasks while shutting down
+  /** Function to perform cleanup tasks while shutting down
     */
-  protected val cleanUp: () => Unit
+  protected def cleanUp(): Unit
 
   /** Specific stop state with clean up actions issued
     */

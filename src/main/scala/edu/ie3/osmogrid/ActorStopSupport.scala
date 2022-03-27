@@ -19,7 +19,7 @@ import org.slf4j.Logger
   */
 trait ActorStopSupport[T, S] {
 
-  /** Partial function to perform cleanup tasks while shutting down
+  /** Function to perform cleanup tasks while shutting down
     */
   protected def cleanUp(stateData: S): Unit
 
