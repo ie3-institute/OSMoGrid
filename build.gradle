@@ -5,7 +5,7 @@ plugins {
   id 'pmd' // code check, working on source code
   id 'com.diffplug.spotless' version '6.3.0'//code format
   id 'com.github.spotbugs' version '5.0.6' // code check, working on byte code
-  id 'de.undercouch.download' version '5.0.1'
+  id 'de.undercouch.download' version '5.0.2'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.32" // run scalatest without specific spec task
   id "org.sonarqube" version "3.3" // sonarqube
@@ -17,7 +17,7 @@ ext {
 
   scalaMajorVersion = '3'
   scalaVersion = '3.1.1'
-  akkaVersion = '2.6.18'
+  akkaVersion = '2.6.19'
 
   tscfgVersion = '0.9.995'
 
@@ -58,12 +58,11 @@ dependencies {
 
   // akka
   implementation "com.typesafe.akka:akka-actor-typed_${scalaMajorVersion}:${akkaVersion}"
-  implementation platform("com.typesafe.akka:akka-bom_$scalaMajorVersion:2.6.18")
-  testImplementation "com.typesafe.akka:akka-actor-testkit-typed_$scalaMajorVersion:2.6.18"
+  testImplementation "com.typesafe.akka:akka-actor-testkit-typed_$scalaMajorVersion:${akkaVersion}"
 
   // logging
   implementation "com.typesafe.scala-logging:scala-logging_${scalaMajorVersion}:3.9.4"
-  implementation 'ch.qos.logback:logback-classic:1.2.10'
+  implementation 'ch.qos.logback:logback-classic:1.2.11'
 
   // testing
   testImplementation "org.scalatest:scalatest_$scalaMajorVersion:3.2.11"
@@ -73,6 +72,9 @@ dependencies {
   // config
   implementation 'com.typesafe:config:1.4.2'
   implementation "com.github.scopt:scopt_$scalaMajorVersion:4.0.1" // cmd args parser
+
+  // osm4scala
+  implementation 'com.acervera.osm4scala:osm4scala-core_2.13:1.0.10'
 
   // todo CLEANUP following old dependencies
   //	 ie³ power system utils
@@ -110,14 +112,14 @@ dependencies {
   // testing
   testImplementation 'junit:junit:4.13.2'
   testImplementation 'cglib:cglib-nodep:3.3.0' // enables mocking of classes (in addition to interfaces)
-  testImplementation 'org.mockito:mockito-core:4.3.1' // mocking framework
+  testImplementation 'org.mockito:mockito-core:4.4.0' // mocking framework
   testImplementation 'org.scalatestplus:mockito-3-12_3:3.2.10.0' // syntactic sugar
 
   testImplementation 'org.spockframework:spock-core:2.1-groovy-3.0'
   testImplementation 'org.objenesis:objenesis:3.2' // Mock creation with constructor parameters
 
   // TODO: Remove. Only there for backwards compatibility in Java code
-  implementation 'tech.units:indriya:2.1.2'
+  implementation 'tech.units:indriya:2.1.3'
   implementation 'org.locationtech.jts:jts-core:1.18.2'
 }
 

@@ -21,8 +21,7 @@ import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.io.output.ResultListener.{GridResult, Request}
-import edu.ie3.osmogrid.lv.LvCoordinator
-import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
+import edu.ie3.osmogrid.lv.coordinator.LvCoordinator
 import org.slf4j.Logger
 
 import java.util.UUID
