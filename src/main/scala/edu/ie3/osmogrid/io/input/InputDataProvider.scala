@@ -6,74 +6,144 @@
 
 package edu.ie3.osmogrid.io.input
 
-import akka.actor.typed.Behavior
-import akka.actor.typed.ActorRef
-import akka.actor.typed.PostStop
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer}
+import akka.actor.typed.{ActorRef, Behavior, PostStop}
+import com.acervera.osm4scala.EntityIterator.fromPbf
+import com.acervera.osm4scala.model.{NodeEntity, RelationEntity, WayEntity}
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
   Transformer2WTypeInput
 }
 import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian
-import edu.ie3.osmogrid.io.input.InputDataProvider.Request
-import edu.ie3.osmogrid.lv.coordinator.LvCoordinator.stopBehavior
-import edu.ie3.osmogrid.model.{OsmoGridModel, PbfFilter}
-import org.slf4j.Logger
+import edu.ie3.osmogrid.io.input.InputDataProvider.{
+  InputDataEvent,
+  ProviderData
+}
+import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
+import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
+import org.locationtech.jts.geom.{
+  Coordinate,
+  LinearRing,
+  Point,
+  Polygon,
+  PrecisionModel
+}
 
+import java.io.{FileInputStream, InputStream}
+import java.time.ZonedDateTime
+import java.util.UUID
+import scala.collection.mutable.ListBuffer
+import scala.util.{Failure, Success, Try, Using}
 import java.util.UUID
 
-object InputDataProvider extends ActorStopSupport[Request] {
+object InputDataProvider
+    extends ActorStopSupport[InputDataEvent, ProviderData] {
 
+  // external requests
   sealed trait Request
 
   final case class ReqOsm(
-      runId: UUID,
       replyTo: ActorRef[InputDataProvider.Response],
-      filter: PbfFilter
+      filter: SourceFilter
   ) extends Request
+      with InputDataEvent
 
   final case class ReqAssetTypes(
-      runId: UUID,
       replyTo: ActorRef[InputDataProvider.Response]
   ) extends Request
+      with InputDataEvent
 
-  object Terminate extends Request
+  case object Terminate extends Request with InputDataEvent
 
   // external responses
   sealed trait Response
-  final case class RepOsm(runId: UUID, osmModel: OsmoGridModel) extends Response
-  final case class InvalidOsmRequest(reqRunId: UUID, actualRunId: UUID)
+  final case class RepOsm(osmModel: OsmoGridModel)
       extends Response
-  final case class OsmReadFailed(reason: Throwable) extends Response
-  final case class RepAssetTypes(
-      assetInformation: AssetInformation
-  ) extends Response
+      with InputDataEvent
+  final case class OsmReadFailed(reason: Throwable)
+      extends Response
+      with InputDataEvent
+  final case class RepAssetTypes(assetInformation: AssetInformation)
+      extends Response
 
   final case class AssetInformation(
       lineTypes: Seq[LineTypeInput],
       transformerTypes: Seq[Transformer2WTypeInput]
   )
 
-  def apply(cfg: OsmoGridConfig.Input): Behavior[Request] =
-    Behaviors
-      .receive[Request] {
-        case (ctx, ReqOsm(runId, replyTo, filter)) =>
-          ctx.log.warn("Reading of data not yet implemented.")
-          Behaviors.same
-        case (ctx, ReqAssetTypes(_, _)) =>
-          ctx.log.info("Got request to provide asset types. But do nothing.")
-          Behaviors.same
-        case (ctx, Terminate) =>
-          ctx.log.info("Stopping input data provider")
-          stopBehavior
-      }
-      .receiveSignal { case (ctx, PostStop) => postStopCleanUp(ctx.log) }
+  // internal api
+  sealed trait InputDataEvent
 
-  /** Partial function to perform cleanup tasks while shutting down
-    */
-  override protected val cleanUp: () => Unit = () => {
-    /* Nothing to do here. At least until now. */
+  // actor data
+  protected final case class ProviderData(
+      ctx: ActorContext[InputDataEvent],
+      buffer: StashBuffer[InputDataEvent],
+      osmSource: OsmSource
+  )
+
+  def apply(
+      osmConfig: OsmoGridConfig.Input
+  ): Behavior[InputDataEvent] = {
+    Behaviors.withStash[InputDataEvent](100) { buffer =>
+      Behaviors.setup[InputDataEvent] { ctx =>
+        idle(
+          ProviderData(ctx, buffer, OsmSource(osmConfig.osm, ctx))
+        )
+      }
+    }
+  }
+
+  private def idle(providerData: ProviderData): Behavior[InputDataEvent] =
+    Behaviors
+      .receive[InputDataEvent] { case (ctx, msg) =>
+        msg match {
+          case ReqOsm(replyTo, filter) =>
+            ctx.pipeToSelf(
+              providerData.osmSource.read(filter)
+            ) {
+              case Success(osmoGridModel: OsmoGridModel) =>
+                RepOsm(osmoGridModel)
+              case Failure(exception) =>
+                ctx.log.error(
+                  s"Error while reading osm data: $exception"
+                )
+                OsmReadFailed(exception)
+            }
+            readOsmData(providerData, replyTo)
+          case ReqAssetTypes(_) =>
+            ctx.log.info("Got request to provide asset types. But do nothing.")
+            Behaviors.same
+          case Terminate =>
+            terminate(ctx.log, providerData)
+          case invalid: (OsmReadFailed | RepOsm) =>
+            ctx.log.error(
+              s"Received unexpected message '$invalid' in state Idle! Ignoring!"
+            )
+            Behaviors.same
+        }
+      }
+      .receiveSignal { case (ctx, PostStop) =>
+        postStopCleanUp(ctx.log, providerData)
+      }
+
+  private def readOsmData(
+      providerData: ProviderData,
+      replyTo: ActorRef[InputDataProvider.Response]
+  ): Behaviors.Receive[InputDataEvent] =
+    Behaviors.receiveMessage {
+      case osmResponse: RepOsm =>
+        replyTo ! osmResponse
+        providerData.buffer.unstashAll(idle(providerData))
+      case readFailed: OsmReadFailed =>
+        replyTo ! readFailed
+        providerData.buffer.unstashAll(idle(providerData))
+      case other =>
+        providerData.buffer.stash(other)
+        Behaviors.same
+    }
+
+  override protected def cleanUp(providerData: ProviderData): Unit = {
+    providerData.osmSource.close()
   }
 }

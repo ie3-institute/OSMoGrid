@@ -79,7 +79,7 @@ final case class RepLvGrids(grids: Seq[SubGridContainer]) extends Response
   */
 private final case class IdleData(
     cfg: OsmoGridConfig.Generation.Lv,
-    inputDataProvider: ActorRef[InputDataProvider.Request],
+    inputDataProvider: ActorRef[InputDataProvider.InputDataEvent],
     runGuardian: ActorRef[Response],
     msgAdapters: MessageAdapters
 )
@@ -120,7 +120,7 @@ private final case class AwaitingData(
       response: InputDataProvider.Response,
       log: Logger
   ): Try[AwaitingData] = response match {
-    case InputDataProvider.RepOsm(_, osmModel) =>
+    case InputDataProvider.RepOsm(osmModel) =>
       log.debug(s"Received OSM data.")
       Success(copy(osmData = Some(osmModel)))
     case InputDataProvider.RepAssetTypes(assetInformation) =>
@@ -129,12 +129,6 @@ private final case class AwaitingData(
         copy(assetInformation = Some(assetInformation))
       )
     /* Those states correspond to failed operation */
-    case _: InputDataProvider.InvalidOsmRequest =>
-      Failure(
-        RequestFailedException(
-          "The sent OSM data request was invalid. Stop generation."
-        )
-      )
     case InputDataProvider.OsmReadFailed(reason) =>
       Failure(
         RequestFailedException(
@@ -143,7 +137,7 @@ private final case class AwaitingData(
       )
   }
 
-  def isComprehensive(): Boolean =
+  def isComprehensive: Boolean =
     osmData.isDefined && assetInformation.isDefined
 
 }

@@ -75,11 +75,17 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
 
         /* Check if I/O actors and LvCoordinator are spawned and watched correctly */
         idleTestKit.expectEffectPF {
-          case Spawned(_: Behavior[InputDataProvider.Request], name, props) =>
+          case Spawned(
+                _: Behavior[InputDataProvider.InputDataEvent],
+                name,
+                props
+              ) =>
             name shouldBe s"InputDataProvider_$runId"
         }
         idleTestKit
-          .expectEffectType[WatchedWith[InputDataProvider.Request, Watch]]
+          .expectEffectType[
+            WatchedWith[InputDataProvider.InputDataEvent, Watch]
+          ]
         idleTestKit.expectEffectPF {
           case Spawned(_: Behavior[ResultEvent], name, props) =>
             name shouldBe s"PersistenceResultListener_$runId"
@@ -108,7 +114,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
       val resultListenerAdapter =
         testKit.createTestProbe[ResultListener.Response]()
       val inputDataProvider =
-        testKit.createTestProbe[InputDataProvider.Request]()
+        testKit.createTestProbe[InputDataProvider.InputDataEvent]()
       val resultListener = testKit.createTestProbe[ResultEvent]()
       val lvCoordinator = testKit.createTestProbe[coordinator.Request]()
 

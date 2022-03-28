@@ -47,8 +47,19 @@ object ConfigFailFast extends LazyLogging {
 
   private def checkLvConfig(lv: OsmoGridConfig.Generation.Lv): Unit = lv match {
     case Lv(
-          distinctHouseConnections
+          amountOfGridGenerators,
+          amountOfRegionCoordinators,
+          distinctHouseConnections,
+          lv.osm
         ) =>
+      if (amountOfGridGenerators < 1)
+        throw IllegalConfigException(
+          s"The amount of lv grid generation actors needs to be at least 1 (provided: $amountOfGridGenerators)."
+        )
+      if (amountOfRegionCoordinators < 1)
+        throw IllegalConfigException(
+          s"The amount of lv region coordination actors needs to be at least 1 (provided: $amountOfRegionCoordinators)."
+        )
   }
 
   private def checkInputConfig(input: OsmoGridConfig.Input): Unit =

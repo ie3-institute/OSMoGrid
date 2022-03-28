@@ -17,18 +17,81 @@ object OsmoGridConfig {
   )
   object Generation {
     final case class Lv(
-        distinctHouseConnections: scala.Boolean
+        amountOfGridGenerators: scala.Int,
+        amountOfRegionCoordinators: scala.Int,
+        distinctHouseConnections: scala.Boolean,
+        osm: OsmoGridConfig.Generation.Lv.Osm
     )
     object Lv {
+      final case class Osm(
+          filter: scala.Option[OsmoGridConfig.Generation.Lv.Osm.Filter]
+      )
+      object Osm {
+        final case class Filter(
+            building: scala.List[java.lang.String],
+            highway: scala.List[java.lang.String],
+            landuse: scala.List[java.lang.String]
+        )
+        object Filter {
+          def apply(
+              c: com.typesafe.config.Config,
+              parentPath: java.lang.String,
+              $tsCfgValidator: $TsCfgValidator
+          ): OsmoGridConfig.Generation.Lv.Osm.Filter = {
+            OsmoGridConfig.Generation.Lv.Osm.Filter(
+              building =
+                $_L$_str(c.getList("building"), parentPath, $tsCfgValidator),
+              highway =
+                $_L$_str(c.getList("highway"), parentPath, $tsCfgValidator),
+              landuse =
+                $_L$_str(c.getList("landuse"), parentPath, $tsCfgValidator)
+            )
+          }
+        }
+
+        def apply(
+            c: com.typesafe.config.Config,
+            parentPath: java.lang.String,
+            $tsCfgValidator: $TsCfgValidator
+        ): OsmoGridConfig.Generation.Lv.Osm = {
+          OsmoGridConfig.Generation.Lv.Osm(
+            filter =
+              if (c.hasPathOrNull("filter"))
+                scala.Some(
+                  OsmoGridConfig.Generation.Lv.Osm.Filter(
+                    c.getConfig("filter"),
+                    parentPath + "filter.",
+                    $tsCfgValidator
+                  )
+                )
+              else None
+          )
+        }
+      }
+
       def apply(
           c: com.typesafe.config.Config,
           parentPath: java.lang.String,
           $tsCfgValidator: $TsCfgValidator
       ): OsmoGridConfig.Generation.Lv = {
         OsmoGridConfig.Generation.Lv(
+          amountOfGridGenerators =
+            if (c.hasPathOrNull("amountOfGridGenerators"))
+              c.getInt("amountOfGridGenerators")
+            else 10,
+          amountOfRegionCoordinators =
+            if (c.hasPathOrNull("amountOfRegionCoordinators"))
+              c.getInt("amountOfRegionCoordinators")
+            else 5,
           distinctHouseConnections = c.hasPathOrNull(
             "distinctHouseConnections"
-          ) && c.getBoolean("distinctHouseConnections")
+          ) && c.getBoolean("distinctHouseConnections"),
+          osm = OsmoGridConfig.Generation.Lv.Osm(
+            if (c.hasPathOrNull("osm")) c.getConfig("osm")
+            else com.typesafe.config.ConfigFactory.parseString("osm{}"),
+            parentPath + "osm.",
+            $tsCfgValidator
+          )
         )
       }
     }
@@ -271,6 +334,31 @@ object OsmoGridConfig {
     $tsCfgValidator.validate()
     $result
   }
+
+  private def $_L$_str(
+      cl: com.typesafe.config.ConfigList,
+      parentPath: java.lang.String,
+      $tsCfgValidator: $TsCfgValidator
+  ): scala.List[java.lang.String] = {
+    import scala.jdk.CollectionConverters._
+    cl.asScala.map(cv => $_str(cv)).toList
+  }
+  private def $_expE(
+      cv: com.typesafe.config.ConfigValue,
+      exp: java.lang.String
+  ) = {
+    val u: Any = cv.unwrapped
+    new java.lang.RuntimeException(
+      s"${cv.origin.lineNumber}: " +
+        "expecting: " + exp + " got: " +
+        (if (u.isInstanceOf[java.lang.String]) "\"" + u + "\"" else u)
+    )
+  }
+
+  private def $_str(cv: com.typesafe.config.ConfigValue): java.lang.String = {
+    java.lang.String.valueOf(cv.unwrapped())
+  }
+
   final class $TsCfgValidator {
     private val badPaths =
       scala.collection.mutable.ArrayBuffer[java.lang.String]()

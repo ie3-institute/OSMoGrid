@@ -9,13 +9,14 @@ package edu.ie3.osmogrid.lv.coordinator
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
-import edu.ie3.osmogrid.ActorStopSupport
+import edu.ie3.osmogrid.{ActorStopSupport, ActorStopSupportStateless}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.RequestFailedException
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.input.InputDataProvider.{ReqAssetTypes, ReqOsm}
 import edu.ie3.osmogrid.lv.LvRegionCoordinator
-import edu.ie3.osmogrid.model.{OsmoGridModel, PbfFilter}
+import edu.ie3.osmogrid.model.SourceFilter.LvFilter
+import edu.ie3.osmogrid.model.OsmoGridModel
 import org.slf4j.Logger
 
 import java.util.UUID
@@ -23,7 +24,7 @@ import scala.util.{Failure, Success, Try}
 
 /** Actor to take care of the overall generation process for low voltage grids
   */
-object LvCoordinator extends ActorStopSupport[Request] {
+object LvCoordinator extends ActorStopSupportStateless[Request] {
 
   /** Build a [[LvCoordinator]] with given additional information
     *
@@ -38,7 +39,7 @@ object LvCoordinator extends ActorStopSupport[Request] {
     */
   def apply(
       cfg: OsmoGridConfig.Generation.Lv,
-      inputDataProvider: ActorRef[InputDataProvider.Request],
+      inputDataProvider: ActorRef[InputDataProvider.InputDataEvent],
       runGuardian: ActorRef[Response]
   ): Behavior[Request] = Behaviors.setup[Request] { context =>
     /* Define message adapters */
@@ -75,14 +76,22 @@ object LvCoordinator extends ActorStopSupport[Request] {
 
         /* Ask for OSM data */
         val run = UUID.randomUUID()
+        val filter = stateData.cfg.osm.filter
+          .map(cfg =>
+            LvFilter(
+              cfg.building.toSet,
+              cfg.highway.toSet,
+              cfg.landuse.toSet
+            )
+          )
+          .getOrElse(LvFilter())
+
         stateData.inputDataProvider ! ReqOsm(
-          runId = run,
           replyTo = stateData.msgAdapters.inputDataProvider,
-          filter = PbfFilter.DummyFilter
+          filter = filter
         )
         /* Ask for grid asset data */
         stateData.inputDataProvider ! ReqAssetTypes(
-          runId = run,
           replyTo = stateData.msgAdapters.inputDataProvider
         )
 
@@ -153,7 +162,7 @@ object LvCoordinator extends ActorStopSupport[Request] {
       ctx: ActorContext[Request]
   ): Behavior[Request] = {
     /* Check, if everything is in place */
-    if (awaitingData.isComprehensive()) {
+    if (awaitingData.isComprehensive) {
       /* Process the data */
       ctx.log.debug("All awaited data is present. Start processing.")
 
@@ -167,8 +176,7 @@ object LvCoordinator extends ActorStopSupport[Request] {
 
       /* Wait for results to come up */
       awaitResults(awaitingData.guardian, awaitingData.msgAdapters)
-    } else
-      awaitInputData(awaitingData) // Wait for missing data
+    } else awaitInputData(awaitingData) // Wait for missing data
   }
 
   /** State to receive results from subordinate actors
@@ -218,9 +226,7 @@ object LvCoordinator extends ActorStopSupport[Request] {
       postStopCleanUp(ctx.log)
     }
 
-  /** Partial function to perform cleanup tasks while shutting down
-    */
-  override protected val cleanUp: () => Unit = () => {
+  override protected def cleanUp(): Unit = {
     /* Nothing to do here. At least until now. */
   }
 }

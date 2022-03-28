@@ -58,7 +58,7 @@ sealed trait Response
 final case class Done(runId: UUID) extends Response
 
 private final case class ChildReferences(
-    inputDataProvider: ActorRef[InputDataProvider.Request],
+    inputDataProvider: ActorRef[InputDataProvider.InputDataEvent],
     resultListener: Option[ActorRef[ResultListener.ResultEvent]],
     additionalResultListeners: Seq[ActorRef[ResultListener.ResultEvent]],
     lvCoordinator: Option[ActorRef[coordinator.Request]]

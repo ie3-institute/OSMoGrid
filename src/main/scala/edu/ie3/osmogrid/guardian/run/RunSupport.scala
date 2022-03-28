@@ -107,7 +107,7 @@ private trait RunSupport {
       outputConfig: OsmoGridConfig.Output,
       ctx: ActorContext[Request]
   ): (
-      ActorRef[InputDataProvider.Request],
+      ActorRef[InputDataProvider.InputDataEvent],
       Option[ActorRef[ResultListener.ResultEvent]]
   ) = (
     spawnInputDataProvider(runId, inputConfig, ctx),
@@ -129,7 +129,7 @@ private trait RunSupport {
       runId: UUID,
       inputConfig: OsmoGridConfig.Input,
       ctx: ActorContext[Request]
-  ): ActorRef[InputDataProvider.Request] = {
+  ): ActorRef[InputDataProvider.InputDataEvent] = {
     ctx.log.info("Starting input data provider ...")
     val inputProvider =
       ctx.spawn(
@@ -191,7 +191,7 @@ private trait RunSupport {
     */
   private def startLvGridGeneration(
       runId: UUID,
-      inputDataProvider: ActorRef[InputDataProvider.Request],
+      inputDataProvider: ActorRef[InputDataProvider.InputDataEvent],
       lvConfig: OsmoGridConfig.Generation.Lv,
       lvCoordinatorAdapter: ActorRef[coordinator.Response],
       ctx: ActorContext[Request]

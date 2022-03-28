@@ -36,12 +36,15 @@ import edu.ie3.osmogrid.lv.coordinator.MessageAdapters.{
   WrappedRegionResponse
 }
 import edu.ie3.osmogrid.lv.{LvRegionCoordinator, coordinator}
-import edu.ie3.osmogrid.model.{DummyOsmoGridModel, OsmoGridModel}
+import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
+import edu.ie3.osmogrid.model.SourceFilter.LvFilter
+import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.test.common.UnitSpec
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.event.Level
 
 import java.util.UUID
+import scala.collection.parallel.ParSeq
 
 class LvCoordinatorSpec
     extends ScalaTestWithActorTestKit
@@ -54,7 +57,7 @@ class LvCoordinatorSpec
       fail("Test config does not contain config for lv grid generation.")
     )
     val inputDataProvider =
-      asynchronousTestKit.createTestProbe[InputDataProvider.Request](
+      asynchronousTestKit.createTestProbe[InputDataProvider.InputDataEvent](
         "InputDataProvider"
       )
     val lvCoordinatorAdapter =
@@ -224,7 +227,16 @@ class LvCoordinatorSpec
             )
           )(awaitingData)
         )
-        val osmData = InputDataProvider.RepOsm(runId, DummyOsmoGridModel)
+        val osmData = InputDataProvider.RepOsm(
+          LvOsmoGridModel(
+            ParSeq.empty,
+            ParSeq.empty,
+            ParSeq.empty,
+            ParSeq.empty,
+            ParSeq.empty,
+            LvFilter()
+          )
+        )
 
         awaitingTestKit.run(WrappedInputDataResponse(osmData))
         awaitingTestKit.hasEffects() shouldBe false
