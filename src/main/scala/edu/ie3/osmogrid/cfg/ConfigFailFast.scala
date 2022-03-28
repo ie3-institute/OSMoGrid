@@ -49,7 +49,8 @@ object ConfigFailFast extends LazyLogging {
     case Lv(
           amountOfGridGenerators,
           amountOfRegionCoordinators,
-          distinctHouseConnections
+          distinctHouseConnections,
+          lv.osm
         ) =>
       if (amountOfGridGenerators < 1)
         throw IllegalConfigException(

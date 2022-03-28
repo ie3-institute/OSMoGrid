@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" height="601px" preserveAspectRatio="none" style="width:801px;height:601px;background:#FFFFFF;" version="1.1" viewBox="0 0 801 601" width="801px" zoomAndPan="magnify"><defs/><g><g id="idle"><rect fill="#FFFFFF" height="52.5938" rx="12.5" ry="12.5" style="stroke:#000000;stroke-width:1.0;" width="202" x="431" y="92"/><line style="stroke:#000000;stroke-width:1.0;" x1="431" x2="633" y1="118.2969" y2="118.2969"/><text fill="#000000" font-family="Verdana" font-size="14" lengthAdjust="spacing" textLength="24" x="520" y="109.9951">idle</text><text fill="#000000" font-family="Verdana" font-size="14" lengthAdjust="spacing" textLength="182" x="436" y="136.292">Awaiting arbitrary requests</text></g><g id="awaitLvGrids"><rect fill="#FFFFFF" height="68.8906" rx="12.5" ry="12.5" style="stroke:#000000;stroke-width:1.0;" width="176" x="360" y="222"/><line style="stroke:#000000;stroke-width:1.0;" x1="360" x2="536" y1="248.2969" y2="248.2969"/><text fill="#000000" font-family="Verdana" font-size="14" lengthAdjust="spacing" textLength="85" x="405.5" y="239.9951">awaitLvGrids</text><text fill="#000000" font-family="Verdana" font-size="14" lengthAdjust="spacing" textLength="117" x="365" y="266.292">Await low voltage</text><text fill="#000000" font-family="Verdana" font-size="14" lengthAdjust="spacing" textLength="156" x="365" y="282.5889">grid generation results</text></g><g id="awaitShutDown"><rect fill="#FFFFFF" height="85.1875" rx="12.5" ry="12.5" style="stroke:#000000;stroke-width:1.0;" width="176" x="12" y="413"/><line style="stroke:#000000;stroke-width:1.0;" x1="12" x2="188" y1="439.2969" y2="439.2969"/><text fill="#000000" font-family="Verdana" font-size="14" lengthAdjust="spacing" textLength="107" x="46.5" y="430.9951">awaitShutDown</text><text fill="#000000" font-family="Verdana" font-size="14" lengthAdjust="spacing" textLength="127" x="17" y="457.292">Awaiting reports in</text><text fill="#000000" font-family="Verdana" font-size="14" lengthAdjust="spacing" textLength="156" x="17" y="473.5889">coordinated shutdown</text><text fill="#000000" font-family="Verdana" font-size="14" lengthAdjust="spacing" textLength="43" x="17" y="489.8857">phase</text></g><ellipse cx="532" cy="21" fill="#000000" rx="10" ry="10" style="stroke:none;stroke-width:1.0;"/><ellipse cx="448" cy="585" fill="none" rx="10" ry="10" style="stroke:#000000;stroke-width:1.0;"/><ellipse cx="448.5" cy="585.5" fill="#000000" rx="6" ry="6" style="stroke:none;stroke-width:1.0;"/><!--MD5=[583e8850357656d6f71ed436b986edf1]
+link *start to idle--><g id="link_*start_idle"><path d="M532,31.16 C532,43.79 532,67.18 532,86.43 " fill="none" id="*start-to-idle" style="stroke:#000000;stroke-width:1.0;"/><polygon fill="#000000" points="532,91.74,536,82.74,532,86.74,528,82.74,532,91.74" style="stroke:#000000;stroke-width:1.0;"/></g><!--MD5=[c70ff4736dea714b98e9125a505913d8]
+link idle to awaitLvGrids--><g id="link_idle_awaitLvGrids"><path d="M473.6,145.21 C462.14,153.06 451.63,162.9 445,175 C438.11,187.56 437.22,202.96 438.62,216.91 " fill="none" id="idle-to-awaitLvGrids" style="stroke:#000000;stroke-width:1.0;"/><polygon fill="#000000" points="439.24,221.97,442.1296,212.5546,438.6392,217.0062,434.1875,213.5159,439.24,221.97" style="stroke:#000000;stroke-width:1.0;"/><text fill="#000000" font-family="Verdana" font-size="13" lengthAdjust="spacing" textLength="143" x="446" y="188.0669">!Run(OsmoGridConfig)</text></g><!--MD5=[52b4f22644ee286136e3cfa332831305]
+link idle to *end--><g id="link_idle_*end"><path d="M570.68,145.13 C580.07,153.44 588.87,163.53 594,175 C652.73,306.39 642.24,372.95 571,498 C546.09,541.72 488.76,568.42 462.11,578.9 " fill="none" id="idle-to-*end" style="stroke:#000000;stroke-width:1.0;"/><polygon fill="#000000" points="457.2,580.78,467.035,581.3027,461.8704,578.9947,464.1785,573.8301,457.2,580.78" style="stroke:#000000;stroke-width:1.0;"/><text fill="#000000" font-family="Verdana" font-size="13" lengthAdjust="spacing" textLength="149" x="638.5" y="334.0669">!InputDataProviderDied</text><text fill="#000000" font-family="Verdana" font-size="13" lengthAdjust="spacing" textLength="160" x="633" y="349.1997">!ResultEventListenerDied</text><text fill="#000000" font-family="Verdana" font-size="13" lengthAdjust="spacing" textLength="123" x="651.5" y="364.3325">!LvCoordinatorDied</text><text fill="#000000" font-family="Verdana" font-size="13" font-style="italic" lengthAdjust="spacing" textLength="113" x="656.5" y="379.4653">unsupported msg</text></g><!--MD5=[67a2bd767a2aaad23f9e01babb20b2da]
+link awaitLvGrids to awaitShutDown--><g id="link_awaitLvGrids_awaitShutDown"><path d="M359.96,269.31 C289.79,280.19 198.56,298.12 169,321 C141.11,342.59 123.44,378.6 112.96,407.79 " fill="none" id="awaitLvGrids-to-awaitShutDown" style="stroke:#000000;stroke-width:1.0;"/><polygon fill="#000000" points="111.22,412.78,117.9783,405.6158,112.8781,408.0629,110.431,402.9628,111.22,412.78" style="stroke:#000000;stroke-width:1.0;"/><text fill="#000000" font-family="Verdana" font-size="13" lengthAdjust="spacing" textLength="251" x="170" y="356.5669">!RepLvGrids(Vector[SubGridContainer])</text></g><!--MD5=[ef3511f091395279e02b39c0efa01470]
+link awaitLvGrids to *end--><g id="link_awaitLvGrids_*end"><path d="M448,291.21 C448,361.5 448,521.18 448,569.73 " fill="none" id="awaitLvGrids-to-*end" style="stroke:#000000;stroke-width:1.0;"/><polygon fill="#000000" points="448,574.84,452,565.84,448,569.84,444,565.84,448,574.84" style="stroke:#000000;stroke-width:1.0;"/><text fill="#000000" font-family="Verdana" font-size="13" font-style="italic" lengthAdjust="spacing" textLength="113" x="449" y="460.0669">unsupported msg</text></g><!--MD5=[0ad018df42d4f79f2883fd03a95be2c1]
+link awaitShutDown to awaitShutDown--><g id="link_awaitShutDown_awaitShutDown"><path d="M188.18,440.85 C208.27,442.14 223,447.02 223,455.5 C223,463.25 210.69,467.99 193.23,469.74 " fill="none" id="awaitShutDown-to-awaitShutDown" style="stroke:#000000;stroke-width:1.0;"/><polygon fill="#000000" points="188.18,470.15,197.4711,473.4174,193.164,469.7501,196.8313,465.4431,188.18,470.15" style="stroke:#000000;stroke-width:1.0;"/><text fill="#000000" font-family="Verdana" font-size="13" lengthAdjust="spacing" textLength="160" x="229" y="460.0669">!ResultEventListenerDied</text></g><!--MD5=[0039a974e754444297da54ae612638d0]
+link awaitShutDown to *end--><g id="link_awaitShutDown_*end"><path d="M172.74,498.08 C203.79,514.5 240.91,532.41 276,545 C332.16,565.15 402.49,577.22 432.87,581.84 " fill="none" id="awaitShutDown-to-*end" style="stroke:#000000;stroke-width:1.0;"/><polygon fill="#000000" points="438.06,582.61,429.7522,577.3204,433.1152,581.869,428.5666,585.232,438.06,582.61" style="stroke:#000000;stroke-width:1.0;"/><text fill="#000000" font-family="Verdana" font-size="13" lengthAdjust="spacing" textLength="144" x="277" y="541.0669">InputDataProviderDied</text></g><!--MD5=[775e7fed4cf6a27ff7d558c2b1fefe58]
+@startuml
+'https://plantuml.com/state-diagram
+
+!theme plain
+hide empty description
+
+idle: Awaiting arbitrary requests
+awaitLvGrids: Await low voltage\ngrid generation results
+awaitShutDown: Awaiting reports in\ncoordinated shutdown\nphase
+
+[*] - -> idle
+idle - -> awaitLvGrids: !Run(OsmoGridConfig)
+idle - -> [*]: !InputDataProviderDied\n!ResultEventListenerDied\n!LvCoordinatorDied\n//unsupported msg//
+
+awaitLvGrids - -> awaitShutDown: !RepLvGrids(Vector[SubGridContainer])
+awaitLvGrids - -> [*]: //unsupported msg//
+
+awaitShutDown - -> awaitShutDown: !ResultEventListenerDied
+awaitShutDown - -> [*]: InputDataProviderDied
+@enduml
+
+@startuml
+
+
+
+
+
+
+
+
+<style>
+  root {
+    BackgroundColor white
+    FontColor black
+    FontName Verdana
+    HyperLinkColor blue
+    LineColor black
+    LineThickness 1
+    Margin 5
+  }
+  caption {
+    LineThickness 0
+  }
+  footer {
+    LineThickness 0
+  }
+  header {
+    LineThickness 0
+  }
+  node {
+    MaximumWidth 300
+  }
+  title {
+    FontSize 22
+    LineThickness 0
+  }
+</style>
+
+skinparam ArrowLollipopColor black
+skinparam BackgroundColor white
+skinparam DefaultFontName Verdana
+skinparam DefaultMonospacedFontName Courier
+skinparam LifelineStrategy nosolid
+skinparam ParticipantPadding 10
+skinparam SequenceLifeLineBorderColor black
+skinparam Shadowing false
+skinparam UseBetaStyle true
+
+skinparam Activity {
+  BackgroundColor white
+  BarColor black
+  BorderColor black
+  FontColor black
+  FontName Verdana
+}
+skinparam Boundary {
+  FontColor black
+}
+skinparam Box {
+  Padding 5
+}
+skinparam CircledCharacter {
+  FontColor black
+  FontName Courier
+  Radius 9
+}
+skinparam Class {
+  BackgroundColor white
+  BorderColor black
+  FontColor black
+  FontName Verdana
+}
+skinparam ClassAttribute {
+  FontColor black
+  FontName Verdana
+}
+skinparam ClassStereotype {
+  FontColor black
+  FontName Verdana
+}
+skinparam Footer {
+  FontColor black
+  FontName Verdana
+}
+skinparam Header {
+  FontColor black
+  FontName Verdana
+}
+skinparam Hyperlink {
+  Color blue
+}
+skinparam IconPackage {
+  Color black
+  BackgroundColor white
+}
+skinparam IconPrivate {
+  Color black
+  BackgroundColor white
+}
+skinparam IconProtected {
+  Color black
+  BackgroundColor white
+}
+skinparam IconPublic {
+  Color black
+  BackgroundColor white
+}
+skinparam Note {
+  FontColor black
+  FontName Verdana
+}
+skinparam Object {
+  BorderColor black
+}
+skinparam Package {
+  BorderColor black
+  FontColor black
+  FontName Verdana
+}
+skinparam State {
+  BackgroundColor white
+  BorderColor black
+}
+skinparam StereotypeA {
+  BackgroundColor white
+  BorderColor black
+}
+skinparam StereotypeC {
+  BackgroundColor white
+  BorderColor black
+}
+skinparam StereotypeE {
+  BackgroundColor white
+  BorderColor black
+}
+skinparam StereotypeI {
+  BackgroundColor white
+  BorderColor black
+}
+skinparam StereotypeN {
+  BackgroundColor white
+  BorderColor black
+}
+skinparam UseCaseStereoType {
+  FontColor black
+  FontName Verdana
+}
+hide empty description
+
+idle: Awaiting arbitrary requests
+awaitLvGrids: Await low voltage\ngrid generation results
+awaitShutDown: Awaiting reports in\ncoordinated shutdown\nphase
+
+[*] - -> idle
+idle - -> awaitLvGrids: !Run(OsmoGridConfig)
+idle - -> [*]: !InputDataProviderDied\n!ResultEventListenerDied\n!LvCoordinatorDied\n//unsupported msg//
+
+awaitLvGrids - -> awaitShutDown: !RepLvGrids(Vector[SubGridContainer])
+awaitLvGrids - -> [*]: //unsupported msg//
+
+awaitShutDown - -> awaitShutDown: !ResultEventListenerDied
+awaitShutDown - -> [*]: InputDataProviderDied
+@enduml
+
+PlantUML version 1.2022.2(Sat Mar 05 17:30:19 CET 2022)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Default Encoding: UTF-8
+Language: de
+Country: DE
+--></g></svg>
