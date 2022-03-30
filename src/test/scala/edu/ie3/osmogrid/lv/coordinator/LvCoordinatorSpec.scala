@@ -7,11 +7,7 @@
 package edu.ie3.osmogrid.lv.coordinator
 
 import akka.actor.testkit.typed.CapturedLogEvent
-import akka.actor.testkit.typed.Effect.{
-  MessageAdapter,
-  Spawned,
-  SpawnedAnonymous
-}
+import akka.actor.testkit.typed.Effect.{MessageAdapter, SpawnedAnonymous}
 import akka.actor.testkit.typed.scaladsl.{
   ActorTestKit,
   BehaviorTestKit,
@@ -27,18 +23,17 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.RequestFailedException
 import edu.ie3.osmogrid.guardian.run.RunGuardian
-import edu.ie3.osmogrid.io.input.{BoundaryAdminLevel, InputDataProvider}
 import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
-import edu.ie3.osmogrid.io.output.ResultListener.ResultEvent
+import edu.ie3.osmogrid.io.input.{BoundaryAdminLevel, InputDataProvider}
 import edu.ie3.osmogrid.lv.LvRegionCoordinator.Partition
 import edu.ie3.osmogrid.lv.coordinator.MessageAdapters.{
   WrappedInputDataResponse,
   WrappedRegionResponse
 }
 import edu.ie3.osmogrid.lv.{LvRegionCoordinator, coordinator}
+import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
-import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.test.common.UnitSpec
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.event.Level
