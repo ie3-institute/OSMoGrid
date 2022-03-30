@@ -9,7 +9,6 @@ package edu.ie3.osmogrid.lv
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import edu.ie3.osmogrid.model.OsmoGridModel
-import edu.ie3.util.osm.model.OsmContainer
 
 object MunicipalityCoordinator {
   sealed trait Request

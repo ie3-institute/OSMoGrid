@@ -6,24 +6,18 @@
 
 package edu.ie3.osmogrid.lv.coordinator
 
-import akka.actor.IllegalActorStateException
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
-import edu.ie3.datamodel.models.input.container.SubGridContainer
-import edu.ie3.osmogrid.{ActorStopSupport, ActorStopSupportStateless}
+import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.exception.RequestFailedException
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.input.InputDataProvider.{ReqAssetTypes, ReqOsm}
 import edu.ie3.osmogrid.lv.LvRegionCoordinator
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
-import edu.ie3.osmogrid.model.OsmoGridModel
-import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
-import org.slf4j.Logger
 
 import java.util.UUID
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 /** Actor to take care of the overall generation process for low voltage grids
   */

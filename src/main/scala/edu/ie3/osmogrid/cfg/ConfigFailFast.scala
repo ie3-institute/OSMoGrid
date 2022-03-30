@@ -8,11 +8,10 @@ package edu.ie3.osmogrid.cfg
 
 import akka.actor.typed.ActorRef
 import com.typesafe.scalalogging.LazyLogging
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Input, Output}
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Input, Output}
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.io.output.ResultListener

@@ -11,16 +11,11 @@ import akka.actor.typed.scaladsl.Behaviors
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
-import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.{EnhancedOsmEntity, LvOsmoGridModel}
 import edu.ie3.util.geo.GeoUtils
-import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
 import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
-import edu.ie3.util.osm.model.{OsmContainer, OsmEntity}
-import org.locationtech.jts.geom.{Coordinate, LinearRing, Polygon}
-import org.locationtech.jts.geom.impl.CoordinateArraySequence
-
-import scala.collection.parallel.immutable.ParMap
+import edu.ie3.util.osm.model.OsmEntity
+import org.locationtech.jts.geom.Polygon
 
 object LvRegionCoordinator {
 
