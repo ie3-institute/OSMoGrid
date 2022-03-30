@@ -6,17 +6,20 @@
 
 package edu.ie3.osmogrid.lv.coordinator
 
+import akka.actor.IllegalActorStateException
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.{ActorStopSupport, ActorStopSupportStateless}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.RequestFailedException
+import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.input.InputDataProvider.{ReqAssetTypes, ReqOsm}
 import edu.ie3.osmogrid.lv.LvRegionCoordinator
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.osmogrid.model.OsmoGridModel
+import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import org.slf4j.Logger
 
 import java.util.UUID
@@ -166,12 +169,18 @@ object LvCoordinator extends ActorStopSupportStateless[Request] {
       /* Process the data */
       ctx.log.debug("All awaited data is present. Start processing.")
 
+      val osmoGridModel = awaitingData.osmData
+        .getOrElse(
+          throw new RuntimeException("LvOsmoGridModel is missing!")
+        )
+
       /* Spawn an coordinator for the region */
       ctx.self ! StartGeneration(
         awaitingData.cfg,
         ctx.spawnAnonymous(
           LvRegionCoordinator()
-        )
+        ),
+        osmoGridModel
       )
 
       /* Wait for results to come up */
@@ -193,13 +202,24 @@ object LvCoordinator extends ActorStopSupportStateless[Request] {
       msgAdapters: MessageAdapters
   ): Behavior[Request] = Behaviors
     .receive[Request] {
-      case (ctx, StartGeneration(cfg, regionCoordinator)) =>
-        /* Forward the generation request */
-        regionCoordinator ! LvRegionCoordinator.Partition(
-          cfg,
-          msgAdapters.regionCoordinator
-        )
-        Behaviors.same
+      case (ctx, StartGeneration(cfg, regionCoordinator, osmoGridModel)) =>
+        BoundaryAdminLevel(cfg.boundaryAdminLevel.starting) match {
+          case Some(startingLevel) =>
+            /* Forward the generation request */
+            regionCoordinator ! LvRegionCoordinator.Partition(
+              osmoGridModel,
+              startingLevel,
+              cfg,
+              msgAdapters.regionCoordinator
+            )
+            Behaviors.same
+          case None =>
+            ctx.log.error(
+              s"Cannot parse starting boundary level ${cfg.boundaryAdminLevel.starting}. Shutting down."
+            )
+            stopBehavior
+        }
+
       case (
             ctx,
             MessageAdapters.WrappedRegionResponse(

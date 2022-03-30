@@ -27,7 +27,7 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.RequestFailedException
 import edu.ie3.osmogrid.guardian.run.RunGuardian
-import edu.ie3.osmogrid.io.input.InputDataProvider
+import edu.ie3.osmogrid.io.input.{BoundaryAdminLevel, InputDataProvider}
 import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
 import edu.ie3.osmogrid.io.output.ResultListener.ResultEvent
 import edu.ie3.osmogrid.lv.LvRegionCoordinator.Partition
@@ -260,7 +260,7 @@ class LvCoordinatorSpec
         }
 
         awaitingTestKit.selfInbox().receiveMessage() match {
-          case StartGeneration(lvConfig, _) => lvConfig shouldBe cfg
+          case StartGeneration(lvConfig, _, _) => lvConfig shouldBe cfg
           case unexpected => fail(s"Received unexpected message '$unexpected'.")
         }
       }
@@ -295,7 +295,7 @@ class LvCoordinatorSpec
         val mockedBehavior: Behavior[LvRegionCoordinator.Request] =
           Behaviors.receive[LvRegionCoordinator.Request] { case (ctx, msg) =>
             msg match {
-              case Partition(_, replyTo) =>
+              case Partition(_, _, _, replyTo) =>
                 ctx.log.info(
                   s"Received the following message: '$msg'. Send out reply."
                 )
@@ -308,11 +308,24 @@ class LvCoordinatorSpec
         val mockedLvRegionCoordinator = asynchronousTestKit.spawn(
           Behaviors.monitor(probe.ref, mockedBehavior)
         )
+        val lvOsmoGridModel = LvOsmoGridModel(
+          ParSeq.empty,
+          ParSeq.empty,
+          ParSeq.empty,
+          ParSeq.empty,
+          ParSeq.empty,
+          LvFilter()
+        )
 
         /* Ask the coordinator to start the process */
-        awaitingTestKit.run(StartGeneration(cfg, mockedLvRegionCoordinator))
+        awaitingTestKit.run(
+          StartGeneration(cfg, mockedLvRegionCoordinator, lvOsmoGridModel)
+        )
         probe.expectMessageType[LvRegionCoordinator.Partition] match {
-          case Partition(config, _) => config shouldBe cfg
+          case Partition(osmoGridModel, administrativeLevel, config, _) =>
+            osmoGridModel shouldBe lvOsmoGridModel
+            administrativeLevel shouldBe BoundaryAdminLevel.NationLevel
+            config shouldBe cfg
         }
 
         /* The mocked behavior directly sends a reply -> Check that out */

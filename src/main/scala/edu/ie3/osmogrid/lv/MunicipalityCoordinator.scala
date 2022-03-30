@@ -8,6 +8,7 @@ package edu.ie3.osmogrid.lv
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
+import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.util.osm.model.OsmContainer
 
 object MunicipalityCoordinator {
@@ -16,7 +17,7 @@ object MunicipalityCoordinator {
   sealed trait Response
 
   def apply(
-      osmContainer: OsmContainer
+      osmoGridModel: OsmoGridModel
   ): Behaviors.Receive[Request] = ???
 
   def idle: Behavior[Request] = Behaviors.receive { (ctx, msg) =>

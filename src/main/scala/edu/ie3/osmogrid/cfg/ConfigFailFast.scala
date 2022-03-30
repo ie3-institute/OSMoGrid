@@ -14,6 +14,7 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
 import edu.ie3.osmogrid.exception.IllegalConfigException
+import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.io.output.ResultListener
 
 import scala.util.Try
@@ -47,19 +48,30 @@ object ConfigFailFast extends LazyLogging {
 
   private def checkLvConfig(lv: OsmoGridConfig.Generation.Lv): Unit = lv match {
     case Lv(
-          amountOfGridGenerators,
-          amountOfRegionCoordinators,
-          distinctHouseConnections,
-          lv.osm
+          Lv.BoundaryAdminLevel(
+            lowest,
+            starting
+          ),
+          _,
+          _
         ) =>
-      if (amountOfGridGenerators < 1)
-        throw IllegalConfigException(
-          s"The amount of lv grid generation actors needs to be at least 1 (provided: $amountOfGridGenerators)."
-        )
-      if (amountOfRegionCoordinators < 1)
-        throw IllegalConfigException(
-          s"The amount of lv region coordination actors needs to be at least 1 (provided: $amountOfRegionCoordinators)."
-        )
+      (BoundaryAdminLevel(lowest), BoundaryAdminLevel(starting)) match {
+        case (None, _) =>
+          throw IllegalConfigException(
+            s"The lowest admin level can not be parsed (provided: $lowest)."
+          )
+        case (_, None) =>
+          throw IllegalConfigException(
+            s"The starting admin level can not be parsed (provided: $starting)."
+          )
+        case (Some(lowestParsed), Some(startingParsed))
+            if startingParsed > lowestParsed =>
+          throw IllegalConfigException(
+            s"The starting admin level (provided: $startingParsed) has to be higher than the lowest admin level (provided: $lowestParsed)."
+          )
+        case _ =>
+        // all good, do nothing
+      }
   }
 
   private def checkInputConfig(input: OsmoGridConfig.Input): Unit =

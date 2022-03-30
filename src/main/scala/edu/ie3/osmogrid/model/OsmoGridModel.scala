@@ -24,12 +24,12 @@ sealed trait OsmoGridModel {
 object OsmoGridModel {
 
   final case class LvOsmoGridModel(
-      buildings: ParSeq[EnhancedOsmEntity],
-      highways: ParSeq[EnhancedOsmEntity],
-      landuses: ParSeq[EnhancedOsmEntity],
-      boundaries: ParSeq[EnhancedOsmEntity],
-      existingSubstations: ParSeq[EnhancedOsmEntity],
-      protected val filter: LvFilter
+      buildings: ParSeq[EnhancedOsmEntity[_]],
+      highways: ParSeq[EnhancedOsmEntity[_]],
+      landuses: ParSeq[EnhancedOsmEntity[_]],
+      boundaries: ParSeq[EnhancedOsmEntity[_]],
+      existingSubstations: ParSeq[EnhancedOsmEntity[_]],
+      filter: LvFilter
   ) extends OsmoGridModel {
 
     /** Merges two lv grids, if their filter match. To recombine two lv grids
@@ -116,18 +116,42 @@ object OsmoGridModel {
 
   }
 
-  case class EnhancedOsmEntity(
-      entity: OsmEntity,
+  case class EnhancedOsmEntity[E <: OsmEntity](
+      entity: E,
       subEntities: Map[Long, OsmEntity]
   ) {
     def allSubEntities: Iterable[OsmEntity] = subEntities.values
+
+    def node(id: Long): Option[Node] =
+      subEntities.get(id) match {
+        case Some(n: Node) => Some(n)
+        case _             => None
+      }
+
+    def nodes(ids: Seq[Long]): Seq[Option[Node]] =
+      ids.map(subEntities.get).map {
+        case Some(n: Node) => Some(n)
+        case _             => None
+      }
+
+    def way(id: Long): Option[Way] =
+      subEntities.get(id) match {
+        case Some(w: Way) => Some(w)
+        case _            => None
+      }
+
+    def relation(id: Long): Option[Relation] =
+      subEntities.get(id) match {
+        case Some(r: Relation) => Some(r)
+        case _                 => None
+      }
   }
 
   object EnhancedOsmEntity {
-    def apply(
-        entity: OsmEntity,
+    def apply[E <: OsmEntity](
+        entity: E,
         subEntities: Iterable[OsmEntity]
-    ): EnhancedOsmEntity =
+    ): EnhancedOsmEntity[E] =
       EnhancedOsmEntity(
         entity,
         subEntities.map(ent => ent.id -> ent).toMap
@@ -137,13 +161,13 @@ object OsmoGridModel {
   def filter(
       osmContainer: ParOsmContainer,
       filter: Filter
-  ): ParSeq[EnhancedOsmEntity] =
+  ): ParSeq[EnhancedOsmEntity[_]] =
     filterOr(osmContainer, Set(filter))
 
   def filterOr(
       osmContainer: ParOsmContainer,
       filters: Set[Filter]
-  ): ParSeq[EnhancedOsmEntity] = {
+  ): ParSeq[EnhancedOsmEntity[_]] = {
     val mappedFilter =
       filters.map(filter => (filter.key, filter.tagValues)).toMap
     (osmContainer.nodes.values ++ osmContainer.ways.values ++ osmContainer.relations.values)
