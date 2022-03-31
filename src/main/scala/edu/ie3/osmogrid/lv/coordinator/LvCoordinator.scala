@@ -21,7 +21,7 @@ import scala.util.{Failure, Success}
 
 /** Actor to take care of the overall generation process for low voltage grids
   */
-object LvCoordinator extends ActorStopSupportStateless[Request] {
+object LvCoordinator extends ActorStopSupportStateless {
 
   /** Build a [[LvCoordinator]] with given additional information
     *
