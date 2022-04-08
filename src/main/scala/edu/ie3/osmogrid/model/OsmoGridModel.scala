@@ -8,12 +8,11 @@ package edu.ie3.osmogrid.model
 
 import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
 import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
-import edu.ie3.util.osm.model.{CommonOsmKey, OsmContainer, OsmEntity}
+import edu.ie3.util.osm.model.{OsmContainer, OsmEntity}
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
-import edu.ie3.util.osm.model.CommonOsmKey.{Building, Highway, Landuse}
 import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
 
-import scala.collection.parallel.{ParIterable, ParMap, ParSeq}
+import scala.collection.parallel.ParSeq
 
 sealed trait OsmoGridModel {
   protected val filter: SourceFilter
@@ -24,11 +23,11 @@ sealed trait OsmoGridModel {
 object OsmoGridModel {
 
   final case class LvOsmoGridModel(
-      buildings: ParSeq[EnhancedOsmEntity[_]],
-      highways: ParSeq[EnhancedOsmEntity[_]],
-      landuses: ParSeq[EnhancedOsmEntity[_]],
-      boundaries: ParSeq[EnhancedOsmEntity[_]],
-      existingSubstations: ParSeq[EnhancedOsmEntity[_]],
+      buildings: ParSeq[EnhancedOsmEntity],
+      highways: ParSeq[EnhancedOsmEntity],
+      landuses: ParSeq[EnhancedOsmEntity],
+      boundaries: ParSeq[EnhancedOsmEntity],
+      existingSubstations: ParSeq[EnhancedOsmEntity],
       filter: LvFilter
   ) extends OsmoGridModel {
 
@@ -116,8 +115,8 @@ object OsmoGridModel {
 
   }
 
-  case class EnhancedOsmEntity[E <: OsmEntity](
-      entity: E,
+  case class EnhancedOsmEntity(
+      entity: OsmEntity,
       subEntities: Map[Long, OsmEntity]
   ) {
     def allSubEntities: Iterable[OsmEntity] = subEntities.values
@@ -148,10 +147,10 @@ object OsmoGridModel {
   }
 
   object EnhancedOsmEntity {
-    def apply[E <: OsmEntity](
-        entity: E,
+    def apply(
+        entity: OsmEntity,
         subEntities: Iterable[OsmEntity]
-    ): EnhancedOsmEntity[E] =
+    ): EnhancedOsmEntity =
       EnhancedOsmEntity(
         entity,
         subEntities.map(ent => ent.id -> ent).toMap
@@ -161,13 +160,13 @@ object OsmoGridModel {
   def filter(
       osmContainer: ParOsmContainer,
       filter: Filter
-  ): ParSeq[EnhancedOsmEntity[_]] =
+  ): ParSeq[EnhancedOsmEntity] =
     filterOr(osmContainer, Set(filter))
 
   def filterOr(
       osmContainer: ParOsmContainer,
       filters: Set[Filter]
-  ): ParSeq[EnhancedOsmEntity[_]] = {
+  ): ParSeq[EnhancedOsmEntity] = {
     val mappedFilter =
       filters.map(filter => (filter.key, filter.tagValues)).toMap
     (osmContainer.nodes.values ++ osmContainer.ways.values ++ osmContainer.relations.values)

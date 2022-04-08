@@ -6,10 +6,9 @@
 
 package edu.ie3.osmogrid.io.input.pbf
 
-import akka.actor.typed.{ActorRef, Behavior, PostStop, SupervisorStrategy}
+import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, Routers}
 import com.acervera.osm4scala.BlobTupleIterator
-import com.acervera.osm4scala.model.{NodeEntity, RelationEntity, WayEntity}
 import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.exception.PbfReadFailedException
 import edu.ie3.osmogrid.io.input.pbf.PbfGuardian.StateData
@@ -18,7 +17,6 @@ import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 import edu.ie3.util.osm.model.OsmContainer
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
-import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
 
 import java.io.{File, FileInputStream, InputStream}
 import java.util.UUID

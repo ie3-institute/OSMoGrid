@@ -17,9 +17,9 @@ object MunicipalityCoordinator {
 
   def apply(
       osmoGridModel: OsmoGridModel
-  ): Behaviors.Receive[Request] = ???
+  ): Behaviors.Receive[Request] = idle()
 
-  def idle: Behavior[Request] = Behaviors.receive { (ctx, msg) =>
+  def idle(): Behaviors.Receive[Request] = Behaviors.receive { (ctx, msg) =>
     ctx.log.info(s"Received a message: $msg")
     Behaviors.same
   }

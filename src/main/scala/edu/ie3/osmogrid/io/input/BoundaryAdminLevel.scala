@@ -6,7 +6,9 @@
 
 package edu.ie3.osmogrid.io.input
 
-/** https://wiki.openstreetmap.org/wiki/Tag:boundary%3Dadministrative
+/** Represents the levels of
+  * [[https://wiki.openstreetmap.org/wiki/Tag:boundary%3Dadministrative administrative boundaries]]
+  * in OSM
   */
 enum BoundaryAdminLevel(val osmLevel: Int) extends Ordered[BoundaryAdminLevel] {
 
