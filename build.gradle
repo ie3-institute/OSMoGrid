@@ -3,9 +3,9 @@ plugins {
   id 'java' //java support
   id 'scala'
   id 'pmd' // code check, working on source code
-  id 'com.diffplug.spotless' version '6.4.0'//code format
+  id 'com.diffplug.spotless' version '6.4.2'//code format
   id 'com.github.spotbugs' version '5.0.6' // code check, working on byte code
-  id 'de.undercouch.download' version '5.0.2'
+  id 'de.undercouch.download' version '5.0.4'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.32" // run scalatest without specific spec task
   id "org.sonarqube" version "3.3" // sonarqube
