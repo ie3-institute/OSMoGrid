@@ -10,10 +10,11 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Collections
 import edu.ie3.datamodel.graph.{DistanceWeightedEdge, DistanceWeightedGraph}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
+import edu.ie3.osmogrid.exception.MissingOsmDataException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.model.OsmoGridModel.EnhancedOsmEntity
 import edu.ie3.util.geo.GeoUtils
-import edu.ie3.util.geo.GeoUtils.buildCoordinate
+import edu.ie3.util.geo.GeoUtils.{buildCoordinate, calcHaversine}
 import edu.ie3.util.osm.OsmUtils
 import edu.ie3.util.osm.model.OsmEntity.Way
 import edu.ie3.util.osm.model.OsmEntity.Way.{ClosedWay, OpenWay}
@@ -22,10 +23,14 @@ import edu.ie3.util.quantities.interfaces.PowerDensity
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.math.{Vector2D, Vector3D}
 import tech.units.indriya.ComparableQuantity
+import edu.ie3.util.geo.RichGeometries.RichPolygon
+import edu.ie3.util.geo.RichGeometries.RichCoordinate
 
+import java.util.UUID
 import javax.measure.quantity.Length
 import scala.collection.immutable.{AbstractSeq, LinearSeq}
 import scala.collection.parallel.{ParSeq, immutable}
+import scala.util.{Failure, Success, Try}
 
 object LvGridGenerator {
   sealed trait Request
@@ -34,10 +39,10 @@ object LvGridGenerator {
   final case class RepLvGrid(grid: SubGridContainer) extends Response
 
   final case class BuildingGraphConnection(
-    building: ClosedWay,
-    center: Coordinate,
-    connectedHighway: Way,
-    nearestNode: Node
+      building: ClosedWay,
+      center: Coordinate,
+      connectedHighway: Way,
+      nearestNode: Node
   )
 
   def apply(): Behaviors.Receive[Request] = idle
@@ -49,16 +54,17 @@ object LvGridGenerator {
   }
 
   // Process:
-    // buildStreetGraph
-    // calcBuildingGraphConnection
-    // updateGraph
-    // removeEmptyLandUses
-    // cleanGraph (?) remove unneccessary dead ends
-    // createClusters
-    // createSubgraphs(clusters)
+  // buildStreetGraph
+  // calcBuildingGraphConnection
+  // updateGraph
+  // removeEmptyLandUses
+  // cleanGraph (?) remove unneccessary dead ends
+  // createClusters
+  // createSubgraphs(clusters)
 
-
-  private def buildStreetGraph(enhancedEntities: Seq[EnhancedOsmEntity]): OsmGraph = {
+  private def buildStreetGraph(
+      enhancedEntities: Seq[EnhancedOsmEntity]
+  ): OsmGraph = {
 //      val graph = new OsmGraph()
 //      enhancedEntities.foreach(enhancedEntity => {
 //        // todo: unsafe
@@ -81,94 +87,181 @@ object LvGridGenerator {
     ???
   }
 
-  private def buildStreetGraph(ways: Seq[Way], nodes: Map[Long, Node]): OsmGraph = {
+  private def buildStreetGraph(
+      ways: Seq[Way],
+      nodes: Map[Long, Node]
+  ): OsmGraph = {
     val graph = new OsmGraph()
     ways.foreach(way => {
       val nodeIds = way.nodes
-      nodeIds.sliding(2).foreach {
-        case Seq(nodeAId, nodeBId) =>
-          val nodeA = nodes.getOrElse(nodeAId, throw IllegalArgumentException(s"Node $nodeAId of Way ${way.id} is not within our nodes mapping"))
-          val nodeB = nodes.getOrElse(nodeBId, throw IllegalArgumentException(s"Node $nodeBId of Way ${way.id} is not within our nodes mapping"))
-          graph.addVertex(nodeA)
-          graph.addVertex(nodeB)
-          // calculate edge weight
-          val weight = GeoUtils.calcHaversine(nodeA.latitude, nodeA.longitude, nodeB.latitude, nodeB.longitude)
-          // create edge and add edge to rawGraph
-          val e = new DistanceWeightedEdge()
-          graph.setEdgeWeight(e, weight.getValue.doubleValue)
-          graph.addEdge(nodeA, nodeB, e) // TODO: consider checking boolean from this method
+      nodeIds.sliding(2).foreach { case Seq(nodeAId, nodeBId) =>
+        val nodeA = nodes.getOrElse(
+          nodeAId,
+          throw IllegalArgumentException(
+            s"Node $nodeAId of Way ${way.id} is not within our nodes mapping"
+          )
+        )
+        val nodeB = nodes.getOrElse(
+          nodeBId,
+          throw IllegalArgumentException(
+            s"Node $nodeBId of Way ${way.id} is not within our nodes mapping"
+          )
+        )
+        graph.addVertex(nodeA)
+        graph.addVertex(nodeB)
+        // calculate edge weight
+        val weight = GeoUtils.calcHaversine(
+          nodeA.latitude,
+          nodeA.longitude,
+          nodeB.latitude,
+          nodeB.longitude
+        )
+        // create edge and add edge to rawGraph
+        val e = new DistanceWeightedEdge()
+        graph.setEdgeWeight(e, weight.getValue.doubleValue)
+        graph.addEdge(nodeA, nodeB, e) // TODO: consider checking boolean from this method
       }
-  })
+    })
     graph
   }
 
-  private def calcPerpendicularDistanceMatrix(buildings: Seq[EnhancedOsmEntity], comparableQuantity: ComparableQuantity[PowerDensity]) = {
+  private def calcPerpendicularDistanceMatrix(
+      buildings: Seq[EnhancedOsmEntity],
+      comparableQuantity: ComparableQuantity[PowerDensity]
+  ) = {
     ???
   }
 
   // todo: I probably can do this parallel to building the street graph
-  private def calcBuildingGraphConnections(buildings: Seq[ClosedWay], highways: Seq[Way], nodes: Map[Long, Node], comparableQuantity: ComparableQuantity[PowerDensity]): Seq[BuildingGraphConnection] = {
+  private def calcBuildingGraphConnections(
+      landuses: Seq[ClosedWay],
+      buildings: Seq[ClosedWay],
+      highways: Seq[Way],
+      nodes: Map[Long, Node],
+      comparableQuantity: ComparableQuantity[PowerDensity],
+      minDistance: ComparableQuantity[Length]
+  ): Seq[BuildingGraphConnection] = {
 
     // for all buildings
-    buildings.map(
-      building => {
-        // check if building is inside residential area
-        if(OsmUtils.isInsideLandUse(building)) {
-          // for all ways
-          highways.foreach(highway => {
-            highway.nodes.sliding(2).foreach{
-              // for every two nodes of way
-              case Seq(nodeAId, nodeBId) =>
+    buildings.map(building => {
+      val buildingCenter: Coordinate = ???
+      // check if building is inside residential area
+      if (isInsideLandUse(building)) {
+        // for all ways
+        val closestOverall = highways.map(highway => {
+          highway.nodes.sliding(2).map {
+            // for every two nodes of way
+            case Seq(nodeAId, nodeBId) =>
               // calculate orthogonal projection
-                val nodeA = nodes.getOrElse(nodeAId, throw IllegalArgumentException(s"Node $nodeAId of Way ${highway.id} is not within our nodes mapping"))
-                val coordinateA = buildCoordinate(nodeA.latitude, nodeA.longitude)
-                val nodeB = nodes.getOrElse(nodeBId, throw IllegalArgumentException(s"Node $nodeBId of Way ${highway.id} is not within our nodes mapping"))
-                val coordinateB = buildCoordinate(nodeB.latitude, nodeB.longitude)
-                val orthogonalProjection = orthogonalProjection(coordinateA, coordinateB)
-                // if orthogonal point is on the line
-                if(orthogonalProjection.isBetween(coordinateA, coordinateB)){
-
-                }
-                // take it since this is the closest we will get
-            }
-          })
-          // todo: What if this point is not actually between the points of the line
-
-        // todo: what is the minimum distance to not create a new point but use an existing one?
-
-        // if orthogonal point is not on the line
-        // take smallest of start and end of line
+              getClosest(buildingCenter, nodeAId, nodeBId, nodes, minDistance) match {
+                case Failure(exc) =>
+                  throw MissingOsmDataException(
+                    s"Could not retrieve closes nodes for highway ${highway.id}", exc
+                  )
+                case Success(closest) => closest
+              }
+            // todo: it might be faster to go with a reduce operation
+          } minBy { _._1 }
+        }) minBy { _._1 }
 
         // calculate load of house
 
         // return Seq[(House, BuildingGraphConnection)]
-
-        }
       }
-    )
+    })
   }
 
+  def isInsideLanduse(
+      landuses: Seq[ClosedWay],
+      buildingCenter: Coordinate
+  ): Boolean = {
+    for (landuse <- landuses) {
+      if (landuse.containsCoordinate(buildingCenter)) return True
+    }
+
+  }
 
   // todo: Knoten die nur Knickpunkte sind werden rausgefiltert -> LF Berechnung -> Knicks als Geoposition
 
-  private def getClosest() = {
-    ???
+  private def getClosest(
+      buildingCenter: Coordinate,
+      linePtA: Long,
+      linePtB: Long,
+      nodes: Map[Long, Node],
+      minDistance: ComparableQuantity[Length]
+  ): Try[(ComparableQuantity[Length], Node)] =
+    (nodes.get(linePtA), nodes.get(linePtB)) match {
+      case (Some(nodeA), Some(nodeB)) =>
+        val coordinateA = buildCoordinate(nodeA.latitude, nodeA.longitude)
+        val coordinateB = buildCoordinate(nodeB.latitude, nodeB.longitude)
+        val orthogonalPt =
+          orthogonalProjection(buildingCenter, coordinateA, coordinateB)
+        // if orthogonal point is on the line
+        // take it since this is the closest we will get
+        if (
+          orthogonalPt.isBetween(
+            coordinateA,
+            coordinateB
+          ) && ((orthogonalPt haversineDistance coordinateA) isGreaterThan minDistance)
+            && ((orthogonalPt haversineDistance coordinateB) isGreaterThan minDistance)
+        ) {
+          Node(
+            id = UUID.randomUUID().getMostSignificantBits,
+            latitude = orthogonalPt.y,
+            longitude = orthogonalPt.x,
+            tags = Map(),
+            metaInformation = None
+          )
+        }
+        val coordinateADistance = buildingCenter.haversineDistance(coordinateA)
+        val coordinateBDistance = buildingCenter.haversineDistance(coordinateB)
+        if (coordinateADistance.isLessThan(coordinateBDistance))
+          Success((coordinateADistance, nodeA))
+        else Success((coordinateBDistance, nodeB))
+      case (None, _) =>
+        Failure(
+          IllegalArgumentException(
+            s"Node $linePtA is not within our nodes mapping"
+          )
+        )
+      case (_, None) =>
+        Failure(
+          IllegalArgumentException(
+            s"Node $linePtB is not within our nodes mapping"
+          )
+        )
+    }
+
+  private def orthogonalProjection(
+      linePtA: Coordinate,
+      linePtB: Coordinate,
+      pt: Coordinate
+  ): Coordinate = {
+    orthogonalProjection(
+      Vector2D.create(linePtA),
+      Vector2D.create(linePtB),
+      Vector2D.create(pt)
+    ).toCoordinate
   }
 
-
-  private def orthogonalProjection(linePtA: Coordinate, linePtB: Coordinate, pt: Coordinate): Coordinate = {
-    orthogonalProjection(Vector2D.create(linePtA), Vector2D.create(linePtB), Vector2D.create(pt)).toCoordinate
-  }
-
-  /** Calculate the orthogonal projection of a point onto a line
-    * Check out how and why this https://stackoverflow.com/questions/54009832/scala-orthogonal-projection-of-a-point-onto-a-line
+  /** Calculate the orthogonal projection of a point onto a line Check out how
+    * and why this
+    * https://stackoverflow.com/questions/54009832/scala-orthogonal-projection-of-a-point-onto-a-line
     *
-    * @param linePtA first point of the line
-    * @param linePtB second point of the line
-    * @param pt the point for which to calculate the projection
-    * @return the projected point
+    * @param linePtA
+    *   first point of the line
+    * @param linePtB
+    *   second point of the line
+    * @param pt
+    *   the point for which to calculate the projection
+    * @return
+    *   the projected point
     */
-  private def orthogonalProjection(pt: Vector2D, linePtA: Vector2D, linePtB: Vector2D): Vector2D = {
+  private def orthogonalProjection(
+      pt: Vector2D,
+      linePtA: Vector2D,
+      linePtB: Vector2D
+  ): Vector2D = {
     val v = linePtA.subtract(pt)
     val d = linePtB.subtract(linePtA)
     linePtA.add(d.multiply((v dot d) / d.lengthSquared()))

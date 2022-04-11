@@ -1,3 +1,9 @@
+/*
+ * © 2022. TU Dortmund University,
+ * Institute of Energy Systems, Energy Efficiency and Energy Economics,
+ * Research group Distribution grid planning and operation
+ */
+
 package edu.ie3.osmogrid.graph
 
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
@@ -10,22 +16,32 @@ import org.jgrapht.graph.SimpleWeightedGraph
 import org.jgrapht.util.SupplierUtil
 import tech.units.indriya.ComparableQuantity
 
-
 @SerialVersionUID(-2797654003980753341L)
-class OsmGraph(vertexSupplier: Supplier[Node], edgeSupplier: Supplier[DistanceWeightedEdge])
-  extends SimpleWeightedGraph[Node, DistanceWeightedEdge] (vertexSupplier, edgeSupplier) {
+class OsmGraph(
+    vertexSupplier: Supplier[Node],
+    edgeSupplier: Supplier[DistanceWeightedEdge]
+) extends SimpleWeightedGraph[Node, DistanceWeightedEdge](
+      vertexSupplier,
+      edgeSupplier
+    ) {
 
   def this() = {
     this(null, SupplierUtil.createSupplier(classOf[DistanceWeightedEdge]))
   }
 
-  def setEdgeWeight(edge: DistanceWeightedEdge, weight: ComparableQuantity[Length]): Unit = {
-    val weightDouble: Double = weight.to(DistanceWeightedEdge.DEFAULT_DISTANCE_UNIT).getValue.doubleValue
+  def setEdgeWeight(
+      edge: DistanceWeightedEdge,
+      weight: ComparableQuantity[Length]
+  ): Unit = {
+    val weightDouble: Double =
+      weight.to(DistanceWeightedEdge.DEFAULT_DISTANCE_UNIT).getValue.doubleValue
     super.setEdgeWeight(edge, weightDouble)
   }
 
-
-  override final def setEdgeWeight(edge: DistanceWeightedEdge, distanceInMeters: Double): Unit = {
+  override final def setEdgeWeight(
+      edge: DistanceWeightedEdge,
+      distanceInMeters: Double
+  ): Unit = {
     super.setEdgeWeight(edge, distanceInMeters)
   }
 }
