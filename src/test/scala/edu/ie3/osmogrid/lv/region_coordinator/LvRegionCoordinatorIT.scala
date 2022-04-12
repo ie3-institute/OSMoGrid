@@ -23,11 +23,10 @@ import org.scalatest.BeforeAndAfterAll
 class LvRegionCoordinatorIT
     extends ScalaTestWithActorTestKit
     with UnitSpec
-    with BeforeAndAfterAll
-    with LvRegionCoordinatorTestModel {
-  private val actorTestKit = ActorTestKit("LvRegionCoordinatorIT")
+    with BeforeAndAfterAll {
 
-  private val (lvConfig, osmoGridModel) = readOsmModel(actorTestKit)
+  private val osmoGridModel = LvRegionCoordinatorTestModel.osmoGridModel
+  private val lvConfig = LvRegionCoordinatorTestModel.lvConfig
 
   "Partitioning osm data" when {
     "having more iterations to go" should {

@@ -21,14 +21,17 @@ import java.nio.file.Paths
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
-trait LvRegionCoordinatorTestModel
+object LvRegionCoordinatorTestModel
     extends ScalaTestWithActorTestKit
     with OptionValues
     with TryValues {
 
-  protected def readOsmModel(
-      actorTestKit: ActorTestKit
-  ): (OsmoGridConfig.Generation.Lv, LvOsmoGridModel) = {
+  private val actorTestKit = ActorTestKit("LvRegionCoordinatorIT")
+
+  lazy val (lvConfig, osmoGridModel) = readOsmModel()
+
+  protected def readOsmModel()
+      : (OsmoGridConfig.Generation.Lv, LvOsmoGridModel) = {
     val inputResource = getClass.getResource("DoBoCas.pbf")
     assert(inputResource != null)
     val resourcePath =

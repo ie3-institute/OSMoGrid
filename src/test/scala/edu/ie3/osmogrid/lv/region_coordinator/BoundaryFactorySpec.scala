@@ -15,11 +15,9 @@ import scala.io.Source
 import scala.util.Using
 import scala.collection.parallel.CollectionConverters.*
 
-class BoundaryFactorySpec extends UnitSpec with LvRegionCoordinatorTestModel {
+class BoundaryFactorySpec extends UnitSpec {
 
-  private val actorTestKit = ActorTestKit("LvRegionCoordinatorIT")
-
-  private val (_, osmoGridModel) = readOsmModel(actorTestKit)
+  private val osmoGridModel = LvRegionCoordinatorTestModel.osmoGridModel
 
   // polygons can be manually validated e.g. in QGIS
   "Creating boundary polygons from osm data" when {
