@@ -25,12 +25,13 @@ import edu.ie3.osmogrid.exception.RequestFailedException
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
 import edu.ie3.osmogrid.io.input.{BoundaryAdminLevel, InputDataProvider}
-import edu.ie3.osmogrid.lv.LvRegionCoordinator.Partition
+import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator.Partition
 import edu.ie3.osmogrid.lv.coordinator.MessageAdapters.{
   WrappedInputDataResponse,
   WrappedRegionResponse
 }
-import edu.ie3.osmogrid.lv.{LvRegionCoordinator, coordinator}
+import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
