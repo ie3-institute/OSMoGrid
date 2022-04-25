@@ -5,7 +5,7 @@ plugins {
   id 'pmd' // code check, working on source code
   id 'com.diffplug.spotless' version '6.4.2'//code format
   id 'com.github.spotbugs' version '5.0.6' // code check, working on byte code
-  id 'de.undercouch.download' version '5.0.4'
+  id 'de.undercouch.download' version '5.0.5'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.32" // run scalatest without specific spec task
   id "org.sonarqube" version "3.3" // sonarqube
@@ -16,7 +16,7 @@ ext {
   javaVersion = JavaVersion.VERSION_17
 
   scalaMajorVersion = '3'
-  scalaVersion = '3.1.1'
+  scalaVersion = '3.1.2'
   akkaVersion = '2.6.19'
 
   tscfgVersion = '0.9.995'
@@ -107,12 +107,12 @@ dependencies {
   implementation 'math.geom2d:javaGeom:0.11.1'
   implementation 'info.picocli:picocli:4.6.3' // command line interface
 
-  spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.11.0'
+  spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.12.0'
 
   // testing
   testImplementation 'junit:junit:4.13.2'
   testImplementation 'cglib:cglib-nodep:3.3.0' // enables mocking of classes (in addition to interfaces)
-  testImplementation 'org.mockito:mockito-core:4.4.0' // mocking framework
+  testImplementation 'org.mockito:mockito-core:4.5.1' // mocking framework
   testImplementation 'org.scalatestplus:mockito-3-12_3:3.2.10.0' // syntactic sugar
 
   testImplementation 'org.spockframework:spock-core:2.1-groovy-3.0'
