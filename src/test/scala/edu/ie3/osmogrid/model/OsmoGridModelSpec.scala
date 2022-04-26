@@ -33,8 +33,8 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
         nodes.building1Node2,
         nodes.building1Node3,
         nodes.building1Node4,
-        nodes.highwayNode1,
-        nodes.highwayNode2,
+        nodes.highway1Node1,
+        nodes.highway1Node2,
         nodes.landuseNode1,
         nodes.landuseNode2,
         nodes.landuseNode3,
@@ -48,7 +48,7 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
 
       val testWays = Seq(
         ways.building1,
-        ways.highway,
+        ways.highway1,
         ways.landuse,
         ways.boundaryWay1,
         ways.boundaryWay2
@@ -95,10 +95,10 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
       result.highways.size shouldBe 1
       result.highways.seq should contain(
         EnhancedOsmEntity(
-          ways.highway,
+          ways.highway1,
           Iterable(
-            nodes.highwayNode1,
-            nodes.highwayNode2
+            nodes.highway1Node1,
+            nodes.highway1Node2
           )
         )
       )
@@ -141,10 +141,10 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
     "be merged correctly" in {
       Given("two exemplary LvOsmoGridModels")
       val highwayEnhanced = EnhancedOsmEntity(
-        ways.highway,
+        ways.highway1,
         Iterable(
-          nodes.highwayNode1,
-          nodes.highwayNode2
+          nodes.highway1Node1,
+          nodes.highway1Node2
         )
       )
 
@@ -205,10 +205,10 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
     "not be merged if filters are different" in {
       Given("two exemplary LvOsmoGridModels")
       val highwayEnhanced = EnhancedOsmEntity(
-        ways.highway,
+        ways.highway1,
         Iterable(
-          nodes.highwayNode1,
-          nodes.highwayNode2
+          nodes.highway1Node1,
+          nodes.highway1Node2
         )
       )
 
@@ -276,13 +276,13 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
         nodes.building1Node2,
         nodes.building1Node3,
         nodes.building1Node4,
-        nodes.highwayNode1,
-        nodes.highwayNode2
+        nodes.highway1Node1,
+        nodes.highway1Node2
       )
 
       val testWays = Seq(
         ways.building1,
-        ways.highway
+        ways.highway1
       )
 
       val testRelations = Seq.empty[Relation]
@@ -322,8 +322,8 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
         nodes.building1Node2,
         nodes.building1Node3,
         nodes.building1Node4,
-        nodes.highwayNode1,
-        nodes.highwayNode2,
+        nodes.highway1Node1,
+        nodes.highway1Node2,
         nodes.landuseNode1,
         nodes.landuseNode2,
         nodes.landuseNode3,
@@ -332,7 +332,7 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
 
       val testWays = Seq(
         ways.building1,
-        ways.highway,
+        ways.highway1,
         ways.landuse
       )
 

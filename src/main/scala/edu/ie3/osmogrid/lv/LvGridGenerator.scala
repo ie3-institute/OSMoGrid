@@ -9,27 +9,36 @@ package edu.ie3.osmogrid.lv
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Collections
 import edu.ie3.datamodel.graph.{DistanceWeightedEdge, DistanceWeightedGraph}
+import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.exception.MissingOsmDataException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.model.OsmoGridModel.EnhancedOsmEntity
-import edu.ie3.util.geo.GeoUtils
+import edu.ie3.util.geo.{GeoUtils, RichGeometries}
 import edu.ie3.util.geo.GeoUtils.{buildCoordinate, calcHaversine}
 import edu.ie3.util.osm.OsmUtils
 import edu.ie3.util.osm.model.OsmEntity.Way
 import edu.ie3.util.osm.model.OsmEntity.Way.{ClosedWay, OpenWay}
 import edu.ie3.util.osm.model.OsmEntity.Node
-import edu.ie3.util.quantities.interfaces.PowerDensity
-import org.locationtech.jts.geom.Coordinate
+import edu.ie3.util.quantities.interfaces.{Irradiance, PowerDensity}
+import org.locationtech.jts.geom.{Coordinate, Polygon}
 import org.locationtech.jts.math.{Vector2D, Vector3D}
 import tech.units.indriya.ComparableQuantity
 import edu.ie3.util.geo.RichGeometries.RichPolygon
 import edu.ie3.util.geo.RichGeometries.RichCoordinate
+import edu.ie3.util.osm.OsmUtils.GeometryUtils
+import edu.ie3.util.osm.OsmUtils.GeometryUtils.buildPolygon
+import edu.ie3.util.quantities.{PowerSystemUnits, QuantityUtil}
+import tech.units.indriya.quantity.Quantities
+import tech.units.indriya.unit.Units
 
+import javax.measure.Unit
 import java.util.UUID
-import javax.measure.quantity.Length
+import javax.measure.Quantity
+import javax.measure.quantity.{Area, Length, Power}
 import scala.collection.immutable.{AbstractSeq, LinearSeq}
 import scala.collection.parallel.{ParSeq, immutable}
+import scala.math.BigDecimal.RoundingMode
 import scala.util.{Failure, Success, Try}
 
 object LvGridGenerator {
@@ -41,6 +50,7 @@ object LvGridGenerator {
   final case class BuildingGraphConnection(
       building: ClosedWay,
       center: Coordinate,
+      buildingPower: ComparableQuantity[Power],
       connectedHighway: Way,
       nearestNode: Node
   )
@@ -79,9 +89,9 @@ object LvGridGenerator {
 //          // calculate edge weight
 //          val weight = GeoUtils.calcHaversine(nodeA.latitude, nodeA.longitude, nodeB.latitude, nodeB.longitude)
 //          // create edge and add edge to rawGraph
-//          val e = new DistanceWeightedEdge()
-//          graph.setEdgeWeight(e, weight.getValue.doubleValue)
-//          graph.addEdge(nodeA, nodeB, e) // TODO: consider checking boolean from this method
+//          val edge = new DistanceWeightedEdge()
+//          graph.setEdgeWeight(edge, weight.getValue.doubleValue)
+//          graph.addEdge(nodeA, nodeB, edge) // TODO: consider checking boolean from this method
 //        }})
 //      graph
     ???
@@ -109,7 +119,6 @@ object LvGridGenerator {
         )
         graph.addVertex(nodeA)
         graph.addVertex(nodeB)
-        // calculate edge weight
         val weight = GeoUtils.calcHaversine(
           nodeA.latitude,
           nodeA.longitude,
@@ -117,9 +126,9 @@ object LvGridGenerator {
           nodeB.longitude
         )
         // create edge and add edge to rawGraph
-        val e = new DistanceWeightedEdge()
-        graph.setEdgeWeight(e, weight.getValue.doubleValue)
-        graph.addEdge(nodeA, nodeB, e) // TODO: consider checking boolean from this method
+        val edge = new DistanceWeightedEdge()
+        graph.setEdgeWeight(edge, weight.getValue.doubleValue)
+        graph.addEdge(nodeA, nodeB, edge) // TODO: consider checking boolean from this method
       }
     })
     graph
@@ -138,51 +147,87 @@ object LvGridGenerator {
       buildings: Seq[ClosedWay],
       highways: Seq[Way],
       nodes: Map[Long, Node],
-      comparableQuantity: ComparableQuantity[PowerDensity],
+      powerDensity: ComparableQuantity[Irradiance],
       minDistance: ComparableQuantity[Length]
   ): Seq[BuildingGraphConnection] = {
-
-    // for all buildings
-    buildings.map(building => {
-      val buildingCenter: Coordinate = ???
+    val landusePolygons = landuses.map(landuse =>
+      buildPolygon(landuse, nodes) match {
+        case Failure(exc) =>
+          throw MissingOsmDataException(
+            s"Could not convert landuse with id: ${landuse.id} since node was not part of nodes mapping",
+            exc
+          )
+        case Success(polygon) => polygon
+      }
+    )
+    buildings.flatMap(building => {
+      val buildingPolygon = buildPolygon(building, nodes) match {
+        case Failure(exc) =>
+          throw MissingOsmDataException(
+            s"Could not convert building with id: ${building.id} since node was not part of nodes mapping",
+            exc
+          )
+        case Success(polygon) => polygon
+      }
+      val buildingCenter: Coordinate = buildingPolygon.getCentroid.getCoordinate
       // check if building is inside residential area
-      if (isInsideLandUse(building)) {
-        // for all ways
+      if (isInsideLanduse(buildingCenter, landusePolygons)) {
         val closestOverall = highways.map(highway => {
           highway.nodes.sliding(2).map {
-            // for every two nodes of way
             case Seq(nodeAId, nodeBId) =>
-              // calculate orthogonal projection
-              getClosest(buildingCenter, nodeAId, nodeBId, nodes, minDistance) match {
+              val (distance, node) = getClosest(
+                buildingCenter,
+                nodeAId,
+                nodeBId,
+                nodes,
+                minDistance
+              ) match {
                 case Failure(exc) =>
                   throw MissingOsmDataException(
-                    s"Could not retrieve closes nodes for highway ${highway.id}", exc
+                    s"Could not retrieve closest nodes for highway ${highway.id}",
+                    exc
                   )
                 case Success(closest) => closest
               }
+              (distance, node, highway)
             // todo: it might be faster to go with a reduce operation
-          } minBy { _._1 }
-        }) minBy { _._1 }
-
+          } minBy {
+            _._1
+          }
+        }) minBy {
+          _._1
+        }
         // calculate load of house
-
-        // return Seq[(House, BuildingGraphConnection)]
+        val load = calcPower(buildingPolygon.calcAreaOnEarth, powerDensity)
+        Some(BuildingGraphConnection(building, buildingCenter, load, closestOverall._3, closestOverall._2))
       }
+      else None
     })
   }
 
   def isInsideLanduse(
-      landuses: Seq[ClosedWay],
-      buildingCenter: Coordinate
+    buildingCenter: Coordinate,
+    landuses: Seq[Polygon]
   ): Boolean = {
     for (landuse <- landuses) {
-      if (landuse.containsCoordinate(buildingCenter)) return True
+      if (landuse.containsCoordinate(buildingCenter)) return true
     }
-
+    false
   }
 
   // todo: Knoten die nur Knickpunkte sind werden rausgefiltert -> LF Berechnung -> Knicks als Geoposition
 
+  /** Get closest point of the buildings center to the highway section spanning linePtA and linePtB. If we find
+    * a point closer to the building center that is not linePtA nor linePtB we only take it if it is sufficiently
+    * far away (further than minDistance) otherwise we go with line point nearby to not inflate the number of points.
+    *
+    * @param buildingCenter center coordinate of the building
+    * @param linePtA point a of the way section
+    * @param linePtB point b of the way section
+    * @param nodes node id to node map
+    * @param minDistance minimum distance for creating a new point
+    * @return a Tuple of the distance and the point
+    */
   private def getClosest(
       buildingCenter: Coordinate,
       linePtA: Long,
@@ -203,7 +248,7 @@ object LvGridGenerator {
             coordinateA,
             coordinateB
           ) && ((orthogonalPt haversineDistance coordinateA) isGreaterThan minDistance)
-            && ((orthogonalPt haversineDistance coordinateB) isGreaterThan minDistance)
+          && ((orthogonalPt haversineDistance coordinateB) isGreaterThan minDistance)
         ) {
           Node(
             id = UUID.randomUUID().getMostSignificantBits,
@@ -265,6 +310,28 @@ object LvGridGenerator {
     val v = linePtA.subtract(pt)
     val d = linePtB.subtract(linePtA)
     linePtA.add(d.multiply((v dot d) / d.lengthSquared()))
+  }
+
+  /**
+    * Calculates the power value of a household load based on the provided building area and the
+    * provided average power density value and the provided average household area size
+    *
+    * @param area area of the household
+    * @param powerDensity average power per area
+    */
+  private def calcPower(area: ComparableQuantity[Area], powerDensity: ComparableQuantity[Irradiance]): ComparableQuantity[Power] = {
+    val power = area.to(Units.SQUARE_METRE)
+      .multiply(powerDensity.to(PowerSystemUnits.WATT_PER_SQUAREMETRE))
+      .asType(classOf[Power])
+      .to(PowerSystemUnits.KILOWATT)
+    round(power, 4)
+  }
+
+  // todo: move to PowerSystemUtils -> QuantityUtils
+  private def round[T <: Quantity[T]](quantity: ComparableQuantity[T], decimals: Int): ComparableQuantity[T] = {
+    if (decimals < 0) throw IllegalArgumentException("You can not round to negative decimal places.")
+    val rounded = BigDecimal.valueOf(quantity.getValue.doubleValue()).setScale(decimals, RoundingMode.HALF_UP).doubleValue
+    Quantities.getQuantity(rounded, quantity.getUnit)
   }
 
 }
