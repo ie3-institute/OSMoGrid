@@ -14,8 +14,4 @@
 
 ### Take raw street graph with loads and build grid graph
 
-### Build GridContainer for grid of substation 
-
-
-
-
+### Build GridContainer for grid of substation

@@ -121,9 +121,9 @@ object OsmoGridConfig {
 
   object Grid {
     val ratedVoltage = 0.4
-    val voltageLevel = 0.4
+    val voltageLevel = "LV"
 
-
+    /*
     private def $_reqBln(parentPath: String, c: Config, path: String, $tsCfgValidator: OsmoGridConfig.$TsCfgValidator): Boolean = {
       if (c == null) return false
       try c.getBoolean(path)
@@ -154,10 +154,15 @@ object OsmoGridConfig {
           null
       }
     }
-
+     */
   }
 
-  class Grid(val c: Config, val parentPath: String, val $tsCfgValidator: OsmoGridConfig.$TsCfgValidator) {
+  class Grid(
+      val c: Config,
+      val parentPath: String,
+      val $tsCfgValidator: OsmoGridConfig.$TsCfgValidator
+  ) {
+    /*
     this.averagePowerDensity = Grid.$_reqDbl(parentPath, c, "averagePowerDensity", $tsCfgValidator)
     this.considerHouseConnectionPoints = Grid.$_reqBln(parentPath, c, "considerHouseConnectionPoints", $tsCfgValidator)
     this.ignoreClustersSmallerThan = Grid.$_reqDbl(parentPath, c, "ignoreClustersSmallerThan", $tsCfgValidator)
@@ -168,9 +173,9 @@ object OsmoGridConfig {
     this.ratedVoltageHigherNet = Grid.$_reqDbl(parentPath, c, "ratedVoltageHigherNet", $tsCfgValidator)
     this.separateClustersByLandUses = Grid.$_reqBln(parentPath, c, "separateClustersByLandUses", $tsCfgValidator)
     this.voltageLevel = Grid.$_reqStr(parentPath, c, "voltageLevel", $tsCfgValidator)
+     */
 
     val averagePowerDensity = .0
-
     val considerHouseConnectionPoints = false
     val ignoreClustersSmallerThan = .0
     val lineType: String = null
@@ -182,14 +187,13 @@ object OsmoGridConfig {
     val voltageLevel: String = null
   }
 
-
   final case class Runtime(
-                          )
+  )
   object Runtime {
-    //TODO: tbd
+    // TODO: tbd
     val name = "Test"
-    }
-  
+  }
+
   final case class Input(
       asset: OsmoGridConfig.Input.Asset,
       osm: OsmoGridConfig.Input.Osm
@@ -465,9 +469,7 @@ object OsmoGridConfig {
   }
 
   object Io {
-    //TODO: refactor readTypes
-    //val readTypes = "TestReadTypes"
-
+    /*
     private def $_reqBln(parentPath: String, c: Config, path: String, $tsCfgValidator: OsmoGridConfig.$TsCfgValidator): Boolean = {
       if (c == null) return false
       try c.getBoolean(path)
@@ -487,23 +489,27 @@ object OsmoGridConfig {
           null
       }
     }
+     */
 
-    def typeSourceFormat() ={
-
-    }
   }
 
-  class Io(val c: Config, val parentPath: String, val $tsCfgValidator: OsmoGridConfig.$TsCfgValidator) {
-    /*this.pbfFilePath = Io.$_reqStr(parentPath, c, "pbfFilePath", $tsCfgValidator)
+  class Io(
+      val c: Config,
+      val parentPath: String,
+      val $tsCfgValidator: OsmoGridConfig.$TsCfgValidator
+  ) {
+    /*
+    this.pbfFilePath = Io.$_reqStr(parentPath, c, "pbfFilePath", $tsCfgValidator)
     this.readTypes = Io.$_reqBln(parentPath, c, "readTypes", $tsCfgValidator)
     this.targetFormat = Io.$_reqStr(parentPath, c, "targetFormat", $tsCfgValidator)
     this.typeSourceFormat = Io.$_reqStr(parentPath, c, "typeSourceFormat", $tsCfgValidator)
-    this.write = Io.$_reqBln(parentPath, c, "write", $tsCfgValidator)*/
-    final var pbfFilePath: String = null
-    final var readTypes = false
-    final var targetFormat: String = null
-    final var typeSourceFormat: String = null
-    final var write = false
+    this.write = Io.$_reqBln(parentPath, c, "write", $tsCfgValidator)
+     */
+    val pbfFilePath: String = null
+    val readTypes = false
+    val targetFormat: String = null
+    val typeSourceFormat: String = null
+    val write = false
   }
 
 }
