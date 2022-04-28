@@ -55,6 +55,7 @@ dependencies {
 
   // scala core
   implementation "org.scala-lang:scala-library:${scalaBinaryVersion}"
+  implementation group: 'org.scala-lang.modules', name: 'scala-parallel-collections_3', version: '1.0.4'
 
   // akka
   implementation "com.typesafe.akka:akka-actor-typed_${scalaVersion}:${akkaVersion}"
