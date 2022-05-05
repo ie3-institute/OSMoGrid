@@ -7,6 +7,7 @@
 package edu.ie3.osmogrid.lv
 
 import akka.actor.typed.scaladsl.Behaviors
+import de.osmogrid.util.OsmoGridUtils
 import edu.ie3.datamodel.graph.{DistanceWeightedEdge, DistanceWeightedGraph}
 import edu.ie3.datamodel.io.naming.FileNamingStrategy
 import edu.ie3.datamodel.io.source.TypeSource
@@ -79,7 +80,6 @@ import java.util
 import scala.util.{Failure, Success, Try}
 import scala.collection.parallel.{ParSeq, immutable}
 import scala.jdk.CollectionConverters.*
-//import scala.collection.JavaConversions._
 import scala.language.postfixOps
 
 object LvGridGenerator {
