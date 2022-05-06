@@ -12,8 +12,8 @@ object LvGridGeneratorSpec extends UnitSpec with OsmTestData {
     "build a street graph correctly" in {
       val buildStreetGraph = PrivateMethod[OsmGraph](Symbol("buildStreetGraph"))
       val waySeq = Seq(ways.highway1, ways.highway2, nodes.nodesMap)
-      val actual = LvGridGenerator invokePrivate buildStreetGraph(ways, nodes.nodesMap)
-      actual.vertexSet.length shouldBe 4
+      val actual: OsmGraph = LvGridGenerator invokePrivate buildStreetGraph(waySeq, nodes.nodesMap)
+      actual.vertexSet().size() shouldBe 4
     }
 
     // what happens when not all ways are connected to one another?
