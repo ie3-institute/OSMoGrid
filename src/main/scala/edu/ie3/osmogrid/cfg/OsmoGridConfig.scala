@@ -204,16 +204,16 @@ object OsmoGridConfig {
     this.voltageLevel =
       Grid.$_reqStr(parentPath, c, "voltageLevel", $tsCfgValidator)
 
-    val averagePowerDensity = .0
-    val considerHouseConnectionPoints = false
-    val ignoreClustersSmallerThan = .0
-    val lineType: String = null
-    val loadSubstation = .0
-    val nominalPower = .0
-    val ratedVoltage = .0
-    val ratedVoltageHigherNet = .0
-    val separateClustersByLandUses = false
-    val voltageLevel: String = null
+    var averagePowerDensity = .0
+    var considerHouseConnectionPoints = false
+    var ignoreClustersSmallerThan = .0
+    var lineType: String = null
+    var loadSubstation = .0
+    var nominalPower = .0
+    var ratedVoltage = .0
+    var ratedVoltageHigherNet = .0
+    var separateClustersByLandUses = false
+    var voltageLevel: String = null
   }
 
   final case class Runtime(
@@ -545,11 +545,11 @@ object OsmoGridConfig {
     this.typeSourceFormat =
       Io.$_reqStr(parentPath, c, "typeSourceFormat", $tsCfgValidator)
     this.write = Io.$_reqBln(parentPath, c, "write", $tsCfgValidator)
-    val pbfFilePath: String = null
-    val readTypes = false
-    val targetFormat: String = null
-    val typeSourceFormat: String = null
-    val write = false
+    var pbfFilePath: String = null
+    var readTypes = false
+    var targetFormat: String = null
+    var typeSourceFormat: String = null
+    var write = false
   }
 
 }
