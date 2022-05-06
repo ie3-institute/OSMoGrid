@@ -10,6 +10,7 @@ import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.util.OneToOneMap
 import edu.ie3.util.quantities.PowerSystemUnits
 import edu.ie3.util.quantities.QuantityUtils
+import edu.ie3.util.quantities.interfaces.PowerDensity
 
 import java.util
 import java.util.stream.Collectors
@@ -104,13 +105,13 @@ object OsmoGridUtils {
     * @return
     *   Calculated LineString from the given LatLon list.
     */
-  def latLonsToLineString(latLons: Collection[LatLon]): LineString = {
+  def latLonsToLineString(latLons: util.Collection[LatLon]): LineString = {
     val geometryFactory = new GeometryFactory
     var geoPosition = null
     if (latLons.size >= 2) {
       val coordinates = new Array[Coordinate](latLons.size)
       var cnt = 0
-      for (latLon <- latLons) {
+      for (latLon <- latLons.asScala) {
         coordinates({ cnt += 1; cnt - 1 }) =
           new Coordinate(latLon.getLon, latLon.getLat)
       }
@@ -123,11 +124,11 @@ object OsmoGridUtils {
     geoPosition
   }
   def buildNodeCodeMap(
-      nodes: Collection[NodeInput]
+      nodes: util.Collection[NodeInput]
   ): OneToOneMap[String, Integer] = {
     val nodeCodeMap = new OneToOneMap[String, Integer](nodes.size)
     var counter = 0
-    for (node <- nodes) {
+    for (node <- nodes.asScala) {
       nodeCodeMap.put(node.getId, counter)
       counter += 1
     }
