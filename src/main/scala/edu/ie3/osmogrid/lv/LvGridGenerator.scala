@@ -7,7 +7,8 @@
 package edu.ie3.osmogrid.lv
 
 import akka.actor.typed.scaladsl.Behaviors
-import de.osmogrid.util.OsmoGridUtils
+import de.osmogrid.util.{OsmoGridUtils, TypeSourceFormat}
+import de.osmogrid.util.TypeSourceFormat.TypeSourceFormat
 import edu.ie3.datamodel.graph.{DistanceWeightedEdge, DistanceWeightedGraph}
 import edu.ie3.datamodel.io.naming.FileNamingStrategy
 import edu.ie3.datamodel.io.source.TypeSource
@@ -372,7 +373,7 @@ object LvGridGenerator {
   private def loadTypes(): Unit = {
     var typeSource: TypeSource = null
     val sourceFormat: TypeSourceFormat =
-      TypeSourceFormat.valueOf(OsmoGridConfig.Io.typeSourceFormat)
+      TypeSourceFormat.values(OsmoGridConfig.Io.typeSourceFormat)
     if (OsmoGridConfig.Io.readTypes) {
       if (sourceFormat eq TypeSourceFormat.CSV) {
         typeSource = new CsvTypeSource(";", "", new FileNamingStrategy)

@@ -9,6 +9,7 @@ package de.osmogrid.util
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.util.OneToOneMap
 import edu.ie3.util.quantities.PowerSystemUnits
+import edu.ie3.util.quantities.QuantityUtils
 
 import java.util
 import java.util.stream.Collectors
@@ -61,7 +62,7 @@ object OsmoGridUtils {
     * @return
     */
   def toJavaAwtPoint(point: Point) =
-    new Point(point.getX.toInt, point.getY.toInt)
+    new Point(point.getCoordinate, point.getPrecisionModel, point.getSRID)
 
   /** Calculates the power value of a household load based on the provided
     * building area and the provided average power density value and the
@@ -79,7 +80,7 @@ object OsmoGridUtils {
       .multiply(density.to(OsmoGridUnits.WATT_PER_SQUARE_METRE))
       .asType(classOf[Power])
       .to(PowerSystemUnits.KILOWATT)
-    QuantityUtils.ceil(power).asType(classOf[Power])
+    QuantityUtils.ceil(Power).asType(classOf[Power])
   }
 
   /** Calculates the geo position as a {@link LineString} from a given
