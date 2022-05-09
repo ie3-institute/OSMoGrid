@@ -21,6 +21,20 @@ import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 object LvRegionCoordinator {
 
   sealed trait Request
+
+  /** When receiving such message, the LvRegionCoordinator partitions given
+    * OsmoGrid model by dividing its entities along the administrative
+    * boundaries of given level
+    *
+    * @param osmoGridModel
+    *   The OsmoGrid model to partition
+    * @param administrativeLevel
+    *   The administrative boundary level at which to partition
+    * @param lvConfig
+    *   The configuration for lv grid generation
+    * @param replyTo
+    *   The actor which receives the generated grid data
+    */
   final case class Partition(
       osmoGridModel: LvOsmoGridModel,
       administrativeLevel: BoundaryAdminLevel,
