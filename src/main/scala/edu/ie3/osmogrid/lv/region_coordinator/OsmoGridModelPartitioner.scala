@@ -24,6 +24,11 @@ object OsmoGridModelPartitioner {
   /** Assign all entities of given OsmoGridModel to the given areas. Depending
     * on the type of entity they are assigned to more than one area.
     *
+    * Entities are assigned to boundaries by comparing the amount of associated
+    * points that are covered by each boundary. When using the allocation
+    * strategy [[EntityAllocationStrategy.AssignByMax]], the entity is assigned
+    * to the boundary with the most covered points.
+    *
     * @param osmoGridModel
     *   the OsmoGridModel to partition
     * @param areas
