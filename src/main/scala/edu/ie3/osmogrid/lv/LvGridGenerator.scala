@@ -164,35 +164,20 @@ object LvGridGenerator {
       powerDensity: ComparableQuantity[Irradiance],
       minDistance: ComparableQuantity[Length]
   ): Seq[BuildingGraphConnection] = {
-    val landusePolygons = landuses.map(landuse =>
-      buildPolygon(landuse, nodes) match {
-        case Failure(exc) =>
-          throw MissingOsmDataException(
-            s"Could not convert landuse with id: ${landuse.id} since node was not part of nodes mapping",
-            exc
-          )
-        case Success(polygon) => polygon
-      }
-    )
+    val landusePolygons = landuses.map(buildPolygon(_, nodes).get)
     buildings.flatMap(building => {
-      val buildingPolygon = buildPolygon(building, nodes) match {
-        case Failure(exc) =>
-          throw MissingOsmDataException(
-            s"Could not convert building with id: ${building.id} since node was not part of nodes mapping",
-            exc
-          )
-        case Success(polygon) => polygon
-      }
+      val buildingPolygon = buildPolygon(building, nodes).get
       val buildingCenter: Coordinate = buildingPolygon.getCentroid.getCoordinate
       // check if building is inside residential area
       if (isInsideLanduse(buildingCenter, landusePolygons)) {
-        val closestOverall = highways.flatMap(highway => {
+
+        val closest = highways.flatMap(highway => {
           // get closest to each highway section
           highway.nodes.sliding(2).map { case Seq(nodeAId, nodeBId) =>
             val (distance, node) = getClosest(
-              buildingCenter,
               nodeAId,
               nodeBId,
+              buildingCenter,
               nodes,
               minDistance
             ).getOrElse(
@@ -202,7 +187,9 @@ object LvGridGenerator {
             )
             (distance, node, highway)
           }
-        }) minBy {
+        })
+
+        val closestOverall = closest minBy {
           _._1
         }
         // calculate load of house
@@ -230,13 +217,56 @@ object LvGridGenerator {
     false
   }
 
+  /** Get closest point of the buildings center to the highway section spanning
+    * linePtA and linePtB. If we find a point closer to the building center that
+    * is not linePtA nor linePtB we only take it if it is sufficiently far away
+    * (further than minDistance) otherwise we go with line point nearby to not
+    * inflate the number of nodes.
+    *
+    * @param buildingCenter
+    *   center coordinate of the building
+    * @param wayNodeA
+    *   point a of the way section
+    * @param wayNodeB
+    *   point b of the way section
+    * @param nodes
+    *   node id to node map
+    * @param minDistance
+    *   minimum distance for creating a new point
+    * @return
+    *   a Tuple of the distance and the point
+    */
+  private def getClosest(
+      wayNodeA: Long,
+      wayNodeB: Long,
+      buildingCenter: Coordinate,
+      nodes: Map[Long, Node],
+      minDistance: ComparableQuantity[Length]
+  ): Try[(ComparableQuantity[Length], Node)] =
+    (nodes.get(wayNodeA), nodes.get(wayNodeB)) match {
+      case (Some(nodeA), Some(nodeB)) =>
+        getClosest(nodeA, nodeB, buildingCenter, minDistance)
+      case (None, _) =>
+        Failure(
+          IllegalArgumentException(
+            s"Node $wayNodeA is not within our nodes mapping"
+          )
+        )
+      case (_, None) =>
+        Failure(
+          IllegalArgumentException(
+            s"Node $wayNodeB is not within our nodes mapping"
+          )
+        )
+    }
+
   // todo: Knoten die nur Knickpunkte sind werden rausgefiltert -> LF Berechnung -> Knicks als Geoposition
 
   /** Get closest point of the buildings center to the highway section spanning
     * linePtA and linePtB. If we find a point closer to the building center that
     * is not linePtA nor linePtB we only take it if it is sufficiently far away
     * (further than minDistance) otherwise we go with line point nearby to not
-    * inflate the number of points.
+    * inflate the number of nodes.
     *
     * @param buildingCenter
     *   center coordinate of the building
@@ -252,54 +282,42 @@ object LvGridGenerator {
     *   a Tuple of the distance and the point
     */
   private def getClosest(
+      wayNodeA: Node,
+      wayNodeB: Node,
       buildingCenter: Coordinate,
-      linePtA: Long,
-      linePtB: Long,
-      nodes: Map[Long, Node],
       minDistance: ComparableQuantity[Length]
-  ): Try[(ComparableQuantity[Length], Node)] =
-    (nodes.get(linePtA), nodes.get(linePtB)) match {
-      case (Some(nodeA), Some(nodeB)) =>
-        val coordinateA = buildCoordinate(nodeA.latitude, nodeA.longitude)
-        val coordinateB = buildCoordinate(nodeB.latitude, nodeB.longitude)
-        val orthogonalPt =
-          orthogonalProjection(buildingCenter, coordinateA, coordinateB)
-        // if orthogonal point is on the line
-        // take it since this is the closest we will get
-        if (
-          orthogonalPt.isBetween(
-            coordinateA,
-            coordinateB,
-            1e-6
-          ) && ((orthogonalPt haversineDistance coordinateA) isGreaterThan minDistance)
-          && ((orthogonalPt haversineDistance coordinateB) isGreaterThan minDistance)
-        ) {
-          Node(
-            id = UUID.randomUUID().getMostSignificantBits,
-            latitude = orthogonalPt.y,
-            longitude = orthogonalPt.x,
-            tags = Map(),
-            metaInformation = None
-          )
-        }
-        val coordinateADistance = buildingCenter.haversineDistance(coordinateA)
-        val coordinateBDistance = buildingCenter.haversineDistance(coordinateB)
-        if (coordinateADistance.isLessThan(coordinateBDistance))
-          Success((coordinateADistance, nodeA))
-        else Success((coordinateBDistance, nodeB))
-      case (None, _) =>
-        Failure(
-          IllegalArgumentException(
-            s"Node $linePtA is not within our nodes mapping"
-          )
-        )
-      case (_, None) =>
-        Failure(
-          IllegalArgumentException(
-            s"Node $linePtB is not within our nodes mapping"
-          )
-        )
+  ): Try[(ComparableQuantity[Length], Node)] = {
+    val coordinateA = buildCoordinate(wayNodeA.latitude, wayNodeA.longitude)
+    val coordinateB = buildCoordinate(wayNodeB.latitude, wayNodeB.longitude)
+    val orthogonalPt =
+      orthogonalProjection(coordinateA, coordinateB, buildingCenter)
+    // if orthogonal point is on the line and far enough apart from the line points
+    // take it since this is the closest we will get
+    if (
+      orthogonalPt.isBetween(
+        coordinateA,
+        coordinateB,
+        1e-3
+      ) && ((orthogonalPt haversineDistance coordinateA) isGreaterThan minDistance)
+      && ((orthogonalPt haversineDistance coordinateB) isGreaterThan minDistance)
+    ) {
+      val closestNode = Node(
+        id = UUID.randomUUID().getMostSignificantBits,
+        latitude = orthogonalPt.y,
+        longitude = orthogonalPt.x,
+        tags = Map(),
+        metaInformation = None
+      )
+      Success(buildingCenter.haversineDistance(orthogonalPt), closestNode)
     }
+    // take the nearer point of the two line points
+    else
+      val coordinateADistance = buildingCenter.haversineDistance(coordinateA)
+      val coordinateBDistance = buildingCenter.haversineDistance(coordinateB)
+      if (coordinateADistance.isLessThan(coordinateBDistance))
+        Success((coordinateADistance, wayNodeA))
+      else Success((coordinateBDistance, wayNodeB))
+  }
 
   private def orthogonalProjection(
       linePtA: Coordinate,
@@ -326,12 +344,13 @@ object LvGridGenerator {
     * @return
     *   the projected point
     */
+  // todo: Move to GeoUtils
   private def orthogonalProjection(
-      pt: Vector2D,
       linePtA: Vector2D,
-      linePtB: Vector2D
+      linePtB: Vector2D,
+      pt: Vector2D
   ): Vector2D = {
-    val v = linePtA.subtract(pt)
+    val v = pt.subtract(linePtA)
     val d = linePtB.subtract(linePtA)
     linePtA.add(d.multiply((v dot d) / d.lengthSquared()))
   }

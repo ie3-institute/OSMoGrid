@@ -41,9 +41,9 @@ trait OsmTestData {
 
     val highway2Node1: Node = highway1Node2
     val highway2Node2: Node =
-      Node(13L, 51.538d, 7.4065d, Map.empty[String, String], None)
+      Node(13L, 50.538d, 7.4065d, Map.empty[String, String], None)
     val highway2Node3: Node =
-      Node(14L, 51.578d, 7.4265d, Map.empty[String, String], None)
+      Node(14L, 50.578d, 7.4265d, Map.empty[String, String], None)
 
     val landuse1Node1: Node =
       Node(21L, 51.49378d, 7.4105d, Map.empty[String, String], None)
@@ -85,10 +85,10 @@ trait OsmTestData {
       2L -> building1Node2,
       3L -> building1Node3,
       4L -> building1Node4,
-      5L -> building1Node1,
-      6L -> building1Node2,
-      7L -> building1Node3,
-      8L -> building1Node4,
+      5L -> building2Node1,
+      6L -> building2Node2,
+      7L -> building2Node3,
+      8L -> building2Node4,
       11L -> highway1Node1,
       12L -> highway1Node2,
       13L -> highway2Node2,
@@ -148,7 +148,7 @@ trait OsmTestData {
 
     val highway2: OpenWay =
       OpenWay(
-        111L,
+        112L,
         Seq(
           nodes.highway2Node1.id,
           nodes.highway2Node2.id,
