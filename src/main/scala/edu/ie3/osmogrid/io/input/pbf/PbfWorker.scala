@@ -38,13 +38,13 @@ import scala.collection.parallel.immutable.ParSeq
 private[pbf] object PbfWorker {
 
   // external request protocol
-  sealed trait PbfWorkerMsg
+  sealed trait Request
 
   final case class ReadBlobMsg(
       blobHeader: BlobHeader,
       blob: Blob,
       replyTo: ActorRef[PbfWorker.Response]
-  ) extends PbfWorkerMsg
+  ) extends Request
 
   // external response protocol
   sealed trait Response
@@ -58,7 +58,7 @@ private[pbf] object PbfWorker {
       exception: Throwable
   ) extends Response
 
-  def apply(): Behavior[PbfWorkerMsg] = Behaviors.receiveMessage[PbfWorkerMsg] {
+  def apply(): Behavior[Request] = Behaviors.receiveMessage[Request] {
     case ReadBlobMsg(_, blob, replyTo) =>
       val osmContainer = readBlob(blob)
 

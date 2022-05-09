@@ -9,7 +9,7 @@ package edu.ie3.osmogrid.lv.coordinator
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
-import edu.ie3.osmogrid.ActorStopSupport
+import edu.ie3.osmogrid.{ActorStopSupport, ActorStopSupportStateless}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.RequestFailedException
 import edu.ie3.osmogrid.io.input.InputDataProvider
@@ -24,7 +24,7 @@ import scala.util.{Failure, Success, Try}
 
 /** Actor to take care of the overall generation process for low voltage grids
   */
-object LvCoordinator extends ActorStopSupport[Request] {
+object LvCoordinator extends ActorStopSupportStateless[Request] {
 
   /** Build a [[LvCoordinator]] with given additional information
     *
@@ -92,7 +92,6 @@ object LvCoordinator extends ActorStopSupport[Request] {
         )
         /* Ask for grid asset data */
         stateData.inputDataProvider ! ReqAssetTypes(
-          runId = run,
           replyTo = stateData.msgAdapters.inputDataProvider
         )
 
@@ -163,7 +162,7 @@ object LvCoordinator extends ActorStopSupport[Request] {
       ctx: ActorContext[Request]
   ): Behavior[Request] = {
     /* Check, if everything is in place */
-    if (awaitingData.isComprehensive()) {
+    if (awaitingData.isComprehensive) {
       /* Process the data */
       ctx.log.debug("All awaited data is present. Start processing.")
 
@@ -227,9 +226,7 @@ object LvCoordinator extends ActorStopSupport[Request] {
       postStopCleanUp(ctx.log)
     }
 
-  /** Partial function to perform cleanup tasks while shutting down
-    */
-  override protected val cleanUp: () => Unit = () => {
+  override protected def cleanUp(): Unit = {
     /* Nothing to do here. At least until now. */
   }
 }

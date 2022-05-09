@@ -11,7 +11,7 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors, Routers}
 import com.acervera.osm4scala.BlobTupleIterator
 import com.acervera.osm4scala.model.{NodeEntity, RelationEntity, WayEntity}
 import edu.ie3.osmogrid.exception.PbfReadFailedException
-import edu.ie3.osmogrid.io.input.pbf.PbfWorker.{PbfWorkerMsg, ReadBlobMsg}
+import edu.ie3.osmogrid.io.input.pbf.PbfWorker.{Request, ReadBlobMsg}
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 import edu.ie3.util.osm.model.OsmContainer
@@ -50,7 +50,7 @@ private[input] object PbfGuardian {
   private final case class StateData(
       pbfIS: InputStream,
       blobIterator: BlobTupleIterator,
-      workerPool: ActorRef[PbfWorkerMsg],
+      workerPool: ActorRef[PbfWorker.Request],
       workerResponseMapper: ActorRef[PbfWorker.Response],
       filter: SourceFilter,
       sender: Option[ActorRef[PbfGuardian.Response]] = None,
@@ -201,7 +201,7 @@ private[input] object PbfGuardian {
 
   private def readPbf(
       blobIterator: BlobTupleIterator,
-      workerPool: ActorRef[PbfWorkerMsg],
+      workerPool: ActorRef[PbfWorker.Request],
       workerResponseMapper: ActorRef[PbfWorker.Response]
   ): Int =
     blobIterator.foldLeft(0) { case (counter, (blobHeader, blob)) =>
