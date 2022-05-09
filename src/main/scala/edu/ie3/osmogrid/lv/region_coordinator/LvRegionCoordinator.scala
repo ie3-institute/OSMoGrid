@@ -78,7 +78,7 @@ object LvRegionCoordinator {
                   replyTo
                 )
               case None =>
-                ctx.spawnAnonymous(MunicipalityCoordinator.apply(osmoGridModel))
+                ctx.spawnAnonymous(MunicipalityCoordinator(osmoGridModel))
             }
           }
 

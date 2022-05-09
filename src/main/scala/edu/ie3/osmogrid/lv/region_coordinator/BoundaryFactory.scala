@@ -39,7 +39,7 @@ object BoundaryFactory {
       .filter {
         case EnhancedOsmEntity(
               entity: OsmEntity,
-              subEntities
+              _
             ) =>
           entity match {
             case relation: OsmEntity.Relation =>
@@ -73,14 +73,14 @@ object BoundaryFactory {
       case relation: OsmEntity.Relation => relation
       case other =>
         throw new RuntimeException(
-          s"Wrong entity type ${other.getClass}, Way is required"
+          s"Wrong entity type ${other.getClass}, Relation is required"
         )
     }
 
     val coordinates = (relation.members
       .flatMap {
         // Filter for ways only
-        case OsmEntity.Relation.RelationMember(id, relationType, role) =>
+        case OsmEntity.Relation.RelationMember(id, relationType, _) =>
           relationType match {
             case RelationMemberType.Way =>
               enhancedRelation.way(id)
