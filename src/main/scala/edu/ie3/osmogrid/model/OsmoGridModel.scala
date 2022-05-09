@@ -6,6 +6,7 @@
 
 package edu.ie3.osmogrid.model
 
+import edu.ie3.osmogrid.model.OsmoGridModel.EnhancedOsmEntity
 import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
 import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
 import edu.ie3.util.osm.model.{OsmContainer, OsmEntity}
@@ -13,11 +14,18 @@ import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
 import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
 
 import scala.collection.parallel.ParSeq
+import scala.collection.parallel.immutable.ParVector
 
 sealed trait OsmoGridModel {
   protected val filter: SourceFilter
 
   def +(additional: OsmoGridModel): Option[OsmoGridModel]
+
+//  def filterForWays(entities: Seq[EnhancedOsmEntity]) = {
+//    entities.foldLeft(Seq.empty[Way], Map.empty[Long, OsmEntity]) { case ((ways, subentities), curEntity: EnhancedOsmEntity) =>
+//      curEntity.entity match
+//        case way: Way => (ways ++ , curEntity.subentities)
+//  }
 }
 
 object OsmoGridModel {

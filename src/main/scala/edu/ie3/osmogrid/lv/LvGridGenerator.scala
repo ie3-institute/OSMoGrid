@@ -13,7 +13,8 @@ import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.exception.MissingOsmDataException
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.model.OsmoGridModel.EnhancedOsmEntity
+import edu.ie3.osmogrid.model.OsmoGridModel
+import edu.ie3.osmogrid.model.OsmoGridModel.{EnhancedOsmEntity, LvOsmoGridModel}
 import edu.ie3.util.geo.{GeoUtils, RichGeometries}
 import edu.ie3.util.geo.GeoUtils.{buildCoordinate, calcHaversine}
 import edu.ie3.util.osm.OsmUtils
@@ -43,6 +44,7 @@ import scala.util.{Failure, Success, Try}
 
 object LvGridGenerator {
   sealed trait Request
+  final case class GenerateGrid(osmData: LvOsmoGridModel) extends Request
 
   sealed trait Response
   final case class RepLvGrid(grid: SubGridContainer) extends Response
@@ -58,6 +60,9 @@ object LvGridGenerator {
   def apply(): Behaviors.Receive[Request] = idle
 
   private def idle: Behaviors.Receive[Request] = Behaviors.receive {
+    case (ctx, GenerateGrid(osmData)) =>
+//      val streetGraph = buildStreetGraph(osmData.highways)
+      ???
     case (ctx, unsupported) =>
       ctx.log.warn(s"Received unsupported message '$unsupported'.")
       Behaviors.stopped
@@ -98,7 +103,17 @@ object LvGridGenerator {
   }
 
   private def buildStreetGraph(
-      ways: Seq[Way],
+      ways: ParSeq[EnhancedOsmEntity]
+  ): OsmGraph = {
+//    val ways = ways.map{case EnhancedOsmEntity(way: Way, subEntities) => }
+//    val nodes =
+//
+//    return buildStreetGraph()
+    ???
+  }
+
+  private def buildStreetGraph(
+      ways: ParSeq[Way],
       nodes: Map[Long, Node]
   ): OsmGraph = {
     val graph = new OsmGraph()
@@ -171,7 +186,8 @@ object LvGridGenerator {
       val buildingCenter: Coordinate = buildingPolygon.getCentroid.getCoordinate
       // check if building is inside residential area
       if (isInsideLanduse(buildingCenter, landusePolygons)) {
-        val closestOverall = highways.map(highway => {
+        val closestOverall = highways.flatMap(highway => {
+          // get closest to each highway section
           highway.nodes.sliding(2).map { case Seq(nodeAId, nodeBId) =>
             val (distance, node) = getClosest(
               buildingCenter,
@@ -179,18 +195,12 @@ object LvGridGenerator {
               nodeBId,
               nodes,
               minDistance
-            ) match {
-              case Success(closest) => closest
-              case Failure(exc) =>
-                throw MissingOsmDataException(
-                  s"Could not retrieve closest nodes for highway ${highway.id}",
-                  exc
-                )
-            }
+            ).getOrElse(
+              throw MissingOsmDataException(
+                s"Could not retrieve closest nodes for highway ${highway.id}"
+              )
+            )
             (distance, node, highway)
-          // todo: it might be faster to go with a reduce operation
-          } minBy {
-            _._1
           }
         }) minBy {
           _._1
@@ -259,7 +269,8 @@ object LvGridGenerator {
         if (
           orthogonalPt.isBetween(
             coordinateA,
-            coordinateB
+            coordinateB,
+            1e-6
           ) && ((orthogonalPt haversineDistance coordinateA) isGreaterThan minDistance)
           && ((orthogonalPt haversineDistance coordinateB) isGreaterThan minDistance)
         ) {
