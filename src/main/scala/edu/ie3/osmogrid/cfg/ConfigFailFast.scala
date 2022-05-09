@@ -8,9 +8,8 @@ package edu.ie3.osmogrid.cfg
 
 import akka.actor.typed.ActorRef
 import com.typesafe.scalalogging.LazyLogging
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Input, Output}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Grid, Input, Output}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
 import edu.ie3.osmogrid.exception.IllegalConfigException
@@ -24,10 +23,11 @@ object ConfigFailFast extends LazyLogging {
       additionalListener: Seq[ActorRef[ResultListener.ResultEvent]] = Seq.empty
   ): Try[OsmoGridConfig] = Try {
     cfg match {
-      case OsmoGridConfig(generation, input, output) =>
+      case OsmoGridConfig(generation, grid, input, output) =>
         checkInputConfig(input)
         checkOutputConfig(output, additionalListener)
         checkGenerationConfig(generation)
+        checkGridConfig(grid)
     }
     cfg
   }
@@ -44,6 +44,8 @@ object ConfigFailFast extends LazyLogging {
         /* Check single configs */
         lv.foreach(checkLvConfig)
     }
+  // TODO
+  private def checkGridConfig(grid: Grid): Unit = ???
 
   private def checkLvConfig(lv: OsmoGridConfig.Generation.Lv): Unit = lv match {
     case Lv(

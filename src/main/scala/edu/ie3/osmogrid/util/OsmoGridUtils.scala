@@ -19,7 +19,13 @@ import javax.measure.quantity.Area
 import javax.measure.quantity.Power
 import net.morbz.osmonaut.osm.LatLon
 import net.morbz.osmonaut.osm.Node
-import org.locationtech.jts.geom.{GeometryFactory, LineString, Point}
+import net.morbz.osmonaut.osm
+import org.locationtech.jts.geom.{
+  Coordinate,
+  GeometryFactory,
+  LineString,
+  Point
+}
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 
@@ -38,6 +44,7 @@ object OsmoGridUtils {
     * @return
     *   List of converted OsmogridNodes
     */
+  /*
   def getOsmoGridNodeList(nodes: List[Node]): List[OsmGridNode] = {
     val osmGridNodes = new util.LinkedList[OsmGridNode]
     for (node <- nodes) {
@@ -46,6 +53,7 @@ object OsmoGridUtils {
     }
     osmGridNodes
   }
+   */
 
   /** Map geom points to java awt points. Can be removed when GeoUtils in PSU is
     * fixed and tested.
@@ -53,8 +61,8 @@ object OsmoGridUtils {
     * @param points
     * @return
     */
-  def toJavaAwtPoints(points: Set[Point]): Set[Point] =
-    points.stream.map(OsmoGridUtils.toJavaAwtPoint).collect(Collectors.toSet)
+  // def toJavaAwtPoints(points: Set[Point]): Set[Point] =
+  //  points.toStream.map(OsmoGridUtils.toJavaAwtPoint).collect(Collectors.toSet)
 
   /** Map geom points to java awt points. Can be removed when GeoUtils in PSU is
     * fixed and tested.
@@ -62,8 +70,8 @@ object OsmoGridUtils {
     * @param point
     * @return
     */
-  def toJavaAwtPoint(point: Point) =
-    new Point(point.getCoordinate, point.getPrecisionModel, point.getSRID)
+  // def toJavaAwtPoint(point: Point) =
+  //  new Point(point.getCoordinate, point.getPrecisionModel, point.getSRID)
 
   /** Calculates the power value of a household load based on the provided
     * building area and the provided average power density value and the
@@ -72,17 +80,19 @@ object OsmoGridUtils {
     * @param area
     * @param density
     */
+  /*
   def calcPower(
       area: Quantity[Area],
       density: Quantity[PowerDensity]
   ): Quantity[Power] = {
     val power = area
       .to(Units.SQUARE_METRE)
-      .multiply(density.to(OsmoGridUnits.WATT_PER_SQUARE_METRE))
-      .asType(classOf[Power])
+      .multiply(density.to(PowerSystemUnits.WATT_PER_SQUAREMETRE))
+      .asType(classOf[PowerDensity])
       .to(PowerSystemUnits.KILOWATT)
     QuantityUtils.ceil(Power).asType(classOf[Power])
   }
+   */
 
   /** Calculates the geo position as a {@link LineString} from a given
     * collection of {@link OsmGridNode}s.
@@ -92,10 +102,12 @@ object OsmoGridUtils {
     * @return
     *   Calculated LineString from the given node list.
     */
-  def nodesToLineString(nodes: Collection[OsmGridNode]): LineString = {
+  /*
+  def nodesToLineString(nodes: util.Collection[OsmGridNode]): LineString = {
     val latLons = nodes.stream.map(Node.getLatlon).collect(Collectors.toSet)
     latLonsToLineString(latLons)
   }
+   */
 
   /** Calculates the geo position as a {@link LineString} from a given
     * collection of {@link LatLon}s.
@@ -105,6 +117,7 @@ object OsmoGridUtils {
     * @return
     *   Calculated LineString from the given LatLon list.
     */
+  /*
   def latLonsToLineString(latLons: util.Collection[LatLon]): LineString = {
     val geometryFactory = new GeometryFactory
     var geoPosition = null
@@ -123,6 +136,8 @@ object OsmoGridUtils {
     }
     geoPosition
   }
+   */
+
   def buildNodeCodeMap(
       nodes: util.Collection[NodeInput]
   ): OneToOneMap[String, Integer] = {
