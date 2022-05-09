@@ -105,30 +105,29 @@ object LvGridGenerator {
     ways.foreach(way => {
       val nodeIds = way.nodes
       nodeIds.sliding(2).foreach { case Seq(nodeAId, nodeBId) =>
-        val nodeA = nodes.getOrElse(
-          nodeAId,
-          throw IllegalArgumentException(
-            s"Node $nodeAId of Way ${way.id} is not within our nodes mapping"
-          )
-        )
-        val nodeB = nodes.getOrElse(
-          nodeBId,
-          throw IllegalArgumentException(
-            s"Node $nodeBId of Way ${way.id} is not within our nodes mapping"
-          )
-        )
-        graph.addVertex(nodeA)
-        graph.addVertex(nodeB)
-        val weight = GeoUtils.calcHaversine(
-          nodeA.latitude,
-          nodeA.longitude,
-          nodeB.latitude,
-          nodeB.longitude
-        )
-        // create edge and add edge to rawGraph
-        val edge = new DistanceWeightedEdge()
-        graph.setEdgeWeight(edge, weight.getValue.doubleValue)
-        graph.addEdge(nodeA, nodeB, edge) // TODO: consider checking boolean from this method
+        (nodes.get(nodeAId), nodes.get(nodeBId)) match
+          case (Some(nodeA), Some(nodeB)) =>
+            graph.addVertex(nodeA)
+            graph.addVertex(nodeB)
+            val weight = GeoUtils.calcHaversine(
+              nodeA.latitude,
+              nodeA.longitude,
+              nodeB.latitude,
+              nodeB.longitude
+            )
+            // create edge and add edge to rawGraph
+            val edge = new DistanceWeightedEdge()
+            graph.setEdgeWeight(edge, weight.getValue.doubleValue)
+            graph.addEdge(nodeA, nodeB, edge) // TODO: consider checking boolean from this method
+
+          case (None, _) =>
+            throw IllegalArgumentException(
+              s"Node $nodeAId of Way ${way.id} is not within our nodes mapping"
+            )
+          case (_, None) =>
+            throw IllegalArgumentException(
+              s"Node $nodeBId of Way ${way.id} is not within our nodes mapping"
+            )
       }
     })
     graph
@@ -173,24 +172,23 @@ object LvGridGenerator {
       // check if building is inside residential area
       if (isInsideLanduse(buildingCenter, landusePolygons)) {
         val closestOverall = highways.map(highway => {
-          highway.nodes.sliding(2).map {
-            case Seq(nodeAId, nodeBId) =>
-              val (distance, node) = getClosest(
-                buildingCenter,
-                nodeAId,
-                nodeBId,
-                nodes,
-                minDistance
-              ) match {
-                case Failure(exc) =>
-                  throw MissingOsmDataException(
-                    s"Could not retrieve closest nodes for highway ${highway.id}",
-                    exc
-                  )
-                case Success(closest) => closest
-              }
-              (distance, node, highway)
-            // todo: it might be faster to go with a reduce operation
+          highway.nodes.sliding(2).map { case Seq(nodeAId, nodeBId) =>
+            val (distance, node) = getClosest(
+              buildingCenter,
+              nodeAId,
+              nodeBId,
+              nodes,
+              minDistance
+            ) match {
+              case Success(closest) => closest
+              case Failure(exc) =>
+                throw MissingOsmDataException(
+                  s"Could not retrieve closest nodes for highway ${highway.id}",
+                  exc
+                )
+            }
+            (distance, node, highway)
+          // todo: it might be faster to go with a reduce operation
           } minBy {
             _._1
           }
@@ -199,15 +197,22 @@ object LvGridGenerator {
         }
         // calculate load of house
         val load = calcPower(buildingPolygon.calcAreaOnEarth, powerDensity)
-        Some(BuildingGraphConnection(building, buildingCenter, load, closestOverall._3, closestOverall._2))
-      }
-      else None
+        Some(
+          BuildingGraphConnection(
+            building,
+            buildingCenter,
+            load,
+            closestOverall._3,
+            closestOverall._2
+          )
+        )
+      } else None
     })
   }
 
   def isInsideLanduse(
-    buildingCenter: Coordinate,
-    landuses: Seq[Polygon]
+      buildingCenter: Coordinate,
+      landuses: Seq[Polygon]
   ): Boolean = {
     for (landuse <- landuses) {
       if (landuse.containsCoordinate(buildingCenter)) return true
@@ -217,16 +222,24 @@ object LvGridGenerator {
 
   // todo: Knoten die nur Knickpunkte sind werden rausgefiltert -> LF Berechnung -> Knicks als Geoposition
 
-  /** Get closest point of the buildings center to the highway section spanning linePtA and linePtB. If we find
-    * a point closer to the building center that is not linePtA nor linePtB we only take it if it is sufficiently
-    * far away (further than minDistance) otherwise we go with line point nearby to not inflate the number of points.
+  /** Get closest point of the buildings center to the highway section spanning
+    * linePtA and linePtB. If we find a point closer to the building center that
+    * is not linePtA nor linePtB we only take it if it is sufficiently far away
+    * (further than minDistance) otherwise we go with line point nearby to not
+    * inflate the number of points.
     *
-    * @param buildingCenter center coordinate of the building
-    * @param linePtA point a of the way section
-    * @param linePtB point b of the way section
-    * @param nodes node id to node map
-    * @param minDistance minimum distance for creating a new point
-    * @return a Tuple of the distance and the point
+    * @param buildingCenter
+    *   center coordinate of the building
+    * @param linePtA
+    *   point a of the way section
+    * @param linePtB
+    *   point b of the way section
+    * @param nodes
+    *   node id to node map
+    * @param minDistance
+    *   minimum distance for creating a new point
+    * @return
+    *   a Tuple of the distance and the point
     */
   private def getClosest(
       buildingCenter: Coordinate,
@@ -312,15 +325,21 @@ object LvGridGenerator {
     linePtA.add(d.multiply((v dot d) / d.lengthSquared()))
   }
 
-  /**
-    * Calculates the power value of a household load based on the provided building area and the
-    * provided average power density value and the provided average household area size
+  /** Calculates the power value of a household load based on the provided
+    * building area and the provided average power density value and the
+    * provided average household area size
     *
-    * @param area area of the household
-    * @param powerDensity average power per area
+    * @param area
+    *   area of the household
+    * @param powerDensity
+    *   average power per area
     */
-  private def calcPower(area: ComparableQuantity[Area], powerDensity: ComparableQuantity[Irradiance]): ComparableQuantity[Power] = {
-    val power = area.to(Units.SQUARE_METRE)
+  private def calcPower(
+      area: ComparableQuantity[Area],
+      powerDensity: ComparableQuantity[Irradiance]
+  ): ComparableQuantity[Power] = {
+    val power = area
+      .to(Units.SQUARE_METRE)
       .multiply(powerDensity.to(PowerSystemUnits.WATT_PER_SQUAREMETRE))
       .asType(classOf[Power])
       .to(PowerSystemUnits.KILOWATT)
@@ -328,9 +347,18 @@ object LvGridGenerator {
   }
 
   // todo: move to PowerSystemUtils -> QuantityUtils
-  private def round[T <: Quantity[T]](quantity: ComparableQuantity[T], decimals: Int): ComparableQuantity[T] = {
-    if (decimals < 0) throw IllegalArgumentException("You can not round to negative decimal places.")
-    val rounded = BigDecimal.valueOf(quantity.getValue.doubleValue()).setScale(decimals, RoundingMode.HALF_UP).doubleValue
+  private def round[T <: Quantity[T]](
+      quantity: ComparableQuantity[T],
+      decimals: Int
+  ): ComparableQuantity[T] = {
+    if (decimals < 0)
+      throw IllegalArgumentException(
+        "You can not round to negative decimal places."
+      )
+    val rounded = BigDecimal
+      .valueOf(quantity.getValue.doubleValue())
+      .setScale(decimals, RoundingMode.HALF_UP)
+      .doubleValue
     Quantities.getQuantity(rounded, quantity.getUnit)
   }
 
