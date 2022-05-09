@@ -66,12 +66,6 @@ object InputDataProvider
       with InputDataEvent
   final case class RepAssetTypes(assetInformation: AssetInformation)
       extends Response
-      with InputDataEvent
-  final case class OsmReadFailed(reason: Throwable)
-      extends Response
-      with InputDataEvent
-  final case class RepAssetTypes(assetInformation: AssetInformation)
-      extends Response
 
   final case class AssetInformation(
       lineTypes: Seq[LineTypeInput],
@@ -150,12 +144,8 @@ object InputDataProvider
         Behaviors.same
     }
 
-  private def cleanUp(providerData: ProviderData): Unit = {
-    providerData.osmSource.close()
-  }
-
   // TODO this doesn't seem to make too much sense here
-    /* Nothing to do here. At least until now. */
+  /* Nothing to do here. At least until now. */
   override protected def cleanUp(providerData: ProviderData): Unit = {
     providerData.osmSource.close()
   }

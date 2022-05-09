@@ -160,15 +160,17 @@ object LvGridGenerator {
     *   GraphModel from which the GridInputModels shall be generated
     */
   private def buildGrid(
-      graphModel: AsSubgraph[OsmGridNode, DistanceWeightedOsmEdge]
+      graphModel: AsSubgraph[Node, DistanceWeightedEdge],
+      ratedVoltage: Double,
+      voltageLevel: String
   ) = {
     val vRated = Quantities.getQuantity(
-      OsmoGridConfig.Grid.ratedVoltage,
+      ratedVoltage,
       PowerSystemUnits.KILOVOLT
     )
     val vTarget = Quantities.getQuantity(1d, PowerSystemUnits.PU)
     val voltLvl: VoltageLevel = Try(
-      GermanVoltageLevelUtils.parse(OsmoGridConfig.Grid.voltageLevel, vRated)
+      GermanVoltageLevelUtils.parse(voltageLevel, vRated)
     ) match {
       case Success(voltageLevel: VoltageLevel) => voltLvl
       case Failure(e) =>
@@ -179,7 +181,7 @@ object LvGridGenerator {
         )
         GermanVoltageLevelUtils.LV
     }
-
+    //TODO Refactor
     // set id counters
     var nodeIdCounter = 1
     var lineIdCounter = 1
@@ -369,32 +371,6 @@ object LvGridGenerator {
     )
   }
 
-  /** Reads line types from csv files. Transformer types. */
-  private def loadTypes(): Unit = {
-    var typeSource: TypeSource = null
-    val sourceFormat: TypeSourceFormat =
-      TypeSourceFormat.values(OsmoGridConfig.Io.typeSourceFormat)
-    if (OsmoGridConfig.Io.readTypes) {
-      if (sourceFormat eq TypeSourceFormat.CSV) {
-        typeSource = new CsvTypeSource(";", "", new FileNamingStrategy)
-        lineType = typeSource.getLineTypes.stream
-          .filter((lineTypeInput: LineTypeInput) =>
-            lineTypeInput.getId == OsmoGridConfig.Grid.lineType
-          )
-          .findAny
-          .orElse(LvGridGenerator.builtDefaultLineType())
-      } else {
-        LvGridGenerator.logger.error(
-          "Invalid TypeSource in config file. Use standard LineTypeInput"
-        )
-        lineType = LvGridGenerator.builtDefaultLineType()
-      }
-    } else {
-      LvGridGenerator.logger.info("Use default line type.")
-      lineType = LvGridGenerator.builtDefaultLineType()
-    }
-  }
-
   /** Calls the methods that are necessary for building the complete electrical
     * grid out of a GraphModel.
     *
@@ -405,7 +381,7 @@ object LvGridGenerator {
     *   for each subnet).
     */
   def generateGrid(
-      graphModel: List[AsSubgraph[OsmGridNode, DistanceWeightedOsmEdge]]
+      graphModel: List[AsSubgraph[Node, DistanceWeightedEdge]]
   ): JointGridContainer = {
     val gridModel = buildGrid(graphModel)
     // build node code maps and admittance matrices for each sub net

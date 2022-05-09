@@ -30,6 +30,7 @@ At least one of the following configuration blocks has to be defined.
 ## Generation
 At least one of the following configuration blocks has to be defined.
 
+
 #### Lv (`generation.lv`)
 | Parameter                  | Allowed values | Note                                                                         |
 |----------------------------|----------------|------------------------------------------------------------------------------|

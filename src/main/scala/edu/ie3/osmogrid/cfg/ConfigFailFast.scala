@@ -8,7 +8,7 @@ package edu.ie3.osmogrid.cfg
 
 import akka.actor.typed.ActorRef
 import com.typesafe.scalalogging.LazyLogging
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Grid, Input, Output}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Grid, Input, Io, Output, Runtime}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
@@ -23,11 +23,13 @@ object ConfigFailFast extends LazyLogging {
       additionalListener: Seq[ActorRef[ResultListener.ResultEvent]] = Seq.empty
   ): Try[OsmoGridConfig] = Try {
     cfg match {
-      case OsmoGridConfig(generation, grid, input, output) =>
+      case OsmoGridConfig(generation, grid, input, io, output, runtime) =>
         checkInputConfig(input)
         checkOutputConfig(output, additionalListener)
         checkGenerationConfig(generation)
         checkGridConfig(grid)
+        checkIoConfig(io)
+        checkRuntimeConfig(runtime)
     }
     cfg
   }
@@ -47,21 +49,13 @@ object ConfigFailFast extends LazyLogging {
   // TODO
   private def checkGridConfig(grid: Grid): Unit = ???
 
+  // TODO Check Filter for osm
   private def checkLvConfig(lv: OsmoGridConfig.Generation.Lv): Unit = lv match {
     case Lv(
-          amountOfGridGenerators,
-          amountOfRegionCoordinators,
           distinctHouseConnections,
-          lv.osm
+          osm
         ) =>
-      if (amountOfGridGenerators < 1)
-        throw IllegalConfigException(
-          s"The amount of lv grid generation actors needs to be at least 1 (provided: $amountOfGridGenerators)."
-        )
-      if (amountOfRegionCoordinators < 1)
-        throw IllegalConfigException(
-          s"The amount of lv region coordination actors needs to be at least 1 (provided: $amountOfRegionCoordinators)."
-        )
+      
   }
 
   private def checkInputConfig(input: OsmoGridConfig.Input): Unit =
@@ -70,6 +64,8 @@ object ConfigFailFast extends LazyLogging {
         checkAssetInputConfig(asset)
         checkOsmInputConfig(osm)
     }
+
+  private def checkIoConfig(io: Io) : Unit = ???
 
   private def checkAssetInputConfig(asset: OsmoGridConfig.Input.Asset): Unit =
     asset match {
@@ -119,4 +115,7 @@ object ConfigFailFast extends LazyLogging {
     throw IllegalConfigException(
       "Output directory and separator must be set when using .csv file sink!"
     )
+
+  private def checkRuntimeConfig(runtime: Runtime): Unit = ???
+
 }

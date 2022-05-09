@@ -10,7 +10,9 @@ final case class OsmoGridConfig(
     generation: OsmoGridConfig.Generation,
     grid: OsmoGridConfig.Grid,
     input: OsmoGridConfig.Input,
-    output: OsmoGridConfig.Output
+    io: OsmoGridConfig.Io,
+    output: OsmoGridConfig.Output,
+    runtime: OsmoGridConfig.Runtime
 )
 object OsmoGridConfig {
   final case class Generation(
@@ -18,8 +20,6 @@ object OsmoGridConfig {
   )
   object Generation {
     final case class Lv(
-        amountOfGridGenerators: scala.Int,
-        amountOfRegionCoordinators: scala.Int,
         distinctHouseConnections: scala.Boolean,
         osm: OsmoGridConfig.Generation.Lv.Osm
     )
@@ -76,14 +76,6 @@ object OsmoGridConfig {
           $tsCfgValidator: $TsCfgValidator
       ): OsmoGridConfig.Generation.Lv = {
         OsmoGridConfig.Generation.Lv(
-          amountOfGridGenerators =
-            if (c.hasPathOrNull("amountOfGridGenerators"))
-              c.getInt("amountOfGridGenerators")
-            else 10,
-          amountOfRegionCoordinators =
-            if (c.hasPathOrNull("amountOfRegionCoordinators"))
-              c.getInt("amountOfRegionCoordinators")
-            else 5,
           distinctHouseConnections = c.hasPathOrNull(
             "distinctHouseConnections"
           ) && c.getBoolean("distinctHouseConnections"),
@@ -346,6 +338,38 @@ object OsmoGridConfig {
     }
   }
 
+  final case class Io(
+      typeSourceFormat: java.lang.String
+  )
+  object Io {
+    def apply(
+        c: com.typesafe.config.Config,
+        parentPath: java.lang.String,
+        $tsCfgValidator: $TsCfgValidator
+    ): OsmoGridConfig.Io = {
+      OsmoGridConfig.Io(
+        typeSourceFormat =
+          $_reqStr(parentPath, c, "typeSourceFormat", $tsCfgValidator)
+      )
+    }
+    private def $_reqStr(
+        parentPath: java.lang.String,
+        c: com.typesafe.config.Config,
+        path: java.lang.String,
+        $tsCfgValidator: $TsCfgValidator
+    ): java.lang.String = {
+      if (c == null) null
+      else
+        try c.getString(path)
+        catch {
+          case e: com.typesafe.config.ConfigException =>
+            $tsCfgValidator.addBadPath(parentPath + path, e)
+            null
+        }
+    }
+
+  }
+
   final case class Output(
       csv: scala.Option[OsmoGridConfig.Output.Csv]
   )
@@ -404,6 +428,37 @@ object OsmoGridConfig {
     }
   }
 
+  final case class Runtime(
+      name: java.lang.String
+  )
+  object Runtime {
+    def apply(
+        c: com.typesafe.config.Config,
+        parentPath: java.lang.String,
+        $tsCfgValidator: $TsCfgValidator
+    ): OsmoGridConfig.Runtime = {
+      OsmoGridConfig.Runtime(
+        name = $_reqStr(parentPath, c, "name", $tsCfgValidator)
+      )
+    }
+    private def $_reqStr(
+        parentPath: java.lang.String,
+        c: com.typesafe.config.Config,
+        path: java.lang.String,
+        $tsCfgValidator: $TsCfgValidator
+    ): java.lang.String = {
+      if (c == null) null
+      else
+        try c.getString(path)
+        catch {
+          case e: com.typesafe.config.ConfigException =>
+            $tsCfgValidator.addBadPath(parentPath + path, e)
+            null
+        }
+    }
+
+  }
+
   def apply(c: com.typesafe.config.Config): OsmoGridConfig = {
     val $tsCfgValidator: $TsCfgValidator = new $TsCfgValidator()
     val parentPath: java.lang.String = ""
@@ -426,10 +481,22 @@ object OsmoGridConfig {
         parentPath + "input.",
         $tsCfgValidator
       ),
+      io = OsmoGridConfig.Io(
+        if (c.hasPathOrNull("io")) c.getConfig("io")
+        else com.typesafe.config.ConfigFactory.parseString("io{}"),
+        parentPath + "io.",
+        $tsCfgValidator
+      ),
       output = OsmoGridConfig.Output(
         if (c.hasPathOrNull("output")) c.getConfig("output")
         else com.typesafe.config.ConfigFactory.parseString("output{}"),
         parentPath + "output.",
+        $tsCfgValidator
+      ),
+      runtime = OsmoGridConfig.Runtime(
+        if (c.hasPathOrNull("runtime")) c.getConfig("runtime")
+        else com.typesafe.config.ConfigFactory.parseString("runtime{}"),
+        parentPath + "runtime.",
         $tsCfgValidator
       )
     )
