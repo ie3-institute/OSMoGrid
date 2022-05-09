@@ -6,7 +6,13 @@
 
 package edu.ie3.test.common
 
-import org.scalatest.{GivenWhenThen, PrivateMethodTester}
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import org.scalatest.{
+  GivenWhenThen,
+  OptionValues,
+  PrivateMethodTester,
+  TryValues
+}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -17,3 +23,6 @@ trait UnitSpec
     with PrivateMethodTester
     with TableDrivenPropertyChecks
     with GivenWhenThen
+    with LogCapturing
+    with OptionValues
+    with TryValues

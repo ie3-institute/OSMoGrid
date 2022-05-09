@@ -25,14 +25,10 @@ trait OsmTestData {
     val building1Node4: Node =
       Node(4L, 51.49286d, 7.41232d, Map.empty[String, String], None)
 
-    val highway1Node1: Node =
+    val highwayNode1: Node =
       Node(11L, 51.4955d, 7.4063d, Map.empty[String, String], None)
-    val highway1Node2: Node =
+    val highwayNode2: Node =
       Node(12L, 51.498d, 7.4255d, Map.empty[String, String], None)
-
-    val highway2Node1: Node = highway1Node2
-    val highway2Node2: Node = Node(13L, 51.538d, 7.4265d, Map.empty[String, String], None)
-    val highway2Node3: Node = Node(14L, 51.578d, 7.4265d, Map.empty[String, String], None)
 
     val landuseNode1: Node =
       Node(21L, 51.49378d, 7.4105d, Map.empty[String, String], None)
@@ -59,31 +55,6 @@ trait OsmTestData {
       Map("power" -> "substation", "building" -> "service"),
       None
     )
-
-    val nodesMap: Map[Long, Node] = Map(
-      1L -> building1Node1,
-      2L -> building1Node2,
-      3L -> building1Node3,
-      4L -> building1Node4,
-      11L -> highway1Node1,
-      12L -> highway1Node2,
-      13L -> highway2Node2,
-      14L -> highway2Node3,
-      21L -> landuseNode1,
-      22L -> landuseNode2,
-      23L -> landuseNode3,
-      24L -> landuseNode4,
-      31L -> boundaryNode1,
-      32L -> boundaryNode2,
-      33L -> boundaryNode3,
-      34L -> boundaryNode4,
-      41L -> substation
-    )
-
-//    def getNode(id: Long): Node = {
-//      nodesMap.getOrElse(throw new IllegalArgumentException(s"Id: $id is not within the test nodes map"))
-//    }
-
   }
 
   object ways {
@@ -101,18 +72,10 @@ trait OsmTestData {
         None
       )
 
-    val highway1: OpenWay =
+    val highway: OpenWay =
       OpenWay(
         111L,
-        Seq(nodes.highway1Node1.id, nodes.highway1Node2.id),
-        Map("highway" -> "motorway"),
-        None
-      )
-
-    val highway2: OpenWay =
-      OpenWay(
-        111L,
-        Seq(nodes.highway2Node1.id, nodes.highway2Node2.id, nodes.highway2Node3.id),
+        Seq(nodes.highwayNode1.id, nodes.highwayNode2.id),
         Map("highway" -> "motorway"),
         None
       )

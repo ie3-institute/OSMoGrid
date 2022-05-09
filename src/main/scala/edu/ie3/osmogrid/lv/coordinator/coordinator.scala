@@ -11,8 +11,8 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.RequestFailedException
 import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.lv.LvRegionCoordinator
-import edu.ie3.osmogrid.model.OsmoGridModel
+import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
+import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import org.slf4j.Logger
 
 import scala.util.{Failure, Success, Try}
@@ -30,7 +30,8 @@ object ReqLvGrids extends Request
   */
 final case class StartGeneration(
     lvConfig: OsmoGridConfig.Generation.Lv,
-    regionCoordinator: ActorRef[LvRegionCoordinator.Request]
+    regionCoordinator: ActorRef[LvRegionCoordinator.Request],
+    osmoGridModel: LvOsmoGridModel
 ) extends Request
 
 object Terminate extends Request
@@ -98,7 +99,7 @@ private final case class IdleData(
   *   Reference to the guardian actor
   */
 private final case class AwaitingData(
-    osmData: Option[OsmoGridModel],
+    osmData: Option[LvOsmoGridModel],
     assetInformation: Option[InputDataProvider.AssetInformation],
     cfg: OsmoGridConfig.Generation.Lv,
     msgAdapters: MessageAdapters,
@@ -120,8 +121,8 @@ private final case class AwaitingData(
       response: InputDataProvider.Response,
       log: Logger
   ): Try[AwaitingData] = response match {
-    case InputDataProvider.RepOsm(_, osmModel) =>
-      log.debug(s"Received OSM data.")
+    case InputDataProvider.RepOsm(osmModel: LvOsmoGridModel) =>
+      log.debug(s"Received LV data model.")
       Success(copy(osmData = Some(osmModel)))
     case InputDataProvider.RepAssetTypes(assetInformation) =>
       log.debug(s"Received asset information.")
@@ -137,7 +138,7 @@ private final case class AwaitingData(
       )
   }
 
-  def isComprehensive(): Boolean =
+  def isComprehensive: Boolean =
     osmData.isDefined && assetInformation.isDefined
 
 }

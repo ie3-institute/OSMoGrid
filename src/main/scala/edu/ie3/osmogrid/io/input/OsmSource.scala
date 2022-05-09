@@ -57,10 +57,7 @@ object OsmSource {
       implicit val system: ActorSystem[_] = ctx.system
       implicit val ec: ExecutionContextExecutor = system.executionContext
 
-      val result: Future[PbfGuardian.Response] =
-        pbfReader.ask(sender => PbfGuardian.Run(sender))
-
-      result.flatMap {
+      pbfReader.ask(sender => PbfGuardian.Run(sender)).flatMap {
         case PbfGuardian.PbfReadSuccessful(osmoGridModel) =>
           Future.successful(osmoGridModel)
         case PbfGuardian.PbfReadFailed(exception) =>
@@ -77,21 +74,21 @@ object OsmSource {
       osmCfg: OsmoGridConfig.Input.Osm,
       actorContext: ActorContext[InputDataEvent]
   ): OsmSource =
-    checkOsmInputConfig(osmCfg).apply(actorContext)
+    getOsmSource(osmCfg).apply(actorContext)
 
-  def checkOsmInputConfig(
+  private def getOsmSource(
       osm: OsmoGridConfig.Input.Osm
   ): ActorContext[InputDataEvent] => OsmSource =
     osm match {
       case Osm(Some(pbf: OsmoGridConfig.Input.Osm.Pbf)) =>
-        checkPbfFileDefinition(pbf)
+        getPbfFileSource(pbf)
       case Osm(None) =>
         throw IllegalConfigException(
           "You have to provide at least one input data type for open street map information!"
         )
     }
 
-  private def checkPbfFileDefinition(
+  private def getPbfFileSource(
       pbf: OsmoGridConfig.Input.Osm.Pbf
   ): ActorContext[InputDataEvent] => PbfFileSource =
     pbf match {
