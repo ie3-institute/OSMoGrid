@@ -17,7 +17,6 @@ import com.acervera.osm4scala.model.{
   RelationMemberEntity,
   WayEntity
 }
-import edu.ie3.osmogrid.io.input.pbf.PbfGuardian.stopAndCleanup
 import edu.ie3.osmogrid.model.Osm4ScalaMapper.{osmNode, osmRelation, osmWay}
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
