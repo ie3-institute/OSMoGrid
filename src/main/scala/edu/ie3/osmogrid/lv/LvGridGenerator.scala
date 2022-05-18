@@ -38,7 +38,7 @@ import fastparse.internal.Logger
 import org.jetbrains.annotations.NotNull
 import org.jgrapht.graph.AsSubgraph
 import org.jxmapviewer.viewer.GeoPosition
-import org.locationtech.jts.geom.Point
+import org.locationtech.jts.geom.{Coordinate, Point}
 import org.locationtech.jts.triangulate.quadedge.Vertex
 import org.slf4j
 import org.slf4j.LoggerFactory
@@ -179,7 +179,7 @@ object LvGridGenerator {
             },
             vTarget,
             osmGridNode.isSubStation,
-            GeoUtils.latlonToPoint(osmGridNode.getLatlon),
+            GeoUtils.buildPoint(osmGridNode.getLatlon),
             voltLvl,
             subNetCounter
           )
@@ -196,7 +196,7 @@ object LvGridGenerator {
               },
               vTarget,
               false,
-              GeoUtils.latlonToPoint(osmGridNode.getHouseConnectionPoint),
+              GeoUtils.buildPoint(osmGridNode.getHouseConnectionPoint),
               voltLvl,
               subNetCounter
             )
@@ -283,7 +283,7 @@ object LvGridGenerator {
               },
               vTarget,
               osmGridNode.isSubStation,
-              GeoUtils.latlonToPoint(osmGridNode.getLatlon),
+              GeoUtils.buildPoint(osmGridNode.getLatlon),
               voltLvl,
               subNetCounter
             )
