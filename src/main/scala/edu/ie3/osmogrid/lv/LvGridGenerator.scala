@@ -13,13 +13,16 @@ import edu.ie3.datamodel.graph.{DistanceWeightedEdge, DistanceWeightedGraph}
 import edu.ie3.datamodel.io.naming.FileNamingStrategy
 import edu.ie3.datamodel.io.source.TypeSource
 import edu.ie3.datamodel.io.source.csv.CsvTypeSource
+import edu.ie3.datamodel.models.BdewLoadProfile
 import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
 import edu.ie3.datamodel.models.input.connector.{LineInput, SwitchInput, Transformer2WInput, Transformer3WInput}
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
 import edu.ie3.datamodel.models.input.container.{GraphicElements, JointGridContainer, RawGridElements, SubGridContainer, SystemParticipants}
 import edu.ie3.datamodel.models.input.graphics.{LineGraphicInput, NodeGraphicInput}
+import edu.ie3.datamodel.models.input.system.characteristic.{CosPhiFixed, OlmCharacteristicInput}
 import edu.ie3.datamodel.models.input.system.{BmInput, ChpInput, EvInput, EvcsInput, FixedFeedInInput, HpInput, LoadInput, PvInput, StorageInput, WecInput}
 import edu.ie3.datamodel.models.voltagelevels.{CommonVoltageLevel, GermanVoltageLevelUtils, VoltageLevel}
+import edu.ie3.datamodel.utils.GridAndGeoUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Grid.{lineType, voltageLevel}
 import edu.ie3.osmogrid.graph.{OsmGraph, OsmGridNode}
@@ -41,10 +44,11 @@ import org.slf4j
 import org.slf4j.LoggerFactory
 import tech.units.indriya.quantity.Quantities
 import geny.Generator.from
+import org.locationtech.jts.operation.overlay.LineBuilder
 
 import java.util.{HashMap, HashSet, List, Map, Set, UUID}
 import javax.measure.Quantity
-import javax.measure.quantity.{Dimensionless, ElectricPotential, Length}
+import javax.measure.quantity.{Dimensionless, ElectricPotential, Energy, Length, Power}
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.unit.Units
 
@@ -354,7 +358,8 @@ object LvGridGenerator {
   def generateGrid(
       graphModel: List[AsSubgraph[Node, DistanceWeightedEdge]]
   ): JointGridContainer = {
-    val gridModel = buildGrid(graphModel.asScala)
+    //TODO: Give ratedVoltage and VoltageLevel
+    val gridModel = buildGrid(graphModel,1.0,"lv")
     // build node code maps and admittance matrices for each sub net
     for (subGrid <- gridModel.getSubGridTopologyGraph.vertexSet.asScala) {
       val nodeCodeMap: OneToOneMap[String, Integer] =
