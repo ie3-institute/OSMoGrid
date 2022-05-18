@@ -57,6 +57,7 @@ import scala.util.{Failure, Success, Try}
 import scala.collection.parallel.{ParSeq, immutable}
 import scala.jdk.CollectionConverters.*
 import scala.language.postfixOps
+import scala.reflect.ClassManifestFactory.Nothing
 
 object LvGridGenerator {
   sealed trait Request
@@ -168,7 +169,7 @@ object LvGridGenerator {
     val lineInputs = new util.HashSet[LineInput]
 
     for (subgraph <- graphModel.asScala) {
-      val geoGridNodesMap = new util.HashMap[Nothing, NodeInput]
+      val geoGridNodesMap = new util.HashMap[OsmGridNode, NodeInput]
       for (osmGridNode: OsmGridNode <- subgraph.vertexSet.asScala) {
         if (osmGridNode.getLoad != null) {
           val nodeInput: NodeInput = new NodeInput(
@@ -179,7 +180,7 @@ object LvGridGenerator {
             },
             vTarget,
             osmGridNode.isSubStation,
-            GeoUtils.buildPoint(osmGridNode.getLatlon),
+            GeoUtils.buildPoint(GeoUtils.buildCoordinate(osmGridNode.getLatlon.getLat, osmGridNode.getLatlon.getLon)),
             voltLvl,
             subNetCounter
           )
