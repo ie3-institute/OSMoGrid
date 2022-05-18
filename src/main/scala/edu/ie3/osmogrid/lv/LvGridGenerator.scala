@@ -14,44 +14,15 @@ import edu.ie3.datamodel.io.naming.FileNamingStrategy
 import edu.ie3.datamodel.io.source.TypeSource
 import edu.ie3.datamodel.io.source.csv.CsvTypeSource
 import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
-import edu.ie3.datamodel.models.input.connector.{
-  LineInput,
-  SwitchInput,
-  Transformer2WInput,
-  Transformer3WInput
-}
+import edu.ie3.datamodel.models.input.connector.{LineInput, SwitchInput, Transformer2WInput, Transformer3WInput}
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
-import edu.ie3.datamodel.models.input.container.{
-  GraphicElements,
-  JointGridContainer,
-  RawGridElements,
-  SubGridContainer,
-  SystemParticipants
-}
-import edu.ie3.datamodel.models.input.graphics.{
-  LineGraphicInput,
-  NodeGraphicInput
-}
-import edu.ie3.datamodel.models.input.system.{
-  BmInput,
-  ChpInput,
-  EvInput,
-  EvcsInput,
-  FixedFeedInInput,
-  HpInput,
-  LoadInput,
-  PvInput,
-  StorageInput,
-  WecInput
-}
-import edu.ie3.datamodel.models.voltagelevels.{
-  CommonVoltageLevel,
-  GermanVoltageLevelUtils,
-  VoltageLevel
-}
+import edu.ie3.datamodel.models.input.container.{GraphicElements, JointGridContainer, RawGridElements, SubGridContainer, SystemParticipants}
+import edu.ie3.datamodel.models.input.graphics.{LineGraphicInput, NodeGraphicInput}
+import edu.ie3.datamodel.models.input.system.{BmInput, ChpInput, EvInput, EvcsInput, FixedFeedInInput, HpInput, LoadInput, PvInput, StorageInput, WecInput}
+import edu.ie3.datamodel.models.voltagelevels.{CommonVoltageLevel, GermanVoltageLevelUtils, VoltageLevel}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Grid.{lineType, voltageLevel}
-import edu.ie3.osmogrid.graph.OsmGraph
+import edu.ie3.osmogrid.graph.{OsmGraph, OsmGridNode}
 import edu.ie3.osmogrid.model.OsmoGridModel.EnhancedOsmEntity
 import edu.ie3.util.OneToOneMap
 import edu.ie3.util.geo.GeoUtils
@@ -160,7 +131,7 @@ object LvGridGenerator {
     *   GraphModel from which the GridInputModels shall be generated
     */
   private def buildGrid(
-      graphModel: AsSubgraph[Node, DistanceWeightedEdge],
+      graphModel: List[AsSubgraph[Node, DistanceWeightedEdge]],
       ratedVoltage: Double,
       voltageLevel: String
   ) = {
@@ -192,9 +163,9 @@ object LvGridGenerator {
     val loadInputs = new util.HashSet[LoadInput]
     val lineInputs = new util.HashSet[LineInput]
 
-    for (subgraph <- graphModel) {
+    for (subgraph <- graphModel.asScala) {
       val geoGridNodesMap = new util.HashMap[Nothing, NodeInput]
-      for (osmGridNode <- subgraph.vertexSet) {
+      for (osmGridNode: OsmGridNode <- subgraph.vertexSet.asScala) {
         if (osmGridNode.getLoad != null) {
           val nodeInput: NodeInput = new NodeInput(
             UUID.randomUUID,
@@ -383,7 +354,7 @@ object LvGridGenerator {
   def generateGrid(
       graphModel: List[AsSubgraph[Node, DistanceWeightedEdge]]
   ): JointGridContainer = {
-    val gridModel = buildGrid(graphModel)
+    val gridModel = buildGrid(graphModel.asScala)
     // build node code maps and admittance matrices for each sub net
     for (subGrid <- gridModel.getSubGridTopologyGraph.vertexSet.asScala) {
       val nodeCodeMap: OneToOneMap[String, Integer] =
