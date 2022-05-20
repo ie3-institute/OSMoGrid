@@ -35,8 +35,7 @@ class BoundaryFactorySpec extends UnitSpec {
             .map(_.toString)
             .toSet
 
-        actualPolygons.size shouldBe 3
-        actualPolygons.subsetOf(polygons) shouldBe true
+        actualPolygons shouldBe polygons
       }
 
       "result in correct polygons on municipality level" in {
@@ -52,8 +51,7 @@ class BoundaryFactorySpec extends UnitSpec {
             .map(_.toString)
             .toSet
 
-        actualPolygons.size shouldBe 1
-        actualPolygons.subsetOf(polygons) shouldBe true
+        actualPolygons shouldBe polygons
       }
 
       "result in correct polygons on suburb level 1" in {
@@ -69,8 +67,7 @@ class BoundaryFactorySpec extends UnitSpec {
             .map(_.toString)
             .toSet
 
-        actualPolygons.size shouldBe 2
-        actualPolygons.subsetOf(polygons) shouldBe true
+        actualPolygons shouldBe polygons
       }
     }
   }

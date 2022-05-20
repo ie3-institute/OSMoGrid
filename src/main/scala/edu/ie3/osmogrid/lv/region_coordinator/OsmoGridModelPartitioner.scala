@@ -6,6 +6,7 @@
 
 package edu.ie3.osmogrid.lv.region_coordinator
 
+import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.osmogrid.model.OsmoGridModel.{EnhancedOsmEntity, LvOsmoGridModel}
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity
@@ -15,7 +16,7 @@ import edu.ie3.osmogrid.lv.region_coordinator.EntityAllocationStrategy
 
 import scala.collection.parallel.{ParMap, ParSeq}
 
-object OsmoGridModelPartitioner {
+object OsmoGridModelPartitioner extends LazyLogging {
 
   /** Id of the boundary relation
     */
@@ -23,6 +24,11 @@ object OsmoGridModelPartitioner {
 
   /** Assign all entities of given OsmoGridModel to the given areas. Depending
     * on the type of entity they are assigned to more than one area.
+    *
+    * Entities are assigned to boundaries by comparing the amount of associated
+    * points that are covered by each boundary. When using the allocation
+    * strategy [[EntityAllocationStrategy.AssignByMax]], the entity is assigned
+    * to the boundary with the most covered points.
     *
     * @param osmoGridModel
     *   the OsmoGridModel to partition
@@ -104,7 +110,13 @@ object OsmoGridModelPartitioner {
       case EntityAllocationStrategy.AssignByMax =>
         entityVotes
           .maxByOption(_._2)
-          .map(_._1)
+          .map { case (areaKey, voteCount) =>
+            if voteCount == 0 then
+              logger warn s"Entity ${enhancedEntity.entity} is not covered by any given area " +
+                s"(but is assigned to area $areaKey nonetheless)"
+
+            areaKey
+          }
           .map(Iterable.single)
           .getOrElse(Iterable.empty)
     }
