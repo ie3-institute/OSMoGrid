@@ -19,7 +19,9 @@ import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
 import tech.units.indriya.ComparableQuantity
 import edu.ie3.util.geo.RichGeometries.RichCoordinate
 import org.locationtech.jts.geom.Coordinate
+import org.scalatestplus.mockito.MockitoSugar.mock
 
+import collection.parallel.CollectionConverters.seqIsParallelizable
 import javax.measure.quantity.Length
 import scala.collection.parallel.ParSeq
 import scala.util.{Failure, Success, Try}
@@ -61,97 +63,131 @@ class LvGridGeneratorSpec extends UnitSpec with OsmTestData {
 
     }
 
-  }
-  "calculating building graph connections" should {
-    "calculate all building graph connections" in {
-      val calcBuildingGraphConnections =
-        PrivateMethod[Seq[BuildingGraphConnection]](
-          Symbol("calcBuildingGraphConnections")
-        )
-      val buildings = Seq(ways.building1, ways.building2)
-      val buildingGraphConnections: Seq[BuildingGraphConnection] =
-        LvGridGenerator invokePrivate calcBuildingGraphConnections(
-          Seq(ways.landuse2),
-          buildings,
-          Seq(ways.highway1, ways.highway2),
-          nodes.nodesMap,
-          0.5d.asKiloWattPerSquareMetre,
-          0.0001.asKilometre
-        )
-      buildingGraphConnections.size shouldBe 2
-      buildingGraphConnections.foreach {
-        case bgc: BuildingGraphConnection if bgc.building == ways.building1 => {
-          val highWayCoordinateA = GeoUtils.buildCoordinate(
-            nodes.highway1Node1.latitude,
-            nodes.highway1Node1.longitude
+    "determining building graph connections" should {
+      "calculate all building graph connections" in {
+        val calcBuildingGraphConnections =
+          PrivateMethod[ParSeq[BuildingGraphConnection]](
+            Symbol("calcBuildingGraphConnections")
           )
-          val highWayCoordinateB = GeoUtils.buildCoordinate(
-            nodes.highway1Node2.latitude,
-            nodes.highway1Node2.longitude
+        val landuses = Seq(ways.landuse2).par
+        val buildings = Seq(ways.building1, ways.building2).par
+        val highways = Seq(ways.highway1, ways.highway2).par
+
+        val buildingGraphConnections: ParSeq[BuildingGraphConnection] =
+          LvGridGenerator invokePrivate calcBuildingGraphConnections(
+            landuses,
+            buildings,
+            highways,
+            nodes.nodesMap,
+            0.5d.asKiloWattPerSquareMetre,
+            0.0001.asKilometre
           )
-          GeoUtils
-            .buildCoordinate(
-              bgc.nearestNode.latitude,
-              bgc.nearestNode.longitude
+        buildingGraphConnections.size shouldBe 2
+        buildingGraphConnections.foreach {
+          case bgc: BuildingGraphConnection
+              if bgc.building == ways.building1 => {
+            val highWayCoordinateA = GeoUtils.buildCoordinate(
+              nodes.highway1Node1.latitude,
+              nodes.highway1Node1.longitude
             )
-            .isBetween(
-              highWayCoordinateA,
-              highWayCoordinateB,
-              1e-3
-            ) shouldBe true
-        }
-        case bgc: BuildingGraphConnection if bgc.building == ways.building2 => {
-          bgc.connectedHighway shouldBe  ways.highway2
-          bgc.nearestNode shouldBe  nodes.highway2Node2
+            val highWayCoordinateB = GeoUtils.buildCoordinate(
+              nodes.highway1Node2.latitude,
+              nodes.highway1Node2.longitude
+            )
+            GeoUtils
+              .buildCoordinate(
+                bgc.graphConnectionNode.latitude,
+                bgc.graphConnectionNode.longitude
+              )
+              .isBetween(
+                highWayCoordinateA,
+                highWayCoordinateB,
+                1e-3
+              ) shouldBe true
+          }
+          case bgc: BuildingGraphConnection if bgc.building == ways.building2 =>
+            bgc.highwayNodeA shouldBe nodes.highway2Node1
+            bgc.highwayNodeB shouldBe nodes.highway2Node2
+            bgc.graphConnectionNode shouldBe nodes.highway2Node2
         }
       }
-    }
 
-    "find the closest ways to connect the buildings to" in {
-      val lineNodeA = Node(1L, 50d, 7d, Map.empty[String, String], None)
-      val lineNodeB = Node(2L, 50d, 8d, Map.empty[String, String], None)
-      val buildingCenter = GeoUtils.buildCoordinate(49d, 7.5)
-      val expectedOrthogonal = GeoUtils.buildCoordinate(50d, 7.5)
-      val nodes = Map(1L -> lineNodeA, 2L -> lineNodeB)
-      val minDistance = 0.05.asKilometre
-      val getClosest =
-        PrivateMethod[Try[(ComparableQuantity[Length], Node)]](
-          Symbol("getClosest")
-        )
-      LvGridGenerator invokePrivate getClosest(
-        lineNodeA.id,
-        lineNodeB.id,
-        buildingCenter,
-        nodes,
-        minDistance
-      ) match
-        case Success(distance, node: Node) =>
-          distance should equalWithTolerance(
-            buildingCenter.haversineDistance(expectedOrthogonal)
+      "find the closest ways to connect the buildings to" in {
+        val lineNodeA = Node(1L, 50d, 7d, Map.empty[String, String], None)
+        val lineNodeB = Node(2L, 50d, 8d, Map.empty[String, String], None)
+        val buildingCenter = GeoUtils.buildCoordinate(49d, 7.5)
+        val expectedOrthogonal = GeoUtils.buildCoordinate(50d, 7.5)
+        val nodes = Map(1L -> lineNodeA, 2L -> lineNodeB)
+        val minDistance = 0.05.asKilometre
+        val getClosest =
+          PrivateMethod[Try[(ComparableQuantity[Length], Node)]](
+            Symbol("getClosest")
           )
-          node.latitude shouldBe (expectedOrthogonal.y +- 1e-8)
-          node.longitude shouldBe (expectedOrthogonal.x +- 1e-8)
-        case Failure(exc) => fail(s"Test failed due to exception: ", exc)
+        LvGridGenerator invokePrivate getClosest(
+          lineNodeA.id,
+          lineNodeB.id,
+          buildingCenter,
+          nodes,
+          minDistance
+        ) match
+          case Success(distance, node: Node) =>
+            distance should equalWithTolerance(
+              buildingCenter.haversineDistance(expectedOrthogonal)
+            )
+            node.latitude shouldBe (expectedOrthogonal.y +- 1e-8)
+            node.longitude shouldBe (expectedOrthogonal.x +- 1e-8)
+          case Failure(exc) => fail(s"Test failed due to exception: ", exc)
+      }
+
+      "calculate an orthogonal projection correctly" in {
+        val coordinateA = GeoUtils.buildCoordinate(50d, 7)
+        val coordinateB = GeoUtils.buildCoordinate(50d, 8)
+        val point = GeoUtils.buildCoordinate(49d, 7.5)
+        val orthogonalProjection =
+          PrivateMethod[Coordinate](Symbol("orthogonalProjection"))
+        val actual = LvGridGenerator invokePrivate orthogonalProjection(
+          coordinateA,
+          coordinateB,
+          point
+        )
+        actual.x shouldBe (7.5 +- 1e-9)
+        actual.y shouldBe (50d +- 1e-9)
+      }
+
+      "update the street graph with all building graph connections" in {
+        val osmGraph = new OsmGraph()
+        osmGraph.addVertex(nodes.highway1Node1)
+        osmGraph.addVertex(nodes.highway1Node2)
+        val connectingNode = new Node(
+          99L,
+          nodes.highway1Node1.latitude + nodes.highway1Node2.latitude,
+          nodes.highway1Node1.longitude + nodes.highway1Node2.longitude,
+          Map.empty,
+          None
+        )
+        val buildingGraphConnection = BuildingGraphConnection(
+          ways.building1,
+          mock[Coordinate],
+          10.asKiloWatt,
+          nodes.highway1Node1,
+          nodes.highway1Node2,
+          connectingNode
+        )
+        val updateGraphWithBuildingConnections =
+          PrivateMethod[OsmGraph](Symbol("updateGraphWithBuildingConnections"))
+        val actual: OsmGraph =
+          LvGridGenerator invokePrivate updateGraphWithBuildingConnections(
+            osmGraph,
+            Seq(buildingGraphConnection).par
+          )
+        actual.containsVertex(connectingNode) shouldBe true
+        actual.containsEdge(
+          nodes.highway1Node1,
+          nodes.highway1Node2
+        ) shouldBe false
+        actual.containsEdge(nodes.highway1Node1, connectingNode) shouldBe true
+        actual.containsEdge(connectingNode, nodes.highway1Node2) shouldBe true
+      }
     }
-
-    "calculate an orthogonal projection correctly" in {
-      val coordinateA = GeoUtils.buildCoordinate(50d, 7)
-      val coordinateB = GeoUtils.buildCoordinate(50d, 8)
-      val point = GeoUtils.buildCoordinate(49d, 7.5)
-      val orthogonalProjection =
-        PrivateMethod[Coordinate](Symbol("orthogonalProjection"))
-      val actual = LvGridGenerator invokePrivate orthogonalProjection(
-        coordinateA,
-        coordinateB,
-        point
-      )
-      actual.x shouldBe (7.5 +- 1e-9)
-      actual.y shouldBe (50d +- 1e-9)
-    }
-
-    "calculate the power of the house connection properly" in {}
-
-    "ignore buildings that are not inside residential areas" in {}
-
   }
 }

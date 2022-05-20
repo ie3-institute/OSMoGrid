@@ -12,7 +12,8 @@ import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
 import edu.ie3.util.osm.model.{OsmContainer, OsmEntity}
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
 import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
-
+import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
+import collection.parallel.CollectionConverters.seqIsParallelizable
 import scala.collection.parallel.ParSeq
 import scala.collection.parallel.immutable.ParVector
 
@@ -20,15 +21,45 @@ sealed trait OsmoGridModel {
   protected val filter: SourceFilter
 
   def +(additional: OsmoGridModel): Option[OsmoGridModel]
-
-//  def filterForWays(entities: Seq[EnhancedOsmEntity]) = {
-//    entities.foldLeft(Seq.empty[Way], Map.empty[Long, OsmEntity]) { case ((ways, subentities), curEntity: EnhancedOsmEntity) =>
-//      curEntity.entity match
-//        case way: Way => (ways ++ , curEntity.subentities)
-//  }
 }
 
 object OsmoGridModel {
+
+  def filterForWays(
+      entities: ParSeq[EnhancedOsmEntity]
+  ): (ParSeq[Way], Map[Long, Node]) = {
+    filterForOsmType[Way, Node](entities)
+  }
+
+  def filterForClosedWays(
+      entities: ParSeq[EnhancedOsmEntity]
+  ): (ParSeq[ClosedWay], Map[Long, Node]) = {
+    filterForOsmType[ClosedWay, Node](entities)
+  }
+
+  def filterForOsmType[E <: OsmEntity, S <: OsmEntity](
+      entities: ParSeq[EnhancedOsmEntity]
+  ): (ParSeq[E], Map[Long, S]) = {
+    val (matchedEntities, matchedSubentities) = entities.foldLeft(
+      Seq.empty[E],
+      Map.empty[Long, S]
+    ) {
+      case (
+            (matchedEntities, matchedSubEntities),
+            curEntity: EnhancedOsmEntity
+          ) =>
+        curEntity.entity match
+          case entity: E =>
+            val subEntities = curEntity.subEntities collect {
+              case (id: Long, subEntity: S) => id -> subEntity
+            }
+            (
+              matchedEntities.appended(entity),
+              matchedSubEntities ++ subEntities
+            )
+    }
+    (matchedEntities.par, matchedSubentities)
+  }
 
   final case class LvOsmoGridModel(
       buildings: ParSeq[EnhancedOsmEntity],
@@ -233,5 +264,4 @@ object OsmoGridModel {
       }
     }
   }
-
 }

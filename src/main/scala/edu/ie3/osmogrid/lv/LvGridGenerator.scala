@@ -13,6 +13,7 @@ import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.exception.MissingOsmDataException
 import edu.ie3.osmogrid.graph.OsmGraph
+import edu.ie3.osmogrid.lv.LvGridGenerator.getClosest
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.{EnhancedOsmEntity, LvOsmoGridModel}
 import edu.ie3.util.geo.{GeoUtils, RichGeometries}
@@ -32,7 +33,6 @@ import edu.ie3.util.osm.OsmUtils.GeometryUtils.buildPolygon
 import edu.ie3.util.quantities.{PowerSystemUnits, QuantityUtil}
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
-
 import javax.measure.Unit
 import java.util.UUID
 import javax.measure.Quantity
@@ -41,77 +41,117 @@ import scala.collection.immutable.{AbstractSeq, LinearSeq}
 import scala.collection.parallel.{ParSeq, immutable}
 import scala.math.BigDecimal.RoundingMode
 import scala.util.{Failure, Success, Try}
+import scala.collection.parallel.immutable.ParVector
 
 object LvGridGenerator {
   sealed trait Request
-  final case class GenerateGrid(osmData: LvOsmoGridModel) extends Request
+  final case class GenerateGrid(
+      osmData: LvOsmoGridModel,
+      powerDensity: Irradiance,
+      minDistance: ComparableQuantity[Length]
+  ) extends Request
 
   sealed trait Response
-  final case class RepLvGrid(grid: SubGridContainer) extends Response
+  final case class RepLvGrid(
+      grid: SubGridContainer
+  ) extends Response
 
+  /** Resembles a calculated connection between a building and a grid. Every
+    * building gets connected on the nearest point at the nearest highway
+    * section. The connection point can either be a new node on mentioned
+    * highway section or one of the two highway section nodes
+    *
+    * @param building
+    *   the building to connect
+    * @param center
+    *   the building center
+    * @param buildingPower
+    *   the building power
+    * @param highwayNodeA
+    *   node a of the highway section at which the building gets connected
+    * @param highwayNodeB
+    *   node b of the highway section at which the building gets connected
+    * @param graphConnectionNode
+    *   the graph connection node
+    */
   final case class BuildingGraphConnection(
       building: ClosedWay,
       center: Coordinate,
       buildingPower: ComparableQuantity[Power],
-      connectedHighway: Way,
-      nearestNode: Node
-  )
+      highwayNodeA: Node,
+      highwayNodeB: Node,
+      graphConnectionNode: Node
+  ) {
+
+    /** Checks whether the graph connection node is a new node. If not it is one
+      * of the highway sections
+      *
+      * @return
+      *   whether the graph connection is a new node
+      */
+    def hasNewNode: Boolean = {
+      (graphConnectionNode != highwayNodeA) && (graphConnectionNode != highwayNodeB)
+    }
+  }
 
   def apply(): Behaviors.Receive[Request] = idle
 
   private def idle: Behaviors.Receive[Request] = Behaviors.receive {
-    case (ctx, GenerateGrid(osmData)) =>
-//      val streetGraph = buildStreetGraph(osmData.highways)
+    case (ctx, GenerateGrid(osmData, powerDensity, minDistance)) =>
+      val streetGraph = buildGridGraph(osmData, powerDensity, minDistance)
       ???
     case (ctx, unsupported) =>
       ctx.log.warn(s"Received unsupported message '$unsupported'.")
       Behaviors.stopped
   }
 
-  // Process:
-  // buildStreetGraph
-  // calcBuildingGraphConnection
-  // updateGraph
-  // removeEmptyLandUses
-  // cleanGraph (?) remove unneccessary dead ends
-  // createClusters
-  // createSubgraphs(clusters)
-
-  private def buildStreetGraph(
-      enhancedEntities: Seq[EnhancedOsmEntity]
-  ): OsmGraph = {
-//      val graph = new OsmGraph()
-//      enhancedEntities.foreach(enhancedEntity => {
-//        // todo: unsafe
-//        val way = enhancedEntity.entity.asInstanceOf[Way]
-//        val nodeIds = way.nodes
-//        for (i <- 1 until nodeIds.size) {
-//          // todo: unsafe
-//          val nodeA = enhancedEntity.subEntities(nodeIds(i - 1)).asInstanceOf[Node]
-//          val nodeB = enhancedEntity.subEntities(nodeIds(i)).asInstanceOf[Node]
-//          graph.addVertex(nodeA)
-//          graph.addVertex(nodeB)
-//          // calculate edge weight
-//          val weight = GeoUtils.calcHaversine(nodeA.latitude, nodeA.longitude, nodeB.latitude, nodeB.longitude)
-//          // create edge and add edge to rawGraph
-//          val edge = new DistanceWeightedEdge()
-//          graph.setEdgeWeight(edge, weight.getValue.doubleValue)
-//          graph.addEdge(nodeA, nodeB, edge) // TODO: consider checking boolean from this method
-//        }})
-//      graph
-    ???
+  /** Builds an extended weighted street graph that resembles not only the
+    * streets but also the building graph connections.
+    *
+    * @param osmoGridModel
+    *   the osmo grid data for which to build the graph
+    * @param powerDensity
+    *   the power density of a household
+    * @param minDistance
+    *   the minimum distance above which to build new nodes on the street graph
+    *   for building connections
+    * @return
+    */
+  private def buildGridGraph(
+      osmoGridModel: LvOsmoGridModel,
+      powerDensity: ComparableQuantity[Irradiance],
+      minDistance: ComparableQuantity[Length]
+  ): (OsmGraph, ParSeq[BuildingGraphConnection]) = {
+    val (highways, highwayNodes) =
+      OsmoGridModel.filterForWays(osmoGridModel.highways)
+    val (building, buildingNodes) =
+      OsmoGridModel.filterForClosedWays(osmoGridModel.buildings)
+    val (landuses, landUseNodes) =
+      OsmoGridModel.filterForClosedWays(osmoGridModel.landuses)
+    val buildingGraphConnections = calcBuildingGraphConnections(
+      landuses,
+      building,
+      highways,
+      highwayNodes ++ buildingNodes ++ landUseNodes,
+      powerDensity,
+      minDistance
+    )
+    val streetGraph = buildStreetGraph(highways, highwayNodes)
+    (
+      updateGraphWithBuildingConnections(streetGraph, buildingGraphConnections),
+      buildingGraphConnections
+    )
   }
 
-  private def buildStreetGraph(
-      ways: ParSeq[EnhancedOsmEntity]
-  ): OsmGraph = {
-//    val ways = ways.map{case EnhancedOsmEntity(way: Way, subEntities) => }
-//    val nodes =
-//
-//    return buildStreetGraph()
-    ???
-  }
-
+  /** builds a weighted street graph out ways and nodes.
+    *
+    * @param ways
+    *   the ways
+    * @param nodes
+    *   the nodes
+    * @return
+    *   the street graph
+    */
   private def buildStreetGraph(
       ways: ParSeq[Way],
       nodes: Map[Long, Node]
@@ -124,16 +164,7 @@ object LvGridGenerator {
           case (Some(nodeA), Some(nodeB)) =>
             graph.addVertex(nodeA)
             graph.addVertex(nodeB)
-            val weight = GeoUtils.calcHaversine(
-              nodeA.latitude,
-              nodeA.longitude,
-              nodeB.latitude,
-              nodeB.longitude
-            )
-            // create edge and add edge to rawGraph
-            val edge = new DistanceWeightedEdge()
-            graph.setEdgeWeight(edge, weight.getValue.doubleValue)
-            graph.addEdge(nodeA, nodeB, edge) // TODO: consider checking boolean from this method
+            graph.addWeightedEdge(nodeA, nodeB)
 
           case (None, _) =>
             throw IllegalArgumentException(
@@ -148,22 +179,33 @@ object LvGridGenerator {
     graph
   }
 
-  private def calcPerpendicularDistanceMatrix(
-      buildings: Seq[EnhancedOsmEntity],
-      comparableQuantity: ComparableQuantity[PowerDensity]
-  ) = {
-    ???
-  }
-
-  // todo: I probably can do this parallel to building the street graph
+  /** Calculates building graph connections of buildings to the nearest highway
+    * sections
+    *
+    * @param landuses
+    *   all landuses
+    * @param buildings
+    *   all buildings
+    * @param highways
+    *   all highways
+    * @param nodes
+    *   all nodes
+    * @param powerDensity
+    *   the average power density of a house
+    * @param minDistance
+    *   the minimum distance above which to build new nodes on the street graph
+    *   for building connections
+    * @return
+    *   all building graph connections
+    */
   private def calcBuildingGraphConnections(
-      landuses: Seq[ClosedWay],
-      buildings: Seq[ClosedWay],
-      highways: Seq[Way],
+      landuses: ParSeq[ClosedWay],
+      buildings: ParSeq[ClosedWay],
+      highways: ParSeq[Way],
       nodes: Map[Long, Node],
       powerDensity: ComparableQuantity[Irradiance],
       minDistance: ComparableQuantity[Length]
-  ): Seq[BuildingGraphConnection] = {
+  ): ParSeq[BuildingGraphConnection] = {
     val landusePolygons = landuses.map(buildPolygon(_, nodes).get)
     buildings.flatMap(building => {
       val buildingPolygon = buildPolygon(building, nodes).get
@@ -174,18 +216,28 @@ object LvGridGenerator {
         val closest = highways.flatMap(highway => {
           // get closest to each highway section
           highway.nodes.sliding(2).map { case Seq(nodeAId, nodeBId) =>
-            val (distance, node) = getClosest(
-              nodeAId,
-              nodeBId,
-              buildingCenter,
-              nodes,
-              minDistance
-            ).getOrElse(
-              throw MissingOsmDataException(
-                s"Could not retrieve closest nodes for highway ${highway.id}"
-              )
-            )
-            (distance, node, highway)
+            (nodes.get(nodeAId), nodes.get(nodeBId)) match {
+              case (None, _) =>
+                throw IllegalArgumentException(
+                  s"Node $nodeAId is not within our nodes mapping"
+                )
+              case (_, None) =>
+                throw IllegalArgumentException(
+                  s"Node $nodeBId is not within our nodes mapping"
+                )
+              case (Some(nodeA), Some(nodeB)) =>
+                val (distance, node) = getClosest(
+                  nodeA,
+                  nodeB,
+                  buildingCenter,
+                  minDistance
+                ).getOrElse(
+                  throw MissingOsmDataException(
+                    s"Could not retrieve closest nodes for highway ${highway.id}"
+                  )
+                )
+                (distance, node, nodeA, nodeB)
+            }
           }
         })
 
@@ -200,6 +252,7 @@ object LvGridGenerator {
             buildingCenter,
             load,
             closestOverall._3,
+            closestOverall._4,
             closestOverall._2
           )
         )
@@ -207,9 +260,18 @@ object LvGridGenerator {
     })
   }
 
+  /** Checks whether or not the center of a building is within a landuse
+    *
+    * @param buildingCenter
+    *   the building center
+    * @param landuses
+    *   the landuse
+    * @return
+    *   whether or not the center of a building is within a landuse
+    */
   def isInsideLanduse(
       buildingCenter: Coordinate,
-      landuses: Seq[Polygon]
+      landuses: ParSeq[Polygon]
   ): Boolean = {
     for (landuse <- landuses) {
       if (landuse.containsCoordinate(buildingCenter)) return true
@@ -232,7 +294,8 @@ object LvGridGenerator {
     * @param nodes
     *   node id to node map
     * @param minDistance
-    *   minimum distance for creating a new point
+    *   the minimum distance above which to build new nodes on the street graph
+    *   for building connections
     * @return
     *   a Tuple of the distance and the point
     */
@@ -260,8 +323,6 @@ object LvGridGenerator {
         )
     }
 
-  // todo: Knoten die nur Knickpunkte sind werden rausgefiltert -> LF Berechnung -> Knicks als Geoposition
-
   /** Get closest point of the buildings center to the highway section spanning
     * linePtA and linePtB. If we find a point closer to the building center that
     * is not linePtA nor linePtB we only take it if it is sufficiently far away
@@ -270,14 +331,13 @@ object LvGridGenerator {
     *
     * @param buildingCenter
     *   center coordinate of the building
-    * @param linePtA
-    *   point a of the way section
-    * @param linePtB
-    *   point b of the way section
-    * @param nodes
-    *   node id to node map
+    * @param wayNodeA
+    *   node a of the way section
+    * @param wayNodeB
+    *   node b of the way section
     * @param minDistance
-    *   minimum distance for creating a new point
+    *   the minimum distance above which to build new nodes on the street graph
+    *   for building connections
     * @return
     *   a Tuple of the distance and the point
     */
@@ -331,8 +391,8 @@ object LvGridGenerator {
     ).toCoordinate
   }
 
-  /** Calculate the orthogonal projection of a point onto a line Check out how
-    * and why this
+  /** Calculate the orthogonal projection of a point onto a line. Credits to
+    * Andrey Tyukin. Check out how and why this works here:
     * https://stackoverflow.com/questions/54009832/scala-orthogonal-projection-of-a-point-onto-a-line
     *
     * @param linePtA
@@ -344,7 +404,7 @@ object LvGridGenerator {
     * @return
     *   the projected point
     */
-  // todo: Move to GeoUtils
+  @deprecated("Move to GeoUtils of the PowerSystemUtils")
   private def orthogonalProjection(
       linePtA: Vector2D,
       linePtB: Vector2D,
@@ -376,7 +436,7 @@ object LvGridGenerator {
     round(power, 4)
   }
 
-  // todo: move to PowerSystemUtils -> QuantityUtils
+  @deprecated("Move to QuantityUtils of the PowerSystemUtils")
   private def round[T <: Quantity[T]](
       quantity: ComparableQuantity[T],
       decimals: Int
@@ -392,4 +452,28 @@ object LvGridGenerator {
     Quantities.getQuantity(rounded, quantity.getUnit)
   }
 
+  /** Updates the graph by adding the building graph connections and updating
+    * the edges of the surrounding nodes
+    *
+    * @param graph
+    *   the graph to update
+    * @param buildingGraphConnections
+    *   the building-graph connections to update with
+    * @return
+    *   the updated OsmGraph
+    */
+  private def updateGraphWithBuildingConnections(
+      graph: OsmGraph,
+      buildingGraphConnections: ParSeq[BuildingGraphConnection]
+  ): OsmGraph = {
+    buildingGraphConnections.foreach(bgc =>
+      if (bgc.hasNewNode) {
+        graph.addVertex(bgc.graphConnectionNode)
+        graph.removeEdge(bgc.highwayNodeA, bgc.highwayNodeB)
+        graph.addWeightedEdge(bgc.highwayNodeA, bgc.graphConnectionNode)
+        graph.addWeightedEdge(bgc.graphConnectionNode, bgc.highwayNodeB)
+      }
+    )
+    graph
+  }
 }
