@@ -7,8 +7,10 @@
 package edu.ie3.osmogrid.graph
 
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
+import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 
+import tech.units.indriya.unit.Units.METRE
 import java.util.function.Supplier
 import javax.measure.Quantity
 import javax.measure.quantity.Length
@@ -29,12 +31,25 @@ class OsmGraph(
     this(null, SupplierUtil.createSupplier(classOf[DistanceWeightedEdge]))
   }
 
+  def addWeightedEdge(nodeA: Node, nodeB: Node): Unit = {
+    val weight = GeoUtils.calcHaversine(
+      nodeA.latitude,
+      nodeA.longitude,
+      nodeB.latitude,
+      nodeB.longitude
+    )
+    val edge = new DistanceWeightedEdge()
+    this.setEdgeWeight(
+      edge, weight)
+    this.addEdge(nodeA, nodeB, edge)
+  }
+
   def setEdgeWeight(
       edge: DistanceWeightedEdge,
       weight: ComparableQuantity[Length]
   ): Unit = {
     val weightDouble: Double =
-      weight.to(DistanceWeightedEdge.DEFAULT_DISTANCE_UNIT).getValue.doubleValue
+      weight.to(METRE).getValue.doubleValue
     super.setEdgeWeight(edge, weightDouble)
   }
 

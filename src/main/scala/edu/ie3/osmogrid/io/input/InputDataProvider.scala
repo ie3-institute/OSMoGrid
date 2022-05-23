@@ -82,7 +82,6 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
   )
 
   def apply(
-      runId: UUID,
       osmConfig: OsmoGridConfig.Input
   ): Behavior[InputDataEvent] = {
     Behaviors.withStash[InputDataEvent](100) { buffer =>
@@ -143,8 +142,6 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
         Behaviors.same
     }
 
-  // TODO this doesn't seem to make too much sense here
-  /* Nothing to do here. At least until now. */
   override protected def cleanUp(providerData: ProviderData): Unit = {
     providerData.osmSource.close()
   }
