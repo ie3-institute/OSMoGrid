@@ -37,8 +37,7 @@ import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try, Using}
 import java.util.UUID
 
-object InputDataProvider
-    extends ActorStopSupport[InputDataEvent, ProviderData] {
+object InputDataProvider extends ActorStopSupport[ProviderData] {
 
   // external requests
   sealed trait Request

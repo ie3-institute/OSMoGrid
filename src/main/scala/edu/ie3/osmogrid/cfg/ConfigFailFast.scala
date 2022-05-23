@@ -8,11 +8,12 @@ package edu.ie3.osmogrid.cfg
 
 import akka.actor.typed.ActorRef
 import com.typesafe.scalalogging.LazyLogging
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Grid, Input, Io, Output, Runtime}
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Input, Output}
 import edu.ie3.osmogrid.exception.IllegalConfigException
+import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.io.output.ResultListener
 
 import scala.util.Try
@@ -52,10 +53,30 @@ object ConfigFailFast extends LazyLogging {
   // TODO Check Filter for osm
   private def checkLvConfig(lv: OsmoGridConfig.Generation.Lv): Unit = lv match {
     case Lv(
-          distinctHouseConnections,
-          osm
+          Lv.BoundaryAdminLevel(
+            lowest,
+            starting
+          ),
+          _,
+          _
         ) =>
-      
+      (BoundaryAdminLevel(lowest), BoundaryAdminLevel(starting)) match {
+        case (None, _) =>
+          throw IllegalConfigException(
+            s"The lowest admin level can not be parsed (provided: $lowest)."
+          )
+        case (_, None) =>
+          throw IllegalConfigException(
+            s"The starting admin level can not be parsed (provided: $starting)."
+          )
+        case (Some(lowestParsed), Some(startingParsed))
+            if startingParsed > lowestParsed =>
+          throw IllegalConfigException(
+            s"The starting admin level (provided: $startingParsed) has to be higher than the lowest admin level (provided: $lowestParsed)."
+          )
+        case _ =>
+        // all good, do nothing
+      }
   }
 
   private def checkInputConfig(input: OsmoGridConfig.Input): Unit =

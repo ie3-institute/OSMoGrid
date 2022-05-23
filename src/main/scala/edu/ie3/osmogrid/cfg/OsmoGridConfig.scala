@@ -20,10 +20,29 @@ object OsmoGridConfig {
   )
   object Generation {
     final case class Lv(
+        boundaryAdminLevel: OsmoGridConfig.Generation.Lv.BoundaryAdminLevel,
         distinctHouseConnections: scala.Boolean,
         osm: OsmoGridConfig.Generation.Lv.Osm
     )
     object Lv {
+      final case class BoundaryAdminLevel(
+          lowest: scala.Int,
+          starting: scala.Int
+      )
+      object BoundaryAdminLevel {
+        def apply(
+            c: com.typesafe.config.Config,
+            parentPath: java.lang.String,
+            $tsCfgValidator: $TsCfgValidator
+        ): OsmoGridConfig.Generation.Lv.BoundaryAdminLevel = {
+          OsmoGridConfig.Generation.Lv.BoundaryAdminLevel(
+            lowest = if (c.hasPathOrNull("lowest")) c.getInt("lowest") else 8,
+            starting =
+              if (c.hasPathOrNull("starting")) c.getInt("starting") else 2
+          )
+        }
+      }
+
       final case class Osm(
           filter: scala.Option[OsmoGridConfig.Generation.Lv.Osm.Filter]
       )
@@ -76,6 +95,15 @@ object OsmoGridConfig {
           $tsCfgValidator: $TsCfgValidator
       ): OsmoGridConfig.Generation.Lv = {
         OsmoGridConfig.Generation.Lv(
+          boundaryAdminLevel = OsmoGridConfig.Generation.Lv.BoundaryAdminLevel(
+            if (c.hasPathOrNull("boundaryAdminLevel"))
+              c.getConfig("boundaryAdminLevel")
+            else
+              com.typesafe.config.ConfigFactory
+                .parseString("boundaryAdminLevel{}"),
+            parentPath + "boundaryAdminLevel.",
+            $tsCfgValidator
+          ),
           distinctHouseConnections = c.hasPathOrNull(
             "distinctHouseConnections"
           ) && c.getBoolean("distinctHouseConnections"),
