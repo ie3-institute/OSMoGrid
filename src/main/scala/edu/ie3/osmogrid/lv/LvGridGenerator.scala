@@ -7,41 +7,51 @@
 package edu.ie3.osmogrid.lv
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.util.Collections
-import edu.ie3.datamodel.graph.{DistanceWeightedEdge, DistanceWeightedGraph}
-import edu.ie3.datamodel.models.StandardUnits
-import edu.ie3.datamodel.models.input.container.SubGridContainer
+import edu.ie3.datamodel.graph.DistanceWeightedEdge
+import edu.ie3.datamodel.models.BdewLoadProfile
+import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
+import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
+import edu.ie3.datamodel.models.input.connector.{LineInput, SwitchInput, Transformer2WInput, Transformer3WInput}
+import edu.ie3.datamodel.models.input.container.{GraphicElements, JointGridContainer, RawGridElements, SubGridContainer, SystemParticipants}
+import edu.ie3.datamodel.models.input.graphics.{LineGraphicInput, NodeGraphicInput}
+import edu.ie3.datamodel.models.input.system.characteristic.{CosPhiFixed, OlmCharacteristicInput}
+import edu.ie3.datamodel.models.input.system.{BmInput, ChpInput, EvInput, EvcsInput, FixedFeedInInput, HpInput, LoadInput, PvInput, StorageInput, WecInput}
+import edu.ie3.datamodel.models.voltagelevels.{GermanVoltageLevelUtils, VoltageLevel}
+import edu.ie3.datamodel.utils.GridAndGeoUtils
+import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.MissingOsmDataException
-import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.lv.LvGridGenerator.getClosest
+import edu.ie3.osmogrid.graph.{OsmGraph, OsmGridNode}
 import edu.ie3.osmogrid.model.OsmoGridModel
-import edu.ie3.osmogrid.model.OsmoGridModel.{EnhancedOsmEntity, LvOsmoGridModel}
-import edu.ie3.util.geo.{GeoUtils, RichGeometries}
-import edu.ie3.util.geo.GeoUtils.{buildCoordinate, calcHaversine}
-import edu.ie3.util.osm.OsmUtils
-import edu.ie3.util.osm.model.OsmEntity.Way
-import edu.ie3.util.osm.model.OsmEntity.Way.{ClosedWay, OpenWay}
-import edu.ie3.util.osm.model.OsmEntity.Node
-import edu.ie3.util.quantities.interfaces.{Irradiance, PowerDensity}
-import org.locationtech.jts.geom.{Coordinate, Polygon}
-import org.locationtech.jts.math.{Vector2D, Vector3D}
-import tech.units.indriya.ComparableQuantity
+import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
+import edu.ie3.util.OneToOneMap
+import edu.ie3.util.geo.GeoUtils
+import edu.ie3.util.geo.GeoUtils.buildCoordinate
 import edu.ie3.util.geo.RichGeometries.RichPolygon
 import edu.ie3.util.geo.RichGeometries.RichCoordinate
-import edu.ie3.util.osm.OsmUtils.GeometryUtils
 import edu.ie3.util.osm.OsmUtils.GeometryUtils.buildPolygon
-import edu.ie3.util.quantities.{PowerSystemUnits, QuantityUtil}
+import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
+import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
+import edu.ie3.util.quantities.PowerSystemUnits
+import edu.ie3.util.quantities.interfaces.Irradiance
+import org.jgrapht.graph.AsSubgraph
+import org.locationtech.jts.geom.{Coordinate, Polygon}
+import org.locationtech.jts.math.Vector2D
+import org.locationtech.jts.operation.overlay.LineBuilder
+import org.slf4j.LoggerFactory
+import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
-import javax.measure.Unit
+
+import scala.jdk.CollectionConverters
+import java.util
 import java.util.UUID
 import javax.measure.Quantity
-import javax.measure.quantity.{Area, Length, Power}
-import scala.collection.immutable.{AbstractSeq, LinearSeq}
-import scala.collection.parallel.{ParSeq, immutable}
+import javax.measure.quantity.{Area, Energy, Length, Power}
+import scala.collection.parallel.ParSeq
 import scala.math.BigDecimal.RoundingMode
 import scala.util.{Failure, Success, Try}
-import scala.collection.parallel.immutable.ParVector
+import collection.convert.ImplicitConversions.set
+
 
 object LvGridGenerator {
   sealed trait Request
@@ -94,6 +104,8 @@ object LvGridGenerator {
       (graphConnectionNode != highwayNodeA) && (graphConnectionNode != highwayNodeB)
     }
   }
+
+  private val nodeCodeMaps = new util.HashMap[Integer, OneToOneMap[String, Integer]]
 
   val logger: slf4j.Logger = LoggerFactory.getLogger("LvGridGenerator")
 
@@ -505,7 +517,7 @@ object LvGridGenerator {
     *   GraphModel from which the GridInputModels shall be generated
     */
   private def buildGrid(
-      graphModel: List[AsSubgraph[Node, DistanceWeightedEdge]],
+      graphModel: List[AsSubgraph[OsmGridNode, DistanceWeightedEdge]],
       ratedVoltage: Double,
       voltageLevel: String
   ) = {
@@ -537,9 +549,9 @@ object LvGridGenerator {
     val loadInputs = new util.HashSet[LoadInput]
     val lineInputs = new util.HashSet[LineInput]
 
-    for (subgraph <- graphModel.asScala) {
+    for (subgraph <- graphModel) {
       val geoGridNodesMap = new util.HashMap[OsmGridNode, NodeInput]
-      for (osmGridNode: OsmGridNode <- subgraph.vertexSet.asScala) {
+      for (osmGridNode: OsmGridNode <- subgraph.vertexSet()) {
         if (osmGridNode.getLoad != null) {
           val nodeInput: NodeInput = new NodeInput(
             UUID.randomUUID,
@@ -566,7 +578,7 @@ object LvGridGenerator {
               },
               vTarget,
               false,
-              GeoUtils.buildPoint(osmGridNode.getHouseConnectionPoint),
+              GeoUtils.buildPoint(GeoUtils.buildCoordinate(osmGridNode.getHouseConnectionPoint.getLat, osmGridNode.getHouseConnectionPoint.getLon)),
               voltLvl,
               subNetCounter
             )
@@ -653,7 +665,7 @@ object LvGridGenerator {
               },
               vTarget,
               osmGridNode.isSubStation,
-              GeoUtils.buildPoint(osmGridNode.getLatlon),
+              GeoUtils.buildPoint(GeoUtils.buildCoordinate(osmGridNode.getLatlon.getLat, osmGridNode.getLatlon.getLon)),
               voltLvl,
               subNetCounter
             )
@@ -680,9 +692,9 @@ object LvGridGenerator {
     */
 
   private def buildGridContainer(
-      nodes: util.Set[NodeInput],
-      lines: util.Set[LineInput],
-      loads: util.Set[LoadInput]
+      nodes: java.util.Set[NodeInput],
+      lines: java.util.Set[LineInput],
+      loads: java.util.Set[LoadInput]
   ) = {
     val rawGridElements = new RawGridElements(
       nodes,
@@ -726,12 +738,12 @@ object LvGridGenerator {
     *   for each subnet).
     */
   def generateGrid(
-      graphModel: List[AsSubgraph[Node, DistanceWeightedEdge]]
+      graphModel: List[AsSubgraph[OsmGridNode, DistanceWeightedEdge]]
   ): JointGridContainer = {
     //TODO: Give ratedVoltage and VoltageLevel
     val gridModel = buildGrid(graphModel,1.0,"lv")
     // build node code maps and admittance matrices for each sub net
-    for (subGrid <- gridModel.getSubGridTopologyGraph.vertexSet.asScala) {
+    for (subGrid <- gridModel.getSubGridTopologyGraph.vertexSet) {
       val nodeCodeMap: OneToOneMap[String, Integer] =
         OsmoGridUtils.buildNodeCodeMap(subGrid.getRawGrid.getNodes)
       LvGridGenerator.nodeCodeMaps.put(subGrid.getSubnet, nodeCodeMap)
