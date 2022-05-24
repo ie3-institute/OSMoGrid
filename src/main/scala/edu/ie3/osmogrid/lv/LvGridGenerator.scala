@@ -7,6 +7,7 @@
 package edu.ie3.osmogrid.lv
 
 import akka.actor.typed.scaladsl.Behaviors
+import de.osmogrid.util.OsmoGridUtils
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.BdewLoadProfile
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
@@ -37,11 +38,12 @@ import org.jgrapht.graph.AsSubgraph
 import org.locationtech.jts.geom.{Coordinate, Polygon}
 import org.locationtech.jts.math.Vector2D
 import org.locationtech.jts.operation.overlay.LineBuilder
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 
+import collection.JavaConverters.asScalaSetConverter
 import scala.jdk.CollectionConverters
 import java.util
 import java.util.UUID
@@ -51,7 +53,6 @@ import scala.collection.parallel.ParSeq
 import scala.math.BigDecimal.RoundingMode
 import scala.util.{Failure, Success, Try}
 import collection.convert.ImplicitConversions.set
-
 
 object LvGridGenerator {
   sealed trait Request
@@ -105,9 +106,10 @@ object LvGridGenerator {
     }
   }
 
-  private val nodeCodeMaps = new util.HashMap[Integer, OneToOneMap[String, Integer]]
+  private val nodeCodeMaps =
+    new util.HashMap[Integer, OneToOneMap[String, Integer]]
 
-  val logger: slf4j.Logger = LoggerFactory.getLogger("LvGridGenerator")
+  val logger: Logger = LoggerFactory.getLogger("LvGridGenerator")
 
   def apply(): Behaviors.Receive[Request] = idle
 
@@ -538,7 +540,7 @@ object LvGridGenerator {
         )
         GermanVoltageLevelUtils.LV
     }
-    //TODO Refactor
+    // TODO Refactor
     // set id counters
     var nodeIdCounter = 1
     var lineIdCounter = 1
@@ -551,7 +553,7 @@ object LvGridGenerator {
 
     for (subgraph <- graphModel) {
       val geoGridNodesMap = new util.HashMap[OsmGridNode, NodeInput]
-      for (osmGridNode: OsmGridNode <- subgraph.vertexSet()) {
+      for (osmGridNode: OsmGridNode <- subgraph.vertexSet().asScala) {
         if (osmGridNode.getLoad != null) {
           val nodeInput: NodeInput = new NodeInput(
             UUID.randomUUID,
@@ -561,7 +563,12 @@ object LvGridGenerator {
             },
             vTarget,
             osmGridNode.isSubStation,
-            GeoUtils.buildPoint(GeoUtils.buildCoordinate(osmGridNode.getLatlon.getLat, osmGridNode.getLatlon.getLon)),
+            GeoUtils.buildPoint(
+              GeoUtils.buildCoordinate(
+                osmGridNode.getLatlon.getLat,
+                osmGridNode.getLatlon.getLon
+              )
+            ),
             voltLvl,
             subNetCounter
           )
@@ -578,7 +585,12 @@ object LvGridGenerator {
               },
               vTarget,
               false,
-              GeoUtils.buildPoint(GeoUtils.buildCoordinate(osmGridNode.getHouseConnectionPoint.getLat, osmGridNode.getHouseConnectionPoint.getLon)),
+              GeoUtils.buildPoint(
+                GeoUtils.buildCoordinate(
+                  osmGridNode.getHouseConnectionPoint.getLat,
+                  osmGridNode.getHouseConnectionPoint.getLon
+                )
+              ),
               voltLvl,
               subNetCounter
             )
@@ -665,7 +677,12 @@ object LvGridGenerator {
               },
               vTarget,
               osmGridNode.isSubStation,
-              GeoUtils.buildPoint(GeoUtils.buildCoordinate(osmGridNode.getLatlon.getLat, osmGridNode.getLatlon.getLon)),
+              GeoUtils.buildPoint(
+                GeoUtils.buildCoordinate(
+                  osmGridNode.getLatlon.getLat,
+                  osmGridNode.getLatlon.getLon
+                )
+              ),
               voltLvl,
               subNetCounter
             )
@@ -740,10 +757,10 @@ object LvGridGenerator {
   def generateGrid(
       graphModel: List[AsSubgraph[OsmGridNode, DistanceWeightedEdge]]
   ): JointGridContainer = {
-    //TODO: Give ratedVoltage and VoltageLevel
-    val gridModel = buildGrid(graphModel,1.0,"lv")
+    // TODO: Give ratedVoltage and VoltageLevel
+    val gridModel = buildGrid(graphModel, 1.0, "lv")
     // build node code maps and admittance matrices for each sub net
-    for (subGrid <- gridModel.getSubGridTopologyGraph.vertexSet) {
+    for (subGrid <- gridModel.getSubGridTopologyGraph.vertexSet.asScala) {
       val nodeCodeMap: OneToOneMap[String, Integer] =
         OsmoGridUtils.buildNodeCodeMap(subGrid.getRawGrid.getNodes)
       LvGridGenerator.nodeCodeMaps.put(subGrid.getSubnet, nodeCodeMap)
