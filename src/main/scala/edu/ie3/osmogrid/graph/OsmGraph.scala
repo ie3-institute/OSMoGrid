@@ -39,8 +39,7 @@ class OsmGraph(
       nodeB.longitude
     )
     val edge = new DistanceWeightedEdge()
-    this.setEdgeWeight(
-      edge, weight)
+    this.setEdgeWeight(edge, weight)
     this.addEdge(nodeA, nodeB, edge)
   }
 

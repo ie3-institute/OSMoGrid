@@ -86,7 +86,7 @@ object ConfigFailFast extends LazyLogging {
         checkOsmInputConfig(osm)
     }
 
-  private def checkIoConfig(io: Io) : Unit = ???
+  private def checkIoConfig(io: Io): Unit = ???
 
   private def checkAssetInputConfig(asset: OsmoGridConfig.Input.Asset): Unit =
     asset match {
