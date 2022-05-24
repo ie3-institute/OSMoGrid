@@ -30,7 +30,7 @@ object ConfigFailFast extends LazyLogging {
         checkGenerationConfig(generation)
         checkGridConfig(grid)
         checkIoConfig(io)
-        checkRuntimeConfig(runtime)
+//        checkRuntimeConfig(runtime)
     }
     cfg
   }
@@ -137,6 +137,7 @@ object ConfigFailFast extends LazyLogging {
       "Output directory and separator must be set when using .csv file sink!"
     )
 
-  private def checkRuntimeConfig(runtime: Runtime): Unit = ???
+  // Todo: Do we need to Check RuntimeConfig?
+//  private def checkRuntimeConfig(runtime: Runtime): Unit = ???
 
 }
