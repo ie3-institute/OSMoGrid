@@ -13,7 +13,11 @@ import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.datamodel.models.input.connector
+import edu.ie3.datamodel.models.input.connector.LineInput
+import edu.ie3.datamodel.models.input.connector.`type`
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
+
+
 
 import collection.JavaConverters.{asScalaBufferConverter, asScalaSetConverter}
 import scala.jdk.CollectionConverters
@@ -57,10 +61,10 @@ class LineBuilder(
   var lastVisitedNode: OsmGridNode
   var geoNodes: util.LinkedList[OsmGridNode]
   var lineIdCounter = 0
-  var lineInputModels = null
+  var lineInputModels: util.LinkedList[LineInput]
   //  var subgraph: AsSubgraph[OsmGridNode, DistanceWeightedEdge]
   //  //  private var subgraph = null
-  //  var geoGridNodesMap: Map[OsmGridNode,NodeInput]
+  var geoGridNodesMap: util.HashMap[OsmGridNode,NodeInput]
   //  //  private var startNode = null
   //  //  private var endNode = null
   //  //  private var geoNodes = null
@@ -95,16 +99,14 @@ class LineBuilder(
       geoGridNodesMap: util.HashMap[OsmGridNode, NodeInput],
       lineIdCounter: Int
   ): Unit = {
-    //        this.subgraph = subgraph
-    //        this.visitColor = VisitColor.WHITE
-    //        this.geoGridNodesMap = geoGridNodesMap
-    // //        this.startNode = null
-    // //        this.endNode = null
-    // //        this.geoNodes = new util.LinkedList[Nothing]
+    this.geoGridNodesMap = geoGridNodesMap
+    this.startNode = null
+    this.endNode = null
+    this.geoNodes = new util.LinkedList[OsmGridNode]
     val nodeColorMap = new util.HashMap[OsmGridNode, VisitColor]
-    //        this.lineIdCounter = lineIdCounter
-    //        this.lineInputModels = new util.LinkedList[LineInput]
-    //        // set the visit color for all nodes to white
+            this.lineIdCounter = lineIdCounter
+            this.lineInputModels = new util.LinkedList[LineInput]
+            // set the visit color for all nodes to white
     subgraph.vertexSet.forEach((node: OsmGridNode) =>
       nodeColorMap.put(node, VisitColor.WHITE)
     )
