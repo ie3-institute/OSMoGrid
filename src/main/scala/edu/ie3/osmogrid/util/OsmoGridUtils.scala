@@ -11,7 +11,7 @@ import edu.ie3.util.OneToOneMap
 import edu.ie3.util.quantities.PowerSystemUnits
 import edu.ie3.util.quantities.QuantityUtils
 import edu.ie3.util.quantities.interfaces.PowerDensity
-
+import edu.ie3.osmogrid.graph.OsmGridNode
 import java.util
 import java.util.stream.Collectors
 import javax.measure.Quantity

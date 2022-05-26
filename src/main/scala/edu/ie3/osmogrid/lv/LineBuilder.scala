@@ -12,12 +12,12 @@ import de.osmogrid.util.OsmoGridUtils
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.util.geo.GeoUtils
+
 import edu.ie3.datamodel.models.input.connector
 import edu.ie3.datamodel.models.input.connector.LineInput
 import edu.ie3.datamodel.models.input.connector.`type`
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
-
-
+import edu.ie3.datamodel.utils.GridAndGeoUtils.buildSafeLineStringBetweenNodes
 
 import collection.JavaConverters.{asScalaBufferConverter, asScalaSetConverter}
 import scala.jdk.CollectionConverters
@@ -25,6 +25,7 @@ import java.util
 import java.util.UUID
 import javax.measure.quantity.Length
 import org.jgrapht.graph.AsSubgraph
+import org.locationtech.jts.geom.LineString
 import tech.units.indriya.ComparableQuantity
 
 /** Provides the methods, based on depth first search, to build the {@link
@@ -53,8 +54,8 @@ import VisitColor._
 
 class LineBuilder(
     lineTypeInput: LineTypeInput,
-    subgraph: AsSubgraph[OsmGridNode, DistanceWeightedEdge]
 ) {
+  var subgraph: AsSubgraph[OsmGridNode, DistanceWeightedEdge]
   var nodeColorMap: util.HashMap[OsmGridNode, VisitColor]
   var startNode: OsmGridNode
   var endNode: OsmGridNode
@@ -230,36 +231,33 @@ class LineBuilder(
   /** Builds the LineInputModel when a line is complete (start and end node
     * set).
     */
-  //  private def buildLineInputModel(): Unit = {
-  //    if (startNode != null && endNode != null && (startNode ne endNode)) {
-  //      val length = GeoUtils.calcHaversine(
-  //        startNode.getLatlon.getLat,
-  //        startNode.getLatlon.getLon,
-  //        endNode.getLatlon.getLat,
-  //        endNode.getLatlon.getLon
-  //      ) // TODO: calculate length correctly
-  //      val lineInput = new LineInput(
-  //        UUID.randomUUID,
-  //        "Line " + lineIdCounter,
-  //        geoGridNodesMap.get(startNode),
-  //        geoGridNodesMap.get(endNode),
-  //        1,
-  //        lineTypeInput,
-  //        length,
-  //        OsmoGridUtils.nodesToLineString(geoNodes),
-  //        null
-  //      )
-  //      if (
-  //        lineInput.getNodeA != null && lineInput.getNodeB != null && (lineInput.getNodeA ne lineInput.getNodeB)
-  //      ) {
-  //        lineInputModels.add(lineInput)
-  //        lineIdCounter += 1
-  //      }
-  //    }
-  //  }
 
   def buildLineInputModel() = {
-    ???
+        if (startNode != null && endNode != null && (startNode ne endNode)) {
+          val length = GeoUtils.calcHaversine(
+            startNode.getLatlon.getLat,
+            startNode.getLatlon.getLon,
+            endNode.getLatlon.getLat,
+            endNode.getLatlon.getLon
+          ) // TODO: calculate length correctly
+          val lineInput = new LineInput(
+            UUID.randomUUID,
+            "Line " + lineIdCounter,
+            geoGridNodesMap.get(startNode),
+            geoGridNodesMap.get(endNode),
+            1,
+            lineTypeInput,
+            length,
+            buildSafeLineStringBetweenNodes(geoGridNodesMap.get(startNode),geoGridNodesMap.get(endNode)),
+            null
+          )
+          if (
+            lineInput.getNodeA != null && lineInput.getNodeB != null && (lineInput.getNodeA ne lineInput.getNodeB)
+          ) {
+            lineInputModels.add(lineInput)
+            lineIdCounter += 1
+          }
+        }
   }
 
   def getLineInputModels = lineInputModels

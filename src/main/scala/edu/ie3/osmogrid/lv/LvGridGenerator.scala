@@ -559,6 +559,20 @@ object LvGridGenerator {
       ratedVoltage,
       PowerSystemUnits.KILOVOLT
     )
+    val lineType: LineTypeInput = Try(
+      config.lineType
+    ) match {
+      case Success(lineType: LineTypeInput) => lineType
+      case Failure(e) =>
+        LvGridGenerator.logger.error(
+          "Could not line type from config file. Continue with {}",
+          lineType,
+          e
+        )
+        builtDefaultLineType()
+    }
+
+
     val vTarget = Quantities.getQuantity(1d, PowerSystemUnits.PU)
     val voltLvl: VoltageLevel = Try(
       GermanVoltageLevelUtils.parse(voltageLevel, vRated)
