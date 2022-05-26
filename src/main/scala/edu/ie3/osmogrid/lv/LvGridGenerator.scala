@@ -572,7 +572,6 @@ object LvGridGenerator {
         builtDefaultLineType()
     }
 
-
     val vTarget = Quantities.getQuantity(1d, PowerSystemUnits.PU)
     val voltLvl: VoltageLevel = Try(
       GermanVoltageLevelUtils.parse(voltageLevel, vRated)

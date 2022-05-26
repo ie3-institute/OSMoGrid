@@ -53,7 +53,7 @@ object VisitColor extends Enumeration {
 import VisitColor._
 
 class LineBuilder(
-    lineTypeInput: LineTypeInput,
+    lineTypeInput: LineTypeInput
 ) {
   var subgraph: AsSubgraph[OsmGridNode, DistanceWeightedEdge]
   var nodeColorMap: util.HashMap[OsmGridNode, VisitColor]
@@ -65,7 +65,7 @@ class LineBuilder(
   var lineInputModels: util.LinkedList[LineInput]
   //  var subgraph: AsSubgraph[OsmGridNode, DistanceWeightedEdge]
   //  //  private var subgraph = null
-  var geoGridNodesMap: util.HashMap[OsmGridNode,NodeInput]
+  var geoGridNodesMap: util.HashMap[OsmGridNode, NodeInput]
   //  //  private var startNode = null
   //  //  private var endNode = null
   //  //  private var geoNodes = null
@@ -105,9 +105,9 @@ class LineBuilder(
     this.endNode = null
     this.geoNodes = new util.LinkedList[OsmGridNode]
     val nodeColorMap = new util.HashMap[OsmGridNode, VisitColor]
-            this.lineIdCounter = lineIdCounter
-            this.lineInputModels = new util.LinkedList[LineInput]
-            // set the visit color for all nodes to white
+    this.lineIdCounter = lineIdCounter
+    this.lineInputModels = new util.LinkedList[LineInput]
+    // set the visit color for all nodes to white
     subgraph.vertexSet.forEach((node: OsmGridNode) =>
       nodeColorMap.put(node, VisitColor.WHITE)
     )
@@ -233,31 +233,34 @@ class LineBuilder(
     */
 
   def buildLineInputModel() = {
-        if (startNode != null && endNode != null && (startNode ne endNode)) {
-          val length = GeoUtils.calcHaversine(
-            startNode.getLatlon.getLat,
-            startNode.getLatlon.getLon,
-            endNode.getLatlon.getLat,
-            endNode.getLatlon.getLon
-          ) // TODO: calculate length correctly
-          val lineInput = new LineInput(
-            UUID.randomUUID,
-            "Line " + lineIdCounter,
-            geoGridNodesMap.get(startNode),
-            geoGridNodesMap.get(endNode),
-            1,
-            lineTypeInput,
-            length,
-            buildSafeLineStringBetweenNodes(geoGridNodesMap.get(startNode),geoGridNodesMap.get(endNode)),
-            null
-          )
-          if (
-            lineInput.getNodeA != null && lineInput.getNodeB != null && (lineInput.getNodeA ne lineInput.getNodeB)
-          ) {
-            lineInputModels.add(lineInput)
-            lineIdCounter += 1
-          }
-        }
+    if (startNode != null && endNode != null && (startNode ne endNode)) {
+      val length = GeoUtils.calcHaversine(
+        startNode.getLatlon.getLat,
+        startNode.getLatlon.getLon,
+        endNode.getLatlon.getLat,
+        endNode.getLatlon.getLon
+      ) // TODO: calculate length correctly
+      val lineInput = new LineInput(
+        UUID.randomUUID,
+        "Line " + lineIdCounter,
+        geoGridNodesMap.get(startNode),
+        geoGridNodesMap.get(endNode),
+        1,
+        lineTypeInput,
+        length,
+        buildSafeLineStringBetweenNodes(
+          geoGridNodesMap.get(startNode),
+          geoGridNodesMap.get(endNode)
+        ),
+        null
+      )
+      if (
+        lineInput.getNodeA != null && lineInput.getNodeB != null && (lineInput.getNodeA ne lineInput.getNodeB)
+      ) {
+        lineInputModels.add(lineInput)
+        lineIdCounter += 1
+      }
+    }
   }
 
   def getLineInputModels = lineInputModels
