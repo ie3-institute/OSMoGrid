@@ -7,17 +7,9 @@
 package edu.ie3.osmogrid.model
 
 import com.acervera.osm4scala.model.RelationMemberEntityTypes.RelationMemberEntityTypes
-import com.acervera.osm4scala.model.{
-  Info,
-  NodeEntity,
-  RelationEntity,
-  RelationMemberEntity,
-  WayEntity
-}
-import edu.ie3.util.osm.model.OsmEntity.Relation.{
-  RelationMember,
-  RelationMemberType
-}
+import com.acervera.osm4scala.model.{Info, NodeEntity, RelationEntity, RelationMemberEntity, WayEntity}
+import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType.RelationMemberType
+import edu.ie3.util.osm.model.OsmEntity.Relation.{RelationMember, RelationMemberType}
 import edu.ie3.util.osm.model.OsmEntity.{MetaInformation, Node, Relation, Way}
 
 object Osm4ScalaMapper {
