@@ -63,37 +63,7 @@ class LineBuilder(
   var geoNodes: util.LinkedList[OsmGridNode]
   var lineIdCounter = 0
   var lineInputModels: util.LinkedList[LineInput]
-  //  var subgraph: AsSubgraph[OsmGridNode, DistanceWeightedEdge]
-  //  //  private var subgraph = null
   var geoGridNodesMap: util.HashMap[OsmGridNode, NodeInput]
-  //  //  private var startNode = null
-  //  //  private var endNode = null
-  //  //  private var geoNodes = null
-
-  //  //  private var lastVisitedNode = null
-  //  var lineIdCounter = 0
-  //  var lineInputModels = null
-  //  var visitColor = VisitColor
-  //
-
-  //  def initialize(
-  //      subgraph: AsSubgraph[Nothing, Nothing],
-  //      geoGridNodesMap: util.Map[Nothing, NodeInput],
-  //      lineIdCounter: Int
-  //  ): Unit = {
-  //    this.subgraph = subgraph
-  //    this.geoGridNodesMap = geoGridNodesMap
-  //    this.startNode = null
-  //    this.endNode = null
-  //    this.geoNodes = new util.LinkedList[Nothing]
-  //    this.nodeColorMap = new util.HashMap[Nothing, LineBuilder.VisitColor]
-  //    this.lineIdCounter = lineIdCounter
-  //    this.lineInputModels = new util.LinkedList[LineInput]
-  //    // set the visit color for all nodes to white
-  //    this.subgraph.vertexSet.forEach((node: Nothing) =>
-  //      nodeColorMap.put(node, LineBuilder.VisitColor.WHITE)
-  //    )
-  //  }
 
   def initialize(
       subgraph: AsSubgraph[OsmGridNode, DistanceWeightedEdge],
