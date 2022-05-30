@@ -550,7 +550,7 @@ object LvGridGenerator {
     *   GraphModel from which the GridInputModels shall be generated
     */
   private def buildGrid(
-      config: Grid,
+      config: OsmoGridConfig,
       graphModel: List[AsSubgraph[OsmGridNode, DistanceWeightedEdge]],
       ratedVoltage: Double,
       voltageLevel: String
@@ -560,7 +560,7 @@ object LvGridGenerator {
       PowerSystemUnits.KILOVOLT
     )
     val lineType: LineTypeInput = Try(
-      config.lineType
+      config.grid.lineType
     ) match {
       case Success(lineType: LineTypeInput) => lineType
       case Failure(e) =>
@@ -620,7 +620,7 @@ object LvGridGenerator {
           geoGridNodesMap.put(osmGridNode, nodeInput)
           nodeInputs.add(nodeInput)
 
-          if (config.considerHouseConnectionPoints) {
+          if (config.grid.considerHouseConnectionPoints) {
             // If parameter considerHouseConnectionPoints is set to true, create another NodeInput at the nodes house connection point.
             val houseConnectionPoint: NodeInput = new NodeInput(
               UUID.randomUUID,
@@ -748,7 +748,7 @@ object LvGridGenerator {
     }
     // Build and return a JointGridContainer
     buildGridContainer(
-      OsmoGridConfig.Runtime,
+      config.runtime,
       nodeInputs,
       lineInputs,
       loadInputs
@@ -806,10 +806,11 @@ object LvGridGenerator {
     *   for each subnet).
     */
   def generateGrid(
+      config: OsmoGridConfig,
       graphModel: List[AsSubgraph[OsmGridNode, DistanceWeightedEdge]]
   ): JointGridContainer = {
     // TODO: Give ratedVoltage and VoltageLevel
-    val gridModel = buildGrid(OsmoGridConfig.Grid, graphModel, 1.0, "lv")
+    val gridModel = buildGrid(config, graphModel, 1.0, "lv")
     // build node code maps and admittance matrices for each sub net
     for (subGrid <- gridModel.getSubGridTopologyGraph.vertexSet.asScala) {
       val nodeCodeMap: OneToOneMap[String, Integer] =
