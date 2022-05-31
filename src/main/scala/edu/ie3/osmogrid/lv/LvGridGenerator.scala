@@ -83,7 +83,6 @@ import javax.measure.quantity.{Area, Energy, Length, Power}
 import scala.collection.parallel.ParSeq
 import scala.math.BigDecimal.RoundingMode
 import scala.util.{Failure, Success, Try}
-import collection.convert.ImplicitConversions.set
 
 object LvGridGenerator {
   sealed trait Request
@@ -559,28 +558,29 @@ object LvGridGenerator {
       ratedVoltage,
       PowerSystemUnits.KILOVOLT
     )
-    val lineType: LineTypeInput = Try(
+    val lineType: LineTypeInput = /*Try(
       config.grid.lineType
     ) match {
       case Success(lineType: LineTypeInput) => lineType
       case Failure(e) =>
         LvGridGenerator.logger.error(
-          "Could not line type from config file. Continue with {}",
+          "Could not get line type from config file. Continue with {}",
           lineType,
           e
         )
         builtDefaultLineType()
     }
-
+     */
+      builtDefaultLineType()
     val vTarget = Quantities.getQuantity(1d, PowerSystemUnits.PU)
     val voltLvl: VoltageLevel = Try(
       GermanVoltageLevelUtils.parse(voltageLevel, vRated)
     ) match {
-      case Success(voltageLevel: VoltageLevel) => voltLvl
+      case Success(voltageLevel: VoltageLevel) => voltageLevel
       case Failure(e) =>
         LvGridGenerator.logger.error(
           "Could not set voltage level from config file. Continue with {}",
-          voltLvl,
+          voltageLevel,
           e
         )
         GermanVoltageLevelUtils.LV
@@ -597,7 +597,8 @@ object LvGridGenerator {
     val lineInputs = new util.HashSet[LineInput]
 
     for (subgraph <- graphModel) {
-      val geoGridNodesMap = new util.HashMap[OsmGridNode, NodeInput]
+      val geoGridNodesMap =
+        new collection.mutable.HashMap[OsmGridNode, NodeInput]
       for (osmGridNode: OsmGridNode <- subgraph.vertexSet().asScala) {
         if (osmGridNode.getLoad != null) {
           val nodeInput: NodeInput = new NodeInput(
@@ -736,7 +737,7 @@ object LvGridGenerator {
           }
         }
         // Depth-first-search for adding LineInputModels:
-        val lineBuilder: LineBuilder = new LineBuilder(lineType)
+        val lineBuilder: LineBuilder = new LineBuilder(lineType, subgraph)
         lineBuilder.initialize(subgraph, geoGridNodesMap, lineIdCounter)
         lineBuilder.start()
         // add all lines from Gridbuilder to list

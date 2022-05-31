@@ -6,27 +6,28 @@
 
 package edu.ie3.osmogrid.lv
 
-import edu.ie3.osmogrid.graph.DistanceWeightedOsmEdge
-import edu.ie3.osmogrid.graph.OsmGridNode
-import de.osmogrid.util.OsmoGridUtils
+import scala.collection.mutable.Map
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.util.geo.GeoUtils
-
-import edu.ie3.datamodel.models.input.connector
 import edu.ie3.datamodel.models.input.connector.LineInput
-import edu.ie3.datamodel.models.input.connector.`type`
+import edu.ie3.datamodel.models.input.connector
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
 import edu.ie3.datamodel.utils.GridAndGeoUtils.buildSafeLineStringBetweenNodes
+import edu.ie3.osmogrid.graph.OsmGridNode
 
-import collection.JavaConverters.{asScalaBufferConverter, asScalaSetConverter}
-import scala.jdk.CollectionConverters
+import java.util.{HashMap, LinkedList, List, Map}
+import edu.ie3.util.geo.GeoUtils
+
+import collection.JavaConverters.asScalaSetConverter
+import collection.JavaConverters.asScalaBufferConverter
 import java.util
 import java.util.UUID
 import javax.measure.quantity.Length
 import org.jgrapht.graph.AsSubgraph
-import org.locationtech.jts.geom.LineString
+import org.slf4j.{Logger, LoggerFactory}
 import tech.units.indriya.ComparableQuantity
+
+import scala.jdk.CollectionConverters
 
 /** Provides the methods, based on depth first search, to build the {@link
   * LineInput}s of the electrical grid from the graph. A special algorithm is
@@ -51,54 +52,55 @@ object VisitColor extends Enumeration {
 }
 
 import VisitColor._
-
 class LineBuilder(
-    lineTypeInput: LineTypeInput
+    lineTypeInput: LineTypeInput,
+    graph: AsSubgraph[OsmGridNode, DistanceWeightedEdge]
 ) {
-  var subgraph: AsSubgraph[OsmGridNode, DistanceWeightedEdge]
-  var nodeColorMap: util.HashMap[OsmGridNode, VisitColor]
-  var startNode: OsmGridNode
-  var endNode: OsmGridNode
-  var lastVisitedNode: OsmGridNode
-  var geoNodes: util.LinkedList[OsmGridNode]
-  var lineIdCounter = 0
-  var lineInputModels: util.LinkedList[LineInput]
-  var geoGridNodesMap: util.HashMap[OsmGridNode, NodeInput]
+
+  val subgraph = graph
+  var geoGridNodesMap = collection.mutable.HashMap[OsmGridNode, NodeInput]()
+
+  val nodeColorMap = collection.mutable.Map[OsmGridNode, VisitColor]()
+  var lastVisitedNode: OsmGridNode = null
+  var lineIdCounter: Int = 0
+  val lineInputModels = java.util.LinkedList[LineInput]()
+  var startNode: OsmGridNode = null
+  var endNode: OsmGridNode = null
+  val geoNodes = java.util.LinkedList[OsmGridNode]()
 
   def initialize(
       subgraph: AsSubgraph[OsmGridNode, DistanceWeightedEdge],
-      geoGridNodesMap: util.HashMap[OsmGridNode, NodeInput],
+      geoGridNodesMap: collection.mutable.HashMap[OsmGridNode, NodeInput],
       lineIdCounter: Int
   ): Unit = {
+//    this.subgraph = subgraph
     this.geoGridNodesMap = geoGridNodesMap
     this.startNode = null
     this.endNode = null
-    this.geoNodes = new util.LinkedList[OsmGridNode]
-    val nodeColorMap = new util.HashMap[OsmGridNode, VisitColor]
+//    this.geoNodes = new util.LinkedList[Nothing]
+//    this.nodeColorMap = new collection.mutable.HashMap[OsmGridNode, VisitColor]()
     this.lineIdCounter = lineIdCounter
-    this.lineInputModels = new util.LinkedList[LineInput]
+//    this.lineInputModels = lineInputModels
     // set the visit color for all nodes to white
     subgraph.vertexSet.forEach((node: OsmGridNode) =>
       nodeColorMap.put(node, VisitColor.WHITE)
     )
-
   }
 
   /** Starts the algorithm by looking for a node with a load. */
   def start(): Unit = {
     var startVertexFound = false
-    for (node <- subgraph.vertexSet().asScala) {
+    for (node <- subgraph.vertexSet.asScala) {
       if (
         !startVertexFound && (node.getLoad != null || subgraph.degreeOf(
           node
         ) > 2)
-      )
-        startVertexFound = true
-        if (
-          startVertexFound && nodeColorMap.get(
-            node
-          ) == VisitColor.WHITE
-        ) visitNode(node)
+      ) startVertexFound = true
+      if (
+        startVertexFound && nodeColorMap.get(
+          node
+        ) == VisitColor.WHITE
+      ) visitNode(node)
     }
   }
 
@@ -108,12 +110,10 @@ class LineBuilder(
     * @param node
     *   Node that has to be visited.
     */
-
-  def visitNode(node: OsmGridNode): Unit = {
+  private def visitNode(node: OsmGridNode): Unit = {
     nodeColorMap.remove(node)
     nodeColorMap.put(node, VisitColor.GRAY)
     var isDeadEnd = false
-
     // investigate the current node
     if (node.getLoad != null || subgraph.degreeOf(node) > 2) { // node has a load or is an intersection
       if (startNode == null) { // startNode not yet set
@@ -158,7 +158,8 @@ class LineBuilder(
         ) neighborNodes.add(subgraph.getEdgeSource(connectedEdge))
       }
       // investigate the neighbor nodes
-      for (neighborNode <- asScalaBufferConverter(neighborNodes).asScala) { // set startNode again if it's null (this could happen if we have reached a dead end or
+
+      for (neighborNode <- neighborNodes.asScala) { // set startNode again if it's null (this could happen if we have reached a dead end or
         // closed a circle in the step before)
         if (
           startNode == null && (node.getLoad != null || subgraph.degreeOf(
@@ -195,14 +196,12 @@ class LineBuilder(
     }
     nodeColorMap.remove(node)
     nodeColorMap.put(node, VisitColor.BLACK)
-
   }
 
   /** Builds the LineInputModel when a line is complete (start and end node
     * set).
     */
-
-  def buildLineInputModel() = {
+  private def buildLineInputModel(): Unit = {
     if (startNode != null && endNode != null && (startNode ne endNode)) {
       val length = GeoUtils.calcHaversine(
         startNode.getLatlon.getLat,
@@ -213,14 +212,22 @@ class LineBuilder(
       val lineInput = new LineInput(
         UUID.randomUUID,
         "Line " + lineIdCounter,
-        geoGridNodesMap.get(startNode),
-        geoGridNodesMap.get(endNode),
+        geoGridNodesMap.get(startNode) match {
+          case Some(nodeInput) => nodeInput
+        },
+        geoGridNodesMap.get(endNode) match {
+          case Some(nodeInput) => nodeInput
+        },
         1,
         lineTypeInput,
         length,
         buildSafeLineStringBetweenNodes(
-          geoGridNodesMap.get(startNode),
-          geoGridNodesMap.get(endNode)
+          geoGridNodesMap.get(startNode) match {
+            case Some(nodeInput) => nodeInput
+          },
+          geoGridNodesMap.get(endNode) match {
+            case Some(nodeInput) => nodeInput
+          }
         ),
         null
       )
@@ -232,11 +239,8 @@ class LineBuilder(
       }
     }
   }
-
   def getLineInputModels = lineInputModels
-
   def getLineIdCounter: Int = lineIdCounter
-
   def setLineIdCounter(lineIdCounter: Int): Unit = {
     this.lineIdCounter = lineIdCounter
   }
