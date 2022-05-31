@@ -14,6 +14,7 @@ import com.acervera.osm4scala.model.{
   RelationMemberEntity,
   WayEntity
 }
+import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType.RelationMemberType
 import edu.ie3.util.osm.model.OsmEntity.Relation.{
   RelationMember,
   RelationMemberType
