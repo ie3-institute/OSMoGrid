@@ -7,51 +7,21 @@
 package edu.ie3.osmogrid.lv
 
 import akka.actor.typed.scaladsl.Behaviors
+import com.typesafe.scalalogging.LazyLogging
 import de.osmogrid.util.OsmoGridUtils
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.BdewLoadProfile
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
 import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
-import edu.ie3.datamodel.models.input.connector.{
-  LineInput,
-  SwitchInput,
-  Transformer2WInput,
-  Transformer3WInput
-}
-import edu.ie3.datamodel.models.input.container.{
-  GraphicElements,
-  JointGridContainer,
-  RawGridElements,
-  SubGridContainer,
-  SystemParticipants
-}
-import edu.ie3.datamodel.models.input.graphics.{
-  LineGraphicInput,
-  NodeGraphicInput
-}
-import edu.ie3.datamodel.models.input.system.characteristic.{
-  CosPhiFixed,
-  OlmCharacteristicInput
-}
-import edu.ie3.datamodel.models.input.system.{
-  BmInput,
-  ChpInput,
-  EvInput,
-  EvcsInput,
-  FixedFeedInInput,
-  HpInput,
-  LoadInput,
-  PvInput,
-  StorageInput,
-  WecInput
-}
-import edu.ie3.datamodel.models.voltagelevels.{
-  GermanVoltageLevelUtils,
-  VoltageLevel
-}
+import edu.ie3.datamodel.models.input.connector.{LineInput, SwitchInput, Transformer2WInput, Transformer3WInput}
+import edu.ie3.datamodel.models.input.container.{GraphicElements, JointGridContainer, RawGridElements, SubGridContainer, SystemParticipants}
+import edu.ie3.datamodel.models.input.graphics.{LineGraphicInput, NodeGraphicInput}
+import edu.ie3.datamodel.models.input.system.characteristic.{CosPhiFixed, OlmCharacteristicInput}
+import edu.ie3.datamodel.models.input.system.{BmInput, ChpInput, EvInput, EvcsInput, FixedFeedInInput, HpInput, LoadInput, PvInput, StorageInput, WecInput}
+import edu.ie3.datamodel.models.voltagelevels.{GermanVoltageLevelUtils, VoltageLevel}
 import edu.ie3.datamodel.utils.GridAndGeoUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Grid
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Lvgrid
 import edu.ie3.osmogrid.exception.MissingOsmDataException
 import edu.ie3.osmogrid.graph.{OsmGraph, OsmGridNode}
 import edu.ie3.osmogrid.model.OsmoGridModel
@@ -84,7 +54,7 @@ import scala.collection.parallel.ParSeq
 import scala.math.BigDecimal.RoundingMode
 import scala.util.{Failure, Success, Try}
 
-object LvGridGenerator {
+object LvGridGenerator extends LazyLogging{
   sealed trait Request
   final case class GenerateGrid(
       osmData: LvOsmoGridModel,
@@ -138,8 +108,6 @@ object LvGridGenerator {
 
   private val nodeCodeMaps =
     new util.HashMap[Integer, OneToOneMap[String, Integer]]
-
-  val logger: Logger = LoggerFactory.getLogger("LvGridGenerator")
 
   def apply(): Behaviors.Receive[Request] = idle
 
@@ -552,26 +520,14 @@ object LvGridGenerator {
       config: OsmoGridConfig,
       graphModel: List[AsSubgraph[OsmGridNode, DistanceWeightedEdge]],
       ratedVoltage: Double,
-      voltageLevel: String
+      voltageLevel: String,
+      lineType: LineTypeInput
   ) = {
     val vRated = Quantities.getQuantity(
       ratedVoltage,
       PowerSystemUnits.KILOVOLT
     )
-    val lineType: LineTypeInput = /*Try(
-      config.grid.lineType
-    ) match {
-      case Success(lineType: LineTypeInput) => lineType
-      case Failure(e) =>
-        LvGridGenerator.logger.error(
-          "Could not get line type from config file. Continue with {}",
-          lineType,
-          e
-        )
-        builtDefaultLineType()
-    }
-     */
-      builtDefaultLineType()
+
     val vTarget = Quantities.getQuantity(1d, PowerSystemUnits.PU)
     val voltLvl: VoltageLevel = Try(
       GermanVoltageLevelUtils.parse(voltageLevel, vRated)
@@ -621,7 +577,7 @@ object LvGridGenerator {
           geoGridNodesMap.put(osmGridNode, nodeInput)
           nodeInputs.add(nodeInput)
 
-          if (config.grid.considerHouseConnectionPoints) {
+          if (config.lvgrid.considerHouseConnectionPoints) {
             // If parameter considerHouseConnectionPoints is set to true, create another NodeInput at the nodes house connection point.
             val houseConnectionPoint: NodeInput = new NodeInput(
               UUID.randomUUID,
@@ -808,10 +764,10 @@ object LvGridGenerator {
     */
   def generateGrid(
       config: OsmoGridConfig,
-      graphModel: List[AsSubgraph[OsmGridNode, DistanceWeightedEdge]]
+      graphModel: List[AsSubgraph[OsmGridNode, DistanceWeightedEdge]],
+      lineType: LineTypeInput
   ): JointGridContainer = {
-    // TODO: Give ratedVoltage and VoltageLevel
-    val gridModel = buildGrid(config, graphModel, 1.0, "lv")
+    val gridModel = buildGrid(config, graphModel, config.lvgrid.ratedVoltage, config.lvgrid.voltageLevel, lineType)
     // build node code maps and admittance matrices for each sub net
     for (subGrid <- gridModel.getSubGridTopologyGraph.vertexSet.asScala) {
       val nodeCodeMap: OneToOneMap[String, Integer] =

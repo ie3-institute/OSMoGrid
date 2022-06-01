@@ -11,7 +11,7 @@ import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Grid, Input, Io, Output}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Input, Io, Lvgrid, Output}
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.io.output.ResultListener
@@ -24,13 +24,12 @@ object ConfigFailFast extends LazyLogging {
       additionalListener: Seq[ActorRef[ResultListener.ResultEvent]] = Seq.empty
   ): Try[OsmoGridConfig] = Try {
     cfg match {
-      case OsmoGridConfig(generation, grid, input, io, output, runtime) =>
+      case OsmoGridConfig(generation, input, io, lvgrid, output, runtime) =>
         checkInputConfig(input)
         checkOutputConfig(output, additionalListener)
         checkGenerationConfig(generation)
-        checkGridConfig(grid)
         checkIoConfig(io)
-//        checkRuntimeConfig(runtime)
+        checkGridConfig(lvgrid)
     }
     cfg
   }
@@ -48,7 +47,7 @@ object ConfigFailFast extends LazyLogging {
         lv.foreach(checkLvConfig)
     }
   // TODO
-  private def checkGridConfig(grid: Grid): Unit = ???
+  private def checkGridConfig(lvgrid: Lvgrid): Unit = ???
 
   // TODO Check Filter for osm
   private def checkLvConfig(lv: OsmoGridConfig.Generation.Lv): Unit = lv match {
