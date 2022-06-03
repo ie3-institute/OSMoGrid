@@ -27,8 +27,8 @@ object OsmoGridModelPartitioner extends LazyLogging {
     *
     * Entities are assigned to boundaries by comparing the amount of associated
     * points that are covered by each boundary. When using the allocation
-    * strategy [[EntityAllocationStrategy.AssignByMax]], the entity is assigned
-    * to the boundary with the most covered points.
+    * strategy [[AssignByMax]], the entity is assigned to the boundary with the
+    * most covered points.
     *
     * @param osmoGridModel
     *   the OsmoGridModel to partition
@@ -44,37 +44,37 @@ object OsmoGridModelPartitioner extends LazyLogging {
     val buildings = assign(
       osmoGridModel.buildings,
       areas,
-      EntityAllocationStrategy.AssignByMax
+      AssignByMax
     )
     val highways = assign(
       osmoGridModel.highways,
       areas,
-      EntityAllocationStrategy.AssignToAll
+      AssignToAll
     )
     val landuses = assign(
       osmoGridModel.landuses,
       areas,
-      EntityAllocationStrategy.AssignToAll
+      AssignToAll
     )
     val boundaries = assign(
       osmoGridModel.boundaries,
       areas,
-      EntityAllocationStrategy.AssignByMax
+      AssignByMax
     )
     val existingSubstations = assign(
       osmoGridModel.existingSubstations,
       areas,
-      EntityAllocationStrategy.AssignByMax
+      AssignByMax
     )
 
     areas.keys.map { areaId =>
       areaId ->
         LvOsmoGridModel(
-          buildings.get(areaId).getOrElse(ParSeq.empty),
-          highways.get(areaId).getOrElse(ParSeq.empty),
-          landuses.get(areaId).getOrElse(ParSeq.empty),
-          boundaries.get(areaId).getOrElse(ParSeq.empty),
-          existingSubstations.get(areaId).getOrElse(ParSeq.empty),
+          buildings.getOrElse(areaId, ParSeq.empty),
+          highways.getOrElse(areaId, ParSeq.empty),
+          landuses.getOrElse(areaId, ParSeq.empty),
+          boundaries.getOrElse(areaId, ParSeq.empty),
+          existingSubstations.getOrElse(areaId, ParSeq.empty),
           osmoGridModel.filter
         )
     }.toMap
@@ -105,13 +105,13 @@ object OsmoGridModelPartitioner extends LazyLogging {
     val entityVotes = vote(enhancedEntity.entity, enhancedEntity, areas)
 
     allocationStrategy match {
-      case EntityAllocationStrategy.AssignToAll =>
+      case AssignToAll =>
         entityVotes.keys
-      case EntityAllocationStrategy.AssignByMax =>
+      case AssignByMax =>
         entityVotes
           .maxByOption(_._2)
           .map { case (areaKey, voteCount) =>
-            if voteCount == 0 then
+            if (voteCount == 0)
               logger warn s"Entity ${enhancedEntity.entity} is not covered by any given area " +
                 s"(but is assigned to area $areaKey nonetheless)"
 

@@ -9,13 +9,12 @@ package edu.ie3.osmogrid.lv.region_coordinator
 /** Possible future enhancement: Strategy that cuts up composed entities by
   * means of intersection with boundary polygon
   */
-enum EntityAllocationStrategy {
+sealed trait EntityAllocationStrategy
 
-  /** If at least one entity lies within the boundary
-    */
-  case AssignToAll
+/** If at least one entity lies within the boundary
+  */
+case object AssignToAll extends EntityAllocationStrategy
 
-  /** Assigns entity to area with the maximum matched sub entities
-    */
-  case AssignByMax
-}
+/** Assigns entity to area with the maximum matched sub entities
+  */
+case object AssignByMax extends EntityAllocationStrategy

@@ -11,7 +11,6 @@ import akka.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Output}
 import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
 import edu.ie3.osmogrid.exception.UnsupportedRequestException
-import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.lv.coordinator
@@ -23,7 +22,7 @@ import edu.ie3.osmogrid.lv.coordinator.{
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
 
-private trait RunSupport {
+trait RunSupport {
 
   /** Initiate a generation run and return the updated run meta data
     *

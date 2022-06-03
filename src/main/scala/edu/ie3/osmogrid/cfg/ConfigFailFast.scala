@@ -54,7 +54,7 @@ object ConfigFailFast extends LazyLogging {
           _,
           _
         ) =>
-      (BoundaryAdminLevel(lowest), BoundaryAdminLevel(starting)) match {
+      (BoundaryAdminLevel.get(lowest), BoundaryAdminLevel.get(starting)) match {
         case (None, _) =>
           throw IllegalConfigException(
             s"The lowest admin level can not be parsed (provided: $lowest)."

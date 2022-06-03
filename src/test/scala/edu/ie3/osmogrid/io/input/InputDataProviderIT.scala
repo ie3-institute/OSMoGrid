@@ -11,15 +11,13 @@ import com.typesafe.config.ConfigFactory
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.$TsCfgValidator
 import edu.ie3.osmogrid.exception.PbfReadFailedException
-import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.{InputDataCheck, UnitSpec}
 
 import java.nio.file.Paths
 import scala.concurrent.duration.DurationInt
-import scala.jdk.CollectionConverters.*
+import scala.jdk.CollectionConverters._
 import scala.language.postfixOps
 
 class InputDataProviderIT extends UnitSpec with InputDataCheck {

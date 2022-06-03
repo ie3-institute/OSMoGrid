@@ -37,7 +37,7 @@ object LvRegionCoordinator {
     */
   final case class Partition(
       osmoGridModel: LvOsmoGridModel,
-      administrativeLevel: BoundaryAdminLevel,
+      administrativeLevel: BoundaryAdminLevel.Value,
       lvConfig: OsmoGridConfig.Generation.Lv,
       replyTo: ActorRef[Response]
   ) extends Request
@@ -64,7 +64,7 @@ object LvRegionCoordinator {
             )
 
           val newOsmoGridModels =
-            if areas.isEmpty then
+            if (areas.isEmpty)
               // if no containers have been found at this level, we continue with container of previous level
               Iterable.single(osmoGridModel)
             else
@@ -75,13 +75,16 @@ object LvRegionCoordinator {
                 )
                 .values
 
-          val levels = BoundaryAdminLevel(cfg.boundaryAdminLevel.lowest)
+          val levels = BoundaryAdminLevel
+            .get(cfg.boundaryAdminLevel.lowest)
             .zip(BoundaryAdminLevel.nextLowerLevel(administrativeLevel))
-            .filter((lowestLevel, nextLevel) => nextLevel <= lowestLevel)
+            .filter(lowestLevelNextLevel =>
+              lowestLevelNextLevel._1 >= lowestLevelNextLevel._2
+            )
 
           newOsmoGridModels.iterator.foreach { osmoGridModel =>
             levels match {
-              case Some(_, nextLevel) =>
+              case Some((_, nextLevel)) =>
                 val newRegionCoordinator = ctx.spawnAnonymous(
                   LvRegionCoordinator()
                 )

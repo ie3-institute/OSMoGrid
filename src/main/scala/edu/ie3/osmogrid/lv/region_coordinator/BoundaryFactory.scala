@@ -34,7 +34,7 @@ object BoundaryFactory {
     */
   def buildBoundaryPolygons(
       osmoGridModel: LvOsmoGridModel,
-      administrativeLevel: BoundaryAdminLevel
+      administrativeLevel: BoundaryAdminLevel.Value
   ): ParMap[AreaKey, Polygon] = {
     osmoGridModel.boundaries
       .filter {
@@ -46,7 +46,7 @@ object BoundaryFactory {
             case relation: OsmEntity.Relation =>
               relation.tags
                 .get("admin_level")
-                .contains(administrativeLevel.osmLevel.toString)
+                .contains(administrativeLevel.id.toString)
             case _ => false
           }
       }
@@ -105,7 +105,7 @@ object BoundaryFactory {
       case nodes
           if nodes.headOption
             .zip(nodes.lastOption)
-            .exists((first, last) => first != last) =>
+            .exists(firstLast => firstLast._1 != firstLast._2) =>
         throw new RuntimeException(
           s"First node should be last in boundary relation ${relation.id}."
         )
@@ -142,26 +142,26 @@ object BoundaryFactory {
     // Each way can be ordered in correct or in reverse order
     val currentNodes = currentWay.nodes
     existingNodes.headOption.zip(existingNodes.lastOption) match {
-      case Some(existingFirst, existingLast) =>
+      case Some((existingFirst, existingLast)) =>
         currentNodes.headOption
           .zip(currentNodes.lastOption)
           .map { case (currentFirst, currentLast) =>
             // Run through a bunch of cases. In the end, we want [a, b, c, d, e]
-            if existingLast == currentFirst then
+            if (existingLast == currentFirst)
               // [a, b, c] and [c, d, e]
               // All in correct order
               existingNodes ++ currentNodes.drop(1)
-            else if existingLast == currentLast then
+            else if (existingLast == currentLast)
               // [a, b, c] and [e, d, c]
               // Additional sequence needs to be flipped
               existingNodes ++ currentNodes.reverse.drop(1)
-            else if existingFirst == currentFirst then
+            else if (existingFirst == currentFirst)
               // [c, b, a] and [c, d, e]
               // Existing sequence in wrong order:
               // this should only happen if we have only added one
               // sequence so far and that sequence was in wrong order
               existingNodes.reverse ++ currentNodes.drop(1)
-            else if existingFirst == currentLast then
+            else if (existingFirst == currentLast)
               // [c, b, a] and [e, d, c]; a != e since we already covered this with first case
               // Existing sequence in wrong order, similar to above
               // but additional sequence has be flipped as well

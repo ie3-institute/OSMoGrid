@@ -11,7 +11,6 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors, Routers}
 import com.acervera.osm4scala.BlobTupleIterator
 import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.exception.PbfReadFailedException
-import edu.ie3.osmogrid.io.input.pbf.PbfGuardian.StateData
 import edu.ie3.osmogrid.io.input.pbf.PbfWorker.{ReadBlobMsg, Request}
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
@@ -22,6 +21,22 @@ import java.io.{File, FileInputStream, InputStream}
 import java.util.UUID
 import scala.collection.parallel.immutable.{ParSeq, ParVector}
 import scala.util.{Failure, Success, Try}
+
+// internal state data
+protected final case class StateData(
+    pbfIS: InputStream,
+    blobIterator: BlobTupleIterator,
+    workerPool: ActorRef[PbfWorker.Request],
+    workerResponseMapper: ActorRef[PbfWorker.Response],
+    filter: SourceFilter,
+    sender: Option[ActorRef[PbfGuardian.Response]] = None,
+    noOfBlobs: Int = -1,
+    noOfResponses: Int = 0,
+    receivedModels: ParSeq[ParOsmContainer] = ParVector.empty,
+    startTime: Long = -1
+) {
+  def allBlobsRead(): Boolean = noOfResponses == noOfBlobs
+}
 
 private[input] object PbfGuardian extends ActorStopSupport[StateData] {
 
@@ -42,22 +57,6 @@ private[input] object PbfGuardian extends ActorStopSupport[StateData] {
   private final case class WrappedPbfWorkerResponse(
       response: PbfWorker.Response
   ) extends Request
-
-  // internal state data
-  protected final case class StateData(
-      pbfIS: InputStream,
-      blobIterator: BlobTupleIterator,
-      workerPool: ActorRef[PbfWorker.Request],
-      workerResponseMapper: ActorRef[PbfWorker.Response],
-      filter: SourceFilter,
-      sender: Option[ActorRef[PbfGuardian.Response]] = None,
-      noOfBlobs: Int = -1,
-      noOfResponses: Int = 0,
-      receivedModels: ParSeq[ParOsmContainer] = ParVector.empty,
-      startTime: Long = -1
-  ) {
-    def allBlobsRead(): Boolean = noOfResponses == noOfBlobs
-  }
 
   def apply(
       pbfFile: File,
