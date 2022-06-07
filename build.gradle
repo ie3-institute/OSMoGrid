@@ -99,7 +99,7 @@ dependencies {
   implementation 'com.github.johanneshiry:OSMonaut:v1.1.1'
 
   implementation 'org.jxmapviewer:jxmapviewer2:2.6' // osm map viewer
-  implementation 'org.glassfish.jaxb:jaxb-runtime:3.0.2'
+  implementation 'org.glassfish.jaxb:jaxb-runtime:4.0.0'
 
   // required for xml parser (javax.xml.bind) (see: https://stackoverflow.com/questions/48204141/replacements-for-deprecated-jpms-modules-with-java-ee-apis/48279048#48279048)
   implementation 'javax.xml.bind:jaxb-api:2.4.0-b180830.0359' // xml parsing
