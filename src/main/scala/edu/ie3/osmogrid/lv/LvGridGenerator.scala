@@ -13,12 +13,43 @@ import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.BdewLoadProfile
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
 import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
-import edu.ie3.datamodel.models.input.connector.{LineInput, SwitchInput, Transformer2WInput, Transformer3WInput}
-import edu.ie3.datamodel.models.input.container.{GraphicElements, JointGridContainer, RawGridElements, SubGridContainer, SystemParticipants}
-import edu.ie3.datamodel.models.input.graphics.{LineGraphicInput, NodeGraphicInput}
-import edu.ie3.datamodel.models.input.system.characteristic.{CosPhiFixed, OlmCharacteristicInput}
-import edu.ie3.datamodel.models.input.system.{BmInput, ChpInput, EvInput, EvcsInput, FixedFeedInInput, HpInput, LoadInput, PvInput, StorageInput, WecInput}
-import edu.ie3.datamodel.models.voltagelevels.{GermanVoltageLevelUtils, VoltageLevel}
+import edu.ie3.datamodel.models.input.connector.{
+  LineInput,
+  SwitchInput,
+  Transformer2WInput,
+  Transformer3WInput
+}
+import edu.ie3.datamodel.models.input.container.{
+  GraphicElements,
+  JointGridContainer,
+  RawGridElements,
+  SubGridContainer,
+  SystemParticipants
+}
+import edu.ie3.datamodel.models.input.graphics.{
+  LineGraphicInput,
+  NodeGraphicInput
+}
+import edu.ie3.datamodel.models.input.system.characteristic.{
+  CosPhiFixed,
+  OlmCharacteristicInput
+}
+import edu.ie3.datamodel.models.input.system.{
+  BmInput,
+  ChpInput,
+  EvInput,
+  EvcsInput,
+  FixedFeedInInput,
+  HpInput,
+  LoadInput,
+  PvInput,
+  StorageInput,
+  WecInput
+}
+import edu.ie3.datamodel.models.voltagelevels.{
+  GermanVoltageLevelUtils,
+  VoltageLevel
+}
 import edu.ie3.datamodel.utils.GridAndGeoUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Lvgrid
@@ -54,7 +85,7 @@ import scala.collection.parallel.ParSeq
 import scala.math.BigDecimal.RoundingMode
 import scala.util.{Failure, Success, Try}
 
-object LvGridGenerator extends LazyLogging{
+object LvGridGenerator extends LazyLogging {
   sealed trait Request
   final case class GenerateGrid(
       osmData: LvOsmoGridModel,
@@ -767,7 +798,13 @@ object LvGridGenerator extends LazyLogging{
       graphModel: List[AsSubgraph[OsmGridNode, DistanceWeightedEdge]],
       lineType: LineTypeInput
   ): JointGridContainer = {
-    val gridModel = buildGrid(config, graphModel, config.lvgrid.ratedVoltage, config.lvgrid.voltageLevel, lineType)
+    val gridModel = buildGrid(
+      config,
+      graphModel,
+      config.lvgrid.ratedVoltage,
+      config.lvgrid.voltageLevel,
+      lineType
+    )
     // build node code maps and admittance matrices for each sub net
     for (subGrid <- gridModel.getSubGridTopologyGraph.vertexSet.asScala) {
       val nodeCodeMap: OneToOneMap[String, Integer] =
