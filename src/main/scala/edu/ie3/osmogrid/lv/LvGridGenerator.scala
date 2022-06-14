@@ -13,7 +13,6 @@ import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.exception.MissingOsmDataException
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.lv.LvGridGenerator.getClosest
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.{EnhancedOsmEntity, LvOsmoGridModel}
 import edu.ie3.util.geo.{GeoUtils, RichGeometries}
@@ -216,28 +215,17 @@ object LvGridGenerator {
         val closest = highways.flatMap(highway => {
           // get closest to each highway section
           highway.nodes.sliding(2).map { case Seq(nodeAId, nodeBId) =>
-            (nodes.get(nodeAId), nodes.get(nodeBId)) match {
-              case (None, _) =>
-                throw IllegalArgumentException(
-                  s"Node $nodeAId is not within our nodes mapping"
-                )
-              case (_, None) =>
-                throw IllegalArgumentException(
-                  s"Node $nodeBId is not within our nodes mapping"
-                )
-              case (Some(nodeA), Some(nodeB)) =>
-                val (distance, node) = getClosest(
-                  nodeA,
-                  nodeB,
-                  buildingCenter,
-                  minDistance
-                ).getOrElse(
-                  throw MissingOsmDataException(
-                    s"Could not retrieve closest nodes for highway ${highway.id}"
-                  )
-                )
-                (distance, node, nodeA, nodeB)
-            }
+            val (distance, node) = getClosest(
+              nodeAId,
+              nodeBId,
+              buildingCenter,
+              minDistance
+            ).getOrElse(
+              throw MissingOsmDataException(
+                s"Could not retrieve closest nodes for highway ${highway.id}"
+              )
+            )
+            (distance, node, nodeA, nodeB)
           }
         })
 
