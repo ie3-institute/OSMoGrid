@@ -19,7 +19,7 @@ import edu.ie3.osmogrid.io.output.ResultListener.ResultEvent
 
 import java.util.UUID
 
-object ResultListener extends ActorStopSupportStateless[ResultEvent] {
+object ResultListener extends ActorStopSupportStateless {
   sealed trait Request
   final case class GridResult(
       grid: GridContainer,
