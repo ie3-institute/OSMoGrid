@@ -13,7 +13,6 @@ import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.exception.MissingOsmDataException
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.lv.LvGridGenerator.getClosest
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.{EnhancedOsmEntity, LvOsmoGridModel}
 import edu.ie3.util.geo.{GeoUtils, RichGeometries}
@@ -278,50 +277,6 @@ object LvGridGenerator {
     }
     false
   }
-
-  /** Get closest point of the buildings center to the highway section spanning
-    * linePtA and linePtB. If we find a point closer to the building center that
-    * is not linePtA nor linePtB we only take it if it is sufficiently far away
-    * (further than minDistance) otherwise we go with line point nearby to not
-    * inflate the number of nodes.
-    *
-    * @param buildingCenter
-    *   center coordinate of the building
-    * @param wayNodeA
-    *   point a of the way section
-    * @param wayNodeB
-    *   point b of the way section
-    * @param nodes
-    *   node id to node map
-    * @param minDistance
-    *   the minimum distance above which to build new nodes on the street graph
-    *   for building connections
-    * @return
-    *   a Tuple of the distance and the point
-    */
-  private def getClosest(
-      wayNodeA: Long,
-      wayNodeB: Long,
-      buildingCenter: Coordinate,
-      nodes: Map[Long, Node],
-      minDistance: ComparableQuantity[Length]
-  ): Try[(ComparableQuantity[Length], Node)] =
-    (nodes.get(wayNodeA), nodes.get(wayNodeB)) match {
-      case (Some(nodeA), Some(nodeB)) =>
-        getClosest(nodeA, nodeB, buildingCenter, minDistance)
-      case (None, _) =>
-        Failure(
-          IllegalArgumentException(
-            s"Node $wayNodeA is not within our nodes mapping"
-          )
-        )
-      case (_, None) =>
-        Failure(
-          IllegalArgumentException(
-            s"Node $wayNodeB is not within our nodes mapping"
-          )
-        )
-    }
 
   /** Get closest point of the buildings center to the highway section spanning
     * linePtA and linePtB. If we find a point closer to the building center that
