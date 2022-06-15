@@ -120,8 +120,8 @@ object SubGridHandling {
   private def assignSubnetNumber(
       subGrid: SubGridContainer,
       subnetNumber: Int
-  ) = Try {
-    val nodes = updateSubnetNumbers(
+  ): Try[SubGridContainer] = Try {
+    val nodes = updateNodes(
       subGrid.getRawGrid.getNodes.asScala.toSeq,
       subnetNumber
     )
@@ -161,7 +161,7 @@ object SubGridHandling {
     )
   }
 
-  private def updateSubnetNumbers(
+  private def updateNodes(
       nodes: Seq[NodeInput],
       subnetNumber: Int
   ): Map[UUID, NodeInput] = nodes
@@ -289,14 +289,14 @@ object SubGridHandling {
     }
   }
 
-  /** Update the node references in two port connectors
+  /** Update the node references in [[Transformer3WInput]]s
     *
     * @param connectors
-    *   Collection of [[ConnectorInput]] to update
+    *   Collection of [[Transformer3WInput]] to update
     * @param nodeMapping
     *   Mapping from node [[UUID]] to updated nodes
     * @return
-    *   Two-port connector with updated node references
+    *   [[Transformer3WInput]]s with updated node references
     */
   private def updateNodeReferences(
       connectors: Seq[Transformer3WInput],
@@ -322,14 +322,14 @@ object SubGridHandling {
     }
   }
 
-  /** Update the node references in two port connectors
+  /** Update the node references in [[MeasurementUnitInput]]s
     *
     * @param measurements
-    *   Collection of [[ConnectorInput]] to update
+    *   Collection of [[MeasurementUnitInput]] to update
     * @param nodeMapping
     *   Mapping from node [[UUID]] to updated nodes
     * @return
-    *   Measurement device with updated node reference
+    *   Measurement devices with updated node references
     */
   private def updateMeasurements(
       measurements: Seq[MeasurementUnitInput],
@@ -359,19 +359,18 @@ object SubGridHandling {
   private def updateSystemParticipants(
       participants: SystemParticipants,
       nodeMapping: Map[UUID, NodeInput]
-  ) = Try {
+  ): Try[SystemParticipants] = Try {
     val bms = updateParticipants(
       participants.getBmPlants.asScala.toSeq,
       nodeMapping,
       (bm: BmInput, node: NodeInput) => bm.copy().node(node).build()
-    ) match {
-      case Success(value) => value
-      case Failure(exception) =>
-        throw GridException(
-          "Unable to update node references of biomass plants.",
-          exception
-        )
-    }
+    ).recover { exception =>
+      throw GridException(
+        "Unable to update node references of biomass plants.",
+        exception
+      )
+    }.get
+
     val chps = updateParticipants(
       participants.getChpPlants.asScala.toSeq,
       nodeMapping,
