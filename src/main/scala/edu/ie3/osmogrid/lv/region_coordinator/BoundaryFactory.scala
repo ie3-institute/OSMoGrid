@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.lv.region_coordinator
 
-import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
+import edu.ie3.osmogrid.io.input.BoundaryAdminLevel.BoundaryAdminLevelValue
 import edu.ie3.osmogrid.model.OsmoGridModel.{EnhancedOsmEntity, LvOsmoGridModel}
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity
@@ -34,7 +34,7 @@ object BoundaryFactory {
     */
   def buildBoundaryPolygons(
       osmoGridModel: LvOsmoGridModel,
-      administrativeLevel: BoundaryAdminLevel.Value
+      administrativeLevel: BoundaryAdminLevelValue
   ): ParMap[AreaKey, Polygon] = {
     osmoGridModel.boundaries
       .filter {
@@ -46,7 +46,7 @@ object BoundaryFactory {
             case relation: OsmEntity.Relation =>
               relation.tags
                 .get("admin_level")
-                .contains(administrativeLevel.id.toString)
+                .contains(administrativeLevel.osmLevel.toString)
             case _ => false
           }
       }
@@ -105,7 +105,7 @@ object BoundaryFactory {
       case nodes
           if nodes.headOption
             .zip(nodes.lastOption)
-            .exists(firstLast => firstLast._1 != firstLast._2) =>
+            .exists { case (first, last) => first != last } =>
         throw new RuntimeException(
           s"First node should be last in boundary relation ${relation.id}."
         )

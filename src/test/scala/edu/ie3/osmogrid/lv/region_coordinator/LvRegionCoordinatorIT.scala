@@ -110,7 +110,7 @@ class LvRegionCoordinatorIT
 
         val lvConfigCapped = lvConfig.copy(
           boundaryAdminLevel =
-            lvConfig.boundaryAdminLevel.copy(lowest = adminLevel.id)
+            lvConfig.boundaryAdminLevel.copy(lowest = adminLevel.osmLevel)
         )
 
         testKit.run(

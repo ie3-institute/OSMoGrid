@@ -11,10 +11,13 @@ package edu.ie3.osmogrid.lv.region_coordinator
   */
 sealed trait EntityAllocationStrategy
 
-/** If at least one entity lies within the boundary
-  */
-case object AssignToAll extends EntityAllocationStrategy
+object EntityAllocationStrategy {
 
-/** Assigns entity to area with the maximum matched sub entities
-  */
-case object AssignByMax extends EntityAllocationStrategy
+  /** If at least one entity lies within the boundary
+    */
+  case object AssignToAll extends EntityAllocationStrategy
+
+  /** Assigns entity to area with the maximum matched sub entities
+    */
+  case object AssignByMax extends EntityAllocationStrategy
+}

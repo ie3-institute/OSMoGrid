@@ -11,11 +11,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
+import edu.ie3.osmogrid.io.input.BoundaryAdminLevel.BoundaryAdminLevelValue
 import edu.ie3.osmogrid.lv.MunicipalityCoordinator
-import edu.ie3.osmogrid.lv.region_coordinator.{
-  BoundaryFactory,
-  OsmoGridModelPartitioner
-}
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 
 object LvRegionCoordinator {
@@ -37,7 +34,7 @@ object LvRegionCoordinator {
     */
   final case class Partition(
       osmoGridModel: LvOsmoGridModel,
-      administrativeLevel: BoundaryAdminLevel.Value,
+      administrativeLevel: BoundaryAdminLevelValue,
       lvConfig: OsmoGridConfig.Generation.Lv,
       replyTo: ActorRef[Response]
   ) extends Request
@@ -77,7 +74,7 @@ object LvRegionCoordinator {
 
           val levels = BoundaryAdminLevel
             .get(cfg.boundaryAdminLevel.lowest)
-            .zip(BoundaryAdminLevel.nextLowerLevel(administrativeLevel))
+            .zip(administrativeLevel.nextLowerLevel())
             .filter(lowestLevelNextLevel =>
               lowestLevelNextLevel._1 >= lowestLevelNextLevel._2
             )

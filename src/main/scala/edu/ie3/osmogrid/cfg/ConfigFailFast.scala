@@ -64,7 +64,7 @@ object ConfigFailFast extends LazyLogging {
             s"The starting admin level can not be parsed (provided: $starting)."
           )
         case (Some(lowestParsed), Some(startingParsed))
-            if startingParsed > lowestParsed =>
+            if startingParsed.osmLevel > lowestParsed.osmLevel =>
           throw IllegalConfigException(
             s"The starting admin level (provided: $startingParsed) has to be higher than the lowest admin level (provided: $lowestParsed)."
           )
