@@ -6,7 +6,12 @@
 
 package edu.ie3.test.common
 
-import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
+import edu.ie3.datamodel.models.{OperationTime, StandardUnits}
+import edu.ie3.datamodel.models.input.{
+  MeasurementUnitInput,
+  NodeInput,
+  OperatorInput
+}
 import edu.ie3.datamodel.models.input.connector.{
   LineInput,
   SwitchInput,
@@ -35,16 +40,34 @@ import edu.ie3.datamodel.models.input.system.{
   StorageInput,
   WecInput
 }
+import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
+import org.locationtech.jts.geom.Point
 import org.mockito.Mockito.when
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatestplus.mockito.MockitoSugar.mock
+import tech.units.indriya.quantity.Quantities
 
+import java.util.UUID
 import scala.jdk.CollectionConverters._
 
 trait GridSupport {
   protected def mockSubGrid(subnetNo: Int): SubGridContainer = {
     val mockedRawGrid = mock[RawGridElements]
-    when(mockedRawGrid.getNodes).thenReturn(Set.empty[NodeInput].asJava)
+
+    // include at least a single node for voltage level determination
+    val dummyNodeInput = new NodeInput(
+      UUID.randomUUID(),
+      "Dummy node",
+      mock[OperatorInput],
+      mock[OperationTime],
+      Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
+      false,
+      mock[Point],
+      GermanVoltageLevelUtils.LV,
+      subnetNo
+    )
+    when(mockedRawGrid.getNodes).thenReturn(Set(dummyNodeInput).asJava)
+
     when(mockedRawGrid.getLines).thenReturn(Set.empty[LineInput].asJava)
     when(mockedRawGrid.getTransformer2Ws).thenReturn(
       Set.empty[Transformer2WInput].asJava
