@@ -8,7 +8,6 @@ package edu.ie3.osmogrid.lv.coordinator
 
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.lv.LvGridGenerator
-import edu.ie3.osmogrid.lv.LvGridGenerator.BuildingGraphConnection
 import edu.ie3.osmogrid.model.OsmTestData
 import edu.ie3.test.common.UnitSpec
 import edu.ie3.util.geo.GeoUtils
@@ -20,7 +19,7 @@ import tech.units.indriya.ComparableQuantity
 import edu.ie3.util.geo.RichGeometries.RichCoordinate
 import org.locationtech.jts.geom.Coordinate
 import org.scalatestplus.mockito.MockitoSugar.mock
-
+import edu.ie3.osmogrid.lv.GraphBuildingSupport.BuildingGraphConnection
 import collection.parallel.CollectionConverters.seqIsParallelizable
 import javax.measure.quantity.Length
 import scala.collection.parallel.ParSeq
@@ -158,7 +157,7 @@ class LvGridGeneratorSpec extends UnitSpec with OsmTestData {
         val osmGraph = new OsmGraph()
         osmGraph.addVertex(nodes.highway1Node1)
         osmGraph.addVertex(nodes.highway1Node2)
-        val connectingNode = new Node(
+        val connectingNode = Node(
           99L,
           nodes.highway1Node1.latitude + nodes.highway1Node2.latitude,
           nodes.highway1Node1.longitude + nodes.highway1Node2.longitude,
