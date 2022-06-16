@@ -12,7 +12,7 @@ import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity
 import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
 import org.locationtech.jts.geom.Polygon
-import edu.ie3.osmogrid.lv.region_coordinator.EntityAllocationStrategy
+import edu.ie3.osmogrid.lv.region_coordinator.EntityAllocationStrategy.{AssignByMax, AssignToAll}
 
 import scala.collection.parallel.{ParMap, ParSeq}
 
