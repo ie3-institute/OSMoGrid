@@ -47,7 +47,8 @@ trait GraphBuildingSupport {
   def buildGridGraph(
       osmoGridModel: LvOsmoGridModel,
       powerDensity: ComparableQuantity[Irradiance],
-      minDistance: ComparableQuantity[Length]
+      minDistance: ComparableQuantity[Length],
+      considerBuildingConnections: Boolean
   ): (OsmGraph, ParSeq[BuildingGraphConnection]) = {
     val (highways, highwayNodes) =
       OsmoGridModel.filterForWays(osmoGridModel.highways)
@@ -65,7 +66,11 @@ trait GraphBuildingSupport {
     )
     val streetGraph = buildStreetGraph(highways, highwayNodes)
     (
-      updateGraphWithBuildingConnections(streetGraph, buildingGraphConnections),
+      updateGraphWithBuildingConnections(
+        streetGraph,
+        buildingGraphConnections,
+        considerBuildingConnections
+      ),
       buildingGraphConnections
     )
   }
@@ -87,20 +92,21 @@ trait GraphBuildingSupport {
     ways.foreach(way => {
       val nodeIds = way.nodes
       nodeIds.sliding(2).foreach { case Seq(nodeAId, nodeBId) =>
-        (nodes.get(nodeAId), nodes.get(nodeBId)) match
+        (nodes.get(nodeAId), nodes.get(nodeBId)) match {
           case (Some(nodeA), Some(nodeB)) =>
             graph.addVertex(nodeA)
             graph.addVertex(nodeB)
             graph.addWeightedEdge(nodeA, nodeB)
 
           case (None, _) =>
-            throw IllegalArgumentException(
+            throw new IllegalArgumentException(
               s"Node $nodeAId of Way ${way.id} is not within our nodes mapping"
             )
           case (_, None) =>
-            throw IllegalArgumentException(
+            throw new IllegalArgumentException(
               s"Node $nodeBId of Way ${way.id} is not within our nodes mapping"
             )
+        }
       }
     })
     graph
@@ -145,11 +151,11 @@ trait GraphBuildingSupport {
           highway.nodes.sliding(2).map { case Seq(nodeAId, nodeBId) =>
             (nodes.get(nodeAId), nodes.get(nodeBId)) match {
               case (None, _) =>
-                throw IllegalArgumentException(
+                throw new IllegalArgumentException(
                   s"Node $nodeAId is not within our nodes mapping"
                 )
               case (_, None) =>
-                throw IllegalArgumentException(
+                throw new IllegalArgumentException(
                   s"Node $nodeBId is not within our nodes mapping"
                 )
               case (Some(nodeA), Some(nodeB)) =>
@@ -254,12 +260,13 @@ trait GraphBuildingSupport {
       Success(buildingCenter.haversineDistance(orthogonalPt), closestNode)
     }
     // take the nearer point of the two line points
-    else
+    else {
       val coordinateADistance = buildingCenter.haversineDistance(coordinateA)
       val coordinateBDistance = buildingCenter.haversineDistance(coordinateB)
       if (coordinateADistance.isLessThan(coordinateBDistance))
         Success((coordinateADistance, wayNodeA))
       else Success((coordinateBDistance, wayNodeB))
+    }
   }
 
   private def orthogonalProjection(
@@ -325,7 +332,7 @@ trait GraphBuildingSupport {
       decimals: Int
   ): ComparableQuantity[T] = {
     if (decimals < 0)
-      throw IllegalArgumentException(
+      throw new IllegalArgumentException(
         "You can not round to negative decimal places."
       )
     val rounded = BigDecimal
@@ -347,16 +354,29 @@ trait GraphBuildingSupport {
     */
   private def updateGraphWithBuildingConnections(
       graph: OsmGraph,
-      buildingGraphConnections: ParSeq[BuildingGraphConnection]
+      buildingGraphConnections: ParSeq[BuildingGraphConnection],
+      considerBuildingConnections: Boolean
   ): OsmGraph = {
-    buildingGraphConnections.foreach(bgc =>
+    buildingGraphConnections.foreach(bgc => {
       if (bgc.hasNewNode) {
         graph.addVertex(bgc.graphConnectionNode)
         graph.removeEdge(bgc.highwayNodeA, bgc.highwayNodeB)
         graph.addWeightedEdge(bgc.highwayNodeA, bgc.graphConnectionNode)
         graph.addWeightedEdge(bgc.graphConnectionNode, bgc.highwayNodeB)
       }
-    )
+      if (considerBuildingConnections) {
+        val buildingNode = Node(
+          bgc.building.id,
+          bgc.center.y,
+          bgc.center.x,
+          Map().empty,
+          None
+        )
+        graph.addVertex(buildingNode)
+        graph.addWeightedEdge(bgc.graphConnectionNode, buildingNode)
+        bgc.copy(buildingNode = Some(buildingNode))
+      }
+    })
     graph
   }
 
@@ -388,7 +408,8 @@ object GraphBuildingSupport {
       buildingPower: ComparableQuantity[Power],
       highwayNodeA: Node,
       highwayNodeB: Node,
-      graphConnectionNode: Node
+      graphConnectionNode: Node,
+      buildingNode: Option[Node] = None
   ) {
 
     /** Checks whether the graph connection node is a new node. If not it is one

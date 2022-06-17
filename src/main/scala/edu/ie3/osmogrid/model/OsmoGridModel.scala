@@ -50,7 +50,7 @@ object OsmoGridModel {
             (matchedEntities, matchedSubEntities),
             curEntity: EnhancedOsmEntity
           ) =>
-        curEntity.entity match
+        curEntity.entity match {
           case entity: E =>
             val subEntities = curEntity.subEntities collect {
               case (id: Long, subEntity: S) => id -> subEntity
@@ -59,6 +59,7 @@ object OsmoGridModel {
               matchedEntities.appended(entity),
               matchedSubEntities ++ subEntities
             )
+        }
     }
     (matchedEntities.par, matchedSubentities)
   }
