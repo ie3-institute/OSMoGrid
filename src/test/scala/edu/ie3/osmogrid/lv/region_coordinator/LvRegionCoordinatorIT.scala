@@ -31,7 +31,7 @@ class LvRegionCoordinatorIT
   "Partitioning osm data" when {
     "having more iterations to go" should {
       "start another partition task" in {
-        val adminLevel = BoundaryAdminLevel.CountyLevel
+        val adminLevel = BoundaryAdminLevel.COUNTY_LEVEL
         val replyTo = TestProbe[LvRegionCoordinator.Response]()
 
         val testKit = BehaviorTestKit(
@@ -61,7 +61,7 @@ class LvRegionCoordinatorIT
         val models = messages.map(_.osmoGridModel)
 
         messages.foreach(
-          _.administrativeLevel shouldBe BoundaryAdminLevel.AmtLevel
+          _.administrativeLevel shouldBe BoundaryAdminLevel.AMT_LEVEL
         )
         messages.foreach(_.lvConfig shouldBe lvConfig)
         messages.foreach(_.replyTo shouldBe replyTo.ref)
@@ -72,7 +72,7 @@ class LvRegionCoordinatorIT
           m.highways.size == 19 &&
           m.landuses.size == 17 &&
           m.boundaries.map(_.entity.id).toSet.seq.equals(Set(62770, 56664)) &&
-          m.existingSubstations.size == 0
+          m.existingSubstations.isEmpty
         } shouldBe true
 
         // Dortmund
@@ -94,14 +94,14 @@ class LvRegionCoordinatorIT
           m.highways.size == 24 &&
           m.landuses.size == 22 &&
           m.boundaries.map(_.entity.id).toSet.seq.equals(Set(1647366, 62644)) &&
-          m.existingSubstations.size == 0
+          m.existingSubstations.isEmpty
         } shouldBe true
       }
     }
 
     "having reached the last administrative level" should {
       "start MunicipalityCoordinators with the results" in {
-        val adminLevel = BoundaryAdminLevel.CountyLevel
+        val adminLevel = BoundaryAdminLevel.COUNTY_LEVEL
         val replyTo = TestProbe[LvRegionCoordinator.Response]()
 
         val testKit = BehaviorTestKit(

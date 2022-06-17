@@ -36,7 +36,6 @@ import edu.ie3.datamodel.models.input.system.{
   WecInput
 }
 import org.mockito.Mockito.when
-import org.mockito.stubbing.OngoingStubbing
 import org.scalatestplus.mockito.MockitoSugar.mock
 
 import scala.jdk.CollectionConverters._
