@@ -14,19 +14,22 @@ import edu.ie3.datamodel.models.input.connector.`type`.{
 }
 import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.io.input.InputDataProvider.InputDataEvent
+import edu.ie3.osmogrid.io.input.InputDataProvider.{
+  InputDataEvent,
+  ProviderData
+}
 import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 
 import scala.util.{Failure, Success}
 
-// actor data
-protected final case class ProviderData(
-    ctx: ActorContext[InputDataEvent],
-    buffer: StashBuffer[InputDataEvent],
-    osmSource: OsmSource
-)
-
 object InputDataProvider extends ActorStopSupport[ProviderData] {
+
+  // actor data
+  protected final case class ProviderData(
+      ctx: ActorContext[InputDataEvent],
+      buffer: StashBuffer[InputDataEvent],
+      osmSource: OsmSource
+  )
 
   // external requests
   sealed trait Request

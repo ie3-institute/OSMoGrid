@@ -75,9 +75,9 @@ object LvRegionCoordinator {
           val levels = BoundaryAdminLevel
             .get(cfg.boundaryAdminLevel.lowest)
             .zip(administrativeLevel.nextLowerLevel())
-            .filter(lowestLevelNextLevel =>
-              lowestLevelNextLevel._1 >= lowestLevelNextLevel._2
-            )
+            .filter { case (lowest, next) =>
+              lowest >= next
+            }
 
           newOsmoGridModels.iterator.foreach { osmoGridModel =>
             levels match {
