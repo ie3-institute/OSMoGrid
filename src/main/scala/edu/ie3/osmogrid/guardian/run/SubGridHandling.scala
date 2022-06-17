@@ -16,7 +16,7 @@ import edu.ie3.osmogrid.io.output.ResultListener
 import org.slf4j.Logger
 
 import java.util.UUID
-import scala.jdk.CollectionConverters.*
+import scala.jdk.CollectionConverters._
 
 trait SubGridHandling {
 

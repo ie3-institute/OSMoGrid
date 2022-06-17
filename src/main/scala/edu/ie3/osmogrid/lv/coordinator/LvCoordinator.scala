@@ -197,7 +197,7 @@ object LvCoordinator extends ActorStopSupportStateless {
   ): Behavior[Request] = Behaviors
     .receive[Request] {
       case (ctx, StartGeneration(cfg, regionCoordinator, osmoGridModel)) =>
-        BoundaryAdminLevel(cfg.boundaryAdminLevel.starting) match {
+        BoundaryAdminLevel.get(cfg.boundaryAdminLevel.starting) match {
           case Some(startingLevel) =>
             /* Forward the generation request */
             regionCoordinator ! LvRegionCoordinator.Partition(

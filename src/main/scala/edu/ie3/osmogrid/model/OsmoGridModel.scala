@@ -12,6 +12,8 @@ import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
 import edu.ie3.util.osm.model.{OsmContainer, OsmEntity}
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
 import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
+
+import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
 import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
 import collection.parallel.CollectionConverters.seqIsParallelizable
 import scala.collection.parallel.ParSeq
@@ -112,7 +114,7 @@ object OsmoGridModel {
         osmContainer: ParOsmContainer,
         lvFilter: LvFilter,
         filterNodes: Boolean = true
-    ): LvOsmoGridModel =
+    ): LvOsmoGridModel = {
       val buildings = filter(osmContainer, lvFilter.buildingFilter)
       val highways = filter(osmContainer, lvFilter.highwayFilter)
       val landuses = filter(osmContainer, lvFilter.landuseFilter)
@@ -128,6 +130,7 @@ object OsmoGridModel {
         substations,
         lvFilter
       )
+    }
 
     def mergeAll(
         models: ParSeq[LvOsmoGridModel],
@@ -209,7 +212,7 @@ object OsmoGridModel {
     val mappedFilter =
       filters.map(filter => (filter.key, filter.tagValues)).toMap
     (osmContainer.nodes.values ++ osmContainer.ways.values ++ osmContainer.relations.values)
-      .foldLeft(ParSeq.empty) {
+      .foldLeft(Seq.empty[EnhancedOsmEntity]) {
         case (resEntities, curEntity)
             if curEntity.hasKeysValuesPairOr(mappedFilter) =>
           val subEntities = curEntity match {
@@ -220,10 +223,11 @@ object OsmoGridModel {
             case relation: Relation =>
               getSubEntities(osmContainer, relation)
           }
-          resEntities :+ EnhancedOsmEntity(curEntity, subEntities)
+          resEntities.appended(EnhancedOsmEntity(curEntity, subEntities))
         case (resEntities, _) =>
           resEntities
       }
+      .par
   }
 
   private def getSubEntities(

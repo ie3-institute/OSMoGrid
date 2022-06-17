@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.cfg
 
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.ConfigFactory
 
 import java.io.File
 import scala.util.Try
