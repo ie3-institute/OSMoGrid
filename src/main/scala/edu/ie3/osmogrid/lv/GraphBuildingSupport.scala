@@ -400,6 +400,15 @@ object GraphBuildingSupport {
     def hasNewNode: Boolean = {
       (graphConnectionNode != highwayNodeA) && (graphConnectionNode != highwayNodeB)
     }
-
+    
+    def createNodeName(considerHouseConnectionNode: Boolean): String = {
+      if considerHouseConnectionNode then
+        if this.hasNewNode then
+          "Node highway between: " + highwayNodeA.id + " and " + highwayNodeB.id
+        else if this.graphConnectionNode == this.highwayNodeA then
+          "Node highway: " + highwayNodeA.id
+        else "Node highway: " + highwayNodeB.id
+      else "Building connection: " + this.building.id
+    }
   }
 }

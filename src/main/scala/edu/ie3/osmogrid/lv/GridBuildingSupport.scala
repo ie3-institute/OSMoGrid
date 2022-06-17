@@ -6,15 +6,25 @@
 
 package edu.ie3.osmogrid.lv
 
+import edu.ie3.datamodel.models.BdewLoadProfile
+import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container.JointGridContainer
+import edu.ie3.datamodel.models.input.system.LoadInput
+import edu.ie3.datamodel.models.input.system.characteristic.CosPhiFixed
+import edu.ie3.datamodel.models.voltagelevels.{GermanVoltageLevelUtils, VoltageLevel}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.lv.GraphBuildingSupport.BuildingGraphConnection
 import edu.ie3.util.osm.model.OsmEntity.Node
+import edu.ie3.util.quantities.PowerSystemUnits
 import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
+import org.locationtech.jts.geom.Point
+import tech.units.indriya.ComparableQuantity
 
+import java.util.UUID
+import javax.measure.quantity.{Dimensionless, Power}
 import scala.jdk.CollectionConverters.*
-import scala.collection.parallel.ParSeq
+import scala.collection.parallel.{ParMap, ParSeq}
 
 trait GridBuildingSupport {
 
@@ -24,18 +34,46 @@ trait GridBuildingSupport {
       config: OsmoGridConfig.LvGrid
   ): JointGridContainer = {
 
-    val nodesWithBuildings: Map[Node, BuildingGraphConnection] =
+    val nodesWithBuildings: ParMap[Node, BuildingGraphConnection] =
       buildingGraphConnections.map(bgc => (bgc.graphConnectionNode, bgc)).toMap
 
     val vRated = config.ratedVoltage.asKiloVolt
+    val vTarget = 1d.asPu
+    val voltageLevel = GermanVoltageLevelUtils.parse(vRated)
+    val nodeCreator = createNode(vTarget, voltageLevel)
 
-    osmGraph.vertexSet().asScala.foreach(node => {
+    osmGraph
+      .vertexSet()
+      .asScala
+      .foreach(osmNode => {
 
-      if nodesWithBuildings contains node {
+        nodesWithBuildings.get(osmNode) match
+          case Some(buildingGraphConnection: BuildingGraphConnection) => {
 
-      }
+            val node = nodeCreator(
+              buildingGraphConnection
+                .createNodeName(config.considerHouseConnectionPoints),
+              osmNode.coordinate
+            )
 
-    })
+            if config.considerHouseConnectionPoints then
+              val houseConnectionPoint: NodeInput = ???
+
+            val load = new LoadInput(
+              UUID.randomUUID,
+              "Load of building: " + buildingGraphConnection.building.id.toString,
+              houseConnectionPoint,
+              CosPhiFixed.CONSTANT_CHARACTERISTIC,
+              BdewLoadProfile.H0,
+              false,
+              // todo: What to do for econsannual?
+              0,
+              buildingGraphConnection.buildingPower,
+              1d
+            )
+          }
+      })
+
 
     // generate NodeInput for every node that has a load connected to it
 
@@ -57,6 +95,21 @@ trait GridBuildingSupport {
 
     // create NodeInput
 
+  }
+
+  def createNode(
+      vTarget: ComparableQuantity[Dimensionless],
+      voltageLevel: VoltageLevel
+  )(id: String, coordinate: Point): NodeInput = {
+    new NodeInput(
+      UUID.randomUUID(),
+      id,
+      vTarget,
+      false,
+      coordinate,
+      voltageLevel,
+      1
+    )
   }
 
   def buildLine() = {
