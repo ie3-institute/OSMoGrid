@@ -400,5 +400,6 @@ object GraphBuildingSupport {
     def hasNewNode: Boolean = {
       (graphConnectionNode != highwayNodeA) && (graphConnectionNode != highwayNodeB)
     }
+
   }
 }

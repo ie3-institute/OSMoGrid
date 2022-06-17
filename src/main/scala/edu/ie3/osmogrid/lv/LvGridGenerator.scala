@@ -85,13 +85,14 @@ import scala.collection.parallel.ParSeq
 import scala.math.BigDecimal.RoundingMode
 import scala.util.{Failure, Success, Try}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
+import edu.ie3.osmogrid.lv.GraphBuildingSupport.BuildingGraphConnection
 import edu.ie3.util.quantities.interfaces.{Irradiance, PowerDensity}
 import tech.units.indriya.ComparableQuantity
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 
 import javax.measure.quantity.{Area, Length, Power}
 
-object LvGridGenerator extends GraphBuildingSupport {
+object LvGridGenerator extends GraphBuildingSupport with LazyLogging {
   sealed trait Request
   final case class GenerateGrid(
       osmData: LvOsmoGridModel,
@@ -111,30 +112,12 @@ object LvGridGenerator extends GraphBuildingSupport {
 
   private def idle: Behaviors.Receive[Request] = Behaviors.receive {
     case (ctx, GenerateGrid(osmData, powerDensity, minDistance)) =>
-      val streetGraph = buildGridGraph(osmData, powerDensity, minDistance)
+      val (graph, buildingGraphConnections) =
+        buildGridGraph(osmData, powerDensity, minDistance)
       ???
     case (ctx, unsupported) =>
       ctx.log.warn(s"Received unsupported message '$unsupported'.")
       Behaviors.stopped
-  }
-
-  /** Creates a default line type
-    *
-    * @return
-    *   Default line type
-    */
-
-  private def builtDefaultLineType(): LineTypeInput = {
-    new LineTypeInput(
-      UUID.randomUUID,
-      "Default generated line type",
-      Quantities.getQuantity(0.0, PowerSystemUnits.SIEMENS_PER_KILOMETRE),
-      Quantities.getQuantity(0.07, PowerSystemUnits.SIEMENS_PER_KILOMETRE),
-      Quantities.getQuantity(0.32, PowerSystemUnits.OHM_PER_KILOMETRE),
-      Quantities.getQuantity(0.07, PowerSystemUnits.OHM_PER_KILOMETRE),
-      Quantities.getQuantity(235.0, Units.AMPERE),
-      Quantities.getQuantity(0.4, PowerSystemUnits.KILOVOLT)
-    )
   }
 
   /** Generates a GridInputModel for each sub graph in graphModel
@@ -142,13 +125,13 @@ object LvGridGenerator extends GraphBuildingSupport {
     * @param graphModel
     *   GraphModel from which the GridInputModels shall be generated
     */
-  private def buildGrid(
-                         config: OsmoGridConfig,
-                         graphModel: List[AsSubgraph[OsmGridNode, DistanceWeightedEdge]],
-                         ratedVoltage: Double,
-                         voltageLevel: String,
-                         lineType: LineTypeInput
-                       ) = {
+  private def buildGridOld(
+      config: OsmoGridConfig,
+      graphModel: List[AsSubgraph[OsmGridNode, DistanceWeightedEdge]],
+      ratedVoltage: Double,
+      voltageLevel: String,
+      lineType: LineTypeInput
+  ) = {
     val vRated = Quantities.getQuantity(
       ratedVoltage,
       PowerSystemUnits.KILOVOLT
@@ -160,7 +143,7 @@ object LvGridGenerator extends GraphBuildingSupport {
     ) match {
       case Success(voltageLevel: VoltageLevel) => voltageLevel
       case Failure(e) =>
-        LvGridGenerator.logger.error(
+        log.error(
           "Could not set voltage level from config file. Continue with {}",
           voltageLevel,
           e
@@ -203,7 +186,7 @@ object LvGridGenerator extends GraphBuildingSupport {
           geoGridNodesMap.put(osmGridNode, nodeInput)
           nodeInputs.add(nodeInput)
 
-          if (config.lvgrid.considerHouseConnectionPoints) {
+          if (config.lvGrid.considerHouseConnectionPoints) {
             // If parameter considerHouseConnectionPoints is set to true, create another NodeInput at the nodes house connection point.
             val houseConnectionPoint: NodeInput = new NodeInput(
               UUID.randomUUID,
@@ -342,11 +325,11 @@ object LvGridGenerator extends GraphBuildingSupport {
     */
 
   private def buildGridContainer(
-                                  config: OsmoGridConfig.Runtime,
-                                  nodes: java.util.Set[NodeInput],
-                                  lines: java.util.Set[LineInput],
-                                  loads: java.util.Set[LoadInput]
-                                ) = {
+      config: OsmoGridConfig.Runtime,
+      nodes: java.util.Set[NodeInput],
+      lines: java.util.Set[LineInput],
+      loads: java.util.Set[LoadInput]
+  ) = {
     val rawGridElements = new RawGridElements(
       nodes,
       lines,
@@ -389,11 +372,11 @@ object LvGridGenerator extends GraphBuildingSupport {
     *   for each subnet).
     */
   def generateGrid(
-                    config: OsmoGridConfig,
-                    graphModel: List[AsSubgraph[OsmGridNode, DistanceWeightedEdge]],
-                    lineType: LineTypeInput
-                  ): JointGridContainer = {
-    val gridModel = buildGrid(
+      config: OsmoGridConfig,
+      graphModel: List[AsSubgraph[OsmGridNode, DistanceWeightedEdge]],
+      lineType: LineTypeInput
+  ): JointGridContainer = {
+    val gridModel = buildGridOld(
       config,
       graphModel,
       config.lvgrid.ratedVoltage,
