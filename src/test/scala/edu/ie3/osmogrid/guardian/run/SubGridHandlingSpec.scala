@@ -7,6 +7,8 @@
 package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import edu.ie3.datamodel.models.input.NodeInput
+import edu.ie3.datamodel.models.input.connector.ConnectorInput
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.io.input.InputDataProvider
@@ -18,6 +20,8 @@ import org.scalatestplus.mockito.MockitoSugar.mock
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.UUID
+import scala.util.Try
+import scala.jdk.CollectionConverters._
 
 class SubGridHandlingSpec
     extends UnitSpec
@@ -28,22 +32,39 @@ class SubGridHandlingSpec
   "Supporting sub grid handling" when {
     "assigning sub grid numbers to a single sub grid container" should {
       val assignSubnetNumber =
-        PrivateMethod[SubGridContainer](Symbol("assignSubnetNumber"))
+        PrivateMethod[Try[SubGridContainer]](Symbol("assignSubnetNumber"))
 
-      "return the same container" in {
-        /* ATTENTION: This is a dummy test until the concrete logic is implemented */
-        val subGridContainer = mock[SubGridContainer]
+      "return the same container with adapted sub grid number" in {
+        Given("a simple subgrid with a small grid graph and a few participants")
+        val subGridContainer = simpleSubGrid(111)
+        val newSubnet = 42
 
+        When("assigning a different subgrid number")
         val actual =
-          SubGridHandling invokePrivate assignSubnetNumber(subGridContainer, 42)
+          (SubGridHandling invokePrivate assignSubnetNumber(
+            subGridContainer,
+            newSubnet
+          )).success.get
 
-        actual shouldBe subGridContainer
+        Then(
+          "subnet number should be set in all nodes and new nodes should be linked"
+        )
+        actual.getSubnet shouldBe newSubnet
+        val newNodes = actual.getRawGrid.getNodes.asScala
+        newNodes.foreach(_.getSubnet shouldBe newSubnet)
+        actual.getSystemParticipants
+          .allEntitiesAsList()
+          .asScala
+          .foreach(participant => newNodes should contain(participant.getNode))
+        checkNodes(actual.getRawGrid.getLines.asScala, newNodes)
+        checkNodes(actual.getRawGrid.getTransformer2Ws.asScala, newNodes)
+        checkNodes(actual.getRawGrid.getSwitches.asScala, newNodes)
       }
     }
 
     "assigning sub grid numbers to a series of sub grid containers" should {
       val assignSubnetNumbers =
-        PrivateMethod[Seq[SubGridContainer]](Symbol("assignSubnetNumbers"))
+        PrivateMethod[Try[Seq[SubGridContainer]]](Symbol("assignSubnetNumbers"))
 
       "return the same containers" in {
         /* ATTENTION: This is a dummy test until the concrete logic is implemented */
@@ -52,7 +73,7 @@ class SubGridHandlingSpec
         val actual =
           SubGridHandling invokePrivate assignSubnetNumbers(containers)
 
-        actual should contain theSameElementsAs containers
+        actual.success.get should contain theSameElementsAs containers
       }
     }
 
@@ -125,4 +146,13 @@ class SubGridHandlingSpec
   }
 
   override protected def afterAll(): Unit = testKit.shutdownTestKit()
+
+  private def checkNodes(
+      actualInputs: Iterable[ConnectorInput],
+      expectedNodes: Iterable[NodeInput]
+  ): Unit =
+    actualInputs.foreach { connectorInput =>
+      expectedNodes should contain(connectorInput.getNodeA)
+      expectedNodes should contain(connectorInput.getNodeB)
+    }
 }

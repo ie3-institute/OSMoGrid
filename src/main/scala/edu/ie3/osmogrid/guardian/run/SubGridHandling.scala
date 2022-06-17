@@ -7,16 +7,7 @@
 package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.ActorRef
-import akka.util.Collections
-import edu.ie3.datamodel.io.factory.input.MeasurementUnitInputFactory
-import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
-import edu.ie3.datamodel.models.input.connector.{
-  ConnectorInput,
-  LineInput,
-  SwitchInput,
-  Transformer2WInput,
-  Transformer3WInput
-}
+import edu.ie3.datamodel.models.input.connector._
 import edu.ie3.datamodel.models.input.container.{
   GraphicElements,
   RawGridElements,
@@ -27,29 +18,16 @@ import edu.ie3.datamodel.models.input.graphics.{
   LineGraphicInput,
   NodeGraphicInput
 }
-import edu.ie3.datamodel.models.input.system.{
-  BmInput,
-  ChpInput,
-  EvInput,
-  EvcsInput,
-  FixedFeedInInput,
-  HpInput,
-  LoadInput,
-  PvInput,
-  StorageInput,
-  SystemParticipantInput,
-  WecInput
-}
+import edu.ie3.datamodel.models.input.system._
+import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
 import edu.ie3.datamodel.utils.ContainerUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.GridException
-import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.guardian.run.SubGridHandling.assignSubnetNumbers
 import edu.ie3.osmogrid.io.output.ResultListener
 import org.slf4j.Logger
 
 import java.util.UUID
-import scala.collection.immutable.{AbstractSeq, LinearSeq}
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -195,6 +173,7 @@ object SubGridHandling {
             exception
           )
       }
+    // transformer top node is included within the node set
     val transformers2w =
       updateNodeReferences(
         rawGrid.getTransformer2Ws.asScala.toSeq,
@@ -209,6 +188,7 @@ object SubGridHandling {
             exception
           )
       }
+    // transformer top nodes are included within the node set
     val transformers3w =
       updateNodeReferences(
         rawGrid.getTransformer3Ws.asScala.toSeq,
