@@ -6,14 +6,13 @@
 
 package edu.ie3.osmogrid.lv.region_coordinator
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.test.common.UnitSpec
 
 import scala.collection.parallel.ParSet
 import scala.io.Source
 import scala.util.Using
-import scala.collection.parallel.CollectionConverters.*
+import scala.collection.parallel.CollectionConverters._
 
 class BoundaryFactorySpec extends UnitSpec {
 
@@ -29,7 +28,7 @@ class BoundaryFactorySpec extends UnitSpec {
           BoundaryFactory
             .buildBoundaryPolygons(
               osmoGridModel,
-              BoundaryAdminLevel.CountyLevel
+              BoundaryAdminLevel.COUNTY_LEVEL
             )
             .values
             .map(_.toString)
@@ -45,7 +44,7 @@ class BoundaryFactorySpec extends UnitSpec {
           BoundaryFactory
             .buildBoundaryPolygons(
               osmoGridModel,
-              BoundaryAdminLevel.MunicipalityLevel
+              BoundaryAdminLevel.MUNICIPALITY_LEVEL
             )
             .values
             .map(_.toString)
@@ -61,7 +60,7 @@ class BoundaryFactorySpec extends UnitSpec {
           BoundaryFactory
             .buildBoundaryPolygons(
               osmoGridModel,
-              BoundaryAdminLevel.Suburb1Level
+              BoundaryAdminLevel.SUBURB_1_LEVEL
             )
             .values
             .map(_.toString)

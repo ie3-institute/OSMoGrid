@@ -6,24 +6,18 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import akka.actor.testkit.typed.Effect.MessageAdapter
-import akka.actor.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import edu.ie3.datamodel.models.input.container.SubGridContainer
-import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
-import edu.ie3.osmogrid.guardian.run.{RunGuardian, SubGridHandling}
+import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.lv.coordinator
-import edu.ie3.osmogrid.lv.coordinator.LvCoordinator
 import edu.ie3.test.common.{GridSupport, UnitSpec}
-import org.mockito.Mockito.when
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.PrivateMethodTester.PrivateMethod
 import org.scalatestplus.mockito.MockitoSugar.mock
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.UUID
-import scala.jdk.CollectionConverters.*
 
 class SubGridHandlingSpec
     extends UnitSpec

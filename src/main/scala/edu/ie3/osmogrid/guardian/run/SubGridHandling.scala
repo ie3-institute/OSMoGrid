@@ -50,7 +50,7 @@ import org.slf4j.Logger
 
 import java.util.UUID
 import scala.collection.immutable.{AbstractSeq, LinearSeq}
-import scala.jdk.CollectionConverters.*
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 trait SubGridHandling {

@@ -22,7 +22,7 @@ trait UnitSpec
     with Matchers
     with PrivateMethodTester
     with TableDrivenPropertyChecks
-    with GivenWhenThen
-    with LogCapturing
     with OptionValues
     with TryValues
+    with GivenWhenThen
+    with LogCapturing

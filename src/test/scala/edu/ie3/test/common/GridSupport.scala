@@ -43,7 +43,6 @@ import edu.ie3.datamodel.models.input.system.{
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
 import org.locationtech.jts.geom.Point
 import org.mockito.Mockito.when
-import org.mockito.stubbing.OngoingStubbing
 import org.scalatestplus.mockito.MockitoSugar.mock
 import tech.units.indriya.quantity.Quantities
 

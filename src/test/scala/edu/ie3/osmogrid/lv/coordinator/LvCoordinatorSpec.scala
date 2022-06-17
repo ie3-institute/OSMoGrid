@@ -14,7 +14,7 @@ import akka.actor.testkit.typed.scaladsl.{
   ScalaTestWithActorTestKit
 }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.Behavior
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
   Transformer2WTypeInput
@@ -22,7 +22,6 @@ import edu.ie3.datamodel.models.input.connector.`type`.{
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.RequestFailedException
-import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
 import edu.ie3.osmogrid.io.input.{BoundaryAdminLevel, InputDataProvider}
 import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator.Partition
@@ -32,7 +31,6 @@ import edu.ie3.osmogrid.lv.coordinator.MessageAdapters.{
 }
 import edu.ie3.osmogrid.lv.coordinator
 import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
-import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.UnitSpec
@@ -186,7 +184,7 @@ class LvCoordinatorSpec
         awaitingTestKit.run(
           WrappedInputDataResponse(
             InputDataProvider.OsmReadFailed(
-              RuntimeException("Some random failure.")
+              new RuntimeException("Some random failure.")
             )
           )
         )
@@ -252,7 +250,6 @@ class LvCoordinatorSpec
           case _: SpawnedAnonymous[_] =>
             succeed
           case unexpected => fail(s"Unexpected Effect happened: $unexpected")
-          case _          => fail("No child spawned")
         }
 
         awaitingTestKit.selfInbox().receiveMessage() match {
@@ -320,7 +317,7 @@ class LvCoordinatorSpec
         probe.expectMessageType[LvRegionCoordinator.Partition] match {
           case Partition(osmoGridModel, administrativeLevel, config, _) =>
             osmoGridModel shouldBe lvOsmoGridModel
-            administrativeLevel shouldBe BoundaryAdminLevel.NationLevel
+            administrativeLevel shouldBe BoundaryAdminLevel.NATION_LEVEL
             config shouldBe cfg
         }
 
