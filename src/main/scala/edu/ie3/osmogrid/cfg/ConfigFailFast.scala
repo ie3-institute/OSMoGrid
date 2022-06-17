@@ -9,7 +9,6 @@ package edu.ie3.osmogrid.cfg
 import akka.actor.typed.ActorRef
 import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.{
   Generation,
@@ -65,7 +64,7 @@ object ConfigFailFast extends LazyLogging {
           _,
           _
         ) =>
-      (BoundaryAdminLevel(lowest), BoundaryAdminLevel(starting)) match {
+      (BoundaryAdminLevel.get(lowest), BoundaryAdminLevel.get(starting)) match {
         case (None, _) =>
           throw IllegalConfigException(
             s"The lowest admin level can not be parsed (provided: $lowest)."
@@ -75,7 +74,7 @@ object ConfigFailFast extends LazyLogging {
             s"The starting admin level can not be parsed (provided: $starting)."
           )
         case (Some(lowestParsed), Some(startingParsed))
-            if startingParsed > lowestParsed =>
+            if startingParsed.osmLevel > lowestParsed.osmLevel =>
           throw IllegalConfigException(
             s"The starting admin level (provided: $startingParsed) has to be higher than the lowest admin level (provided: $lowestParsed)."
           )

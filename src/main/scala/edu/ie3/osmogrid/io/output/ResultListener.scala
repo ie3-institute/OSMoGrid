@@ -8,19 +8,18 @@ package edu.ie3.osmogrid.io.output
 
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import akka.actor.typed.scaladsl.Behaviors
-import edu.ie3.datamodel.models.input.container.{
-  GridContainer,
-  JointGridContainer
-}
+import edu.ie3.datamodel.models.input.container.GridContainer
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian
-import edu.ie3.osmogrid.io.output.ResultListener.ResultEvent
 
 import java.util.UUID
 
 object ResultListener extends ActorStopSupportStateless {
   sealed trait Request
+
+  /* internal API */
+  sealed trait ResultEvent
+
   final case class GridResult(
       grid: GridContainer,
       replyTo: ActorRef[Response]
@@ -33,9 +32,6 @@ object ResultListener extends ActorStopSupportStateless {
       runId: UUID,
       replyTo: ActorRef[ResultListener.ResultEvent]
   ) extends Response
-
-  /* internal API */
-  sealed trait ResultEvent
 
   def apply(runId: UUID, cfg: OsmoGridConfig.Output): Behavior[ResultEvent] =
     Behaviors

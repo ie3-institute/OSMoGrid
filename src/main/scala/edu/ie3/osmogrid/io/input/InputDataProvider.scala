@@ -8,39 +8,31 @@ package edu.ie3.osmogrid.io.input
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer}
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
-import com.acervera.osm4scala.EntityIterator.fromPbf
-import com.acervera.osm4scala.model.{NodeEntity, RelationEntity, WayEntity}
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
   Transformer2WTypeInput
 }
 import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.io.input.InputDataProvider.{
-  InputDataEvent,
-  ProviderData
-}
+import edu.ie3.osmogrid.io.input.InputDataProvider.InputDataEvent
 import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
-import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
-import org.locationtech.jts.geom.{
-  Coordinate,
-  LinearRing,
-  Point,
-  Polygon,
-  PrecisionModel
-}
 
-import java.io.{FileInputStream, InputStream}
-import java.time.ZonedDateTime
-import java.util.UUID
-import scala.collection.mutable.ListBuffer
-import scala.util.{Failure, Success, Try, Using}
-import java.util.UUID
+import scala.util.{Failure, Success}
+
+// actor data
+protected final case class ProviderData(
+    ctx: ActorContext[InputDataEvent],
+    buffer: StashBuffer[InputDataEvent],
+    osmSource: OsmSource
+)
 
 object InputDataProvider extends ActorStopSupport[ProviderData] {
 
   // external requests
   sealed trait Request
+
+  // internal api
+  sealed trait InputDataEvent
 
   final case class ReqOsm(
       replyTo: ActorRef[InputDataProvider.Response],
@@ -69,16 +61,6 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
   final case class AssetInformation(
       lineTypes: Seq[LineTypeInput],
       transformerTypes: Seq[Transformer2WTypeInput]
-  )
-
-  // internal api
-  sealed trait InputDataEvent
-
-  // actor data
-  protected final case class ProviderData(
-      ctx: ActorContext[InputDataEvent],
-      buffer: StashBuffer[InputDataEvent],
-      osmSource: OsmSource
   )
 
   def apply(
@@ -115,7 +97,7 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
             Behaviors.same
           case Terminate =>
             terminate(ctx.log, providerData)
-          case invalid: (OsmReadFailed | RepOsm) =>
+          case invalid =>
             ctx.log.error(
               s"Received unexpected message '$invalid' in state Idle! Ignoring!"
             )

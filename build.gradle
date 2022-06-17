@@ -15,8 +15,8 @@ plugins {
 ext {
   javaVersion = JavaVersion.VERSION_17
 
-  scalaMajorVersion = '3'
-  scalaVersion = '3.1.2'
+  scalaVersion = '2.13'
+  scalaBinaryVersion = '2.13.8'
   akkaVersion = '2.6.19'
 
   tscfgVersion = '0.9.995'
@@ -53,25 +53,25 @@ repositories {
 dependencies {
 
   // scala core
-  implementation "org.scala-lang:scala3-library_3:$scalaVersion"
-  implementation 'org.scala-lang.modules:scala-parallel-collections_3:1.0.4'
+  implementation "org.scala-lang:scala-library:${scalaBinaryVersion}"
+  implementation group: 'org.scala-lang.modules', name: "scala-parallel-collections_${scalaVersion}", version: '1.0.4'
 
   // akka
-  implementation "com.typesafe.akka:akka-actor-typed_${scalaMajorVersion}:${akkaVersion}"
-  testImplementation "com.typesafe.akka:akka-actor-testkit-typed_$scalaMajorVersion:${akkaVersion}"
+  implementation "com.typesafe.akka:akka-actor-typed_${scalaVersion}:${akkaVersion}"
+  testImplementation "com.typesafe.akka:akka-actor-testkit-typed_$scalaVersion:${akkaVersion}"
 
   // logging
-  implementation "com.typesafe.scala-logging:scala-logging_${scalaMajorVersion}:3.9.5"
+  implementation "com.typesafe.scala-logging:scala-logging_${scalaVersion}:3.9.4"
   implementation 'ch.qos.logback:logback-classic:1.2.11'
 
   // testing
-  testImplementation "org.scalatest:scalatest_$scalaMajorVersion:3.2.12"
+  testImplementation "org.scalatest:scalatest_$scalaVersion:3.2.11"
   testRuntimeOnly 'com.vladsch.flexmark:flexmark-all:0.64.0' //scalatest html output
   testImplementation 'org.pegdown:pegdown:1.6.0'
 
   // config
   implementation 'com.typesafe:config:1.4.2'
-  implementation "com.github.scopt:scopt_$scalaMajorVersion:4.0.1" // cmd args parser
+  implementation "com.github.scopt:scopt_$scalaVersion:4.0.1" // cmd args parser
 
   // osm4scala
   implementation 'com.acervera.osm4scala:osm4scala-core_2.13:1.0.10'
@@ -113,7 +113,7 @@ dependencies {
   testImplementation 'junit:junit:4.13.2'
   testImplementation 'cglib:cglib-nodep:3.3.0' // enables mocking of classes (in addition to interfaces)
   testImplementation 'org.mockito:mockito-core:4.6.1' // mocking framework
-  testImplementation 'org.scalatestplus:mockito-3-12_3:3.2.10.0' // syntactic sugar
+  testImplementation "org.scalatestplus:mockito-3-12_$scalaVersion:3.2.10.0" // syntactic sugar
 
   testImplementation 'org.spockframework:spock-core:2.1-groovy-3.0'
   testImplementation 'org.objenesis:objenesis:3.2' // Mock creation with constructor parameters

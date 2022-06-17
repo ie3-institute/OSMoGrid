@@ -6,10 +6,7 @@
 
 package edu.ie3.osmogrid.cfg
 
-import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.test.common.UnitSpec
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.util.{Failure, Success}
 
@@ -145,8 +142,8 @@ class ConfigFailFastSpec extends UnitSpec {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
               case Failure(exception) =>
-                exception.getMessage shouldBe "The starting admin level (provided: StateDistrictLevel) " +
-                  "has to be higher than the lowest admin level (provided: FederalStateLevel)."
+                exception.getMessage shouldBe "The starting admin level (provided: STATE_DISTRICT_LEVEL) " +
+                  "has to be higher than the lowest admin level (provided: FEDERAL_STATE_LEVEL)."
               case Success(_) =>
                 fail("Config check succeeded, but was meant to fail.")
             }

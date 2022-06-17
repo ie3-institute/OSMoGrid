@@ -11,11 +11,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
+import edu.ie3.osmogrid.io.input.BoundaryAdminLevel.BoundaryAdminLevelValue
 import edu.ie3.osmogrid.lv.MunicipalityCoordinator
-import edu.ie3.osmogrid.lv.region_coordinator.{
-  BoundaryFactory,
-  OsmoGridModelPartitioner
-}
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 
 object LvRegionCoordinator {
@@ -37,7 +34,7 @@ object LvRegionCoordinator {
     */
   final case class Partition(
       osmoGridModel: LvOsmoGridModel,
-      administrativeLevel: BoundaryAdminLevel,
+      administrativeLevel: BoundaryAdminLevelValue,
       lvConfig: OsmoGridConfig.Generation.Lv,
       replyTo: ActorRef[Response]
   ) extends Request
@@ -64,7 +61,7 @@ object LvRegionCoordinator {
             )
 
           val newOsmoGridModels =
-            if areas.isEmpty then
+            if (areas.isEmpty)
               // if no containers have been found at this level, we continue with container of previous level
               Iterable.single(osmoGridModel)
             else
@@ -75,13 +72,16 @@ object LvRegionCoordinator {
                 )
                 .values
 
-          val levels = BoundaryAdminLevel(cfg.boundaryAdminLevel.lowest)
-            .zip(BoundaryAdminLevel.nextLowerLevel(administrativeLevel))
-            .filter((lowestLevel, nextLevel) => nextLevel <= lowestLevel)
+          val levels = BoundaryAdminLevel
+            .get(cfg.boundaryAdminLevel.lowest)
+            .zip(administrativeLevel.nextLowerLevel())
+            .filter { case (lowest, next) =>
+              lowest >= next
+            }
 
           newOsmoGridModels.iterator.foreach { osmoGridModel =>
             levels match {
-              case Some(_, nextLevel) =>
+              case Some((_, nextLevel)) =>
                 val newRegionCoordinator = ctx.spawnAnonymous(
                   LvRegionCoordinator()
                 )

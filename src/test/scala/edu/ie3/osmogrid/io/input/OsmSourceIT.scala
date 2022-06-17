@@ -6,27 +6,20 @@
 
 package edu.ie3.osmogrid.io.input
 
-import akka.actor.testkit.typed.scaladsl.{
-  ActorTestKit,
-  ScalaTestWithActorTestKit
-}
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.io.input.OsmSource.PbfFileSource
-import edu.ie3.osmogrid.io.input.OsmSourceIT.SourceTestActor.SourceTestActorMsg
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
-import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
-import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
+import edu.ie3.osmogrid.model.SourceFilter.LvFilter
+import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.test.common.{InputDataCheck, UnitSpec}
-import org.scalatest.BeforeAndAfterAll
-
 import java.nio.file.Paths
-import java.time.temporal.ChronoUnit
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
-class OsmSourceIT extends UnitSpec with BeforeAndAfterAll with InputDataCheck {
+class OsmSourceIT extends UnitSpec with InputDataCheck {
   private val testKit = ActorTestKit("OsmSourceIT")
 
   "Reading input data from pbf file" when {

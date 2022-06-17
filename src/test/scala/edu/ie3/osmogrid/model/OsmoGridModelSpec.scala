@@ -10,15 +10,8 @@ import edu.ie3.osmogrid.model.OsmoGridModel.{EnhancedOsmEntity, LvOsmoGridModel}
 import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
 import edu.ie3.test.common.UnitSpec
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
-import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
-import edu.ie3.util.osm.model.OsmEntity.Relation.{
-  RelationMember,
-  RelationMemberType
-}
-import edu.ie3.util.osm.model.OsmEntity.Way.{ClosedWay, OpenWay}
-import org.scalatest.GivenWhenThen
-
-import scala.collection.parallel.CollectionConverters.*
+import edu.ie3.util.osm.model.OsmEntity.Relation
+import scala.collection.parallel.CollectionConverters._
 import scala.collection.parallel.ParSeq
 
 class OsmoGridModelSpec extends UnitSpec with OsmTestData {
