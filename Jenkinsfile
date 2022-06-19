@@ -106,7 +106,7 @@ node {
 
         sh 'java -version'
 
-        gradle('--refresh-dependencies clean spotlessCheck pmdMain pmdTest spotbugsMain spotbugsTest test', projectName)
+        gradle('--refresh-dependencies clean spotlessCheck pmdMain pmdTest spotbugsMain spotbugsTest test reportScoverage checkScoverage', projectName)
 
         // due to an issue with openjdk-8 we use openjdk-11 for javadocs generation
         sh(script: """set +x && cd $projectName""" + ''' set +x; ./gradlew clean javadoc''', returnStdout: true)
@@ -434,6 +434,15 @@ def publishReports(String relativeProjectDir) {
 
   // publish spotbugs report for main project only
   publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, escapeUnderscores: false, keepAll: true, reportDir: relativeProjectDir + '/build/reports/spotbugs', reportFiles: 'main.html', reportName: "${relativeProjectDir}_spotbugs_report", reportTitles: ''])
+
+  // publish scapegoat src report for main project only
+  publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, escapeUnderscores: false, keepAll: true, reportDir: relativeProjectDir + '/build/reports/scapegoat/src', reportFiles: 'scapegoat.html', reportName: "${relativeProjectDir}_scapegoat_src_report", reportTitles: ''])
+
+  // publish scapegoat testsrc report for main project only
+  publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, escapeUnderscores: false, keepAll: true, reportDir: relativeProjectDir + '/build/reports/scapegoat/testsrc', reportFiles: 'scapegoat.html', reportName: "${relativeProjectDir}_scapegoat_testsrc_report", reportTitles: ''])
+
+  // scoverage report dir
+  publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, escapeUnderscores: false, keepAll: true, reportDir: relativeProjectDir + '/build/reports/scoverageTest', reportFiles: 'scoverage.xml', reportName: "${relativeProjectDir}_scoverage_report", reportTitles: ''])
 }
 
 def prFromFork() {
