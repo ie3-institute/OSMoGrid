@@ -156,13 +156,13 @@ private[input] object PbfGuardian extends ActorStopSupport[StateData] {
 
     def status(stateData: StateData): Unit = {
       val currentProgress =
-        (stateData.noOfResponses.toDouble / stateData.noOfBlobs) * 100d
-      val fivePercent = Math.round((stateData.noOfBlobs / 100d) * 5)
+        ((stateData.noOfResponses.toDouble / stateData.noOfBlobs) * 100d).toInt
+      val fivePercent = Math.round((stateData.noOfBlobs / 100d) * 5).toInt
       if (
         currentProgress != 0d && stateData.noOfResponses.toDouble % fivePercent == 0
       ) {
         ctx.log.debug(
-          s"Finished reading ${stateData.noOfResponses} blobs (${currentProgress.toInt}% of all blobs). Duration: ${(System
+          s"Finished reading ${stateData.noOfResponses} blobs ($currentProgress% of all blobs). Duration: ${(System
             .currentTimeMillis() - stateData.startTime) / 1000}s"
         )
       }
