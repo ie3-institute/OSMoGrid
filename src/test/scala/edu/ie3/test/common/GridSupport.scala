@@ -9,6 +9,7 @@ package edu.ie3.test.common
 import edu.ie3.datamodel.models.BdewLoadProfile
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
+  Transformer2WTypeInput,
   Transformer3WTypeInput
 }
 import edu.ie3.datamodel.models.input.connector.{
@@ -58,7 +59,7 @@ trait GridSupport {
     // include at least a single node for voltage level determination
     val dummyNodeInput = new NodeInput(
       UUID.randomUUID(),
-      "Dummy node",
+      s"Dummy node in $subgridNo",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       false,
       mock[Point],
@@ -110,10 +111,11 @@ trait GridSupport {
     */
   protected def simpleSubGrid(subgridNo: Int): SubGridContainer = {
 
+    // GRID //
     // include at least a single node for voltage level determination
     val nodeA = new NodeInput(
       UUID.randomUUID(),
-      "Node A",
+      s"Node A in $subgridNo",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       false,
       GeoUtils.buildPoint(51.49249, 7.41105),
@@ -122,16 +124,26 @@ trait GridSupport {
     )
     val nodeB = new NodeInput(
       UUID.randomUUID(),
-      "Node B",
+      s"Node B in $subgridNo",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       false,
       GeoUtils.buildPoint(51.49276, 7.41657),
       GermanVoltageLevelUtils.LV,
       subgridNo
     )
+    val nodeC = new NodeInput(
+      UUID.randomUUID(),
+      s"Node C in $subgridNo",
+      Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
+      false,
+      GeoUtils.buildPoint(51.49350, 7.41605),
+      GermanVoltageLevelUtils.LV,
+      subgridNo
+    )
+
     val topNode1 = new NodeInput(
       UUID.randomUUID(),
-      "Top node 1",
+      s"Top node 1 in $subgridNo",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       false,
       mock[Point],
@@ -140,7 +152,7 @@ trait GridSupport {
     )
     val topNode2 = new NodeInput(
       UUID.randomUUID(),
-      "Top node 2",
+      s"Top node 2 in $subgridNo",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       false,
       mock[Point],
@@ -150,7 +162,7 @@ trait GridSupport {
 
     val lineInput = new LineInput(
       UUID.randomUUID(),
-      "Line 1",
+      s"Line 1 in $subgridNo",
       nodeA,
       nodeB,
       1,
@@ -160,11 +172,20 @@ trait GridSupport {
       OlmCharacteristicInput.CONSTANT_CHARACTERISTIC
     )
 
-    lineInput.copy().nodeA(topNode1).nodeB(topNode2).build()
+    val transformer2W = new Transformer2WInput(
+      UUID.randomUUID(),
+      s"Transformer (2W) in $subgridNo",
+      nodeC,
+      topNode2,
+      1,
+      mock[Transformer2WTypeInput],
+      0,
+      false
+    )
 
     val transformer3W = new Transformer3WInput(
       UUID.randomUUID(),
-      "Transformer (3W)",
+      s"Transformer (3W) in $subgridNo",
       nodeA,
       topNode1,
       topNode2,
@@ -174,18 +195,37 @@ trait GridSupport {
       false
     )
 
-    val rawGrid = new RawGridElements(
-      Set(nodeA, nodeB, topNode1, topNode2).asJava,
-      Set(lineInput).asJava,
-      Set.empty[Transformer2WInput].asJava,
-      Set(transformer3W).asJava,
-      Set.empty[SwitchInput].asJava,
-      Set.empty[MeasurementUnitInput].asJava
+    val switchInput = new SwitchInput(
+      UUID.randomUUID(),
+      s"Switch in $subgridNo",
+      nodeB,
+      nodeC,
+      false
     )
 
+    val measurementUnitInput = new MeasurementUnitInput(
+      UUID.randomUUID(),
+      s"Measurement unit in $subgridNo",
+      nodeB,
+      true,
+      true,
+      false,
+      false
+    )
+
+    val rawGrid = new RawGridElements(
+      Set(nodeA, nodeB, nodeC, topNode1, topNode2).asJava,
+      Set(lineInput).asJava,
+      Set(transformer2W).asJava,
+      Set(transformer3W).asJava,
+      Set(switchInput).asJava,
+      Set(measurementUnitInput).asJava
+    )
+
+    // PARTICIPANTS //
     val loadInput = new LoadInput(
       UUID.randomUUID(),
-      "Load",
+      s"Load in $subgridNo",
       nodeB,
       mock[ReactivePowerCharacteristic],
       BdewLoadProfile.H0,
@@ -197,7 +237,7 @@ trait GridSupport {
 
     val pvInput = new PvInput(
       UUID.randomUUID(),
-      "PV",
+      s"PV in $subgridNo",
       nodeA,
       mock[ReactivePowerCharacteristic],
       0d,
@@ -224,13 +264,14 @@ trait GridSupport {
       Set.empty[WecInput].asJava
     )
 
+    // GRAPHICS (just mocked) //
     val mockedGraphics = new GraphicElements(
       Set.empty[NodeGraphicInput].asJava,
       Set.empty[LineGraphicInput].asJava
     )
 
     new SubGridContainer(
-      "SimpleGrid",
+      "SubGrid",
       subgridNo,
       rawGrid,
       participants,
