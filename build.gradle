@@ -61,7 +61,7 @@ dependencies {
   testImplementation "com.typesafe.akka:akka-actor-testkit-typed_$scalaVersion:${akkaVersion}"
 
   // logging
-  implementation "com.typesafe.scala-logging:scala-logging_${scalaVersion}:3.9.4"
+  implementation "com.typesafe.scala-logging:scala-logging_${scalaVersion}:3.9.5"
   implementation 'ch.qos.logback:logback-classic:1.2.11'
 
   // testing
