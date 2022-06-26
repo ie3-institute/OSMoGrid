@@ -374,7 +374,7 @@ trait GraphBuildingSupport {
         )
         graph.addVertex(buildingNode)
         graph.addWeightedEdge(bgc.graphConnectionNode, buildingNode)
-        bgc.copy(buildingNode = Some(buildingNode))
+        bgc.copy(buildingConnectionNode = Some(buildingNode))
       }
     })
     graph
@@ -409,7 +409,7 @@ object GraphBuildingSupport {
       highwayNodeA: Node,
       highwayNodeB: Node,
       graphConnectionNode: Node,
-      buildingNode: Option[Node] = None
+      buildingConnectionNode: Option[Node] = None
   ) {
 
     /** Checks whether the graph connection node is a new node. If not it is one
@@ -421,15 +421,19 @@ object GraphBuildingSupport {
     def hasNewNode: Boolean = {
       (graphConnectionNode != highwayNodeA) && (graphConnectionNode != highwayNodeB)
     }
-    
-    def createNodeName(considerHouseConnectionNode: Boolean): String = {
-      if considerHouseConnectionNode then
-        if this.hasNewNode then
+
+    def createHighwayNodeName(considerHouseConnectionNode: Boolean): String = {
+      if (considerHouseConnectionNode) {
+        if (this.hasNewNode)
           "Node highway between: " + highwayNodeA.id + " and " + highwayNodeB.id
-        else if this.graphConnectionNode == this.highwayNodeA then
+        else if (this.graphConnectionNode == this.highwayNodeA)
           "Node highway: " + highwayNodeA.id
         else "Node highway: " + highwayNodeB.id
-      else "Building connection: " + this.building.id
+      } else "Building connection: " + this.building.id
+    }
+
+    def createBuildingNodeName(): String = {
+      "Building connection: " + this.building.id
     }
   }
 }
