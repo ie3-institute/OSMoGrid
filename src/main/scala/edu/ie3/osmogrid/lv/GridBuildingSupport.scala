@@ -6,13 +6,40 @@
 
 package edu.ie3.osmogrid.lv
 
+import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.BdewLoadProfile
-import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.datamodel.models.input.connector.LineInput
+import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
+import edu.ie3.datamodel.models.input.connector.{
+  LineInput,
+  SwitchInput,
+  Transformer2WInput,
+  Transformer3WInput
+}
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
-import edu.ie3.datamodel.models.input.container.JointGridContainer
-import edu.ie3.datamodel.models.input.system.LoadInput
+import edu.ie3.datamodel.models.input.container.{
+  GraphicElements,
+  JointGridContainer,
+  RawGridElements,
+  SubGridContainer,
+  SystemParticipants
+}
+import edu.ie3.datamodel.models.input.graphics.{
+  LineGraphicInput,
+  NodeGraphicInput
+}
+import edu.ie3.datamodel.models.input.system.{
+  BmInput,
+  ChpInput,
+  EvInput,
+  EvcsInput,
+  FixedFeedInInput,
+  HpInput,
+  LoadInput,
+  PvInput,
+  StorageInput,
+  WecInput
+}
 import edu.ie3.datamodel.models.input.system.characteristic.CosPhiFixed
 import edu.ie3.datamodel.models.voltagelevels.{
   GermanVoltageLevelUtils,
@@ -26,49 +53,55 @@ import edu.ie3.osmogrid.exception.{
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.lv.GraphBuildingSupport.BuildingGraphConnection
 import edu.ie3.osmogrid.lv.GridBuildingSupport.GridElements
+import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
-import org.locationtech.jts.geom.Point
+import org.locationtech.jts.geom.impl.CoordinateArraySequence
+import org.locationtech.jts.geom.{LineString, Point}
 import tech.units.indriya.ComparableQuantity
 
+import java.util
 import java.util.UUID
 import javax.measure.quantity.{Dimensionless, Power}
 import scala.collection.Set
 import scala.jdk.CollectionConverters._
 import scala.collection.parallel.{ParMap, ParSeq}
 
-trait GridBuildingSupport {
+trait GridBuildingSupport extends LazyLogging {
 
   def buildGrid(
       osmGraph: OsmGraph,
       buildingGraphConnections: ParSeq[BuildingGraphConnection],
-      config: OsmoGridConfig.LvGrid
-  ): JointGridContainer = {
+      config: OsmoGridConfig,
+      lineType: LineTypeInput
+  ): SubGridContainer = {
 
     val nodesWithBuildings: ParMap[Node, BuildingGraphConnection] =
       buildingGraphConnections.map(bgc => (bgc.graphConnectionNode, bgc)).toMap
 
-    val vRated = config.ratedVoltage.asKiloVolt
+    val vRated = config.lvGrid.ratedVoltage.asKiloVolt
     val vTarget = 1d.asPu
     val voltageLevel = GermanVoltageLevelUtils.parse(vRated)
     val nodeCreator = createNode(vTarget, voltageLevel) _
 
-    osmGraph
+    val gridElements = osmGraph
       .vertexSet()
       .asScala
-      .foldLeft(GridElements(Map.empty, Set()))((gridElements, osmNode) => {
+      .foldLeft(GridElements(Map(), Set()))((gridElements, osmNode) => {
         nodesWithBuildings.get(osmNode) match {
-          case Some(buildingGraphConnection: BuildingGraphConnection) => {
+          case Some(buildingGraphConnection: BuildingGraphConnection) =>
             val highwayNode = nodeCreator(
               buildingGraphConnection
-                .createHighwayNodeName(config.considerHouseConnectionPoints),
+                .createHighwayNodeName(
+                  config.lvGrid.considerHouseConnectionPoints
+                ),
               osmNode.coordinate
             )
             val loadCreator = createLoad(
               "Load of building: " + buildingGraphConnection.building.id.toString,
               buildingGraphConnection.buildingPower
             ) _
-            if (config.considerHouseConnectionPoints) {
+            if (config.lvGrid.considerHouseConnectionPoints) {
               val osmBuildingConnectionNode =
                 buildingGraphConnection.buildingConnectionNode.getOrElse(
                   throw IllegalStateException(
@@ -89,14 +122,43 @@ trait GridBuildingSupport {
               val load = loadCreator(highwayNode)
               gridElements ++ Map(osmNode -> highwayNode) + load
             }
-          }
+
           case None if osmGraph.degreeOf(osmNode) > 2 =>
-            gridElements + nodeCreator(
+            val node = nodeCreator(
               s"Node highway: ${osmNode.id}",
               osmNode.coordinate
             )
+            gridElements ++ Map(osmNode -> node)
+          case None =>
+            gridElements
         }
       })
+    val (startNode, startNodeInput) = gridElements.nodes.headOption.getOrElse(
+      throw new IllegalArgumentException("No nodes were converted.")
+    )
+    val (visitedNodes, lineInputs) = traverseGraph(
+      startNode,
+      startNodeInput,
+      osmGraph,
+      Set.empty,
+      Set.empty,
+      gridElements.nodes,
+      lineType
+    )
+
+    val unvisitedNodes = osmGraph.vertexSet().asScala.diff(visitedNodes)
+    if (unvisitedNodes.nonEmpty) {
+      logger.error(
+        "We did not visit all nodes while taversing the graph. Unvisited Nodes: " + unvisitedNodes
+      )
+    }
+
+    buildGridContainer(
+      config.output.gridName,
+      gridElements.nodes.values.toSet.asJava,
+      lineInputs.asJava,
+      gridElements.loads.asJava
+    )
   }
 
   def createNode(
@@ -209,8 +271,38 @@ trait GridBuildingSupport {
       nodeB: NodeInput,
       geoNodes: Seq[Node],
       lineType: LineTypeInput
-  ): LineTypeInput = {
-    ???
+  ): LineInput = {
+    val geoPosition = new LineString(
+      new CoordinateArraySequence(
+        geoNodes.map(_.coordinate.getCoordinate).toArray
+      ),
+      GeoUtils.DEFAULT_GEOMETRY_FACTORY
+    )
+    val id = s"Line between: " + geoNodes.headOption
+      .getOrElse(
+        throw new IllegalArgumentException(
+          s"Line between $nodeA and $nodeB has no first node."
+        )
+      )
+      .id + "-" + geoNodes.lastOption
+      .getOrElse(
+        throw new IllegalArgumentException(
+          s"Line between $nodeA and $nodeB has no last node."
+        )
+      )
+      .id
+    new LineInput(
+      UUID.randomUUID(),
+      id,
+      nodeA,
+      nodeB,
+      0,
+      lineType,
+      GeoUtils.calcHaversine(geoPosition),
+      geoPosition,
+      // todo: What do we expect as OlmCharacteristic?
+      null
+    )
   }
 
   /** Looks for the next [[Node]] that has an associated [[NodeInput]]. Returns
@@ -286,6 +378,48 @@ trait GridBuildingSupport {
   ): Node = {
     if (graph.getEdgeSource(edge) == source) graph.getEdgeTarget(edge)
     else graph.getEdgeSource(edge)
+  }
+
+  /** Builds a GridContainer by adding all assets together
+    */
+
+  private def buildGridContainer(
+      gridName: String,
+      nodes: java.util.Set[NodeInput],
+      lines: java.util.Set[LineInput],
+      loads: java.util.Set[LoadInput]
+  ) = {
+    val rawGridElements = new RawGridElements(
+      nodes,
+      lines,
+      new util.HashSet[Transformer2WInput],
+      new util.HashSet[Transformer3WInput],
+      new util.HashSet[SwitchInput],
+      new util.HashSet[MeasurementUnitInput]
+    )
+    val systemParticipants = new SystemParticipants(
+      new util.HashSet[BmInput],
+      new util.HashSet[ChpInput],
+      new util.HashSet[EvcsInput],
+      new util.HashSet[EvInput],
+      new util.HashSet[FixedFeedInInput],
+      new util.HashSet[HpInput],
+      loads,
+      new util.HashSet[PvInput],
+      new util.HashSet[StorageInput],
+      new util.HashSet[WecInput]
+    )
+    val graphicElements = new GraphicElements(
+      new util.HashSet[NodeGraphicInput],
+      new util.HashSet[LineGraphicInput]
+    )
+    new SubGridContainer(
+      gridName,
+      1,
+      rawGridElements,
+      systemParticipants,
+      graphicElements
+    )
   }
 }
 

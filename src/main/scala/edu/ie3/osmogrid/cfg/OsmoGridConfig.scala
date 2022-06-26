@@ -11,8 +11,7 @@ final case class OsmoGridConfig(
     input: OsmoGridConfig.Input,
     io: OsmoGridConfig.Io,
     lvGrid: OsmoGridConfig.LvGrid,
-    output: OsmoGridConfig.Output,
-    runtime: OsmoGridConfig.Runtime
+    output: OsmoGridConfig.Output
 )
 object OsmoGridConfig {
   final case class Generation(
@@ -366,7 +365,8 @@ object OsmoGridConfig {
   }
 
   final case class Output(
-      csv: scala.Option[OsmoGridConfig.Output.Csv]
+      csv: scala.Option[OsmoGridConfig.Output.Csv],
+      gridName: java.lang.String
   )
   object Output {
     final case class Csv(
@@ -418,22 +418,8 @@ object OsmoGridConfig {
               OsmoGridConfig.Output
                 .Csv(c.getConfig("csv"), parentPath + "csv.", $tsCfgValidator)
             )
-          else None
-      )
-    }
-  }
-
-  final case class Runtime(
-      name: java.lang.String
-  )
-  object Runtime {
-    def apply(
-        c: com.typesafe.config.Config,
-        parentPath: java.lang.String,
-        $tsCfgValidator: $TsCfgValidator
-    ): OsmoGridConfig.Runtime = {
-      OsmoGridConfig.Runtime(
-        name = $_reqStr(parentPath, c, "name", $tsCfgValidator)
+          else None,
+        gridName = $_reqStr(parentPath, c, "gridName", $tsCfgValidator)
       )
     }
     private def $_reqStr(
@@ -486,12 +472,6 @@ object OsmoGridConfig {
         if (c.hasPathOrNull("output")) c.getConfig("output")
         else com.typesafe.config.ConfigFactory.parseString("output{}"),
         parentPath + "output.",
-        $tsCfgValidator
-      ),
-      runtime = OsmoGridConfig.Runtime(
-        if (c.hasPathOrNull("runtime")) c.getConfig("runtime")
-        else com.typesafe.config.ConfigFactory.parseString("runtime{}"),
-        parentPath + "runtime.",
         $tsCfgValidator
       )
     )
