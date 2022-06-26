@@ -12,7 +12,6 @@ import edu.ie3.osmogrid.model.OsmTestData
 import edu.ie3.test.common.UnitSpec
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
-import edu.ie3.util.osm.model.OsmEntity.Way.{ClosedWay, OpenWay}
 import edu.ie3.util.quantities.QuantityMatchers.equalWithTolerance
 import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
 import tech.units.indriya.ComparableQuantity
@@ -128,14 +127,15 @@ class LvGridGeneratorSpec extends UnitSpec with OsmTestData {
           buildingCenter,
           nodes,
           minDistance
-        ) match
-          case Success(distance, node: Node) =>
-            distance should equalWithTolerance(
+        ) match {
+          case Success(distanceAndNode) =>
+            distanceAndNode._1 should equalWithTolerance(
               buildingCenter.haversineDistance(expectedOrthogonal)
             )
-            node.latitude shouldBe (expectedOrthogonal.y +- 1e-8)
-            node.longitude shouldBe (expectedOrthogonal.x +- 1e-8)
+            distanceAndNode._2.latitude  shouldBe (expectedOrthogonal.y +- 1e-8)
+            distanceAndNode._2.longitude shouldBe (expectedOrthogonal.x +- 1e-8)
           case Failure(exc) => fail(s"Test failed due to exception: ", exc)
+        }
       }
 
       "calculate an orthogonal projection correctly" in {
