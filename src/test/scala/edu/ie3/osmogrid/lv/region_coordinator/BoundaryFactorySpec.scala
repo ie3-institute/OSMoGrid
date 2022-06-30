@@ -76,6 +76,6 @@ class BoundaryFactorySpec extends UnitSpec {
     assert(file != null)
     Using(Source.fromFile(file.toURI)) { source =>
       source.getLines().toSet.par
-    }.get
+    }.success.get
   }
 }

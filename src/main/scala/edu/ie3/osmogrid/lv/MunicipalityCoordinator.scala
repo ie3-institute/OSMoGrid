@@ -6,14 +6,11 @@
 
 package edu.ie3.osmogrid.lv
 
-import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import edu.ie3.osmogrid.model.OsmoGridModel
 
 object MunicipalityCoordinator {
   sealed trait Request
-
-  sealed trait Response
 
   def apply(
       osmoGridModel: OsmoGridModel
