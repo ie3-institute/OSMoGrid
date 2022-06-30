@@ -7,18 +7,14 @@
 package edu.ie3.osmogrid.lv.coordinator
 
 import akka.actor.testkit.typed.CapturedLogEvent
-import akka.actor.testkit.typed.Effect.{
-  MessageAdapter,
-  Spawned,
-  SpawnedAnonymous
-}
+import akka.actor.testkit.typed.Effect.{MessageAdapter, SpawnedAnonymous}
 import akka.actor.testkit.typed.scaladsl.{
   ActorTestKit,
   BehaviorTestKit,
   ScalaTestWithActorTestKit
 }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.Behavior
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
   Transformer2WTypeInput
@@ -26,19 +22,17 @@ import edu.ie3.datamodel.models.input.connector.`type`.{
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.RequestFailedException
-import edu.ie3.osmogrid.guardian.run.RunGuardian
-import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
-import edu.ie3.osmogrid.io.output.ResultListener.ResultEvent
-import edu.ie3.osmogrid.lv.LvRegionCoordinator.Partition
+import edu.ie3.osmogrid.io.input.{BoundaryAdminLevel, InputDataProvider}
+import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator.Partition
 import edu.ie3.osmogrid.lv.coordinator.MessageAdapters.{
   WrappedInputDataResponse,
   WrappedRegionResponse
 }
-import edu.ie3.osmogrid.lv.{LvRegionCoordinator, coordinator}
+import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
-import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.test.common.UnitSpec
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.event.Level
@@ -190,7 +184,7 @@ class LvCoordinatorSpec
         awaitingTestKit.run(
           WrappedInputDataResponse(
             InputDataProvider.OsmReadFailed(
-              RuntimeException("Some random failure.")
+              new RuntimeException("Some random failure.")
             )
           )
         )
@@ -256,11 +250,10 @@ class LvCoordinatorSpec
           case _: SpawnedAnonymous[_] =>
             succeed
           case unexpected => fail(s"Unexpected Effect happened: $unexpected")
-          case _          => fail("No child spawned")
         }
 
         awaitingTestKit.selfInbox().receiveMessage() match {
-          case StartGeneration(lvConfig, _) => lvConfig shouldBe cfg
+          case StartGeneration(lvConfig, _, _) => lvConfig shouldBe cfg
           case unexpected => fail(s"Received unexpected message '$unexpected'.")
         }
       }
@@ -295,7 +288,7 @@ class LvCoordinatorSpec
         val mockedBehavior: Behavior[LvRegionCoordinator.Request] =
           Behaviors.receive[LvRegionCoordinator.Request] { case (ctx, msg) =>
             msg match {
-              case Partition(_, replyTo) =>
+              case Partition(_, _, _, replyTo) =>
                 ctx.log.info(
                   s"Received the following message: '$msg'. Send out reply."
                 )
@@ -308,11 +301,24 @@ class LvCoordinatorSpec
         val mockedLvRegionCoordinator = asynchronousTestKit.spawn(
           Behaviors.monitor(probe.ref, mockedBehavior)
         )
+        val lvOsmoGridModel = LvOsmoGridModel(
+          ParSeq.empty,
+          ParSeq.empty,
+          ParSeq.empty,
+          ParSeq.empty,
+          ParSeq.empty,
+          LvFilter()
+        )
 
         /* Ask the coordinator to start the process */
-        awaitingTestKit.run(StartGeneration(cfg, mockedLvRegionCoordinator))
+        awaitingTestKit.run(
+          StartGeneration(cfg, mockedLvRegionCoordinator, lvOsmoGridModel)
+        )
         probe.expectMessageType[LvRegionCoordinator.Partition] match {
-          case Partition(config, _) => config shouldBe cfg
+          case Partition(osmoGridModel, administrativeLevel, config, _) =>
+            osmoGridModel shouldBe lvOsmoGridModel
+            administrativeLevel shouldBe BoundaryAdminLevel.NATION_LEVEL
+            config shouldBe cfg
         }
 
         /* The mocked behavior directly sends a reply -> Check that out */

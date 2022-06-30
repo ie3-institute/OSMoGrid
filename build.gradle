@@ -3,20 +3,20 @@ plugins {
   id 'java' //java support
   id 'scala'
   id 'pmd' // code check, working on source code
-  id 'com.diffplug.spotless' version '6.5.2'//code format
-  id 'com.github.spotbugs' version '5.0.6' // code check, working on byte code
+  id 'com.diffplug.spotless' version '6.7.2'//code format
+  id 'com.github.spotbugs' version '5.0.9' // code check, working on byte code
   id 'de.undercouch.download' version '5.1.0'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.32" // run scalatest without specific spec task
-  id "org.sonarqube" version "3.3" // sonarqube
+  id "org.sonarqube" version "3.4.0.2513" // sonarqube
   id 'net.thauvin.erik.gradle.semver' version '1.0.4' // semantic versioning
 }
 
 ext {
   javaVersion = JavaVersion.VERSION_17
 
-  scalaMajorVersion = '3'
-  scalaVersion = '3.1.2'
+  scalaVersion = '2.13'
+  scalaBinaryVersion = '2.13.8'
   akkaVersion = '2.6.19'
 
   tscfgVersion = '0.9.995'
@@ -53,25 +53,25 @@ repositories {
 dependencies {
 
   // scala core
-  implementation "org.scala-lang:scala3-library_3:$scalaVersion"
-  implementation 'org.scala-lang.modules:scala-parallel-collections_3:1.0.4'
+  implementation "org.scala-lang:scala-library:${scalaBinaryVersion}"
+  implementation group: 'org.scala-lang.modules', name: "scala-parallel-collections_${scalaVersion}", version: '1.0.4'
 
   // akka
-  implementation "com.typesafe.akka:akka-actor-typed_${scalaMajorVersion}:${akkaVersion}"
-  testImplementation "com.typesafe.akka:akka-actor-testkit-typed_$scalaMajorVersion:${akkaVersion}"
+  implementation "com.typesafe.akka:akka-actor-typed_${scalaVersion}:${akkaVersion}"
+  testImplementation "com.typesafe.akka:akka-actor-testkit-typed_$scalaVersion:${akkaVersion}"
 
   // logging
-  implementation "com.typesafe.scala-logging:scala-logging_${scalaMajorVersion}:3.9.4"
+  implementation "com.typesafe.scala-logging:scala-logging_${scalaVersion}:3.9.5"
   implementation 'ch.qos.logback:logback-classic:1.2.11'
 
   // testing
-  testImplementation "org.scalatest:scalatest_$scalaMajorVersion:3.2.12"
-  testRuntimeClasspath 'com.vladsch.flexmark:flexmark-all:0.64.0'
+  testImplementation "org.scalatest:scalatest_$scalaVersion:3.2.12"
+  testRuntimeOnly 'com.vladsch.flexmark:flexmark-all:0.64.0' //scalatest html output
   testImplementation 'org.pegdown:pegdown:1.6.0'
 
   // config
   implementation 'com.typesafe:config:1.4.2'
-  implementation "com.github.scopt:scopt_$scalaMajorVersion:4.0.1" // cmd args parser
+  implementation "com.github.scopt:scopt_$scalaVersion:4.0.1" // cmd args parser
 
   // osm4scala
   implementation 'com.acervera.osm4scala:osm4scala-core_2.13:1.0.10'
@@ -99,7 +99,7 @@ dependencies {
   implementation 'com.github.johanneshiry:OSMonaut:v1.1.1'
 
   implementation 'org.jxmapviewer:jxmapviewer2:2.6' // osm map viewer
-  implementation 'org.glassfish.jaxb:jaxb-runtime:3.0.2'
+  implementation 'org.glassfish.jaxb:jaxb-runtime:4.0.0'
 
   // required for xml parser (javax.xml.bind) (see: https://stackoverflow.com/questions/48204141/replacements-for-deprecated-jpms-modules-with-java-ee-apis/48279048#48279048)
   implementation 'javax.xml.bind:jaxb-api:2.4.0-b180830.0359' // xml parsing
@@ -112,15 +112,15 @@ dependencies {
   // testing
   testImplementation 'junit:junit:4.13.2'
   testImplementation 'cglib:cglib-nodep:3.3.0' // enables mocking of classes (in addition to interfaces)
-  testImplementation 'org.mockito:mockito-core:4.5.1' // mocking framework
-  testImplementation 'org.scalatestplus:mockito-3-12_3:3.2.10.0' // syntactic sugar
+  testImplementation 'org.mockito:mockito-core:4.6.1' // mocking framework
+  testImplementation "org.scalatestplus:mockito-3-12_$scalaVersion:3.2.10.0" // syntactic sugar
 
   testImplementation 'org.spockframework:spock-core:2.1-groovy-3.0'
   testImplementation 'org.objenesis:objenesis:3.2' // Mock creation with constructor parameters
 
   // TODO: Remove. Only there for backwards compatibility in Java code
   implementation 'tech.units:indriya:2.1.3'
-  implementation 'org.locationtech.jts:jts-core:1.18.2'
+  implementation 'org.locationtech.jts:jts-core:1.19.0'
 }
 
 tasks.withType(JavaCompile) {

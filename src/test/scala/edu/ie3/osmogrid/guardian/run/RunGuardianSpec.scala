@@ -13,7 +13,6 @@ import akka.actor.testkit.typed.scaladsl.{
   ScalaTestWithActorTestKit
 }
 import akka.actor.typed.{ActorRef, Behavior}
-import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input.InputDataProvider

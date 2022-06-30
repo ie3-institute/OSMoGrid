@@ -6,32 +6,44 @@
 
 package edu.ie3.osmogrid.io.input.pbf
 
-import akka.actor.typed.{ActorRef, Behavior, PostStop, SupervisorStrategy}
+import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, Routers}
 import com.acervera.osm4scala.BlobTupleIterator
-import com.acervera.osm4scala.model.{NodeEntity, RelationEntity, WayEntity}
+import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.exception.PbfReadFailedException
-import edu.ie3.osmogrid.io.input.pbf.PbfWorker.{Request, ReadBlobMsg}
+import edu.ie3.osmogrid.io.input.pbf.PbfWorker.ReadBlobMsg
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 import edu.ie3.util.osm.model.OsmContainer
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
-import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
 
 import java.io.{File, FileInputStream, InputStream}
 import java.util.UUID
 import scala.collection.parallel.immutable.{ParSeq, ParVector}
+import scala.util.{Failure, Success, Try}
 
-private[input] object PbfGuardian {
+// internal state data
+protected final case class StateData(
+    pbfIS: InputStream,
+    blobIterator: BlobTupleIterator,
+    workerPool: ActorRef[PbfWorker.Request],
+    workerResponseMapper: ActorRef[PbfWorker.Response],
+    filter: SourceFilter,
+    sender: Option[ActorRef[PbfGuardian.Response]] = None,
+    noOfBlobs: Int = -1,
+    noOfResponses: Int = 0,
+    receivedModels: ParSeq[ParOsmContainer] = ParVector.empty,
+    startTime: Long = -1
+) {
+  def allBlobsRead(): Boolean = noOfResponses == noOfBlobs
+}
 
-  sealed trait PbfGuardianEvent
+private[input] object PbfGuardian extends ActorStopSupport[StateData] {
 
   // external request protocol
   sealed trait Request
 
-  final case class Run(replyTo: ActorRef[PbfGuardian.Response])
-      extends Request
-      with PbfGuardianEvent
+  final case class Run(replyTo: ActorRef[PbfGuardian.Response]) extends Request
 
   // external reply protocol
   sealed trait Response
@@ -44,29 +56,13 @@ private[input] object PbfGuardian {
   // internal private protocol
   private final case class WrappedPbfWorkerResponse(
       response: PbfWorker.Response
-  ) extends PbfGuardianEvent
-
-  // internal state data
-  private final case class StateData(
-      pbfIS: InputStream,
-      blobIterator: BlobTupleIterator,
-      workerPool: ActorRef[PbfWorker.Request],
-      workerResponseMapper: ActorRef[PbfWorker.Response],
-      filter: SourceFilter,
-      sender: Option[ActorRef[PbfGuardian.Response]] = None,
-      noOfBlobs: Int = -1,
-      noOfResponses: Int = 0,
-      receivedModels: ParSeq[ParOsmContainer] = ParVector.empty,
-      startTime: Long = -1
-  ) {
-    def allBlobsRead(): Boolean = noOfResponses == noOfBlobs
-  }
+  ) extends Request
 
   def apply(
       pbfFile: File,
       filter: SourceFilter,
       noOfActors: Int = Runtime.getRuntime.availableProcessors()
-  ): Behavior[PbfGuardianEvent] = Behaviors.setup[PbfGuardianEvent] { ctx =>
+  ): Behavior[Request] = Behaviors.setup[Request] { ctx =>
     ctx.log.info(s"Start reading pbf file using $noOfActors actors ...")
     val pool = Routers.pool(poolSize = noOfActors) {
       Behaviors
@@ -90,25 +86,45 @@ private[input] object PbfGuardian {
     )
   }
 
-  private def idle(stateData: StateData): Behavior[PbfGuardianEvent] = Behaviors
-    .receive[PbfGuardianEvent] { case (ctx, msg) =>
+  private def idle(stateData: StateData): Behavior[Request] = Behaviors
+    .receive[Request] { case (ctx, msg) =>
       msg match {
         case Run(sender) =>
           // start the reading process
           val start = System.currentTimeMillis()
-          val noOfBlobs = readPbf(
-            stateData.blobIterator,
-            stateData.workerPool,
-            stateData.workerResponseMapper
-          )
-          ctx.log.debug(s"Reading $noOfBlobs blobs ...")
-          idle(
-            stateData.copy(
-              sender = Some(sender),
-              noOfBlobs = noOfBlobs,
-              startTime = start
+          Try {
+            readPbf(
+              stateData.blobIterator,
+              stateData.workerPool,
+              stateData.workerResponseMapper
             )
-          )
+          } match {
+            case Success(noOfBlobs) if noOfBlobs > 0 =>
+              ctx.log.debug(s"Reading $noOfBlobs blobs ...")
+              idle(
+                stateData.copy(
+                  sender = Some(sender),
+                  noOfBlobs = noOfBlobs,
+                  startTime = start
+                )
+              )
+            case Success(_) =>
+              sender ! PbfReadFailed(
+                PbfReadFailedException(
+                  "Input file is empty, stopping."
+                )
+              )
+              terminate(ctx.log, stateData)
+            case Failure(exception) =>
+              sender ! PbfReadFailed(
+                PbfReadFailedException(
+                  "Reading input failed.",
+                  exception
+                )
+              )
+              terminate(ctx.log, stateData)
+          }
+
         case WrappedPbfWorkerResponse(response) =>
           response match {
             case PbfWorker.ReadSuccessful(osmContainer) =>
@@ -124,24 +140,18 @@ private[input] object PbfGuardian {
                       .initCause(exception)
                   )
               )
-              stopAndCleanup(stateData, ctx)
+              terminate(ctx.log, stateData)
           }
       }
     }
 
-  private def stopAndCleanup(
-      stateData: StateData,
-      ctx: ActorContext[PbfGuardianEvent]
-  ): Behavior[PbfGuardianEvent] = {
-    ctx.log.info("Stopping .pbf file reading!")
+  override protected def cleanUp(stateData: StateData): Unit =
     stateData.pbfIS.close()
-    Behaviors.stopped // stops this actor and all its children
-  }
 
   private def addOsmoGridModel(
       osmContainer: OsmContainer,
       stateData: StateData,
-      ctx: ActorContext[PbfGuardianEvent]
+      ctx: ActorContext[Request]
   ) = {
 
     def status(stateData: StateData): Unit = {
@@ -193,7 +203,7 @@ private[input] object PbfGuardian {
 
       stateData.sender
         .foreach(_ ! PbfReadSuccessful(osmoGridModel))
-      stopAndCleanup(stateData, ctx)
+      terminate(ctx.log, stateData)
     }
     // if not not done, just stay in idle with updated data
     idle(updatedStateData)

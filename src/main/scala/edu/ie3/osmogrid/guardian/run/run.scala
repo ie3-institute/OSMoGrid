@@ -57,7 +57,7 @@ sealed trait Response
 
 final case class Done(runId: UUID) extends Response
 
-private final case class ChildReferences(
+final case class ChildReferences(
     inputDataProvider: ActorRef[InputDataProvider.InputDataEvent],
     resultListener: Option[ActorRef[ResultListener.ResultEvent]],
     additionalResultListeners: Seq[ActorRef[ResultListener.ResultEvent]],
@@ -69,7 +69,7 @@ private final case class ChildReferences(
       .getOrElse(Seq.empty) ++ additionalResultListeners
 }
 
-private sealed trait StateData
+sealed trait StateData
 private final case class RunGuardianData(
     runId: UUID,
     cfg: OsmoGridConfig,
@@ -89,7 +89,7 @@ private final case class RunGuardianData(
   * @param lvCoordinatorTerminated
   *   Optional information, if the [[LvCoordinator]] has stopped
   */
-private final case class StoppingData(
+final case class StoppingData(
     runId: UUID,
     inputDataProviderTerminated: Boolean,
     resultListenerTerminated: Boolean,
