@@ -8,8 +8,16 @@ package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.connector._
-import edu.ie3.datamodel.models.input.container.{GraphicElements, RawGridElements, SubGridContainer, SystemParticipants}
-import edu.ie3.datamodel.models.input.graphics.{LineGraphicInput, NodeGraphicInput}
+import edu.ie3.datamodel.models.input.container.{
+  GraphicElements,
+  RawGridElements,
+  SubGridContainer,
+  SystemParticipants
+}
+import edu.ie3.datamodel.models.input.graphics.{
+  LineGraphicInput,
+  NodeGraphicInput
+}
 import edu.ie3.datamodel.models.input.system._
 import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
 import edu.ie3.datamodel.utils.ContainerUtils
