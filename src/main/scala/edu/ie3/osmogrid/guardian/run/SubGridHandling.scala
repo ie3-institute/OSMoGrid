@@ -7,51 +7,21 @@
 package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.ActorRef
-import akka.util.Collections
-import edu.ie3.datamodel.io.factory.input.MeasurementUnitInputFactory
+import edu.ie3.datamodel.models.input.connector._
+import edu.ie3.datamodel.models.input.container.{GraphicElements, RawGridElements, SubGridContainer, SystemParticipants}
+import edu.ie3.datamodel.models.input.graphics.{LineGraphicInput, NodeGraphicInput}
+import edu.ie3.datamodel.models.input.system._
 import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
-import edu.ie3.datamodel.models.input.connector.{
-  ConnectorInput,
-  LineInput,
-  SwitchInput,
-  Transformer2WInput,
-  Transformer3WInput
-}
-import edu.ie3.datamodel.models.input.container.{
-  GraphicElements,
-  RawGridElements,
-  SubGridContainer,
-  SystemParticipants
-}
-import edu.ie3.datamodel.models.input.graphics.{
-  LineGraphicInput,
-  NodeGraphicInput
-}
-import edu.ie3.datamodel.models.input.system.{
-  BmInput,
-  ChpInput,
-  EvInput,
-  EvcsInput,
-  FixedFeedInInput,
-  HpInput,
-  LoadInput,
-  PvInput,
-  StorageInput,
-  SystemParticipantInput,
-  WecInput
-}
 import edu.ie3.datamodel.utils.ContainerUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.GridException
-import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.guardian.run.SubGridHandling.assignSubnetNumbers
 import edu.ie3.osmogrid.io.output.ResultListener
 import org.slf4j.Logger
 
 import java.util.UUID
-import scala.collection.immutable.{AbstractSeq, LinearSeq}
-import scala.util.{Failure, Success, Try}
 import scala.jdk.CollectionConverters._
+import scala.util.{Failure, Success, Try}
 
 trait SubGridHandling {
 
@@ -120,37 +90,43 @@ object SubGridHandling {
   private def assignSubnetNumber(
       subGrid: SubGridContainer,
       subnetNumber: Int
-  ) = Try {
-    val nodes = updateSubnetNumbers(
+  ): Try[SubGridContainer] = Try {
+    val nodes = updateNodes(
       subGrid.getRawGrid.getNodes.asScala.toSeq,
       subnetNumber
     )
-    val rawGrid = updateRawGrid(subGrid.getRawGrid, nodes) match {
-      case Success(value) => value
-      case Failure(exception) =>
-        throw GridException("Unable to update raw grid structure.", exception)
-    }
+
+    val rawGrid = updateRawGrid(subGrid.getRawGrid, nodes).fold(
+      exception =>
+        throw GridException(
+          "Unable to update raw grid structure.",
+          exception
+        ),
+      identity
+    )
+
     val systemParticipants =
-      updateSystemParticipants(subGrid.getSystemParticipants, nodes) match {
-        case Success(value) => value
-        case Failure(exception) =>
+      updateSystemParticipants(subGrid.getSystemParticipants, nodes).fold(
+        exception =>
           throw GridException(
             "Unable to update system participants.",
             exception
-          )
-      }
+          ),
+        identity
+      )
+
     val graphics = updateGraphics(
       subGrid.getGraphics,
       nodes,
       rawGrid.getLines.asScala.map(line => line.getUuid -> line).toMap
-    ) match {
-      case Success(value) => value
-      case Failure(exception) =>
+    ).fold(
+      exception =>
         throw GridException(
           "Unable to update graphic elements.",
           exception
-        )
-    }
+        ),
+      identity
+    )
 
     new SubGridContainer(
       subGrid.getGridName,
@@ -161,7 +137,7 @@ object SubGridHandling {
     )
   }
 
-  private def updateSubnetNumbers(
+  private def updateNodes(
       nodes: Seq[NodeInput],
       subnetNumber: Int
   ): Map[UUID, NodeInput] = nodes
@@ -187,66 +163,73 @@ object SubGridHandling {
         nodeMapping,
         (line: LineInput, nodeA: NodeInput, nodeB: NodeInput) =>
           line.copy().nodeA(nodeA).nodeB(nodeB).build()
-      ) match {
-        case Success(value) => value
-        case Failure(exception) =>
+      ).fold(
+        exception =>
           throw GridException(
             "Unable to update node references of lines.",
             exception
-          )
-      }
+          ),
+        identity
+      )
+
+    // transformer top node is included within the node set
     val transformers2w =
       updateNodeReferences(
         rawGrid.getTransformer2Ws.asScala.toSeq,
         nodeMapping,
         (transformer: Transformer2WInput, nodeA: NodeInput, nodeB: NodeInput) =>
           transformer.copy().nodeA(nodeA).nodeB(nodeB).build()
-      ) match {
-        case Success(value) => value
-        case Failure(exception) =>
+      ).fold(
+        exception =>
           throw GridException(
             "Unable to update node references of two winding transformers.",
             exception
-          )
-      }
+          ),
+        identity
+      )
+
+    // transformer top nodes are included within the node set
     val transformers3w =
       updateNodeReferences(
         rawGrid.getTransformer3Ws.asScala.toSeq,
         nodeMapping
-      ) match {
-        case Success(value) => value
-        case Failure(exception) =>
+      ).fold(
+        exception =>
           throw GridException(
             "Unable to update node references of three winding transformers.",
             exception
-          )
-      }
+          ),
+        identity
+      )
+
     val switches =
       updateNodeReferences(
         rawGrid.getSwitches.asScala.toSeq,
         nodeMapping,
         (swtch: SwitchInput, nodeA: NodeInput, nodeB: NodeInput) =>
           swtch.copy().nodeA(nodeA).nodeB(nodeB).build()
-      ) match {
-        case Success(value) => value
-        case Failure(exception) =>
+      ).fold(
+        exception =>
           throw GridException(
             "Unable to update node references of switches.",
             exception
-          )
-      }
+          ),
+        identity
+      )
+
     val measurements =
       updateMeasurements(
         rawGrid.getMeasurementUnits.asScala.toSeq,
         nodeMapping
-      ) match {
-        case Success(value) => value
-        case Failure(exception) =>
+      ).fold(
+        exception =>
           throw GridException(
             "Unable to update node references of measurements.",
             exception
-          )
-      }
+          ),
+        identity
+      )
+
     new RawGridElements(
       nodeMapping.values.toSet.asJava,
       lines.toSet.asJava,
@@ -289,14 +272,14 @@ object SubGridHandling {
     }
   }
 
-  /** Update the node references in two port connectors
+  /** Update the node references in [[Transformer3WInput]]s
     *
     * @param connectors
-    *   Collection of [[ConnectorInput]] to update
+    *   Collection of [[Transformer3WInput]] to update
     * @param nodeMapping
     *   Mapping from node [[UUID]] to updated nodes
     * @return
-    *   Two-port connector with updated node references
+    *   [[Transformer3WInput]]s with updated node references
     */
   private def updateNodeReferences(
       connectors: Seq[Transformer3WInput],
@@ -322,14 +305,14 @@ object SubGridHandling {
     }
   }
 
-  /** Update the node references in two port connectors
+  /** Update the node references in [[MeasurementUnitInput]]s
     *
     * @param measurements
-    *   Collection of [[ConnectorInput]] to update
+    *   Collection of [[MeasurementUnitInput]] to update
     * @param nodeMapping
     *   Mapping from node [[UUID]] to updated nodes
     * @return
-    *   Measurement device with updated node reference
+    *   Measurement devices with updated node references
     */
   private def updateMeasurements(
       measurements: Seq[MeasurementUnitInput],
@@ -359,128 +342,137 @@ object SubGridHandling {
   private def updateSystemParticipants(
       participants: SystemParticipants,
       nodeMapping: Map[UUID, NodeInput]
-  ) = Try {
+  ): Try[SystemParticipants] = Try {
     val bms = updateParticipants(
       participants.getBmPlants.asScala.toSeq,
       nodeMapping,
       (bm: BmInput, node: NodeInput) => bm.copy().node(node).build()
-    ) match {
-      case Success(value) => value
-      case Failure(exception) =>
+    ).fold(
+      exception =>
         throw GridException(
           "Unable to update node references of biomass plants.",
           exception
-        )
-    }
+        ),
+      identity
+    )
+
     val chps = updateParticipants(
       participants.getChpPlants.asScala.toSeq,
       nodeMapping,
       (chp: ChpInput, node: NodeInput) => chp.copy().node(node).build()
-    ) match {
-      case Success(value) => value
-      case Failure(exception) =>
+    ).fold(
+      exception =>
         throw GridException(
           "Unable to update node references of combined heat and power plants.",
           exception
-        )
-    }
+        ),
+      identity
+    )
+
     val evcss = updateParticipants(
       participants.getEvCS.asScala.toSeq,
       nodeMapping,
       (evcs: EvcsInput, node: NodeInput) => evcs.copy().node(node).build()
-    ) match {
-      case Success(value) => value
-      case Failure(exception) =>
+    ).fold(
+      exception =>
         throw GridException(
           "Unable to update node references of charging stations.",
           exception
-        )
-    }
+        ),
+      identity
+    )
+
     val evs = updateParticipants(
       participants.getEvs.asScala.toSeq,
       nodeMapping,
       (ev: EvInput, node: NodeInput) => ev.copy().node(node).build()
-    ) match {
-      case Success(value) => value
-      case Failure(exception) =>
+    ).fold(
+      exception =>
         throw GridException(
           "Unable to update node references of electric vehicles.",
           exception
-        )
-    }
+        ),
+      identity
+    )
+
     val ffis = updateParticipants(
       participants.getFixedFeedIns.asScala.toSeq,
       nodeMapping,
       (ffi: FixedFeedInInput, node: NodeInput) => ffi.copy().node(node).build()
-    ) match {
-      case Success(value) => value
-      case Failure(exception) =>
+    ).fold(
+      exception =>
         throw GridException(
           "Unable to update node references of fixed feed ins.",
           exception
-        )
-    }
+        ),
+      identity
+    )
+
     val hps = updateParticipants(
       participants.getHeatPumps.asScala.toSeq,
       nodeMapping,
       (hp: HpInput, node: NodeInput) => hp.copy().node(node).build()
-    ) match {
-      case Success(value) => value
-      case Failure(exception) =>
+    ).fold(
+      exception =>
         throw GridException(
           "Unable to update node references of heat pumps.",
           exception
-        )
-    }
+        ),
+      identity
+    )
+
     val loads = updateParticipants(
       participants.getLoads.asScala.toSeq,
       nodeMapping,
       (load: LoadInput, node: NodeInput) => load.copy().node(node).build()
-    ) match {
-      case Success(value) => value
-      case Failure(exception) =>
+    ).fold(
+      exception =>
         throw GridException(
           "Unable to update node references of loads.",
           exception
-        )
-    }
+        ),
+      identity
+    )
+
     val pvs = updateParticipants(
       participants.getPvPlants.asScala.toSeq,
       nodeMapping,
       (pv: PvInput, node: NodeInput) => pv.copy().node(node).build()
-    ) match {
-      case Success(value) => value
-      case Failure(exception) =>
+    ).fold(
+      exception =>
         throw GridException(
           "Unable to update node references of participants.",
           exception
-        )
-    }
+        ),
+      identity
+    )
+
     val storages = updateParticipants(
       participants.getStorages.asScala.toSeq,
       nodeMapping,
       (storage: StorageInput, node: NodeInput) =>
         storage.copy().node(node).build()
-    ) match {
-      case Success(value) => value
-      case Failure(exception) =>
+    ).fold(
+      exception =>
         throw GridException(
           "Unable to update node references of storages.",
           exception
-        )
-    }
+        ),
+      identity
+    )
+
     val wecs = updateParticipants(
       participants.getWecPlants.asScala.toSeq,
       nodeMapping,
       (wec: WecInput, node: NodeInput) => wec.copy().node(node).build()
-    ) match {
-      case Success(value) => value
-      case Failure(exception) =>
+    ).fold(
+      exception =>
         throw GridException(
           "Unable to update node references of wind energy converters.",
           exception
-        )
-    }
+        ),
+      identity
+    )
 
     new SystemParticipants(
       bms.toSet.asJava,
