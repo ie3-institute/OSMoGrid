@@ -22,6 +22,12 @@ sonarqube {
     property "sonar.java.pmd.reportPaths", [
       "build/reports/pmd/test.xml",
       "build/reports/pmd/main.xml"] // Comma-delimited list of paths to PMD Apex XML reports
+    // scapegoat report dir
+    property "sonar.scala.scapegoat.reportPaths", [
+      "build/reports/scapegoat/src/scapegoat-scalastyle.xml",
+      "build/reports/scapegoat/testsrc/scapegoat-scalastyle.xml"] // Comma-delimited list of paths to Scapegoat reports in the Scalastyle format
+    // scala specific stuff
+    property 'sonar.scala.coverage.reportPaths', 'build/reports/scoverageTest/scoverage.xml'
     // exclusions
     property 'sonar.exclusions', [
       'docs/**',
@@ -38,3 +44,5 @@ project.tasks["sonarqube"].dependsOn "check"
 // - pmdTest
 // - spotBugsTest
 // - test
+project.tasks["sonarqube"].dependsOn "reportScoverage"
+project.tasks["sonarqube"].dependsOn "checkScoverage"

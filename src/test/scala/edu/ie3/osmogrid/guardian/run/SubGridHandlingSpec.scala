@@ -93,13 +93,16 @@ class SubGridHandlingSpec
         lvCoordinatorAdapter.ref,
         resultListenerAdapter.ref
       )
-      val cfg = OsmoGridConfigFactory.parse {
-        """
+      val cfg = OsmoGridConfigFactory
+        .parse {
+          """
           |input.osm.file.pbf=test.pbf
           |input.asset.file.directory=assets/
           |output.csv.directory=output/
           |generation.lv.distinctHouseConnections=true""".stripMargin
-      }.get
+        }
+        .success
+        .get
 
       "having an active run" should {
         "inform the right parties about correct information" in new SubGridHandling {

@@ -12,8 +12,6 @@ import akka.actor.typed.scaladsl.Behaviors
 object SubDistrictCoordinator {
   sealed trait Request
 
-  sealed trait Response
-
   def apply(): Behavior[Request] = idle
 
   def idle: Behavior[Request] = Behaviors.receive { (ctx, msg) =>

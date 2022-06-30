@@ -91,15 +91,16 @@ object BoundaryFactory {
           }
       }
       .foldLeft(Seq.empty[Long]) { case (existingNodes, currentWay) =>
-        addWayNodesToPolygonSequence(existingNodes, currentWay).recoverWith {
-          case exc =>
+        addWayNodesToPolygonSequence(existingNodes, currentWay)
+          .recoverWith { case exc =>
             Failure(
               new RuntimeException(
                 s"Could not create Polygon from relation ${relation.id}",
                 exc
               )
             )
-        }.get
+          }
+          .fold(throw _, identity)
       } match {
       // Sanity check: in the end, first node should equal the last node
       case nodes
