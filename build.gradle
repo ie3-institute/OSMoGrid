@@ -81,7 +81,7 @@ dependencies {
 
   // config
   implementation 'com.typesafe:config:1.4.2'
-  implementation "com.github.scopt:scopt_$scalaVersion:4.0.1" // cmd args parser
+  implementation "com.github.scopt:scopt_$scalaVersion:4.1.0" // cmd args parser
 
   // osm4scala
   implementation 'com.acervera.osm4scala:osm4scala-core_2.13:1.0.10'
