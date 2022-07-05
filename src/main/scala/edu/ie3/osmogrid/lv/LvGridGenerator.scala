@@ -9,13 +9,14 @@ package edu.ie3.osmogrid.lv
 import akka.actor.typed.scaladsl.Behaviors
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.lv.LvGraphBuilder.buildGridGraph
 import edu.ie3.util.quantities.interfaces.{Irradiance, PowerDensity}
 import tech.units.indriya.ComparableQuantity
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 
 import javax.measure.quantity.{Area, Length, Power}
 
-object LvGridGenerator extends GraphBuildingSupport {
+object LvGridGenerator{
   sealed trait Request
   final case class GenerateGrid(
       osmData: LvOsmoGridModel,
