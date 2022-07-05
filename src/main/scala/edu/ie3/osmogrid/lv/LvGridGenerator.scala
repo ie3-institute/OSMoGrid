@@ -9,16 +9,14 @@ package edu.ie3.osmogrid.lv
 import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.datamodel.models.input.container.SubGridContainer
-import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
+import edu.ie3.osmogrid.lv.LvGraphBuilder.buildGridGraph
 import edu.ie3.util.quantities.interfaces.Irradiance
 import tech.units.indriya.ComparableQuantity
+import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import javax.measure.quantity.Length
 
-object LvGridGenerator
-    extends GraphBuildingSupport
-    with GridBuildingSupport
-    with LazyLogging {
+object LvGridGenerator extends GridBuildingSupport with LazyLogging {
   sealed trait Request
   final case class GenerateGrid(
       osmData: LvOsmoGridModel,

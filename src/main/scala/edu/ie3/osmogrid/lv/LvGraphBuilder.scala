@@ -6,31 +6,82 @@
 
 package edu.ie3.osmogrid.lv
 
-import edu.ie3.osmogrid.exception.MissingOsmDataException
+import edu.ie3.osmogrid.exception.OsmDataException
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.lv.GraphBuildingSupport.BuildingGraphConnection
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.util.geo.GeoUtils.buildCoordinate
-import edu.ie3.util.osm.OsmUtils.GeometryUtils.buildPolygon
 import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
 import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
-import edu.ie3.util.quantities.PowerSystemUnits
 import edu.ie3.util.quantities.interfaces.Irradiance
-import org.locationtech.jts.geom.{Coordinate, Polygon}
-import org.locationtech.jts.math.Vector2D
+import org.locationtech.jts.geom.Coordinate
 import tech.units.indriya.ComparableQuantity
-import tech.units.indriya.quantity.Quantities
-import tech.units.indriya.unit.Units
 import java.util.UUID
-import javax.measure.Quantity
-import javax.measure.quantity.{Area, Length, Power}
+import javax.measure.quantity.{Length, Power}
 import scala.collection.parallel.ParSeq
-import scala.math.BigDecimal.RoundingMode
 import scala.util.{Success, Try}
 import edu.ie3.util.geo.RichGeometries.{RichCoordinate, RichPolygon}
+import utils.OsmogridUtils.{
+  calcHouseholdPower,
+  isInsideLanduse,
+  orthogonalProjection,
+  safeBuildPolygon
+}
 
-trait GraphBuildingSupport {
+object LvGraphBuilder {
+
+  /** Resembles a calculated connection between a building and a grid. Every
+    * building gets connected on the nearest point at the nearest highway
+    * section. The connection point can either be a new node on mentioned
+    * highway section or one of the two highway section nodes
+    *
+    * @param building
+    *   the building to connect
+    * @param center
+    *   the building center
+    * @param buildingPower
+    *   the building power
+    * @param highwayNodeA
+    *   node a of the highway section at which the building gets connected
+    * @param highwayNodeB
+    *   node b of the highway section at which the building gets connected
+    * @param graphConnectionNode
+    *   the graph connection node
+    */
+  final case class BuildingGraphConnection(
+      building: ClosedWay,
+      center: Coordinate,
+      buildingPower: ComparableQuantity[Power],
+      highwayNodeA: Node,
+      highwayNodeB: Node,
+      graphConnectionNode: Node,
+      buildingConnectionNode: Option[Node] = None
+  ) {
+
+    /** Checks whether the graph connection node is a new node. If not it is one
+      * of the highway sections
+      *
+      * @return
+      *   whether the graph connection is a new node
+      */
+    def hasNewNode: Boolean = {
+      (graphConnectionNode != highwayNodeA) && (graphConnectionNode != highwayNodeB)
+    }
+
+    def createHighwayNodeName(considerHouseConnectionNode: Boolean): String = {
+      if (considerHouseConnectionNode) {
+        if (this.hasNewNode)
+          "Node highway between: " + highwayNodeA.id + " and " + highwayNodeB.id
+        else if (this.graphConnectionNode == this.highwayNodeA)
+          "Node highway: " + highwayNodeA.id
+        else "Node highway: " + highwayNodeB.id
+      } else "Building connection: " + this.building.id
+    }
+
+    def createBuildingNodeName(): String = {
+      "Building connection: " + this.building.id
+    }
+  }
 
   /** Builds an extended weighted street graph that resembles not only the
     * streets but also the building graph connections.
@@ -139,9 +190,10 @@ trait GraphBuildingSupport {
       powerDensity: ComparableQuantity[Irradiance],
       minDistance: ComparableQuantity[Length]
   ): ParSeq[BuildingGraphConnection] = {
-    val landusePolygons = landuses.map(buildPolygon(_, nodes).get)
+    val landusePolygons =
+      landuses.map(closedWay => safeBuildPolygon(closedWay, nodes))
     buildings.flatMap(building => {
-      val buildingPolygon = buildPolygon(building, nodes).get
+      val buildingPolygon = safeBuildPolygon(building, nodes)
       val buildingCenter: Coordinate = buildingPolygon.getCentroid.getCoordinate
       // check if building is inside residential area
       if (isInsideLanduse(buildingCenter, landusePolygons)) {
@@ -165,7 +217,7 @@ trait GraphBuildingSupport {
                   buildingCenter,
                   minDistance
                 ).getOrElse(
-                  throw MissingOsmDataException(
+                  throw OsmDataException(
                     s"Could not retrieve closest nodes for highway ${highway.id}"
                   )
                 )
@@ -178,7 +230,8 @@ trait GraphBuildingSupport {
           _._1
         }
         // calculate load of house
-        val load = calcPower(buildingPolygon.calcAreaOnEarth, powerDensity)
+        val load =
+          calcHouseholdPower(buildingPolygon.calcAreaOnEarth, powerDensity)
         Some(
           BuildingGraphConnection(
             building,
@@ -191,25 +244,6 @@ trait GraphBuildingSupport {
         )
       } else None
     })
-  }
-
-  /** Checks whether or not the center of a building is within a landuse
-    *
-    * @param buildingCenter
-    *   the building center
-    * @param landuses
-    *   the landuse
-    * @return
-    *   whether or not the center of a building is within a landuse
-    */
-  def isInsideLanduse(
-      buildingCenter: Coordinate,
-      landuses: ParSeq[Polygon]
-  ): Boolean = {
-    for (landuse <- landuses) {
-      if (landuse.containsCoordinate(buildingCenter)) return true
-    }
-    false
   }
 
   /** Get closest point of the buildings center to the highway section spanning
@@ -269,79 +303,6 @@ trait GraphBuildingSupport {
     }
   }
 
-  private def orthogonalProjection(
-      linePtA: Coordinate,
-      linePtB: Coordinate,
-      pt: Coordinate
-  ): Coordinate = {
-    orthogonalProjection(
-      Vector2D.create(linePtA),
-      Vector2D.create(linePtB),
-      Vector2D.create(pt)
-    ).toCoordinate
-  }
-
-  /** Calculate the orthogonal projection of a point onto a line. Credits to
-    * Andrey Tyukin. Check out how and why this works here:
-    * https://stackoverflow.com/questions/54009832/scala-orthogonal-projection-of-a-point-onto-a-line
-    *
-    * @param linePtA
-    *   first point of the line
-    * @param linePtB
-    *   second point of the line
-    * @param pt
-    *   the point for which to calculate the projection
-    * @return
-    *   the projected point
-    */
-  @deprecated("Move to GeoUtils of the PowerSystemUtils")
-  private def orthogonalProjection(
-      linePtA: Vector2D,
-      linePtB: Vector2D,
-      pt: Vector2D
-  ): Vector2D = {
-    val v = pt.subtract(linePtA)
-    val d = linePtB.subtract(linePtA)
-    linePtA.add(d.multiply((v dot d) / d.lengthSquared()))
-  }
-
-  /** Calculates the power value of a household load based on the provided
-    * building area and the provided average power density value and the
-    * provided average household area size
-    *
-    * @param area
-    *   area of the household
-    * @param powerDensity
-    *   average power per area
-    */
-  private def calcPower(
-      area: ComparableQuantity[Area],
-      powerDensity: ComparableQuantity[Irradiance]
-  ): ComparableQuantity[Power] = {
-    val power = area
-      .to(Units.SQUARE_METRE)
-      .multiply(powerDensity.to(PowerSystemUnits.WATT_PER_SQUAREMETRE))
-      .asType(classOf[Power])
-      .to(PowerSystemUnits.KILOWATT)
-    round(power, 4)
-  }
-
-  @deprecated("Move to QuantityUtils of the PowerSystemUtils")
-  private def round[T <: Quantity[T]](
-      quantity: ComparableQuantity[T],
-      decimals: Int
-  ): ComparableQuantity[T] = {
-    if (decimals < 0)
-      throw new IllegalArgumentException(
-        "You can not round to negative decimal places."
-      )
-    val rounded = BigDecimal
-      .valueOf(quantity.getValue.doubleValue())
-      .setScale(decimals, RoundingMode.HALF_UP)
-      .doubleValue
-    Quantities.getQuantity(rounded, quantity.getUnit)
-  }
-
   /** Updates the graph by adding the building graph connections and updating
     * the edges of the surrounding nodes
     *
@@ -380,60 +341,4 @@ trait GraphBuildingSupport {
     graph
   }
 
-}
-
-object GraphBuildingSupport {
-
-  /** Resembles a calculated connection between a building and a grid. Every
-    * building gets connected on the nearest point at the nearest highway
-    * section. The connection point can either be a new node on mentioned
-    * highway section or one of the two highway section nodes
-    *
-    * @param building
-    *   the building to connect
-    * @param center
-    *   the building center
-    * @param buildingPower
-    *   the building power
-    * @param highwayNodeA
-    *   node a of the highway section at which the building gets connected
-    * @param highwayNodeB
-    *   node b of the highway section at which the building gets connected
-    * @param graphConnectionNode
-    *   the graph connection node
-    */
-  final case class BuildingGraphConnection(
-      building: ClosedWay,
-      center: Coordinate,
-      buildingPower: ComparableQuantity[Power],
-      highwayNodeA: Node,
-      highwayNodeB: Node,
-      graphConnectionNode: Node,
-      buildingConnectionNode: Option[Node] = None
-  ) {
-
-    /** Checks whether the graph connection node is a new node. If not it is one
-      * of the highway sections
-      *
-      * @return
-      *   whether the graph connection is a new node
-      */
-    def hasNewNode: Boolean = {
-      (graphConnectionNode != highwayNodeA) && (graphConnectionNode != highwayNodeB)
-    }
-
-    def createHighwayNodeName(considerHouseConnectionNode: Boolean): String = {
-      if (considerHouseConnectionNode) {
-        if (this.hasNewNode)
-          "Node highway between: " + highwayNodeA.id + " and " + highwayNodeB.id
-        else if (this.graphConnectionNode == this.highwayNodeA)
-          "Node highway: " + highwayNodeA.id
-        else "Node highway: " + highwayNodeB.id
-      } else "Building connection: " + this.building.id
-    }
-
-    def createBuildingNodeName(): String = {
-      "Building connection: " + this.building.id
-    }
-  }
 }

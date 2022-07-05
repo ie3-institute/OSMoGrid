@@ -7,7 +7,7 @@
 package edu.ie3.osmogrid.lv.coordinator
 
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.lv.LvGridGenerator
+import edu.ie3.osmogrid.lv.LvGraphBuilder
 import edu.ie3.osmogrid.model.OsmTestData
 import edu.ie3.test.common.UnitSpec
 import edu.ie3.util.geo.GeoUtils
@@ -18,26 +18,54 @@ import tech.units.indriya.ComparableQuantity
 import edu.ie3.util.geo.RichGeometries.RichCoordinate
 import org.locationtech.jts.geom.Coordinate
 import org.scalatestplus.mockito.MockitoSugar.mock
-import edu.ie3.osmogrid.lv.GraphBuildingSupport.BuildingGraphConnection
+import edu.ie3.osmogrid.lv.LvGraphBuilder.{
+  BuildingGraphConnection,
+  buildGridGraph
+}
+import tech.units.indriya.unit.Units
+import utils.OsmogridUtils.orthogonalProjection
+
 import collection.parallel.CollectionConverters.seqIsParallelizable
 import javax.measure.quantity.Length
 import scala.collection.parallel.ParSeq
 import scala.util.{Failure, Success, Try}
 
-class LvGraphGeneratorSpec extends UnitSpec with OsmTestData {
+class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
 
-  "A lv grid generator" when {
+  "A lv grid generator spec" when {
+    "building a complete grid graph" should {
+
+      "build the graph correctly" in {
+
+        val osmoGridModel = TestLvOsmoGridModel.lvOsmoGridModel
+        val powerDensity = 10.asKiloWattPerSquareMetre
+        val minDistance = 1.asKilometre
+        val considerBuildingConnections = false
+
+        val (osmGraph, buildingGraphConnections) = buildGridGraph(
+          osmoGridModel,
+          powerDensity,
+          minDistance,
+          considerBuildingConnections
+        )
+
+        // 1 building not in landuse and therefore filtered out
+        buildingGraphConnections.size shouldBe 1
+        // the ways have a common point of connection which means 1 node is doubled therefore we expect 4 not 5
+        osmGraph.vertexSet().size shouldBe 4
+      }
+    }
+
     "building a street graph" should {
-      val buildStreetGraph =
-        PrivateMethod[OsmGraph](Symbol("buildStreetGraph"))
       val waySeq = ParSeq(ways.highway1, ways.highway2)
       val wayNodes = ways.highway1.nodes ++ ways.highway2.nodes
+      val buildStreetGraph = PrivateMethod[OsmGraph](Symbol("buildStreetGraph"))
       val actual: OsmGraph =
-        LvGridGenerator invokePrivate buildStreetGraph(waySeq, nodes.nodesMap)
+        LvGraphBuilder invokePrivate buildStreetGraph(waySeq, nodes.nodesMap)
 
       "build a graph with all nodes and edges" in {
         actual.vertexSet().size() shouldBe 4
-        actual.edgeSet().size() shouldBe 3
+        actual.edgeSet().size() shouldBe 4
         wayNodes.foreach(node =>
           actual.containsVertex(
             nodes.nodesMap.getOrElse(node, fail(f"Node: $node not found"))
@@ -55,10 +83,9 @@ class LvGraphGeneratorSpec extends UnitSpec with OsmTestData {
           nodeB.longitude
         )
         actual.getEdge(nodeA, nodeB).getDistance should equalWithTolerance(
-          distance
+          distance.to(Units.METRE)
         )
       }
-
     }
 
     "determining building graph connections" should {
@@ -72,7 +99,7 @@ class LvGraphGeneratorSpec extends UnitSpec with OsmTestData {
         val highways = Seq(ways.highway1, ways.highway2).par
 
         val buildingGraphConnections: ParSeq[BuildingGraphConnection] =
-          LvGridGenerator invokePrivate calcBuildingGraphConnections(
+          LvGraphBuilder invokePrivate calcBuildingGraphConnections(
             landuses,
             buildings,
             highways,
@@ -115,17 +142,15 @@ class LvGraphGeneratorSpec extends UnitSpec with OsmTestData {
         val lineNodeB = Node(2L, 50d, 8d, Map.empty[String, String], None)
         val buildingCenter = GeoUtils.buildCoordinate(49d, 7.5)
         val expectedOrthogonal = GeoUtils.buildCoordinate(50d, 7.5)
-        val nodes = Map(1L -> lineNodeA, 2L -> lineNodeB)
         val minDistance = 0.05.asKilometre
         val getClosest =
           PrivateMethod[Try[(ComparableQuantity[Length], Node)]](
             Symbol("getClosest")
           )
-        LvGridGenerator invokePrivate getClosest(
-          lineNodeA.id,
-          lineNodeB.id,
+        LvGraphBuilder invokePrivate getClosest(
+          lineNodeA,
+          lineNodeB,
           buildingCenter,
-          nodes,
           minDistance
         ) match {
           case Success(distanceAndNode) =>
@@ -142,9 +167,7 @@ class LvGraphGeneratorSpec extends UnitSpec with OsmTestData {
         val coordinateA = GeoUtils.buildCoordinate(50d, 7)
         val coordinateB = GeoUtils.buildCoordinate(50d, 8)
         val point = GeoUtils.buildCoordinate(49d, 7.5)
-        val orthogonalProjection =
-          PrivateMethod[Coordinate](Symbol("orthogonalProjection"))
-        val actual = LvGridGenerator invokePrivate orthogonalProjection(
+        val actual = orthogonalProjection(
           coordinateA,
           coordinateB,
           point
@@ -153,14 +176,11 @@ class LvGraphGeneratorSpec extends UnitSpec with OsmTestData {
         actual.y shouldBe (50d +- 1e-9)
       }
 
-      "update the street graph with all building graph connections" in {
-        val osmGraph = new OsmGraph()
-        osmGraph.addVertex(nodes.highway1Node1)
-        osmGraph.addVertex(nodes.highway1Node2)
+      "update the street graph with all building graph connections correctly" when {
         val connectingNode = Node(
           99L,
-          nodes.highway1Node1.latitude + nodes.highway1Node2.latitude,
-          nodes.highway1Node1.longitude + nodes.highway1Node2.longitude,
+          (nodes.highway1Node1.latitude + nodes.highway1Node2.latitude) / 2,
+          (nodes.highway1Node1.longitude + nodes.highway1Node2.longitude) / 2,
           Map.empty,
           None
         )
@@ -174,21 +194,49 @@ class LvGraphGeneratorSpec extends UnitSpec with OsmTestData {
         )
         val updateGraphWithBuildingConnections =
           PrivateMethod[OsmGraph](Symbol("updateGraphWithBuildingConnections"))
-        val actual: OsmGraph =
-          LvGridGenerator invokePrivate updateGraphWithBuildingConnections(
-            osmGraph,
-            Seq(buildingGraphConnection).par
-          )
-        actual.containsVertex(connectingNode) shouldBe true
-        actual.containsEdge(
-          nodes.highway1Node1,
-          nodes.highway1Node2
-        ) shouldBe false
-        actual.containsEdge(nodes.highway1Node1, connectingNode) shouldBe true
-        actual.containsEdge(connectingNode, nodes.highway1Node2) shouldBe true
+
+        "not considering building graph connections these are not added to the graph" in {
+          val osmGraph = new OsmGraph()
+          osmGraph.addVertex(nodes.highway1Node1)
+          osmGraph.addVertex(nodes.highway1Node2)
+          osmGraph.addWeightedEdge(nodes.highway1Node1, nodes.highway1Node2)
+          val actual: OsmGraph =
+            LvGraphBuilder invokePrivate updateGraphWithBuildingConnections(
+              osmGraph,
+              Seq(buildingGraphConnection).par,
+              true
+            )
+          actual.vertexSet().size() shouldBe 4
+          actual.containsVertex(connectingNode) shouldBe true
+          actual.containsEdge(
+            nodes.highway1Node1,
+            nodes.highway1Node2
+          ) shouldBe false
+          actual.containsEdge(nodes.highway1Node1, connectingNode) shouldBe true
+          actual.containsEdge(connectingNode, nodes.highway1Node2) shouldBe true
+        }
+
+        "considering building graph connections these are added to the graph" in {
+          val osmGraph = new OsmGraph()
+          osmGraph.addVertex(nodes.highway1Node1)
+          osmGraph.addVertex(nodes.highway1Node2)
+          osmGraph.addWeightedEdge(nodes.highway1Node1, nodes.highway1Node2)
+          val actual: OsmGraph =
+            LvGraphBuilder invokePrivate updateGraphWithBuildingConnections(
+              osmGraph,
+              Seq(buildingGraphConnection).par,
+              false
+            )
+          actual.vertexSet().size() shouldBe 3
+          actual.containsVertex(connectingNode) shouldBe true
+          actual.containsEdge(
+            nodes.highway1Node1,
+            nodes.highway1Node2
+          ) shouldBe false
+          actual.containsEdge(nodes.highway1Node1, connectingNode) shouldBe true
+          actual.containsEdge(connectingNode, nodes.highway1Node2) shouldBe true
+        }
       }
     }
   }
-
-  "building an lv grid" should {}
 }

@@ -46,13 +46,10 @@ import edu.ie3.datamodel.models.voltagelevels.{
   VoltageLevel
 }
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.exception.{
-  IllegalStateException,
-  MissingOsmDataException
-}
+import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.lv.GraphBuildingSupport.BuildingGraphConnection
 import edu.ie3.osmogrid.lv.GridBuildingSupport.GridElements
+import edu.ie3.osmogrid.lv.LvGraphBuilder.BuildingGraphConnection
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
