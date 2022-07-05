@@ -44,11 +44,13 @@ trait OsmTestData {
     val highway1Node2: Node =
       Node(12L, 51.498d, 7.4255d, Map.empty[String, String], None)
 
+    // connection between ways
     val highway2Node1: Node = highway1Node2
     val highway2Node2: Node =
       Node(13L, 50.538d, 7.4065d, Map.empty[String, String], None)
     val highway2Node3: Node =
       Node(14L, 50.578d, 7.4265d, Map.empty[String, String], None)
+    val highway2Node4: Node = highway1Node1
 
     val landuse1Node1: Node =
       Node(21L, 51.49378d, 7.4105d, Map.empty[String, String], None)
@@ -157,7 +159,8 @@ trait OsmTestData {
         Seq(
           nodes.highway2Node1.id,
           nodes.highway2Node2.id,
-          nodes.highway2Node3.id
+          nodes.highway2Node3.id,
+          nodes.highway2Node4.id
         ),
         Map("highway" -> "motorway"),
         None

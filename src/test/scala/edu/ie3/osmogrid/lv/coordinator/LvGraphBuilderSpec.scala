@@ -18,7 +18,10 @@ import tech.units.indriya.ComparableQuantity
 import edu.ie3.util.geo.RichGeometries.RichCoordinate
 import org.locationtech.jts.geom.Coordinate
 import org.scalatestplus.mockito.MockitoSugar.mock
-import edu.ie3.osmogrid.lv.LvGraphBuilder.BuildingGraphConnection
+import edu.ie3.osmogrid.lv.LvGraphBuilder.{
+  BuildingGraphConnection,
+  buildGridGraph
+}
 import tech.units.indriya.unit.Units
 import utils.OsmogridUtils.orthogonalProjection
 
@@ -31,18 +34,38 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
 
   "A lv grid generator spec" when {
     "building a complete grid graph" should {
-      val osmoGridModel = ???
+
+      "build the graph correctly" in {
+
+        val osmoGridModel = TestLvOsmoGridModel.lvOsmoGridModel
+        val powerDensity = 10.asKiloWattPerSquareMetre
+        val minDistance = 1.asKilometre
+        val considerBuildingConnections = false
+
+        val (osmGraph, buildingGraphConnections) = buildGridGraph(
+          osmoGridModel,
+          powerDensity,
+          minDistance,
+          considerBuildingConnections
+        )
+
+        // 1 building not in landuse and therefore filtered out
+        buildingGraphConnections.size shouldBe 1
+        // the ways have a common point of connection which means 1 node is doubled therefore we expect 4 not 5
+        osmGraph.vertexSet().size shouldBe 4
+      }
     }
 
     "building a street graph" should {
       val waySeq = ParSeq(ways.highway1, ways.highway2)
       val wayNodes = ways.highway1.nodes ++ ways.highway2.nodes
       val buildStreetGraph = PrivateMethod[OsmGraph](Symbol("buildStreetGraph"))
-      val actual: OsmGraph = LvGraphBuilder invokePrivate buildStreetGraph(waySeq, nodes.nodesMap)
+      val actual: OsmGraph =
+        LvGraphBuilder invokePrivate buildStreetGraph(waySeq, nodes.nodesMap)
 
       "build a graph with all nodes and edges" in {
         actual.vertexSet().size() shouldBe 4
-        actual.edgeSet().size() shouldBe 3
+        actual.edgeSet().size() shouldBe 4
         wayNodes.foreach(node =>
           actual.containsVertex(
             nodes.nodesMap.getOrElse(node, fail(f"Node: $node not found"))
@@ -119,7 +142,6 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
         val lineNodeB = Node(2L, 50d, 8d, Map.empty[String, String], None)
         val buildingCenter = GeoUtils.buildCoordinate(49d, 7.5)
         val expectedOrthogonal = GeoUtils.buildCoordinate(50d, 7.5)
-        val nodes = Map(1L -> lineNodeA, 2L -> lineNodeB)
         val minDistance = 0.05.asKilometre
         val getClosest =
           PrivateMethod[Try[(ComparableQuantity[Length], Node)]](
@@ -135,7 +157,7 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
             distanceAndNode._1 should equalWithTolerance(
               buildingCenter.haversineDistance(expectedOrthogonal)
             )
-            distanceAndNode._2.latitude  shouldBe (expectedOrthogonal.y +- 1e-8)
+            distanceAndNode._2.latitude shouldBe (expectedOrthogonal.y +- 1e-8)
             distanceAndNode._2.longitude shouldBe (expectedOrthogonal.x +- 1e-8)
           case Failure(exc) => fail(s"Test failed due to exception: ", exc)
         }

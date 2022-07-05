@@ -21,7 +21,12 @@ import javax.measure.quantity.{Length, Power}
 import scala.collection.parallel.ParSeq
 import scala.util.{Success, Try}
 import edu.ie3.util.geo.RichGeometries.{RichCoordinate, RichPolygon}
-import utils.OsmogridUtils.{calcHouseholdPower, isInsideLanduse, orthogonalProjection, safeBuildPolygon}
+import utils.OsmogridUtils.{
+  calcHouseholdPower,
+  isInsideLanduse,
+  orthogonalProjection,
+  safeBuildPolygon
+}
 
 object LvGraphBuilder {
 
@@ -44,13 +49,13 @@ object LvGraphBuilder {
     *   the graph connection node
     */
   final case class BuildingGraphConnection(
-    building: ClosedWay,
-    center: Coordinate,
-    buildingPower: ComparableQuantity[Power],
-    highwayNodeA: Node,
-    highwayNodeB: Node,
-    graphConnectionNode: Node,
-    buildingNode: Option[Node] = None
+      building: ClosedWay,
+      center: Coordinate,
+      buildingPower: ComparableQuantity[Power],
+      highwayNodeA: Node,
+      highwayNodeB: Node,
+      graphConnectionNode: Node,
+      buildingNode: Option[Node] = None
   ) {
 
     /** Checks whether the graph connection node is a new node. If not it is one
@@ -171,7 +176,8 @@ object LvGraphBuilder {
       powerDensity: ComparableQuantity[Irradiance],
       minDistance: ComparableQuantity[Length]
   ): ParSeq[BuildingGraphConnection] = {
-    val landusePolygons = landuses.map(closedWay => safeBuildPolygon(closedWay, nodes))
+    val landusePolygons =
+      landuses.map(closedWay => safeBuildPolygon(closedWay, nodes))
     buildings.flatMap(building => {
       val buildingPolygon = safeBuildPolygon(building, nodes)
       val buildingCenter: Coordinate = buildingPolygon.getCentroid.getCoordinate
@@ -210,7 +216,8 @@ object LvGraphBuilder {
           _._1
         }
         // calculate load of house
-        val load = calcHouseholdPower(buildingPolygon.calcAreaOnEarth, powerDensity)
+        val load =
+          calcHouseholdPower(buildingPolygon.calcAreaOnEarth, powerDensity)
         Some(
           BuildingGraphConnection(
             building,
@@ -224,7 +231,6 @@ object LvGraphBuilder {
       } else None
     })
   }
-
 
   /** Get closest point of the buildings center to the highway section spanning
     * linePtA and linePtB. If we find a point closer to the building center that

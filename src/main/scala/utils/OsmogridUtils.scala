@@ -1,3 +1,9 @@
+/*
+ * © 2022. TU Dortmund University,
+ * Institute of Energy Systems, Energy Efficiency and Energy Economics,
+ * Research group Distribution grid planning and operation
+ */
+
 package utils
 
 import edu.ie3.osmogrid.exception.OsmDataException
@@ -31,19 +37,26 @@ object OsmogridUtils {
     *   whether or not the center of a building is within a landuse
     */
   def isInsideLanduse(
-     buildingCenter: Coordinate,
-     landuses: ParSeq[Polygon]
-   ): Boolean = {
+      buildingCenter: Coordinate,
+      landuses: ParSeq[Polygon]
+  ): Boolean = {
     for (landuse <- landuses) {
       if (landuse.containsCoordinate(buildingCenter)) return true
     }
     false
   }
 
-  def safeBuildPolygon(closedWay: ClosedWay, nodes: Map[Long, Node]): Polygon = {
+  def safeBuildPolygon(
+      closedWay: ClosedWay,
+      nodes: Map[Long, Node]
+  ): Polygon = {
     buildPolygon(closedWay, nodes) match {
       case Success(polygon) => polygon
-      case Failure(exception) => throw OsmDataException(s"Could not build polygon from closed way: $closedWay. Exception: ", exception)
+      case Failure(exception) =>
+        throw OsmDataException(
+          s"Could not build polygon from closed way: $closedWay. Exception: ",
+          exception
+        )
     }
   }
 
@@ -57,9 +70,9 @@ object OsmogridUtils {
     *   average power per area
     */
   def calcHouseholdPower(
-                                  area: ComparableQuantity[Area],
-                                  powerDensity: ComparableQuantity[Irradiance]
-                                ): ComparableQuantity[Power] = {
+      area: ComparableQuantity[Area],
+      powerDensity: ComparableQuantity[Irradiance]
+  ): ComparableQuantity[Power] = {
     val power = area
       .to(Units.SQUARE_METRE)
       .multiply(powerDensity.to(PowerSystemUnits.WATT_PER_SQUAREMETRE))
@@ -70,9 +83,9 @@ object OsmogridUtils {
 
   @deprecated("Move to QuantityUtils of the PowerSystemUtils")
   private def round[T <: Quantity[T]](
-                                       quantity: ComparableQuantity[T],
-                                       decimals: Int
-                                     ): ComparableQuantity[T] = {
+      quantity: ComparableQuantity[T],
+      decimals: Int
+  ): ComparableQuantity[T] = {
     if (decimals < 0)
       throw new IllegalArgumentException(
         "You can not round to negative decimal places."
@@ -85,9 +98,9 @@ object OsmogridUtils {
   }
 
   def orthogonalProjection(
-    linePtA: Coordinate,
-    linePtB: Coordinate,
-    pt: Coordinate
+      linePtA: Coordinate,
+      linePtB: Coordinate,
+      pt: Coordinate
   ): Coordinate = {
     orthogonalProjection(
       Vector2D.create(linePtA),
@@ -111,10 +124,10 @@ object OsmogridUtils {
     */
   @deprecated("Move to GeoUtils of the PowerSystemUtils")
   def orthogonalProjection(
-                                    linePtA: Vector2D,
-                                    linePtB: Vector2D,
-                                    pt: Vector2D
-                                  ): Vector2D = {
+      linePtA: Vector2D,
+      linePtB: Vector2D,
+      pt: Vector2D
+  ): Vector2D = {
     val v = pt.subtract(linePtA)
     val d = linePtB.subtract(linePtA)
     linePtA.add(d.multiply((v dot d) / d.lengthSquared()))
