@@ -189,4 +189,14 @@ class LvGridGeneratorSpec extends UnitSpec with OsmTestData {
       }
     }
   }
+
+  "building an lv grid" should {
+   "convert the osm graph to a correct subgrid" in {
+     val osmoGridModel = ???
+     val powerDensity = ???
+     val minDistance = ???
+     val considerBuildingGraphConnections = ???
+     
+   }
+  }
 }
