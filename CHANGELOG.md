@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Only terminate OSMoGrid internal result event listener and let additional listeners alive
   - Post stop phase for terminated children (to shut down data connections, ...)
   - Await response from terminated children
+- `SubGridHandling` takes care of merging the created sub grids and adapting the sub grid numbers to ensure uniqueness
 
 ### Changed
 - Rely on Java 17
