@@ -6,12 +6,17 @@
 
 package edu.ie3.osmogrid.model
 
+import edu.ie3.osmogrid.model.OsmoGridModel.{LvOsmoGridModel}
+import edu.ie3.osmogrid.model.SourceFilter.LvFilter
+import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
+import edu.ie3.util.osm.model.OsmEntity
 import edu.ie3.util.osm.model.OsmEntity.{Node, Relation}
 import edu.ie3.util.osm.model.OsmEntity.Relation.{
   RelationMember,
   RelationMemberType
 }
 import edu.ie3.util.osm.model.OsmEntity.Way.{ClosedWay, OpenWay}
+import scala.collection.parallel.immutable.ParSeq
 
 trait OsmTestData {
 
@@ -164,11 +169,13 @@ trait OsmTestData {
         nodes.landuse1Node1.id,
         nodes.landuse1Node2.id,
         nodes.landuse1Node3.id,
-        nodes.landuse1Node4.id
+        nodes.landuse1Node4.id,
+        nodes.landuse1Node1.id
       ),
       Map("landuse" -> "education"),
       None
     )
+
     val landuse2: ClosedWay = ClosedWay(
       122L,
       Seq(
@@ -216,4 +223,59 @@ trait OsmTestData {
     )
   }
 
+  object TestLvOsmoGridModel {
+    private val nodeSeq: ParSeq[Node] = ParSeq(
+      // buildings
+      nodes.building1Node1,
+      nodes.building1Node2,
+      nodes.building1Node3,
+      nodes.building1Node4,
+      nodes.building2Node1,
+      nodes.building2Node2,
+      nodes.building2Node3,
+      nodes.building2Node4,
+      // highways
+      nodes.highway1Node1,
+      nodes.highway1Node2,
+      nodes.highway2Node1,
+      nodes.highway2Node2,
+      nodes.highway2Node3,
+      // landuses
+      nodes.landuse1Node1,
+      nodes.landuse1Node2,
+      nodes.landuse1Node3,
+      nodes.landuse1Node4,
+      nodes.landuse2Node1,
+      nodes.landuse2Node2,
+      nodes.landuse2Node3,
+      nodes.landuse2Node4,
+      // boundaries
+      nodes.boundaryNode1,
+      nodes.boundaryNode2,
+      nodes.boundaryNode3,
+      nodes.boundaryNode4
+    )
+    private val waySeq: ParSeq[OsmEntity.Way] = ParSeq(
+      ways.building1,
+      ways.building2,
+      ways.highway1,
+      ways.highway2,
+      ways.landuse1,
+      ways.landuse2,
+      ways.boundaryWay1,
+      ways.boundaryWay2
+    )
+    private val relationSeq: ParSeq[Relation] = ParSeq(
+      relations.boundary
+    )
+    val osmContainer: ParOsmContainer = ParOsmContainer(
+      nodeSeq,
+      waySeq,
+      relationSeq
+    )
+    val lvOsmoGridModel: LvOsmoGridModel = LvOsmoGridModel(
+      osmContainer,
+      LvFilter()
+    )
+  }
 }
