@@ -6,18 +6,14 @@
 
 package edu.ie3.osmogrid.model
 
-import edu.ie3.osmogrid.model.OsmoGridModel.EnhancedOsmEntity
 import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
 import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
 import edu.ie3.util.osm.model.{OsmContainer, OsmEntity}
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
 import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
-
 import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
 import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
-import collection.parallel.CollectionConverters.seqIsParallelizable
 import scala.collection.parallel.ParSeq
-import scala.collection.parallel.immutable.ParVector
 
 sealed trait OsmoGridModel {
   protected val filter: SourceFilter

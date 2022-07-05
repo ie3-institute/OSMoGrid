@@ -192,23 +192,6 @@ trait GridBuildingSupport extends LazyLogging {
       1d
     )
 
-  def buildLines(osmGraph: OsmGraph, gridElements: GridElements) = {
-    // build line between nodes of graph
-    // consider nodes with attached loads or intersections
-    // other nodes are only for geoposition of line
-
-    val startingNode = osmGraph
-      .vertexSet()
-      .asScala
-      .headOption
-      .getOrElse(
-        throw MissingOsmDataException(
-          s"The osm graph $osmGraph does not contain any nodes."
-        )
-      )
-
-  }
-
   def traverseGraph(
       currentNode: Node,
       currentNodeInput: NodeInput,

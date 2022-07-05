@@ -24,9 +24,9 @@ import javax.measure.quantity.Length
 import scala.collection.parallel.ParSeq
 import scala.util.{Failure, Success, Try}
 
-class LvGridGeneratorSpec extends UnitSpec with OsmTestData {
+class LvGraphGeneratorSpec extends UnitSpec with OsmTestData {
 
-  "A lv grid generator spec" when {
+  "A lv grid generator" when {
     "building a street graph" should {
       val buildStreetGraph =
         PrivateMethod[OsmGraph](Symbol("buildStreetGraph"))
@@ -132,7 +132,7 @@ class LvGridGeneratorSpec extends UnitSpec with OsmTestData {
             distanceAndNode._1 should equalWithTolerance(
               buildingCenter.haversineDistance(expectedOrthogonal)
             )
-            distanceAndNode._2.latitude  shouldBe (expectedOrthogonal.y +- 1e-8)
+            distanceAndNode._2.latitude shouldBe (expectedOrthogonal.y +- 1e-8)
             distanceAndNode._2.longitude shouldBe (expectedOrthogonal.x +- 1e-8)
           case Failure(exc) => fail(s"Test failed due to exception: ", exc)
         }
@@ -190,13 +190,5 @@ class LvGridGeneratorSpec extends UnitSpec with OsmTestData {
     }
   }
 
-  "building an lv grid" should {
-   "convert the osm graph to a correct subgrid" in {
-     val osmoGridModel = ???
-     val powerDensity = ???
-     val minDistance = ???
-     val considerBuildingGraphConnections = ???
-     
-   }
-  }
+  "building an lv grid" should {}
 }
