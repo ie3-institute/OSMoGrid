@@ -55,6 +55,8 @@ class LvGridGeneratorSupportSpec extends UnitSpec with OsmTestData {
       subgridContainer.getRawGrid.getNodes.size() shouldBe 2
       subgridContainer.getRawGrid.getLines.size() shouldBe 1
       subgridContainer.getSystemParticipants.getLoads.size() shouldBe 2
+
+      // Todo: Extend test by connecting another house at node 22L
     }
 
   }
