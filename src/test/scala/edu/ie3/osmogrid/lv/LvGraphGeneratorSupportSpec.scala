@@ -4,33 +4,33 @@
  * Research group Distribution grid planning and operation
  */
 
-package edu.ie3.osmogrid.lv.coordinator
+package edu.ie3.osmogrid.lv
 
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.lv.LvGraphBuilder
-import edu.ie3.osmogrid.model.OsmTestData
-import edu.ie3.test.common.UnitSpec
-import edu.ie3.util.geo.GeoUtils
-import edu.ie3.util.osm.model.OsmEntity.Node
-import edu.ie3.util.quantities.QuantityMatchers.equalWithTolerance
-import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
-import tech.units.indriya.ComparableQuantity
-import edu.ie3.util.geo.RichGeometries.RichCoordinate
-import org.locationtech.jts.geom.Coordinate
-import org.scalatestplus.mockito.MockitoSugar.mock
-import edu.ie3.osmogrid.lv.LvGraphBuilder.{
+import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.{
   BuildingGraphConnection,
   buildGridGraph
 }
+import edu.ie3.osmogrid.model.OsmTestData
+import edu.ie3.test.common.UnitSpec
+import edu.ie3.util.geo.GeoUtils
+import edu.ie3.util.geo.RichGeometries.RichCoordinate
+import edu.ie3.util.osm.model.OsmEntity.Node
+import edu.ie3.util.quantities.QuantityMatchers.equalWithTolerance
+import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
+import org.jgrapht.alg.connectivity.ConnectivityInspector
+import org.locationtech.jts.geom.Coordinate
+import org.scalatestplus.mockito.MockitoSugar.mock
+import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.unit.Units
 import utils.OsmogridUtils.orthogonalProjection
 
-import collection.parallel.CollectionConverters.seqIsParallelizable
 import javax.measure.quantity.Length
+import scala.collection.parallel.CollectionConverters.seqIsParallelizable
 import scala.collection.parallel.ParSeq
 import scala.util.{Failure, Success, Try}
 
-class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
+class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
 
   "A lv grid generator spec" when {
     "building a complete grid graph" should {
@@ -53,6 +53,7 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
         buildingGraphConnections.size shouldBe 1
         // the ways have a common point of connection which means 1 node is doubled therefore we expect 4 not 5
         osmGraph.vertexSet().size shouldBe 4
+        new ConnectivityInspector(osmGraph).isConnected shouldBe true
       }
     }
 
@@ -61,7 +62,10 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
       val wayNodes = ways.highway1.nodes ++ ways.highway2.nodes
       val buildStreetGraph = PrivateMethod[OsmGraph](Symbol("buildStreetGraph"))
       val actual: OsmGraph =
-        LvGraphBuilder invokePrivate buildStreetGraph(waySeq, nodes.nodesMap)
+        LvGraphGeneratorSupport invokePrivate buildStreetGraph(
+          waySeq,
+          nodes.nodesMap
+        )
 
       "build a graph with all nodes and edges" in {
         actual.vertexSet().size() shouldBe 4
@@ -99,7 +103,7 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
         val highways = Seq(ways.highway1, ways.highway2).par
 
         val buildingGraphConnections: ParSeq[BuildingGraphConnection] =
-          LvGraphBuilder invokePrivate calcBuildingGraphConnections(
+          LvGraphGeneratorSupport invokePrivate calcBuildingGraphConnections(
             landuses,
             buildings,
             highways,
@@ -147,7 +151,7 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
           PrivateMethod[Try[(ComparableQuantity[Length], Node)]](
             Symbol("getClosest")
           )
-        LvGraphBuilder invokePrivate getClosest(
+        LvGraphGeneratorSupport invokePrivate getClosest(
           lineNodeA,
           lineNodeB,
           buildingCenter,
@@ -201,7 +205,7 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
           osmGraph.addVertex(nodes.highway1Node2)
           osmGraph.addWeightedEdge(nodes.highway1Node1, nodes.highway1Node2)
           val actual: OsmGraph =
-            LvGraphBuilder invokePrivate updateGraphWithBuildingConnections(
+            LvGraphGeneratorSupport invokePrivate updateGraphWithBuildingConnections(
               osmGraph,
               Seq(buildingGraphConnection).par,
               true
@@ -222,7 +226,7 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
           osmGraph.addVertex(nodes.highway1Node2)
           osmGraph.addWeightedEdge(nodes.highway1Node1, nodes.highway1Node2)
           val actual: OsmGraph =
-            LvGraphBuilder invokePrivate updateGraphWithBuildingConnections(
+            LvGraphGeneratorSupport invokePrivate updateGraphWithBuildingConnections(
               osmGraph,
               Seq(buildingGraphConnection).par,
               false

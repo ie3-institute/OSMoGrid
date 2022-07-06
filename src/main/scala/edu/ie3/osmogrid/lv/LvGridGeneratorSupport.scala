@@ -19,7 +19,6 @@ import edu.ie3.datamodel.models.input.connector.{
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
 import edu.ie3.datamodel.models.input.container.{
   GraphicElements,
-  JointGridContainer,
   RawGridElements,
   SubGridContainer,
   SystemParticipants
@@ -45,40 +44,52 @@ import edu.ie3.datamodel.models.voltagelevels.{
   GermanVoltageLevelUtils,
   VoltageLevel
 }
-import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.lv.GridBuildingSupport.GridElements
-import edu.ie3.osmogrid.lv.LvGraphBuilder.BuildingGraphConnection
+import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.BuildingGraphConnection
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
 import org.locationtech.jts.geom.impl.CoordinateArraySequence
 import org.locationtech.jts.geom.{LineString, Point}
 import tech.units.indriya.ComparableQuantity
-
 import java.util
 import java.util.UUID
-import javax.measure.quantity.{Dimensionless, Power}
+import javax.measure.quantity.{Dimensionless, ElectricPotential, Power}
+import scala.annotation.tailrec
 import scala.collection.Set
 import scala.jdk.CollectionConverters._
 import scala.collection.parallel.{ParMap, ParSeq}
 
-trait GridBuildingSupport extends LazyLogging {
+object LvGridGeneratorSupport extends LazyLogging {
+
+  final case class GridElements(
+      nodes: Map[Node, NodeInput],
+      loads: Set[LoadInput]
+  ) {
+    def +(load: LoadInput): GridElements = {
+      GridElements(this.nodes, this.loads + load)
+    }
+
+    def ++(nodes: Map[Node, NodeInput]): GridElements = {
+      GridElements(this.nodes ++ nodes, this.loads)
+    }
+  }
 
   def buildGrid(
       osmGraph: OsmGraph,
       buildingGraphConnections: ParSeq[BuildingGraphConnection],
-      config: OsmoGridConfig,
-      lineType: LineTypeInput
+      ratedVoltage: ComparableQuantity[ElectricPotential],
+      considerHouseConnectionPoints: Boolean,
+      lineType: LineTypeInput,
+      gridName: String
   ): SubGridContainer = {
 
     val nodesWithBuildings: ParMap[Node, BuildingGraphConnection] =
       buildingGraphConnections.map(bgc => (bgc.graphConnectionNode, bgc)).toMap
 
-    val vRated = config.lvGrid.ratedVoltage.asKiloVolt
     val vTarget = 1d.asPu
-    val voltageLevel = GermanVoltageLevelUtils.parse(vRated)
+    val voltageLevel = GermanVoltageLevelUtils.parse(ratedVoltage)
     val nodeCreator = createNode(vTarget, voltageLevel) _
 
     val gridElements = osmGraph
@@ -90,7 +101,7 @@ trait GridBuildingSupport extends LazyLogging {
             val highwayNode = nodeCreator(
               buildingGraphConnection
                 .createHighwayNodeName(
-                  config.lvGrid.considerHouseConnectionPoints
+                  considerHouseConnectionPoints
                 ),
               osmNode.coordinate
             )
@@ -98,7 +109,7 @@ trait GridBuildingSupport extends LazyLogging {
               "Load of building: " + buildingGraphConnection.building.id.toString,
               buildingGraphConnection.buildingPower
             ) _
-            if (config.lvGrid.considerHouseConnectionPoints) {
+            if (considerHouseConnectionPoints) {
               val osmBuildingConnectionNode =
                 buildingGraphConnection.buildingConnectionNode.getOrElse(
                   throw IllegalStateException(
@@ -151,14 +162,14 @@ trait GridBuildingSupport extends LazyLogging {
     }
 
     buildGridContainer(
-      config.output.gridName,
+      gridName,
       gridElements.nodes.values.toSet.asJava,
       lineInputs.asJava,
       gridElements.loads.asJava
     )
   }
 
-  def createNode(
+  private def createNode(
       vTarget: ComparableQuantity[Dimensionless],
       voltageLevel: VoltageLevel
   )(id: String, coordinate: Point): NodeInput = {
@@ -173,7 +184,7 @@ trait GridBuildingSupport extends LazyLogging {
     )
   }
 
-  def createLoad(id: String, ratedPower: ComparableQuantity[Power])(
+  private def createLoad(id: String, ratedPower: ComparableQuantity[Power])(
       node: NodeInput
   ) =
     new LoadInput(
@@ -189,7 +200,7 @@ trait GridBuildingSupport extends LazyLogging {
       1d
     )
 
-  def traverseGraph(
+  private def traverseGraph(
       currentNode: Node,
       currentNodeInput: NodeInput,
       osmGraph: OsmGraph,
@@ -200,20 +211,22 @@ trait GridBuildingSupport extends LazyLogging {
   ): (Set[Node], Set[LineInput]) = {
     if (alreadyVisited.contains(currentNode)) return (alreadyVisited, lines)
     val connectedEdges = osmGraph.edgesOf(currentNode).asScala
-    // traverse through every of the current node to build lines
+    // traverse through every edge of the current node to build lines
     connectedEdges.foldLeft((alreadyVisited, lines)) {
       case ((updatedAlreadyVisited, updatedLines), edge) =>
         val nextNode = getOtherEdgeNode(osmGraph, currentNode, edge)
         if (!alreadyVisited.contains(nextNode)) {
+          // follow the edge along until the next node input is found if there is any
           val (maybeNextNodeInput, maybeNextNode, passedStreetNodes) =
             findNextNodeInput(
               osmGraph,
-              currentNode,
+              nextNode,
               edge,
-              alreadyVisited,
+              updatedAlreadyVisited + currentNode,
               nodeToNodeInput
             )
           maybeNextNodeInput.zip(maybeNextNode) match {
+            // if a node input is found along the edge we build a line
             case Some((nextNodeInput, nextNode)) =>
               val newLine =
                 buildLine(
@@ -226,7 +239,7 @@ trait GridBuildingSupport extends LazyLogging {
                 nextNode,
                 nextNodeInput,
                 osmGraph,
-                alreadyVisited ++ passedStreetNodes,
+                alreadyVisited ++ passedStreetNodes + currentNode,
                 lines + newLine,
                 nodeToNodeInput,
                 lineTypeInput
@@ -235,9 +248,12 @@ trait GridBuildingSupport extends LazyLogging {
                 updatedAlreadyVisited ++ visitedNodes,
                 updatedLines ++ builtLines
               )
+            // if there is no more node input along the edge we are done with this branch of the graph
             case None =>
-              // no further nodes to consider on this branch of the graph
-              (updatedAlreadyVisited, updatedLines)
+              (
+                updatedAlreadyVisited ++ passedStreetNodes + currentNode,
+                updatedLines
+              )
           }
         } else {
           // we've already been at this node before so we are done on this branch of the graph
@@ -246,36 +262,41 @@ trait GridBuildingSupport extends LazyLogging {
     }
   }
 
-  def buildLine(
-      nodeA: NodeInput,
-      nodeB: NodeInput,
-      geoNodes: Seq[Node],
+  private def buildLine(
+      firstNode: NodeInput,
+      secondNode: NodeInput,
+      passedStreetNodes: Seq[Node],
       lineType: LineTypeInput
   ): LineInput = {
+    val lineGeoNodes = passedStreetNodes
+      .map(_.coordinate.getCoordinate)
+      .toArray
+      .prepended(firstNode.getGeoPosition.getCoordinate)
+      .appended(secondNode.getGeoPosition.getCoordinate)
     val geoPosition = new LineString(
       new CoordinateArraySequence(
-        geoNodes.map(_.coordinate.getCoordinate).toArray
+        lineGeoNodes
       ),
       GeoUtils.DEFAULT_GEOMETRY_FACTORY
     )
-    val id = s"Line between: " + geoNodes.headOption
+    val id = s"Line between: " + passedStreetNodes.headOption
       .getOrElse(
         throw new IllegalArgumentException(
-          s"Line between $nodeA and $nodeB has no first node."
+          s"Line between $firstNode and $secondNode has no first node."
         )
       )
-      .id + "-" + geoNodes.lastOption
+      .id + "-" + passedStreetNodes.lastOption
       .getOrElse(
         throw new IllegalArgumentException(
-          s"Line between $nodeA and $nodeB has no last node."
+          s"Line between $firstNode and $secondNode has no last node."
         )
       )
       .id
     new LineInput(
       UUID.randomUUID(),
       id,
-      nodeA,
-      nodeB,
+      firstNode,
+      secondNode,
       0,
       lineType,
       GeoUtils.calcHaversine(geoPosition),
@@ -305,7 +326,8 @@ trait GridBuildingSupport extends LazyLogging {
     *   An optional of the found [[NodeInput]], an optional of the associated
     *   [[Node]] and all [[Node]]s we looked at while traversin
     */
-  def findNextNodeInput(
+  @tailrec
+  private def findNextNodeInput(
       graph: OsmGraph,
       currentNode: Node,
       lastEdge: DistanceWeightedEdge,
@@ -313,9 +335,11 @@ trait GridBuildingSupport extends LazyLogging {
       nodeToNodeInput: Map[Node, NodeInput],
       passedNodes: Seq[Node] = Seq.empty
   ): (Option[NodeInput], Option[Node], Seq[Node]) = {
+    if (alreadyVisited.contains(currentNode))
+      return (None, None, passedNodes)
     nodeToNodeInput.get(currentNode) match {
       case Some(nodeInput) =>
-        (Some(nodeInput), Some(currentNode), passedNodes :+ currentNode)
+        (Some(nodeInput), Some(currentNode), passedNodes)
       case None =>
         graph.edgesOf(currentNode).asScala.filter(_ != lastEdge).toSeq match {
           case Seq(nextEdge) =>
@@ -324,7 +348,7 @@ trait GridBuildingSupport extends LazyLogging {
               graph,
               nextNode,
               nextEdge,
-              alreadyVisited + nextNode,
+              alreadyVisited + currentNode,
               nodeToNodeInput,
               passedNodes :+ currentNode
             )
@@ -400,20 +424,5 @@ trait GridBuildingSupport extends LazyLogging {
       systemParticipants,
       graphicElements
     )
-  }
-}
-
-object GridBuildingSupport {
-  final case class GridElements(
-      nodes: Map[Node, NodeInput],
-      loads: Set[LoadInput]
-  ) {
-    def +(load: LoadInput): GridElements = {
-      GridElements(this.nodes, this.loads + load)
-    }
-
-    def ++(nodes: Map[Node, NodeInput]): GridElements = {
-      GridElements(this.nodes ++ nodes, this.loads)
-    }
   }
 }

@@ -8,7 +8,7 @@ package edu.ie3.osmogrid.lv
 
 import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.lv.LvGraphBuilder.BuildingGraphConnection
+import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.BuildingGraphConnection
 import edu.ie3.osmogrid.model.{OsmTestData, OsmoGridModel}
 import edu.ie3.test.common.UnitSpec
 import tech.units.indriya.quantity.Quantities

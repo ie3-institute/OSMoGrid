@@ -10,13 +10,7 @@ import akka.actor.typed.ActorRef
 import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.{
-  Generation,
-  Input,
-  Io,
-  LvGrid,
-  Output
-}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Input, Io, Output}
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.io.output.ResultListener
@@ -29,12 +23,11 @@ object ConfigFailFast extends LazyLogging {
       additionalListener: Seq[ActorRef[ResultListener.ResultEvent]] = Seq.empty
   ): Try[OsmoGridConfig] = Try {
     cfg match {
-      case OsmoGridConfig(generation, input, io, lvgrid, output) =>
+      case OsmoGridConfig(generation, input, io, output) =>
         checkInputConfig(input)
         checkOutputConfig(output, additionalListener)
         checkGenerationConfig(generation)
         checkIoConfig(io)
-        checkGridConfig(lvgrid)
     }
     cfg
   }
@@ -51,16 +44,17 @@ object ConfigFailFast extends LazyLogging {
         /* Check single configs */
         lv.foreach(checkLvConfig)
     }
-  // TODO
-  private def checkGridConfig(lvgrid: LvGrid): Unit = ???
 
   // TODO Check Filter for osm
   private def checkLvConfig(lv: OsmoGridConfig.Generation.Lv): Unit = lv match {
     case Lv(
+          _,
           Lv.BoundaryAdminLevel(
             lowest,
             starting
           ),
+          _,
+          _,
           _,
           _
         ) =>
@@ -122,13 +116,13 @@ object ConfigFailFast extends LazyLogging {
       additionalListener: Seq[ActorRef[ResultListener.ResultEvent]]
   ): Unit =
     output match {
-      case Output(Some(file), _) =>
+      case Output(Some(file)) =>
         checkOutputFile(file)
-      case Output(None, _) if additionalListener.nonEmpty =>
+      case Output(None) if additionalListener.nonEmpty =>
         logger.info(
           "No output data type defined, but other listener provided. Will use them accordingly!"
         )
-      case Output(None, _) =>
+      case Output(None) =>
         throw IllegalConfigException(
           "You have to provide at least one output data sink, e.g. to .csv-files!"
         )

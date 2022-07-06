@@ -28,7 +28,7 @@ import utils.OsmogridUtils.{
   safeBuildPolygon
 }
 
-object LvGraphBuilder {
+object LvGraphGeneratorSupport {
 
   /** Resembles a calculated connection between a building and a grid. Every
     * building gets connected on the nearest point at the nearest highway

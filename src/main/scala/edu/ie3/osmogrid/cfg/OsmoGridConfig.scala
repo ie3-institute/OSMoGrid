@@ -10,7 +10,6 @@ final case class OsmoGridConfig(
     generation: OsmoGridConfig.Generation,
     input: OsmoGridConfig.Input,
     io: OsmoGridConfig.Io,
-    lvGrid: OsmoGridConfig.LvGrid,
     output: OsmoGridConfig.Output
 )
 object OsmoGridConfig {
@@ -19,9 +18,12 @@ object OsmoGridConfig {
   )
   object Generation {
     final case class Lv(
+        averagePowerDensity: scala.Double,
         boundaryAdminLevel: OsmoGridConfig.Generation.Lv.BoundaryAdminLevel,
-        distinctHouseConnections: scala.Boolean,
-        osm: OsmoGridConfig.Generation.Lv.Osm
+        considerHouseConnectionPoints: scala.Boolean,
+        gridName: java.lang.String,
+        osm: OsmoGridConfig.Generation.Lv.Osm,
+        ratedVoltage: scala.Double
     )
     object Lv {
       final case class BoundaryAdminLevel(
@@ -94,6 +96,8 @@ object OsmoGridConfig {
           $tsCfgValidator: $TsCfgValidator
       ): OsmoGridConfig.Generation.Lv = {
         OsmoGridConfig.Generation.Lv(
+          averagePowerDensity =
+            $_reqDbl(parentPath, c, "averagePowerDensity", $tsCfgValidator),
           boundaryAdminLevel = OsmoGridConfig.Generation.Lv.BoundaryAdminLevel(
             if (c.hasPathOrNull("boundaryAdminLevel"))
               c.getConfig("boundaryAdminLevel")
@@ -103,17 +107,52 @@ object OsmoGridConfig {
             parentPath + "boundaryAdminLevel.",
             $tsCfgValidator
           ),
-          distinctHouseConnections = c.hasPathOrNull(
-            "distinctHouseConnections"
-          ) && c.getBoolean("distinctHouseConnections"),
+          considerHouseConnectionPoints = c.hasPathOrNull(
+            "considerHouseConnectionPoints"
+          ) && c.getBoolean("considerHouseConnectionPoints"),
+          gridName = $_reqStr(parentPath, c, "gridName", $tsCfgValidator),
           osm = OsmoGridConfig.Generation.Lv.Osm(
             if (c.hasPathOrNull("osm")) c.getConfig("osm")
             else com.typesafe.config.ConfigFactory.parseString("osm{}"),
             parentPath + "osm.",
             $tsCfgValidator
-          )
+          ),
+          ratedVoltage =
+            $_reqDbl(parentPath, c, "ratedVoltage", $tsCfgValidator)
         )
       }
+      private def $_reqDbl(
+          parentPath: java.lang.String,
+          c: com.typesafe.config.Config,
+          path: java.lang.String,
+          $tsCfgValidator: $TsCfgValidator
+      ): scala.Double = {
+        if (c == null) 0
+        else
+          try c.getDouble(path)
+          catch {
+            case e: com.typesafe.config.ConfigException =>
+              $tsCfgValidator.addBadPath(parentPath + path, e)
+              0
+          }
+      }
+
+      private def $_reqStr(
+          parentPath: java.lang.String,
+          c: com.typesafe.config.Config,
+          path: java.lang.String,
+          $tsCfgValidator: $TsCfgValidator
+      ): java.lang.String = {
+        if (c == null) null
+        else
+          try c.getString(path)
+          catch {
+            case e: com.typesafe.config.ConfigException =>
+              $tsCfgValidator.addBadPath(parentPath + path, e)
+              null
+          }
+      }
+
     }
 
     def apply(
@@ -302,71 +341,8 @@ object OsmoGridConfig {
 
   }
 
-  final case class LvGrid(
-      averagePowerDensity: scala.Double,
-      considerHouseConnectionPoints: scala.Boolean,
-      ignoreClustersSmallerThan: scala.Double,
-      nominalPower: scala.Double,
-      ratedVoltage: scala.Double
-  )
-  object LvGrid {
-    def apply(
-        c: com.typesafe.config.Config,
-        parentPath: java.lang.String,
-        $tsCfgValidator: $TsCfgValidator
-    ): OsmoGridConfig.LvGrid = {
-      OsmoGridConfig.LvGrid(
-        averagePowerDensity =
-          $_reqDbl(parentPath, c, "averagePowerDensity", $tsCfgValidator),
-        considerHouseConnectionPoints = $_reqBln(
-          parentPath,
-          c,
-          "considerHouseConnectionPoints",
-          $tsCfgValidator
-        ),
-        ignoreClustersSmallerThan =
-          $_reqDbl(parentPath, c, "ignoreClustersSmallerThan", $tsCfgValidator),
-        nominalPower = $_reqDbl(parentPath, c, "nominalPower", $tsCfgValidator),
-        ratedVoltage = $_reqDbl(parentPath, c, "ratedVoltage", $tsCfgValidator)
-      )
-    }
-    private def $_reqBln(
-        parentPath: java.lang.String,
-        c: com.typesafe.config.Config,
-        path: java.lang.String,
-        $tsCfgValidator: $TsCfgValidator
-    ): scala.Boolean = {
-      if (c == null) false
-      else
-        try c.getBoolean(path)
-        catch {
-          case e: com.typesafe.config.ConfigException =>
-            $tsCfgValidator.addBadPath(parentPath + path, e)
-            false
-        }
-    }
-
-    private def $_reqDbl(
-        parentPath: java.lang.String,
-        c: com.typesafe.config.Config,
-        path: java.lang.String,
-        $tsCfgValidator: $TsCfgValidator
-    ): scala.Double = {
-      if (c == null) 0
-      else
-        try c.getDouble(path)
-        catch {
-          case e: com.typesafe.config.ConfigException =>
-            $tsCfgValidator.addBadPath(parentPath + path, e)
-            0
-        }
-    }
-
-  }
-
   final case class Output(
-      csv: scala.Option[OsmoGridConfig.Output.Csv],
-      gridName: java.lang.String
+      csv: scala.Option[OsmoGridConfig.Output.Csv]
   )
   object Output {
     final case class Csv(
@@ -418,26 +394,9 @@ object OsmoGridConfig {
               OsmoGridConfig.Output
                 .Csv(c.getConfig("csv"), parentPath + "csv.", $tsCfgValidator)
             )
-          else None,
-        gridName = $_reqStr(parentPath, c, "gridName", $tsCfgValidator)
+          else None
       )
     }
-    private def $_reqStr(
-        parentPath: java.lang.String,
-        c: com.typesafe.config.Config,
-        path: java.lang.String,
-        $tsCfgValidator: $TsCfgValidator
-    ): java.lang.String = {
-      if (c == null) null
-      else
-        try c.getString(path)
-        catch {
-          case e: com.typesafe.config.ConfigException =>
-            $tsCfgValidator.addBadPath(parentPath + path, e)
-            null
-        }
-    }
-
   }
 
   def apply(c: com.typesafe.config.Config): OsmoGridConfig = {
@@ -460,12 +419,6 @@ object OsmoGridConfig {
         if (c.hasPathOrNull("io")) c.getConfig("io")
         else com.typesafe.config.ConfigFactory.parseString("io{}"),
         parentPath + "io.",
-        $tsCfgValidator
-      ),
-      lvGrid = OsmoGridConfig.LvGrid(
-        if (c.hasPathOrNull("lvGrid")) c.getConfig("lvGrid")
-        else com.typesafe.config.ConfigFactory.parseString("lvGrid{}"),
-        parentPath + "lvGrid.",
         $tsCfgValidator
       ),
       output = OsmoGridConfig.Output(

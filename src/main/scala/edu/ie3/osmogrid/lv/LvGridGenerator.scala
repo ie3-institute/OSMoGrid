@@ -9,20 +9,23 @@ package edu.ie3.osmogrid.lv
 import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.datamodel.models.input.container.SubGridContainer
-import edu.ie3.osmogrid.lv.LvGraphBuilder.buildGridGraph
+import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.buildGridGraph
 import edu.ie3.util.quantities.interfaces.Irradiance
 import tech.units.indriya.ComparableQuantity
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.buildGrid
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
+import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
+
 import javax.measure.quantity.Length
 
-object LvGridGenerator extends GridBuildingSupport with LazyLogging {
+object LvGridGenerator extends LazyLogging {
   sealed trait Request
   final case class GenerateGrid(
       osmData: LvOsmoGridModel,
       powerDensity: Irradiance,
       minDistance: ComparableQuantity[Length],
-      config: OsmoGridConfig
+      config: OsmoGridConfig.Generation.Lv
   ) extends Request
 
   sealed trait Response
@@ -39,15 +42,17 @@ object LvGridGenerator extends GridBuildingSupport with LazyLogging {
           osmData,
           powerDensity,
           minDistance,
-          config.lvGrid.considerHouseConnectionPoints
+          config.considerHouseConnectionPoints
         )
       // todo : ask input data provider for line type
       val lineType = ???
       val lvSubGrid = buildGrid(
         graph,
         buildingGraphConnections,
-        config,
-        lineType
+        config.ratedVoltage.asKiloVolt,
+        config.considerHouseConnectionPoints,
+        lineType,
+        config.gridName
       )
       ???
     case (ctx, unsupported) =>
