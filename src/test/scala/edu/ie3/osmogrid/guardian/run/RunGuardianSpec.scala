@@ -45,7 +45,16 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
 
       "log an error, if initiation of a run is impossible" in {
         val maliciousConfig = OsmoGridConfigFactory
-          .parseWithoutFallback("")
+          .parseWithoutFallback("""input.osm.pbf.file = ""
+                                            |output.csv.directory = "output_file_path"
+                                            |output.gridName = "test_grid"
+                                            |generation.lv.gridName = "test_grid"
+                                            |generation.lv.averagePowerDensity = 12.5
+                                            |generation.lv.ratedVoltage = 0.4
+                                            |generation.lv.considerHouseConnectionPoints = false
+                                            |generation.lv.boundaryAdminLevel.starting = 2
+                                            |generation.lv.boundaryAdminLevel.lowest = 8
+                                            |""".stripMargin)
           .getOrElse(fail("Unable to parse malicious config"))
         val maliciousIdleTestKit = BehaviorTestKit(
           RunGuardian(maliciousConfig, Seq.empty[ActorRef[ResultEvent]], runId)

@@ -10,7 +10,7 @@ import akka.actor.typed.ActorRef
 import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Input, Io, Output}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Input, Output}
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.io.output.ResultListener
@@ -23,11 +23,10 @@ object ConfigFailFast extends LazyLogging {
       additionalListener: Seq[ActorRef[ResultListener.ResultEvent]] = Seq.empty
   ): Try[OsmoGridConfig] = Try {
     cfg match {
-      case OsmoGridConfig(generation, input, io, output) =>
+      case OsmoGridConfig(generation, input, output) =>
         checkInputConfig(input)
         checkOutputConfig(output, additionalListener)
         checkGenerationConfig(generation)
-        checkIoConfig(io)
     }
     cfg
   }
@@ -53,7 +52,6 @@ object ConfigFailFast extends LazyLogging {
             lowest,
             starting
           ),
-          _,
           _,
           _,
           _
@@ -83,8 +81,6 @@ object ConfigFailFast extends LazyLogging {
         checkAssetInputConfig(asset)
         checkOsmInputConfig(osm)
     }
-
-  private def checkIoConfig(io: Io): Unit = ???
 
   private def checkAssetInputConfig(asset: OsmoGridConfig.Input.Asset): Unit =
     asset match {
@@ -116,13 +112,13 @@ object ConfigFailFast extends LazyLogging {
       additionalListener: Seq[ActorRef[ResultListener.ResultEvent]]
   ): Unit =
     output match {
-      case Output(Some(file)) =>
+      case Output(Some(file), _) =>
         checkOutputFile(file)
-      case Output(None) if additionalListener.nonEmpty =>
+      case Output(None, _) if additionalListener.nonEmpty =>
         logger.info(
           "No output data type defined, but other listener provided. Will use them accordingly!"
         )
-      case Output(None) =>
+      case Output(None, _) =>
         throw IllegalConfigException(
           "You have to provide at least one output data sink, e.g. to .csv-files!"
         )

@@ -17,8 +17,9 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           """input.asset.file.directory = "asset_input_dir"
             |input.asset.file.hierarchic = false
-            |output.file.directory = "output_file_path"
-            |generation.lv.distinctHouseConnections = true""".stripMargin
+            |output.csv.directory = "output_file_path"
+            |output.gridName = "test_grid"
+            |""".stripMargin
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
@@ -37,8 +38,9 @@ class ConfigFailFastSpec extends UnitSpec {
           """input.osm.pbf.file = ""
             |input.asset.file.directory = "asset_input_dir"
             |input.asset.file.hierarchic = false
-            |output.file.directory = "output_file_path"
-            |generation.lv.distinctHouseConnections = true""".stripMargin
+            |output.csv.directory = "output_file_path"
+            |output.gridName = "test_grid"
+            |""".stripMargin
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
@@ -54,9 +56,10 @@ class ConfigFailFastSpec extends UnitSpec {
 
       "fail on missing asset input definition" in {
         OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
-            |output.file.directory = "output_file_path"
-            |generation.lv.distinctHouseConnections = true""".stripMargin
+          """input.osm.pbf.file = "pbf_file"
+            |output.csv.directory = "output_file_path"
+            |output.gridName = "test_grid"
+            |""".stripMargin
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
@@ -72,11 +75,12 @@ class ConfigFailFastSpec extends UnitSpec {
 
       "fail on empty asset directory definition" in {
         OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
+          """input.osm.pbf.file = ""
             |input.asset.file.directory = ""
             |input.asset.file.hierarchic = false
-            |output.file.directory = "output_file_path"
-            |generation.lv.distinctHouseConnections = true""".stripMargin
+            |output.csv.directory = "output_file_path"
+            |output.gridName = "test_grid"
+            |""".stripMargin
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
@@ -92,11 +96,18 @@ class ConfigFailFastSpec extends UnitSpec {
 
       "fail on invalid lowest admin level" in {
         OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
+          """input.osm.pbf.file = "pbf_file"
             |input.asset.file.directory = "asset_input_dir"
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
-            |generation.lv.boundaryAdminLevel.lowest = 99""".stripMargin
+            |output.gridName = "test_grid"
+            |generation.lv.gridName = "test_grid"
+            |generation.lv.averagePowerDensity = 12.5
+            |generation.lv.ratedVoltage = 0.4
+            |generation.lv.considerHouseConnectionPoints = false
+            |generation.lv.boundaryAdminLevel.starting = 2
+            |generation.lv.boundaryAdminLevel.lowest = 99
+            |""".stripMargin.stripMargin
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
@@ -112,11 +123,18 @@ class ConfigFailFastSpec extends UnitSpec {
 
       "fail on invalid starting admin level" in {
         OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
+          """input.osm.pbf.file = "pbf_file"
             |input.asset.file.directory = "asset_input_dir"
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
-            |generation.lv.boundaryAdminLevel.starting = -1""".stripMargin
+            |output.gridName = "test_grid"
+            |generation.lv.gridName = "test_grid"
+            |generation.lv.averagePowerDensity = 12.5
+            |generation.lv.ratedVoltage = 0.4
+            |generation.lv.considerHouseConnectionPoints = false
+            |generation.lv.boundaryAdminLevel.starting = -1
+            |generation.lv.boundaryAdminLevel.lowest = 8
+            |""".stripMargin
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
@@ -132,12 +150,18 @@ class ConfigFailFastSpec extends UnitSpec {
 
       "fail on starting level bigger than lowest level" in {
         OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
+          """input.osm.pbf.file = "pbf_file"
             |input.asset.file.directory = "asset_input_dir"
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
+            |output.gridName = "test_grid"
+            |generation.lv.gridName = "test_grid"
+            |generation.lv.averagePowerDensity = 12.5
+            |generation.lv.ratedVoltage = 0.4
+            |generation.lv.considerHouseConnectionPoints = false
             |generation.lv.boundaryAdminLevel.starting = 5
-            |generation.lv.boundaryAdminLevel.lowest = 4""".stripMargin
+            |generation.lv.boundaryAdminLevel.lowest = 4
+            |""".stripMargin
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
@@ -156,10 +180,12 @@ class ConfigFailFastSpec extends UnitSpec {
     "having missing generation configs" should {
       "fail" in {
         OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
+          """input.osm.pbf.file = "pbf_file"
             |input.asset.file.directory = "asset_input_dir"
             |input.asset.file.hierarchic = false
-            |output.csv.directory = "output_file_path"""".stripMargin
+            |output.csv.directory = "output_file_path"
+            |output.gridName = "test_grid"
+            |""".stripMargin
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
@@ -177,11 +203,18 @@ class ConfigFailFastSpec extends UnitSpec {
     "having a valid config" should {
       "pass" in {
         OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
-          |input.asset.file.directory = "asset_input_dir"
-          |input.asset.file.hierarchic = false
-          |output.csv.directory = "output_file_path"
-          |generation.lv.distinctHouseConnections = true""".stripMargin
+          """input.osm.pbf.file = "pbf_file"
+            |input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.hierarchic = false
+            |output.csv.directory = "output_file_path"
+            |output.gridName = "test_grid"
+            |generation.lv.gridName = "test_grid"
+            |generation.lv.averagePowerDensity = 12.5
+            |generation.lv.ratedVoltage = 0.4
+            |generation.lv.considerHouseConnectionPoints = false
+            |generation.lv.boundaryAdminLevel.starting = 2
+            |generation.lv.boundaryAdminLevel.lowest = 8
+            |""".stripMargin
         } match {
           case Success(cfg) => ConfigFailFast.check(cfg) shouldBe Success(cfg)
           case Failure(exception) =>

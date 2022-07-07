@@ -25,7 +25,8 @@ object LvGridGenerator extends LazyLogging {
       osmData: LvOsmoGridModel,
       powerDensity: Irradiance,
       minDistance: ComparableQuantity[Length],
-      config: OsmoGridConfig.Generation.Lv
+      config: OsmoGridConfig.Generation.Lv,
+      gridName: String
   ) extends Request
 
   sealed trait Response
@@ -36,7 +37,10 @@ object LvGridGenerator extends LazyLogging {
   def apply(): Behaviors.Receive[Request] = idle
 
   private def idle: Behaviors.Receive[Request] = Behaviors.receive {
-    case (ctx, GenerateGrid(osmData, powerDensity, minDistance, config)) =>
+    case (
+          ctx,
+          GenerateGrid(osmData, powerDensity, minDistance, config, gridName)
+        ) =>
       val (graph, buildingGraphConnections) =
         buildGridGraph(
           osmData,
@@ -52,7 +56,7 @@ object LvGridGenerator extends LazyLogging {
         config.ratedVoltage.asKiloVolt,
         config.considerHouseConnectionPoints,
         lineType,
-        config.gridName
+        gridName
       )
       ???
     case (ctx, unsupported) =>

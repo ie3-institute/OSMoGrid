@@ -9,7 +9,6 @@ package edu.ie3.osmogrid.cfg
 final case class OsmoGridConfig(
     generation: OsmoGridConfig.Generation,
     input: OsmoGridConfig.Input,
-    io: OsmoGridConfig.Io,
     output: OsmoGridConfig.Output
 )
 object OsmoGridConfig {
@@ -21,7 +20,6 @@ object OsmoGridConfig {
         averagePowerDensity: scala.Double,
         boundaryAdminLevel: OsmoGridConfig.Generation.Lv.BoundaryAdminLevel,
         considerHouseConnectionPoints: scala.Boolean,
-        gridName: java.lang.String,
         osm: OsmoGridConfig.Generation.Lv.Osm,
         ratedVoltage: scala.Double
     )
@@ -110,7 +108,6 @@ object OsmoGridConfig {
           considerHouseConnectionPoints = c.hasPathOrNull(
             "considerHouseConnectionPoints"
           ) && c.getBoolean("considerHouseConnectionPoints"),
-          gridName = $_reqStr(parentPath, c, "gridName", $tsCfgValidator),
           osm = OsmoGridConfig.Generation.Lv.Osm(
             if (c.hasPathOrNull("osm")) c.getConfig("osm")
             else com.typesafe.config.ConfigFactory.parseString("osm{}"),
@@ -134,22 +131,6 @@ object OsmoGridConfig {
             case e: com.typesafe.config.ConfigException =>
               $tsCfgValidator.addBadPath(parentPath + path, e)
               0
-          }
-      }
-
-      private def $_reqStr(
-          parentPath: java.lang.String,
-          c: com.typesafe.config.Config,
-          path: java.lang.String,
-          $tsCfgValidator: $TsCfgValidator
-      ): java.lang.String = {
-        if (c == null) null
-        else
-          try c.getString(path)
-          catch {
-            case e: com.typesafe.config.ConfigException =>
-              $tsCfgValidator.addBadPath(parentPath + path, e)
-              null
           }
       }
 
@@ -309,40 +290,9 @@ object OsmoGridConfig {
     }
   }
 
-  final case class Io(
-      typeSourceFormat: java.lang.String
-  )
-  object Io {
-    def apply(
-        c: com.typesafe.config.Config,
-        parentPath: java.lang.String,
-        $tsCfgValidator: $TsCfgValidator
-    ): OsmoGridConfig.Io = {
-      OsmoGridConfig.Io(
-        typeSourceFormat =
-          $_reqStr(parentPath, c, "typeSourceFormat", $tsCfgValidator)
-      )
-    }
-    private def $_reqStr(
-        parentPath: java.lang.String,
-        c: com.typesafe.config.Config,
-        path: java.lang.String,
-        $tsCfgValidator: $TsCfgValidator
-    ): java.lang.String = {
-      if (c == null) null
-      else
-        try c.getString(path)
-        catch {
-          case e: com.typesafe.config.ConfigException =>
-            $tsCfgValidator.addBadPath(parentPath + path, e)
-            null
-        }
-    }
-
-  }
-
   final case class Output(
-      csv: scala.Option[OsmoGridConfig.Output.Csv]
+      csv: scala.Option[OsmoGridConfig.Output.Csv],
+      gridName: java.lang.String
   )
   object Output {
     final case class Csv(
@@ -394,9 +344,26 @@ object OsmoGridConfig {
               OsmoGridConfig.Output
                 .Csv(c.getConfig("csv"), parentPath + "csv.", $tsCfgValidator)
             )
-          else None
+          else None,
+        gridName = $_reqStr(parentPath, c, "gridName", $tsCfgValidator)
       )
     }
+    private def $_reqStr(
+        parentPath: java.lang.String,
+        c: com.typesafe.config.Config,
+        path: java.lang.String,
+        $tsCfgValidator: $TsCfgValidator
+    ): java.lang.String = {
+      if (c == null) null
+      else
+        try c.getString(path)
+        catch {
+          case e: com.typesafe.config.ConfigException =>
+            $tsCfgValidator.addBadPath(parentPath + path, e)
+            null
+        }
+    }
+
   }
 
   def apply(c: com.typesafe.config.Config): OsmoGridConfig = {
@@ -413,12 +380,6 @@ object OsmoGridConfig {
         if (c.hasPathOrNull("input")) c.getConfig("input")
         else com.typesafe.config.ConfigFactory.parseString("input{}"),
         parentPath + "input.",
-        $tsCfgValidator
-      ),
-      io = OsmoGridConfig.Io(
-        if (c.hasPathOrNull("io")) c.getConfig("io")
-        else com.typesafe.config.ConfigFactory.parseString("io{}"),
-        parentPath + "io.",
         $tsCfgValidator
       ),
       output = OsmoGridConfig.Output(
