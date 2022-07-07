@@ -115,7 +115,7 @@ object LvGraphGeneratorSupport {
       powerDensity,
       minDistance
     )
-    val streetGraph = buildStreetGraph(highways, highwayNodes)
+    val streetGraph = buildStreetGraph(highways.seq.toSeq, highwayNodes)
     (
       updateGraphWithBuildingConnections(
         streetGraph,
@@ -136,7 +136,7 @@ object LvGraphGeneratorSupport {
     *   the street graph
     */
   private def buildStreetGraph(
-      ways: ParSeq[Way],
+      ways: Seq[Way],
       nodes: Map[Long, Node]
   ): OsmGraph = {
     val graph = new OsmGraph()
