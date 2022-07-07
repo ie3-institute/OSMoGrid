@@ -57,7 +57,7 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
     }
 
     "building a street graph" should {
-      val waySeq = ParSeq(ways.highway1, ways.highway2)
+      val waySeq = Seq(ways.highway1, ways.highway2)
       val wayNodes = ways.highway1.nodes ++ ways.highway2.nodes
       val buildStreetGraph = PrivateMethod[OsmGraph](Symbol("buildStreetGraph"))
       val actual: OsmGraph =
