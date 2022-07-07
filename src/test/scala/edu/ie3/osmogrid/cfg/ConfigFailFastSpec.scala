@@ -101,7 +101,6 @@ class ConfigFailFastSpec extends UnitSpec {
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
             |output.gridName = "test_grid"
-            |generation.lv.gridName = "test_grid"
             |generation.lv.averagePowerDensity = 12.5
             |generation.lv.ratedVoltage = 0.4
             |generation.lv.considerHouseConnectionPoints = false
@@ -128,7 +127,6 @@ class ConfigFailFastSpec extends UnitSpec {
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
             |output.gridName = "test_grid"
-            |generation.lv.gridName = "test_grid"
             |generation.lv.averagePowerDensity = 12.5
             |generation.lv.ratedVoltage = 0.4
             |generation.lv.considerHouseConnectionPoints = false
@@ -155,7 +153,6 @@ class ConfigFailFastSpec extends UnitSpec {
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
             |output.gridName = "test_grid"
-            |generation.lv.gridName = "test_grid"
             |generation.lv.averagePowerDensity = 12.5
             |generation.lv.ratedVoltage = 0.4
             |generation.lv.considerHouseConnectionPoints = false
@@ -208,7 +205,6 @@ class ConfigFailFastSpec extends UnitSpec {
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
             |output.gridName = "test_grid"
-            |generation.lv.gridName = "test_grid"
             |generation.lv.averagePowerDensity = 12.5
             |generation.lv.ratedVoltage = 0.4
             |generation.lv.considerHouseConnectionPoints = false

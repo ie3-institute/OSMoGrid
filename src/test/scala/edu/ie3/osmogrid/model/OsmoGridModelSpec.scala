@@ -104,7 +104,8 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
             nodes.landuse1Node1,
             nodes.landuse1Node2,
             nodes.landuse1Node3,
-            nodes.landuse1Node4
+            nodes.landuse1Node4,
+            nodes.landuse1Node1
           )
         )
       )

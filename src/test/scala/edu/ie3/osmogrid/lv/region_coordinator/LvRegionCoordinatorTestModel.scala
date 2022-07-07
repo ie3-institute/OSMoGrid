@@ -45,8 +45,14 @@ object LvRegionCoordinatorTestModel
         s"""input.osm.pbf.file = "${resourcePath.replace("\\", "\\\\")}"
            |input.asset.file.directory = "asset_input_dir"
            |input.asset.file.hierarchic = false
+           |output.gridName = "test_grid"
            |output.csv.directory = "output_file_path"
-           |generation.lv.distinctHouseConnections = true""".stripMargin
+           |generation.lv.averagePowerDensity = 12.5
+           |generation.lv.ratedVoltage = 0.4
+           |generation.lv.considerHouseConnectionPoints = false
+           |generation.lv.boundaryAdminLevel.starting = 2
+           |generation.lv.boundaryAdminLevel.lowest = 8
+           |""".stripMargin
       )
       .success
       .value

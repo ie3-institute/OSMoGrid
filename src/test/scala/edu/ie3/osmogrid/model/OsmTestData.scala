@@ -98,7 +98,7 @@ trait OsmTestData {
       Node(64L, 51.5874d, 7.5600d, Map.empty[String, String], None)
 
     val substation: Node = Node(
-      41L,
+      80L,
       51.4895185d,
       7.4058116d,
       Map("power" -> "substation", "building" -> "service"),
