@@ -63,6 +63,13 @@ import scala.collection.parallel.{ParMap, ParSeq}
 
 object LvGridGeneratorSupport extends LazyLogging {
 
+  /** Container to store built grid assets.
+    *
+    * @param nodes
+    *   mapping from osm to electrical node
+    * @param loads
+    *   the built loads
+    */
   final case class GridElements(
       nodes: Map[Node, NodeInput],
       loads: Set[LoadInput]
@@ -76,6 +83,26 @@ object LvGridGeneratorSupport extends LazyLogging {
     }
   }
 
+  /** Builds a [[SubGridContainer]] from an OSM street graph by traversing the
+    * graph, building electrical nodes for all street nodes that are
+    * intersection or have a connected building associated with it and building
+    * electrical lines between all the electrical nodes.
+    *
+    * @param osmGraph
+    *   the osm graph to traverse
+    * @param buildingGraphConnections
+    *   the building connections to the street graph
+    * @param ratedVoltage
+    *   the rated voltage of the grid to build
+    * @param considerHouseConnectionPoints
+    *   whether or not to build distinct lines to houses
+    * @param lineType
+    *   the line type for the electrical lines
+    * @param gridName
+    *   the name for the grid
+    * @return
+    *   the built [[SubGridContainer]]
+    */
   def buildGrid(
       osmGraph: OsmGraph,
       buildingGraphConnections: ParSeq[BuildingGraphConnection],
@@ -169,6 +196,19 @@ object LvGridGeneratorSupport extends LazyLogging {
     )
   }
 
+  /** Create a node.
+    *
+    * @param vTarget
+    *   the target voltage of the node
+    * @param voltageLevel
+    *   the voltage level
+    * @param id
+    *   the id of the node
+    * @param coordinate
+    *   the coordinate of the node position
+    * @return
+    *   the created node
+    */
   private def createNode(
       vTarget: ComparableQuantity[Dimensionless],
       voltageLevel: VoltageLevel
@@ -184,6 +224,17 @@ object LvGridGeneratorSupport extends LazyLogging {
     )
   }
 
+  /** Creates a load.
+    *
+    * @param id
+    *   the id for the load to build
+    * @param ratedPower
+    *   the rated power of the load
+    * @param node
+    *   the node at which the load will be connected
+    * @return
+    *   the created load
+    */
   private def createLoad(id: String, ratedPower: ComparableQuantity[Power])(
       node: NodeInput
   ) =
@@ -200,6 +251,27 @@ object LvGridGeneratorSupport extends LazyLogging {
       1d
     )
 
+  /** Recursively traverses the graph by starting at a given node and follows
+    * all connected edges sequentially, building all lines between nodes in the
+    * process.
+    *
+    * @param currentNode
+    *   the osm node at which we start
+    * @param currentNodeInput
+    *   the node input associated with the osm node at which we start
+    * @param osmGraph
+    *   the osm graph wich we traverse
+    * @param alreadyVisited
+    *   nodes we have already visited
+    * @param lines
+    *   lines we have already built
+    * @param nodeToNodeInput
+    *   a mapping from osm node to node input
+    * @param lineTypeInput
+    *   the line type we use for building lines
+    * @return
+    *   a tuple of the set of already visited nodes and lines we have built
+    */
   private def traverseGraph(
       currentNode: Node,
       currentNodeInput: NodeInput,
@@ -262,6 +334,20 @@ object LvGridGeneratorSupport extends LazyLogging {
     }
   }
 
+  /** Builds line between the nodes. Includes passed passed osm street node to
+    * the geo position to track the street profile.
+    *
+    * @param firstNode
+    *   node at which the line starts
+    * @param secondNode
+    *   node at which the line ends
+    * @param passedStreetNodes
+    *   osm street nodes the line follows along
+    * @param lineType
+    *   type of the line to build
+    * @return
+    *   the built line
+    */
   private def buildLine(
       firstNode: NodeInput,
       secondNode: NodeInput,
@@ -386,7 +472,6 @@ object LvGridGeneratorSupport extends LazyLogging {
 
   /** Builds a GridContainer by adding all assets together
     */
-
   private def buildGridContainer(
       gridName: String,
       nodes: java.util.Set[NodeInput],

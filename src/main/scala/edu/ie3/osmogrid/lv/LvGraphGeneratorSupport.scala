@@ -21,7 +21,7 @@ import javax.measure.quantity.{Length, Power}
 import scala.collection.parallel.ParSeq
 import scala.util.{Success, Try}
 import edu.ie3.util.geo.RichGeometries.{RichCoordinate, RichPolygon}
-import utils.OsmogridUtils.{
+import utils.OsmoGridUtils.{
   calcHouseholdPower,
   isInsideLanduse,
   orthogonalProjection,
@@ -340,5 +340,4 @@ object LvGraphGeneratorSupport {
     })
     graph
   }
-
 }

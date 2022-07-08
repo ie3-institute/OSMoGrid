@@ -23,7 +23,7 @@ import org.locationtech.jts.geom.Coordinate
 import org.scalatestplus.mockito.MockitoSugar.mock
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.unit.Units
-import utils.OsmogridUtils.orthogonalProjection
+import utils.OsmoGridUtils.orthogonalProjection
 
 import javax.measure.quantity.Length
 import scala.collection.parallel.CollectionConverters.seqIsParallelizable
