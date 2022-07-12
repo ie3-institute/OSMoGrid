@@ -21,7 +21,7 @@ ext {
   akkaVersion = '2.6.19'
 
   tscfgVersion = '0.9.995'
-  scapegoatVersion = '1.4.14'
+  scapegoatVersion = '1.4.15'
 
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
   docsDirName = 'docs'
