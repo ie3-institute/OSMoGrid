@@ -10,12 +10,13 @@ import edu.ie3.osmogrid.exception.OsmDataException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
-import edu.ie3.util.geo.GeoUtils.buildCoordinate
+import edu.ie3.util.geo.GeoUtils.{buildCoordinate, orthogonalProjection}
 import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
 import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
 import edu.ie3.util.quantities.interfaces.Irradiance
 import org.locationtech.jts.geom.Coordinate
 import tech.units.indriya.ComparableQuantity
+
 import java.util.UUID
 import javax.measure.quantity.{Length, Power}
 import scala.collection.parallel.ParSeq
@@ -24,7 +25,6 @@ import edu.ie3.util.geo.RichGeometries.{RichCoordinate, RichPolygon}
 import utils.OsmogridUtils.{
   calcHouseholdPower,
   isInsideLanduse,
-  orthogonalProjection,
   safeBuildPolygon
 }
 
