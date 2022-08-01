@@ -75,7 +75,7 @@ dependencies {
   implementation 'ch.qos.logback:logback-classic:1.2.11'
 
   // testing
-  testImplementation "org.scalatest:scalatest_$scalaVersion:3.2.12"
+  testImplementation "org.scalatest:scalatest_$scalaVersion:3.2.13"
   testRuntimeOnly 'com.vladsch.flexmark:flexmark-all:0.64.0' //scalatest html output
   testImplementation 'org.pegdown:pegdown:1.6.0'
 
