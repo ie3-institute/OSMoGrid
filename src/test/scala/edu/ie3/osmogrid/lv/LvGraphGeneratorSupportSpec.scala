@@ -22,9 +22,15 @@ import org.jgrapht.alg.connectivity.ConnectivityInspector
 import org.locationtech.jts.geom.Coordinate
 import org.scalatestplus.mockito.MockitoSugar.mock
 import tech.units.indriya.ComparableQuantity
+import edu.ie3.osmogrid.lv.LvGraphBuilder.{
+  BuildingGraphConnection,
+  buildGridGraph
+}
+import edu.ie3.util.geo.GeoUtils.orthogonalProjection
 import tech.units.indriya.unit.Units
 import utils.OsmoGridUtils.orthogonalProjection
 
+import collection.parallel.CollectionConverters.seqIsParallelizable
 import javax.measure.quantity.Length
 import scala.collection.parallel.CollectionConverters.seqIsParallelizable
 import scala.collection.parallel.ParSeq
