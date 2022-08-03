@@ -72,16 +72,6 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           .expectEffectType[MessageAdapter[coordinator.Response, Request]]
         idleTestKit.expectEffectType[MessageAdapter[ResultEvent, Request]]
 
-      }
-
-      "fails if input data provider cannot be spawned" in {
-        idleTestKit.run(Run)
-
-        /* Two message adapters are registered */
-        idleTestKit
-          .expectEffectType[MessageAdapter[coordinator.Response, Request]]
-        idleTestKit.expectEffectType[MessageAdapter[ResultEvent, Request]]
-
         /* Check if I/O actors and LvCoordinator are spawned and watched correctly */
         idleTestKit.expectEffectPF {
           case Spawned(
@@ -110,7 +100,6 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           .receiveAll()
           .contains(coordinator.ReqLvGrids) shouldBe true
       }
-
     }
 
     "being in running state" should {
