@@ -23,7 +23,8 @@ import scala.util.{Failure, Success}
 protected final case class ProviderData(
     ctx: ActorContext[InputDataEvent],
     buffer: StashBuffer[InputDataEvent],
-    osmSource: OsmSource
+    osmSource: OsmSource,
+    assetSource: AssetSource
 )
 
 object InputDataProvider extends ActorStopSupport[ProviderData] {
@@ -57,6 +58,7 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
       with InputDataEvent
   final case class RepAssetTypes(assetInformation: AssetInformation)
       extends Response
+      with InputDataEvent
 
   final case class AssetInformation(
       lineTypes: Seq[LineTypeInput],
@@ -69,7 +71,12 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
     Behaviors.withStash[InputDataEvent](100) { buffer =>
       Behaviors.setup[InputDataEvent] { ctx =>
         idle(
-          ProviderData(ctx, buffer, OsmSource(osmConfig.osm, ctx))
+          ProviderData(
+            ctx,
+            buffer,
+            OsmSource(osmConfig.osm, ctx),
+            AssetSource(osmConfig.asset)
+          )
         )
       }
     }
@@ -92,8 +99,8 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
                 OsmReadFailed(exception)
             }
             readOsmData(providerData, replyTo)
-          case ReqAssetTypes(_) =>
-            ctx.log.info("Got request to provide asset types. But do nothing.")
+          case ReqAssetTypes(replyTo) =>
+            replyTo ! RepAssetTypes(providerData.assetSource.read())
             Behaviors.same
           case Terminate =>
             terminate(ctx.log, providerData)
