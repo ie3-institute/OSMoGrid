@@ -72,33 +72,6 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           .expectEffectType[MessageAdapter[coordinator.Response, Request]]
         idleTestKit.expectEffectType[MessageAdapter[ResultEvent, Request]]
 
-//        /* Check if I/O actors and LvCoordinator are spawned and watched correctly */
-//        idleTestKit.expectEffectPF {
-//          case Spawned(
-//                _: Behavior[_],
-//                name,
-//                _
-//              ) =>
-//            name shouldBe s"InputDataProvider_$runId"
-//        }
-//        idleTestKit
-//          .expectEffectType[
-//            WatchedWith[InputDataProvider.InputDataEvent, Watch]
-//          ]
-//        idleTestKit.expectEffectPF { case Spawned(_: Behavior[_], name, _) =>
-//          name shouldBe s"PersistenceResultListener_$runId"
-//        }
-//        idleTestKit.expectEffectType[WatchedWith[ResultEvent, Watch]]
-//        idleTestKit.expectEffectPF { case Spawned(_: Behavior[_], name, _) =>
-//          name shouldBe s"LvCoordinator_$runId"
-//        }
-//        idleTestKit.expectEffectType[WatchedWith[coordinator.Request, Watch]]
-//
-//        /* Check for child messages */
-//        idleTestKit
-//          .childInbox[coordinator.Request](s"LvCoordinator_$runId")
-//          .receiveAll()
-//          .contains(coordinator.ReqLvGrids) shouldBe true
       }
 
       "fails if input data provider cannot be spawned" in {
