@@ -75,29 +75,6 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
             assetInformation.transformerTypes.length shouldBe 1
         }
       }
-
-      "fail on empty asset data directory" in {
-        val config: OsmoGridConfig.Input =
-          createConfig("/Witten_Stockum.pbf", "/empty_lv_assets")
-
-        val requestProbe = testKit.createTestProbe[InputDataProvider.Response]()
-        val testActor = testKit.spawn(
-          InputDataProvider(config)
-        )
-
-        testActor ! InputDataProvider.ReqAssetTypes(requestProbe.ref)
-
-        requestProbe
-          .expectMessageType[InputDataProvider.RepAssetTypes](
-            30 seconds
-          ) match {
-          case InputDataProvider.RepAssetTypes(
-                assetInformation: AssetInformation
-              ) =>
-            assetInformation.lineTypes.length shouldBe 1
-            assetInformation.transformerTypes.length shouldBe 1
-        }
-      }
     }
 
     "having empty input data" should {
