@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (c) 2019. TU Dortmund University,
+  ~ Copyright (c) 2022. TU Dortmund University,
   ~ Institute of Energy Systems, Energy Efficiency and Energy Economics,
   ~ Research group Distribution grid planning and operation
   -->
@@ -18,10 +18,10 @@
         </filter>
     </appender>
     <appender name="RF" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/simona/simona.log</file>
+        <file>logs/osmogrid/osmogrid.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover -->
-            <fileNamePattern>logs/simona/archive/simona-%d{yyyyMMdd'T'HHmmss}-${bySecond}.log</fileNamePattern>
+            <fileNamePattern>logs/osmogrid/archive/osmogrid-%d{yyyyMMdd'T'HHmmss}-${bySecond}.log</fileNamePattern>
             <!-- keep 30 days' worth of history capped at 3GB total size -->
             <maxHistory>10</maxHistory>
             <totalSizeCap>3GB</totalSizeCap>
