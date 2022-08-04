@@ -44,6 +44,7 @@ object LvRegionCoordinatorTestModel
       .parseWithoutFallback(
         s"""input.osm.pbf.file = "${resourcePath.replace("\\", "\\\\")}"
            |input.asset.file.directory = "asset_input_dir"
+           |input.asset.file.separator = ","
            |input.asset.file.hierarchic = false
            |output.gridName = "test_grid"
            |output.csv.directory = "output_file_path"

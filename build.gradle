@@ -126,7 +126,7 @@ dependencies {
   testImplementation "org.scalatestplus:mockito-3-12_$scalaVersion:3.2.10.0" // syntactic sugar
 
   testImplementation 'org.spockframework:spock-core:2.1-groovy-3.0'
-  testImplementation 'org.objenesis:objenesis:3.2' // Mock creation with constructor parameters
+  testImplementation 'org.objenesis:objenesis:3.3' // Mock creation with constructor parameters
 
   // TODO: Remove. Only there for backwards compatibility in Java code
   implementation 'tech.units:indriya:2.1.3'

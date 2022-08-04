@@ -16,6 +16,7 @@ class ConfigFailFastSpec extends UnitSpec {
       "fail on missing osm input definition" in {
         OsmoGridConfigFactory.parseWithoutFallback {
           """input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.separator = ","
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
             |output.gridName = "test_grid"
@@ -37,6 +38,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           """input.osm.pbf.file = ""
             |input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.separator = ","
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
             |output.gridName = "test_grid"
@@ -77,6 +79,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           """input.osm.pbf.file = ""
             |input.asset.file.directory = ""
+            |input.asset.file.separator = ","
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
             |output.gridName = "test_grid"
@@ -124,6 +127,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           """input.osm.pbf.file = "pbf_file"
             |input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.separator = ","
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
             |output.gridName = "test_grid"
@@ -150,6 +154,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           """input.osm.pbf.file = "pbf_file"
             |input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.separator = ","
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
             |output.gridName = "test_grid"
@@ -179,6 +184,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           """input.osm.pbf.file = "pbf_file"
             |input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.separator = ","
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
             |output.gridName = "test_grid"
@@ -202,6 +208,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           """input.osm.pbf.file = "pbf_file"
             |input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.separator = ","
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
             |output.gridName = "test_grid"

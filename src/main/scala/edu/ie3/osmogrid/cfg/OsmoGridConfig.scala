@@ -164,7 +164,8 @@ object OsmoGridConfig {
     object Asset {
       final case class File(
           directory: java.lang.String,
-          hierarchic: scala.Boolean
+          hierarchic: scala.Boolean,
+          separator: java.lang.String
       )
       object File {
         def apply(
@@ -175,7 +176,8 @@ object OsmoGridConfig {
           OsmoGridConfig.Input.Asset.File(
             directory = $_reqStr(parentPath, c, "directory", $tsCfgValidator),
             hierarchic =
-              c.hasPathOrNull("hierarchic") && c.getBoolean("hierarchic")
+              c.hasPathOrNull("hierarchic") && c.getBoolean("hierarchic"),
+            separator = $_reqStr(parentPath, c, "separator", $tsCfgValidator)
           )
         }
         private def $_reqStr(
