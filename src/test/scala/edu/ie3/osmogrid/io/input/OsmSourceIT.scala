@@ -25,11 +25,7 @@ class OsmSourceIT extends UnitSpec with InputDataCheck {
   "Reading input data from pbf file" when {
     "having proper input data" should {
       "provide full data set correctly" in {
-        val inputResource = getClass.getResource("/Witten_Stockum.pbf")
-        assert(inputResource != null)
-        val resourcePath =
-          Paths.get(inputResource.toURI).toAbsolutePath.toString
-
+        val resourcePath = getResourcePath("/Witten_Stockum.pbf")
         val requestProbe = testKit.createTestProbe[Try[OsmoGridModel]]()
         val testActor = testKit.spawn(
           OsmSourceIT.SourceTestActor(resourcePath)
