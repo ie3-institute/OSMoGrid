@@ -144,17 +144,10 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
       assetSep: String = ",",
       assetHierarchic: Boolean = false
   ) = {
-    val inputResource = getClass.getResource(pbfFilePath)
-    assert(inputResource != null)
-    val pbfResourcePath =
-      Paths.get(inputResource.toURI).toAbsolutePath.toString
-    val assetRessource = getClass.getResource(assetDirPath)
-    val assetResourcePath =
-      Paths.get(assetRessource.toURI).toAbsolutePath.toString
     val parsedCfg = ConfigFactory.parseMap(
       Map(
-        "osm.pbf.file" -> pbfResourcePath,
-        "asset.file.directory" -> assetResourcePath,
+        "osm.pbf.file" -> getResourcePath(pbfFilePath),
+        "asset.file.directory" -> getResourcePath(assetDirPath),
         "asset.file.separator" -> assetSep,
         "asset.file.hierarchic" -> assetHierarchic
       ).asJava
