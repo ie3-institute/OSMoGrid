@@ -124,13 +124,22 @@ object LvGridGeneratorSupport extends LazyLogging {
       .asScala
       .foldLeft(GridElements(Map(), Set()))((gridElements, osmNode) => {
         nodesWithBuildings.get(osmNode) match {
+          case Some(buildingGraphConnection: BuildingGraphConnection)
+              if buildingGraphConnection.isSubstation =>
+            val substationNode = nodeCreator(
+              "",
+              osmNode.coordinate,
+              true
+            )
+            gridElements ++ Map(osmNode -> substationNode)
           case Some(buildingGraphConnection: BuildingGraphConnection) =>
             val highwayNode = nodeCreator(
               buildingGraphConnection
                 .createHighwayNodeName(
                   considerHouseConnectionPoints
                 ),
-              osmNode.coordinate
+              osmNode.coordinate,
+              false
             )
             val loadCreator = createLoad(
               "Load of building: " + buildingGraphConnection.building.id.toString,
@@ -145,7 +154,8 @@ object LvGridGeneratorSupport extends LazyLogging {
                 )
               val buildingConnectionNode: NodeInput = nodeCreator(
                 buildingGraphConnection.createBuildingNodeName(),
-                osmBuildingConnectionNode.coordinate
+                osmBuildingConnectionNode.coordinate,
+                false
               )
               val load = loadCreator(buildingConnectionNode)
               gridElements ++ Map(
@@ -161,7 +171,8 @@ object LvGridGeneratorSupport extends LazyLogging {
           case None if osmGraph.degreeOf(osmNode) > 2 =>
             val node = nodeCreator(
               s"Node highway: ${osmNode.id}",
-              osmNode.coordinate
+              osmNode.coordinate,
+              false
             )
             gridElements ++ Map(osmNode -> node)
           case None =>
@@ -212,12 +223,12 @@ object LvGridGeneratorSupport extends LazyLogging {
   private def createNode(
       vTarget: ComparableQuantity[Dimensionless],
       voltageLevel: VoltageLevel
-  )(id: String, coordinate: Point): NodeInput = {
+  )(id: String, coordinate: Point, isSlack: Boolean): NodeInput = {
     new NodeInput(
       UUID.randomUUID(),
       id,
       vTarget,
-      false,
+      isSlack,
       coordinate,
       voltageLevel,
       1

@@ -105,6 +105,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
           LvGraphGeneratorSupport invokePrivate calcBuildingGraphConnections(
             landuses,
             buildings,
+            Seq.empty.par,
             highways,
             nodes.nodesMap,
             0.5d.asKiloWattPerSquareMetre,
@@ -193,7 +194,8 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
           10.asKiloWatt,
           nodes.highway1Node1,
           nodes.highway1Node2,
-          connectingNode
+          connectingNode,
+          isSubstation = false
         )
         val updateGraphWithBuildingConnections =
           PrivateMethod[OsmGraph](Symbol("updateGraphWithBuildingConnections"))

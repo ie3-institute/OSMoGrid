@@ -55,6 +55,7 @@ object LvGraphGeneratorSupport {
       highwayNodeA: Node,
       highwayNodeB: Node,
       graphConnectionNode: Node,
+      isSubstation: Boolean,
       buildingConnectionNode: Option[Node] = None
   ) {
 
@@ -107,11 +108,14 @@ object LvGraphGeneratorSupport {
       OsmoGridModel.filterForClosedWays(osmoGridModel.buildings)
     val (landuses, landUseNodes) =
       OsmoGridModel.filterForClosedWays(osmoGridModel.landuses)
+    val (substations, substationNodes) =
+      OsmoGridModel.filterForClosedWays(osmoGridModel.existingSubstations)
     val buildingGraphConnections = calcBuildingGraphConnections(
       landuses,
       building,
+      substations,
       highways,
-      highwayNodes ++ buildingNodes ++ landUseNodes,
+      highwayNodes ++ buildingNodes ++ landUseNodes ++ substationNodes,
       powerDensity,
       minDistance
     )
@@ -185,6 +189,7 @@ object LvGraphGeneratorSupport {
   private def calcBuildingGraphConnections(
       landuses: ParSeq[ClosedWay],
       buildings: ParSeq[ClosedWay],
+      substations: ParSeq[ClosedWay],
       highways: ParSeq[Way],
       nodes: Map[Long, Node],
       powerDensity: ComparableQuantity[Irradiance],
@@ -192,7 +197,7 @@ object LvGraphGeneratorSupport {
   ): ParSeq[BuildingGraphConnection] = {
     val landusePolygons =
       landuses.map(closedWay => safeBuildPolygon(closedWay, nodes))
-    buildings.flatMap(building => {
+    (buildings ++ substations).flatMap(building => {
       val buildingPolygon = safeBuildPolygon(building, nodes)
       val buildingCenter: Coordinate = buildingPolygon.getCentroid.getCoordinate
       // check if building is inside residential area
@@ -239,7 +244,8 @@ object LvGraphGeneratorSupport {
             load,
             closestOverall._3,
             closestOverall._4,
-            closestOverall._2
+            closestOverall._2,
+            if (substations.toSet.contains(building)) true else false
           )
         )
       } else None

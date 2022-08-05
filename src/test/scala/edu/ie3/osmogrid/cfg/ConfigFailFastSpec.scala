@@ -101,6 +101,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           """input.osm.pbf.file = "pbf_file"
             |input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.separator = ","
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
             |output.gridName = "test_grid"
