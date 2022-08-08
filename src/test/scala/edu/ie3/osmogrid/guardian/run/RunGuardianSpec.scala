@@ -13,6 +13,7 @@ import akka.actor.testkit.typed.scaladsl.{
   ScalaTestWithActorTestKit
 }
 import akka.actor.typed.{ActorRef, Behavior}
+import edu.ie3.osmogrid.cfg.ConfigFailFastSpec.viableConfigurationString
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input.InputDataProvider
@@ -45,16 +46,9 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
 
       "log an error, if initiation of a run is impossible" in {
         val maliciousConfig = OsmoGridConfigFactory
-          .parseWithoutFallback("""input.osm.pbf.file = ""
-                                            |output.csv.directory = "output_file_path"
-                                            |output.gridName = "test_grid"
-                                            |generation.lv.gridName = "test_grid"
-                                            |generation.lv.averagePowerDensity = 12.5
-                                            |generation.lv.ratedVoltage = 0.4
-                                            |generation.lv.considerHouseConnectionPoints = false
-                                            |generation.lv.boundaryAdminLevel.starting = 2
-                                            |generation.lv.boundaryAdminLevel.lowest = 8
-                                            |""".stripMargin)
+          .parseWithoutFallback(
+            viableConfigurationString.replaceAll("(?m)^.*input.asset.*$", "")
+          )
           .getOrElse(fail("Unable to parse malicious config"))
         val maliciousIdleTestKit = BehaviorTestKit(
           RunGuardian(maliciousConfig, Seq.empty[ActorRef[ResultEvent]], runId)
