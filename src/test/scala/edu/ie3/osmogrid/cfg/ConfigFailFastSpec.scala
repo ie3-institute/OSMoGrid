@@ -51,10 +51,7 @@ class ConfigFailFastSpec extends UnitSpec {
 
       "fail on missing asset input definition" in {
         OsmoGridConfigFactory.parseWithoutFallback {
-          viableConfigurationString.replace(
-            "input.osm.pbf.file = \"pbf_file\"",
-            ""
-          )
+          viableConfigurationString.replaceAll("(?m)^.*input.asset.*$", "")
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
