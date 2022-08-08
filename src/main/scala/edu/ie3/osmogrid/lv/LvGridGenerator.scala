@@ -9,27 +9,26 @@ package edu.ie3.osmogrid.lv
 import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.datamodel.models.input.container.SubGridContainer
-import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.buildGridGraph
-import edu.ie3.util.quantities.interfaces.Irradiance
-import tech.units.indriya.ComparableQuantity
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
+import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.buildGridGraph
 import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.buildGrid
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
-
-import javax.measure.quantity.Length
+import tech.units.indriya.quantity.Quantities
+import tech.units.indriya.unit.Units
 
 object LvGridGenerator extends LazyLogging {
   sealed trait Request
+
   final case class GenerateGrid(
       osmData: LvOsmoGridModel,
-      powerDensity: Irradiance,
-      minDistance: ComparableQuantity[Length],
-      config: OsmoGridConfig.Generation.Lv,
-      gridName: String
+      assetInformation: AssetInformation,
+      config: OsmoGridConfig.Generation.Lv
   ) extends Request
 
   sealed trait Response
+
   final case class RepLvGrid(
       grid: SubGridContainer
   ) extends Response
@@ -39,8 +38,14 @@ object LvGridGenerator extends LazyLogging {
   private def idle: Behaviors.Receive[Request] = Behaviors.receive {
     case (
           ctx,
-          GenerateGrid(osmData, powerDensity, minDistance, config, gridName)
+          GenerateGrid(
+            osmData,
+            assetInformation,
+            config
+          )
         ) =>
+      val powerDensity = config.averagePowerDensity.asKiloWattPerSquareMetre
+      val minDistance = Quantities.getQuantity(config.minDistance, Units.METRE)
       val (graph, buildingGraphConnections) =
         buildGridGraph(
           osmData,
@@ -48,7 +53,6 @@ object LvGridGenerator extends LazyLogging {
           minDistance,
           config.considerHouseConnectionPoints
         )
-      // todo : ask input data provider for line type
       val lineType = ???
       val lvSubGrid = buildGrid(
         graph,
@@ -56,7 +60,7 @@ object LvGridGenerator extends LazyLogging {
         config.ratedVoltage.asKiloVolt,
         config.considerHouseConnectionPoints,
         lineType,
-        gridName
+        config.gridName
       )
       ???
     case (ctx, unsupported) =>

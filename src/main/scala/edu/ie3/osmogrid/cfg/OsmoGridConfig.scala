@@ -20,6 +20,8 @@ object OsmoGridConfig {
         averagePowerDensity: scala.Double,
         boundaryAdminLevel: OsmoGridConfig.Generation.Lv.BoundaryAdminLevel,
         considerHouseConnectionPoints: scala.Boolean,
+        gridName: java.lang.String,
+        minDistance: scala.Double,
         osm: OsmoGridConfig.Generation.Lv.Osm,
         ratedVoltage: scala.Double
     )
@@ -108,6 +110,8 @@ object OsmoGridConfig {
           considerHouseConnectionPoints = c.hasPathOrNull(
             "considerHouseConnectionPoints"
           ) && c.getBoolean("considerHouseConnectionPoints"),
+          gridName = $_reqStr(parentPath, c, "gridName", $tsCfgValidator),
+          minDistance = $_reqDbl(parentPath, c, "minDistance", $tsCfgValidator),
           osm = OsmoGridConfig.Generation.Lv.Osm(
             if (c.hasPathOrNull("osm")) c.getConfig("osm")
             else com.typesafe.config.ConfigFactory.parseString("osm{}"),
@@ -131,6 +135,22 @@ object OsmoGridConfig {
             case e: com.typesafe.config.ConfigException =>
               $tsCfgValidator.addBadPath(parentPath + path, e)
               0
+          }
+      }
+
+      private def $_reqStr(
+          parentPath: java.lang.String,
+          c: com.typesafe.config.Config,
+          path: java.lang.String,
+          $tsCfgValidator: $TsCfgValidator
+      ): java.lang.String = {
+        if (c == null) null
+        else
+          try c.getString(path)
+          catch {
+            case e: com.typesafe.config.ConfigException =>
+              $tsCfgValidator.addBadPath(parentPath + path, e)
+              null
           }
       }
 

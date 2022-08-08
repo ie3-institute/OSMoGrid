@@ -31,6 +31,7 @@ import edu.ie3.osmogrid.lv.coordinator.MessageAdapters.{
 }
 import edu.ie3.osmogrid.lv.coordinator
 import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
+import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinatorTestModel.assetInformation
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.UnitSpec
@@ -253,7 +254,7 @@ class LvCoordinatorSpec
         }
 
         awaitingTestKit.selfInbox().receiveMessage() match {
-          case StartGeneration(lvConfig, _, _) => lvConfig shouldBe cfg
+          case StartGeneration(lvConfig, _, _, _) => lvConfig shouldBe cfg
           case unexpected => fail(s"Received unexpected message '$unexpected'.")
         }
       }
@@ -288,7 +289,7 @@ class LvCoordinatorSpec
         val mockedBehavior: Behavior[LvRegionCoordinator.Request] =
           Behaviors.receive[LvRegionCoordinator.Request] { case (ctx, msg) =>
             msg match {
-              case Partition(_, _, _, replyTo) =>
+              case Partition(_, _, _, _, replyTo) =>
                 ctx.log.info(
                   s"Received the following message: '$msg'. Send out reply."
                 )
@@ -312,10 +313,21 @@ class LvCoordinatorSpec
 
         /* Ask the coordinator to start the process */
         awaitingTestKit.run(
-          StartGeneration(cfg, mockedLvRegionCoordinator, lvOsmoGridModel)
+          StartGeneration(
+            cfg,
+            mockedLvRegionCoordinator,
+            lvOsmoGridModel,
+            assetInformation
+          )
         )
         probe.expectMessageType[LvRegionCoordinator.Partition] match {
-          case Partition(osmoGridModel, administrativeLevel, config, _) =>
+          case Partition(
+                osmoGridModel,
+                assetInformation,
+                administrativeLevel,
+                config,
+                _
+              ) =>
             osmoGridModel shouldBe lvOsmoGridModel
             administrativeLevel shouldBe BoundaryAdminLevel.NATION_LEVEL
             config shouldBe cfg

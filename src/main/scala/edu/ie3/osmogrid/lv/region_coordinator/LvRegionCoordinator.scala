@@ -12,8 +12,12 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel.BoundaryAdminLevelValue
-import edu.ie3.osmogrid.lv.MunicipalityCoordinator
+import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
+import edu.ie3.osmogrid.lv.LvGridGenerator.GenerateGrid
+import edu.ie3.osmogrid.lv.{LvGridGenerator, MunicipalityCoordinator}
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
+
+import java.util.UUID
 
 object LvRegionCoordinator {
 
@@ -34,13 +38,16 @@ object LvRegionCoordinator {
     */
   final case class Partition(
       osmoGridModel: LvOsmoGridModel,
+      assetInformation: AssetInformation,
       administrativeLevel: BoundaryAdminLevelValue,
       lvConfig: OsmoGridConfig.Generation.Lv,
       replyTo: ActorRef[Response]
   ) extends Request
 
   sealed trait Response
+
   case object Done extends Response
+
   final case class RepLvGrids(subGrids: Seq[SubGridContainer]) extends Response
 
   def apply(): Behaviors.Receive[Request] = idle()
@@ -50,6 +57,7 @@ object LvRegionCoordinator {
       msg match {
         case Partition(
               osmoGridModel,
+              assetInformation,
               administrativeLevel,
               cfg,
               replyTo
@@ -87,12 +95,19 @@ object LvRegionCoordinator {
                 )
                 newRegionCoordinator ! Partition(
                   osmoGridModel,
+                  assetInformation,
                   nextLevel,
                   cfg,
                   replyTo
                 )
               case None =>
-                ctx.spawnAnonymous(MunicipalityCoordinator(osmoGridModel))
+                val gridId = UUID.randomUUID()
+                val gridGenerator = ctx.spawnAnonymous(LvGridGenerator())
+                gridGenerator ! GenerateGrid(
+                  osmoGridModel,
+                  assetInformation,
+                  cfg
+                )
             }
           }
 

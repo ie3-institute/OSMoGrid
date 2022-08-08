@@ -62,51 +62,52 @@ object LvCoordinator extends ActorStopSupportStateless {
     * @return
     *   The next state
     */
-  private def idle(stateData: IdleData): Behavior[Request] = Behaviors
-    .receive[Request] {
-      case (
-            ctx,
-            ReqLvGrids
-          ) =>
-        ctx.log.info("Starting generation of low voltage grids!")
-        ctx.log.debug("Request input data")
+  private def idle(stateData: IdleData): Behavior[Request] =
+    Behaviors
+      .receive[Request] {
+        case (
+              ctx,
+              ReqLvGrids
+            ) =>
+          ctx.log.info("Starting generation of low voltage grids!")
+          ctx.log.debug("Request input data")
 
-        /* Ask for OSM data */
-        val run = UUID.randomUUID()
-        val filter = stateData.cfg.osm.filter
-          .map(cfg =>
-            LvFilter(
-              cfg.building.toSet,
-              cfg.highway.toSet,
-              cfg.landuse.toSet
+          /* Ask for OSM data */
+          val run = UUID.randomUUID()
+          val filter = stateData.cfg.osm.filter
+            .map(cfg =>
+              LvFilter(
+                cfg.building.toSet,
+                cfg.highway.toSet,
+                cfg.landuse.toSet
+              )
             )
+            .getOrElse(LvFilter())
+
+          stateData.inputDataProvider ! ReqOsm(
+            replyTo = stateData.msgAdapters.inputDataProvider,
+            filter = filter
           )
-          .getOrElse(LvFilter())
+          /* Ask for grid asset data */
+          stateData.inputDataProvider ! ReqAssetTypes(
+            replyTo = stateData.msgAdapters.inputDataProvider
+          )
 
-        stateData.inputDataProvider ! ReqOsm(
-          replyTo = stateData.msgAdapters.inputDataProvider,
-          filter = filter
-        )
-        /* Ask for grid asset data */
-        stateData.inputDataProvider ! ReqAssetTypes(
-          replyTo = stateData.msgAdapters.inputDataProvider
-        )
-
-        /* Change state and await incoming data */
-        awaitInputData(
-          AwaitingData.empty(stateData)
-        )
-      case (ctx, Terminate) =>
-        terminate(ctx.log)
-      case (ctx, unsupported) =>
-        ctx.log.error(
-          s"Received unsupported message '$unsupported' in idle state."
-        )
-        stopBehavior
-    }
-    .receiveSignal { case (ctx, PostStop) =>
-      postStopCleanUp(ctx.log)
-    }
+          /* Change state and await incoming data */
+          awaitInputData(
+            AwaitingData.empty(stateData)
+          )
+        case (ctx, Terminate) =>
+          terminate(ctx.log)
+        case (ctx, unsupported) =>
+          ctx.log.error(
+            s"Received unsupported message '$unsupported' in idle state."
+          )
+          stopBehavior
+      }
+      .receiveSignal { case (ctx, PostStop) =>
+        postStopCleanUp(ctx.log)
+      }
 
   /** Await incoming input data and register it
     *
@@ -117,31 +118,32 @@ object LvCoordinator extends ActorStopSupportStateless {
     */
   private def awaitInputData(
       awaitingData: AwaitingData
-  ): Behavior[Request] = Behaviors
-    .receive[Request] {
-      case (ctx, MessageAdapters.WrappedInputDataResponse(response)) =>
-        /* Register what has been responded */
-        awaitingData.registerResponse(response, ctx.log) match {
-          case Success(updatedStateData) =>
-            handleUpdatedAwaitingData(updatedStateData, ctx)
-          case Failure(exception) =>
-            ctx.log.error(
-              "Request of needed input data failed. Stop low voltage grid generation.",
-              exception
-            )
-            stopBehavior
-        }
-      case (ctx, Terminate) =>
-        terminate(ctx.log)
-      case (ctx, unsupported) =>
-        ctx.log.warn(
-          s"Received unsupported message '$unsupported' in data awaiting state. Keep on going."
-        )
-        Behaviors.same
-    }
-    .receiveSignal { case (ctx, PostStop) =>
-      postStopCleanUp(ctx.log)
-    }
+  ): Behavior[Request] =
+    Behaviors
+      .receive[Request] {
+        case (ctx, MessageAdapters.WrappedInputDataResponse(response)) =>
+          /* Register what has been responded */
+          awaitingData.registerResponse(response, ctx.log) match {
+            case Success(updatedStateData) =>
+              handleUpdatedAwaitingData(updatedStateData, ctx)
+            case Failure(exception) =>
+              ctx.log.error(
+                "Request of needed input data failed. Stop low voltage grid generation.",
+                exception
+              )
+              stopBehavior
+          }
+        case (ctx, Terminate) =>
+          terminate(ctx.log)
+        case (ctx, unsupported) =>
+          ctx.log.warn(
+            s"Received unsupported message '$unsupported' in data awaiting state. Keep on going."
+          )
+          Behaviors.same
+      }
+      .receiveSignal { case (ctx, PostStop) =>
+        postStopCleanUp(ctx.log)
+      }
 
   /** Handle updated [[AwaitingData]]. If everything, that is requested, is at
     * place, spawn child actors and change to Behavior to await results. If
@@ -168,13 +170,18 @@ object LvCoordinator extends ActorStopSupportStateless {
           throw new RuntimeException("LvOsmoGridModel is missing!")
         )
 
+      val assetInformation = awaitingData.assetInformation.getOrElse(
+        throw new RuntimeException("AssetInformation is missing!")
+      )
+
       /* Spawn an coordinator for the region */
       ctx.self ! StartGeneration(
         awaitingData.cfg,
         ctx.spawnAnonymous(
           LvRegionCoordinator()
         ),
-        osmoGridModel
+        osmoGridModel,
+        assetInformation
       )
 
       /* Wait for results to come up */
@@ -194,51 +201,61 @@ object LvCoordinator extends ActorStopSupportStateless {
   private def awaitResults(
       guardian: ActorRef[Response],
       msgAdapters: MessageAdapters
-  ): Behavior[Request] = Behaviors
-    .receive[Request] {
-      case (ctx, StartGeneration(cfg, regionCoordinator, osmoGridModel)) =>
-        BoundaryAdminLevel.get(cfg.boundaryAdminLevel.starting) match {
-          case Some(startingLevel) =>
-            /* Forward the generation request */
-            regionCoordinator ! LvRegionCoordinator.Partition(
-              osmoGridModel,
-              startingLevel,
-              cfg,
-              msgAdapters.regionCoordinator
-            )
-            Behaviors.same
-          case None =>
-            ctx.log.error(
-              s"Cannot parse starting boundary level ${cfg.boundaryAdminLevel.starting}. Shutting down."
-            )
-            stopBehavior
-        }
+  ): Behavior[Request] =
+    Behaviors
+      .receive[Request] {
+        case (
+              ctx,
+              StartGeneration(
+                cfg,
+                regionCoordinator,
+                osmoGridModel,
+                assetInformation
+              )
+            ) =>
+          BoundaryAdminLevel.get(cfg.boundaryAdminLevel.starting) match {
+            case Some(startingLevel) =>
+              /* Forward the generation request */
+              regionCoordinator ! LvRegionCoordinator.Partition(
+                osmoGridModel,
+                assetInformation,
+                startingLevel,
+                cfg,
+                msgAdapters.regionCoordinator
+              )
+              Behaviors.same
+            case None =>
+              ctx.log.error(
+                s"Cannot parse starting boundary level ${cfg.boundaryAdminLevel.starting}. Shutting down."
+              )
+              stopBehavior
+          }
 
-      case (
-            ctx,
-            MessageAdapters.WrappedRegionResponse(
-              LvRegionCoordinator.RepLvGrids(subGrids)
-            )
-          ) =>
-        ctx.log.info(
-          s"Low voltage grid generation succeeded."
-        )
+        case (
+              ctx,
+              MessageAdapters.WrappedRegionResponse(
+                LvRegionCoordinator.RepLvGrids(subGrids)
+              )
+            ) =>
+          ctx.log.info(
+            s"Low voltage grid generation succeeded."
+          )
 
-        /* Report back the collected grids */
-        guardian ! RepLvGrids(subGrids)
+          /* Report back the collected grids */
+          guardian ! RepLvGrids(subGrids)
 
-        stopBehavior
-      case (ctx, Terminate) =>
-        terminate(ctx.log)
-      case (ctx, unsupported) =>
-        ctx.log.error(
-          s"Received an unsupported message: '$unsupported'. Shutting down."
-        )
-        stopBehavior
-    }
-    .receiveSignal { case (ctx, PostStop) =>
-      postStopCleanUp(ctx.log)
-    }
+          stopBehavior
+        case (ctx, Terminate) =>
+          terminate(ctx.log)
+        case (ctx, unsupported) =>
+          ctx.log.error(
+            s"Received an unsupported message: '$unsupported'. Shutting down."
+          )
+          stopBehavior
+      }
+      .receiveSignal { case (ctx, PostStop) =>
+        postStopCleanUp(ctx.log)
+      }
 
   override protected def cleanUp(): Unit = {
     /* Nothing to do here. At least until now. */

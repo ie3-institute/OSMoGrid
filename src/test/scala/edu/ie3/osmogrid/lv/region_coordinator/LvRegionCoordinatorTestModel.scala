@@ -11,12 +11,20 @@ import akka.actor.testkit.typed.scaladsl.{
   ScalaTestWithActorTestKit,
   TestProbe
 }
+import edu.ie3.datamodel.models.input.connector.`type`.{
+  LineTypeInput,
+  Transformer2WTypeInput
+}
 import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
 import edu.ie3.osmogrid.io.input.InputDataProvider
+import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.UnitSpec
+import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
+import org.scalatestplus.mockito.MockitoSugar.mock
 
+import java.util.UUID
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
@@ -27,6 +35,21 @@ object LvRegionCoordinatorTestModel
   private val actorTestKit = ActorTestKit("LvRegionCoordinatorIT")
 
   lazy val (lvConfig, osmoGridModel) = readOsmModel()
+  val assetInformation: AssetInformation = AssetInformation(
+    Seq(
+      new LineTypeInput(
+        UUID.randomUUID,
+        "Default generated line type",
+        0.0.asSiemensPerKilometre,
+        0.07.asSiemensPerKilometre,
+        0.32.asOhmPerKilometre,
+        0.07.asOhmPerKilometre,
+        235.0.asAmpere,
+        0.4.asKiloVolt
+      )
+    ),
+    Seq(mock[Transformer2WTypeInput])
+  )
 
   protected def readOsmModel()
       : (OsmoGridConfig.Generation.Lv, LvOsmoGridModel) = {

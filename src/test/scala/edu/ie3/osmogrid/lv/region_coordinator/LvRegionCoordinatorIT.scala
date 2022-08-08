@@ -13,12 +13,21 @@ import akka.actor.testkit.typed.scaladsl.{
   ScalaTestWithActorTestKit,
   TestProbe
 }
+import edu.ie3.datamodel.models.input.connector.`type`.{
+  LineTypeInput,
+  Transformer2WTypeInput
+}
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
+import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
 import edu.ie3.osmogrid.lv.MunicipalityCoordinator
 import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
 import edu.ie3.test.common.UnitSpec
+import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
 import org.locationtech.jts.geom.Polygon
 import org.scalatest.BeforeAndAfterAll
+import org.scalatestplus.mockito.MockitoSugar.mock
+
+import java.util.UUID
 
 class LvRegionCoordinatorIT
     extends ScalaTestWithActorTestKit
@@ -27,6 +36,7 @@ class LvRegionCoordinatorIT
 
   private val osmoGridModel = LvRegionCoordinatorTestModel.osmoGridModel
   private val lvConfig = LvRegionCoordinatorTestModel.lvConfig
+  private val assetInformation = LvRegionCoordinatorTestModel.assetInformation
 
   "Partitioning osm data" when {
     "having more iterations to go" should {
@@ -43,7 +53,8 @@ class LvRegionCoordinatorIT
             osmoGridModel = osmoGridModel,
             administrativeLevel = adminLevel,
             lvConfig = lvConfig,
-            replyTo = replyTo.ref
+            replyTo = replyTo.ref,
+            assetInformation = assetInformation
           )
         )
 
@@ -118,7 +129,8 @@ class LvRegionCoordinatorIT
             osmoGridModel = osmoGridModel,
             administrativeLevel = adminLevel,
             lvConfig = lvConfigCapped,
-            replyTo = replyTo.ref
+            replyTo = replyTo.ref,
+            assetInformation = assetInformation
           )
         )
 
