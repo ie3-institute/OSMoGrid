@@ -6,27 +6,13 @@
 
 package edu.ie3.osmogrid.guardian
 
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import akka.actor.typed.ActorRef
-import edu.ie3.datamodel.models.input.container.{
-  JointGridContainer,
-  SubGridContainer
-}
-import edu.ie3.datamodel.utils.ContainerUtils
-import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Output}
-import edu.ie3.osmogrid.guardian.run.Run
+import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.scaladsl.Behaviors
+import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.RunGuardian
-import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
-import edu.ie3.osmogrid.lv.LvCoordinator
-import edu.ie3.osmogrid.lv.LvCoordinator.ReqLvGrids
-import org.slf4j.Logger
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 
 import java.util.UUID
-import scala.jdk.CollectionConverters.*
-import scala.util.{Failure, Success, Try}
 
 object OsmoGridGuardian {
 
@@ -43,8 +29,7 @@ object OsmoGridGuardian {
     */
   final case class Run(
       cfg: OsmoGridConfig,
-      additionalListener: Seq[ActorRef[ResultListenerProtocol.Request]] =
-        Seq.empty,
+      additionalListener: Seq[ActorRef[ResultListenerProtocol]] = Seq.empty,
       runId: UUID = UUID.randomUUID()
   ) extends Request
 

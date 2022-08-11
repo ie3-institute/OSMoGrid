@@ -8,9 +8,9 @@ package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.ActorRef
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.io.input.InputDataProvider
+import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
-import edu.ie3.osmogrid.lv.LvCoordinator
+import edu.ie3.osmogrid.lv.coordinator
 
 import java.util.UUID
 
@@ -27,12 +27,12 @@ object Run extends Request
   *   Adapter for messages from [[LvCoordinator]]
   */
 private final case class MessageAdapters(
-    lvCoordinator: ActorRef[LvCoordinator.Response]
+    lvCoordinator: ActorRef[coordinator.Response]
 )
 
 private object MessageAdapters {
   final case class WrappedLvCoordinatorResponse(
-      response: LvCoordinator.Response
+      response: coordinator.Response
   ) extends Request
 
 }
@@ -51,16 +51,23 @@ sealed trait Response
 
 final case class Done(runId: UUID) extends Response
 
-private final case class ChildReferences(
-    inputDataProvider: ActorRef[InputDataProvider.Request],
-    lvCoordinator: Option[ActorRef[LvCoordinator.Request]]
-)
+final case class ChildReferences(
+    inputDataProvider: ActorRef[input.InputDataEvent],
+    resultListener: Option[ActorRef[ResultListenerProtocol]],
+    additionalResultListeners: Seq[ActorRef[ResultListenerProtocol]],
+    lvCoordinator: Option[ActorRef[coordinator.Request]]
+) {
+  def resultListeners: Seq[ActorRef[ResultListenerProtocol]] =
+    resultListener
+      .map(Seq(_))
+      .getOrElse(Seq.empty) ++ additionalResultListeners
+}
 
-private sealed trait StateData
+sealed trait StateData
 private final case class RunGuardianData(
     runId: UUID,
     cfg: OsmoGridConfig,
-    additionalListener: Seq[ActorRef[ResultListenerProtocol.Request]],
+    additionalListener: Seq[ActorRef[ResultListenerProtocol]],
     msgAdapters: MessageAdapters
 ) extends StateData
 
@@ -76,7 +83,7 @@ private final case class RunGuardianData(
   * @param lvCoordinatorTerminated
   *   Optional information, if the [[LvCoordinator]] has stopped
   */
-private final case class StoppingData(
+final case class StoppingData(
     runId: UUID,
     inputDataProviderTerminated: Boolean,
     resultListenerTerminated: Boolean,

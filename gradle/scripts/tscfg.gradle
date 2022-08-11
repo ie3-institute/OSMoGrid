@@ -5,7 +5,7 @@ task genConfigClass {
   doLast {
     def tscfgJarFile = project.file('build/tscfg-' + tscfgVersion + '.jar')
     if (!tscfgJarFile.exists() || !tscfgJarFile.isFile()) {
-      download {
+      download.run {
         src 'https://github.com/carueda/tscfg/releases/download/v' + tscfgVersion + '/tscfg-' + tscfgVersion + '.jar'
         dest buildDir
       }
@@ -37,7 +37,7 @@ task genConfigSample {
   doLast {
     def tscfgJarFile = project.file('build/tscfg-' + tscfgVersion + '.jar')
     if (!tscfgJarFile.exists() || !tscfgJarFile.isFile()) {
-      download {
+      download.run {
         src 'https://github.com/carueda/tscfg/releases/download/v' + tscfgVersion + '/tscfg-' + tscfgVersion + '.jar'
         dest buildDir
       }

@@ -16,10 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A `RunGuardian` takes care of a distinct simulation run and spawns all its needed services
   - Spawn an `InputDataProvider` and a `ResultListener`(if required) per run
   - Spawn `LvCoordinator` and trigger it
+- A `LvCoordinator` coordinates the generation of the low voltage grid level
+  - Acquires needed osm and asset input data
+  - Starts the process chain by spawning a `LvRegionCoordinator`
 - Coordinated shut down phase
   - Only terminate OSMoGrid internal result event listener and let additional listeners alive
   - Post stop phase for terminated children (to shut down data connections, ...)
   - Await response from terminated children
+- `SubGridHandling` takes care of merging the created sub grids and adapting the sub grid numbers to ensure uniqueness
 
 ### Changed
 - Rely on Java 17

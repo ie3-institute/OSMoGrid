@@ -6,14 +6,12 @@
 
 package edu.ie3.osmogrid.io.output
 
-import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.{ActorContext, StashBuffer}
 import edu.ie3.datamodel.models.input.container.JointGridContainer
-import edu.ie3.osmogrid.cfg.OsmoGridConfig
 
 import java.util.UUID
 
-private sealed trait ResultListenerProtocol
+sealed trait ResultListenerProtocol
 
 object ResultListenerProtocol {
 

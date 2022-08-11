@@ -6,10 +6,7 @@
 
 package edu.ie3.osmogrid.cfg
 
-import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.test.common.UnitSpec
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.util.{Failure, Success}
 
@@ -92,6 +89,68 @@ class ConfigFailFastSpec extends UnitSpec {
             fail(s"Config generation failed with an exception: '$exception'")
         }
       }
+
+      "fail on invalid lowest admin level" in {
+        OsmoGridConfigFactory.parseWithoutFallback {
+          """input.osm.pbf.file = "input_file_path"
+            |input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.hierarchic = false
+            |output.csv.directory = "output_file_path"
+            |generation.lv.boundaryAdminLevel.lowest = 99""".stripMargin
+        } match {
+          case Success(cfg) =>
+            ConfigFailFast.check(cfg) match {
+              case Failure(exception) =>
+                exception.getMessage shouldBe "The lowest admin level can not be parsed (provided: 99)."
+              case Success(_) =>
+                fail("Config check succeeded, but was meant to fail.")
+            }
+          case Failure(exception) =>
+            fail(s"Config generation failed with an exception: '$exception'")
+        }
+      }
+
+      "fail on invalid starting admin level" in {
+        OsmoGridConfigFactory.parseWithoutFallback {
+          """input.osm.pbf.file = "input_file_path"
+            |input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.hierarchic = false
+            |output.csv.directory = "output_file_path"
+            |generation.lv.boundaryAdminLevel.starting = -1""".stripMargin
+        } match {
+          case Success(cfg) =>
+            ConfigFailFast.check(cfg) match {
+              case Failure(exception) =>
+                exception.getMessage shouldBe "The starting admin level can not be parsed (provided: -1)."
+              case Success(_) =>
+                fail("Config check succeeded, but was meant to fail.")
+            }
+          case Failure(exception) =>
+            fail(s"Config generation failed with an exception: '$exception'")
+        }
+      }
+
+      "fail on starting level bigger than lowest level" in {
+        OsmoGridConfigFactory.parseWithoutFallback {
+          """input.osm.pbf.file = "input_file_path"
+            |input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.hierarchic = false
+            |output.csv.directory = "output_file_path"
+            |generation.lv.boundaryAdminLevel.starting = 5
+            |generation.lv.boundaryAdminLevel.lowest = 4""".stripMargin
+        } match {
+          case Success(cfg) =>
+            ConfigFailFast.check(cfg) match {
+              case Failure(exception) =>
+                exception.getMessage shouldBe "The starting admin level (provided: STATE_DISTRICT_LEVEL) " +
+                  "has to be higher than the lowest admin level (provided: FEDERAL_STATE_LEVEL)."
+              case Success(_) =>
+                fail("Config check succeeded, but was meant to fail.")
+            }
+          case Failure(exception) =>
+            fail(s"Config generation failed with an exception: '$exception'")
+        }
+      }
     }
 
     "having missing generation configs" should {
@@ -106,96 +165,6 @@ class ConfigFailFastSpec extends UnitSpec {
             ConfigFailFast.check(cfg) match {
               case Failure(exception) =>
                 exception.getMessage shouldBe "At least one voltage level generation config has to be defined."
-              case Success(_) =>
-                fail("Config check succeeded, but was meant to fail.")
-            }
-          case Failure(exception) =>
-            fail(s"Config generation failed with an exception: '$exception'")
-        }
-      }
-    }
-
-    "having a malicious generation config" should {
-      "fail on zero amount of lv grid workers" in {
-        OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
-            |input.asset.file.directory = "asset_input_dir"
-            |input.asset.file.hierarchic = false
-            |output.csv.directory = "output_file_path"
-            |generation.lv.amountOfGridGenerators = 0
-            |generation.lv.amountOfRegionCoordinators = 5
-            |generation.lv.distinctHouseConnections = false""".stripMargin
-        } match {
-          case Success(cfg) =>
-            ConfigFailFast.check(cfg) match {
-              case Failure(exception) =>
-                exception.getMessage shouldBe "The amount of lv grid generation actors needs to be at least 1 (provided: 0)."
-              case Success(_) =>
-                fail("Config check succeeded, but was meant to fail.")
-            }
-          case Failure(exception) =>
-            fail(s"Config generation failed with an exception: '$exception'")
-        }
-      }
-
-      "fail on negative amount of lv grid workers" in {
-        OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
-            |input.asset.file.directory = "asset_input_dir"
-            |input.asset.file.hierarchic = false
-            |output.csv.directory = "output_file_path"
-            |generation.lv.amountOfGridGenerators = -42
-            |generation.lv.amountOfRegionCoordinators = 5
-            |generation.lv.distinctHouseConnections = false""".stripMargin
-        } match {
-          case Success(cfg) =>
-            ConfigFailFast.check(cfg) match {
-              case Failure(exception) =>
-                exception.getMessage shouldBe "The amount of lv grid generation actors needs to be at least 1 (provided: -42)."
-              case Success(_) =>
-                fail("Config check succeeded, but was meant to fail.")
-            }
-          case Failure(exception) =>
-            fail(s"Config generation failed with an exception: '$exception'")
-        }
-      }
-
-      "fail on zero amount of lv region coordinators" in {
-        OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
-            |input.asset.file.directory = "asset_input_dir"
-            |input.asset.file.hierarchic = false
-            |output.csv.directory = "output_file_path"
-            |generation.lv.amountOfGridGenerators = 10
-            |generation.lv.amountOfRegionCoordinators = 0
-            |generation.lv.distinctHouseConnections = false""".stripMargin
-        } match {
-          case Success(cfg) =>
-            ConfigFailFast.check(cfg) match {
-              case Failure(exception) =>
-                exception.getMessage shouldBe "The amount of lv region coordination actors needs to be at least 1 (provided: 0)."
-              case Success(_) =>
-                fail("Config check succeeded, but was meant to fail.")
-            }
-          case Failure(exception) =>
-            fail(s"Config generation failed with an exception: '$exception'")
-        }
-      }
-
-      "fail on negative amount of lv region coordinators" in {
-        OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
-            |input.asset.file.directory = "asset_input_dir"
-            |input.asset.file.hierarchic = false
-            |output.csv.directory = "output_file_path"
-            |generation.lv.amountOfGridGenerators = 10
-            |generation.lv.amountOfRegionCoordinators = -42
-            |generation.lv.distinctHouseConnections = false""".stripMargin
-        } match {
-          case Success(cfg) =>
-            ConfigFailFast.check(cfg) match {
-              case Failure(exception) =>
-                exception.getMessage shouldBe "The amount of lv region coordination actors needs to be at least 1 (provided: -42)."
               case Success(_) =>
                 fail("Config check succeeded, but was meant to fail.")
             }

@@ -1,0 +1,22 @@
+@startuml
+'https://plantuml.com/state-diagram
+
+!theme plain
+hide empty description
+
+idle: Awaiting arbitrary requests
+awaitInputData: Await OSM and\nasset information
+awaitResults: Await results
+
+[*] --> idle
+idle --> awaitInputData: !ReqLvGrids
+idle --> [*]: !Terminate\n//unsupported msg//
+
+awaitInputData --> awaitInputData: !WrappedInputDataResponse\n//if data missing//
+awaitInputData --> awaitResults: !WrappedInputDataResponse\n//if data complete//
+awaitInputData --> [*]: !Terminate\n//unsupported msg//
+
+awaitResults --> awaitResults: !StartGeneration
+awaitResults --> [*]: !WrappedRegionResponse
+awaitResults --> [*]: !Terminate\n//unsupported msg//
+@enduml

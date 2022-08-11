@@ -6,37 +6,78 @@
 
 package edu.ie3.osmogrid.io.input
 
-import akka.actor.typed.Behavior
-import akka.actor.typed.ActorRef
-import akka.actor.typed.PostStop
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, Behavior, PostStop}
+import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian
+import edu.ie3.osmogrid.model.OsmoGridModel
 
-object InputDataProvider {
+import scala.util.{Failure, Success}
 
-  sealed trait Request
-  final case class Read()
-      extends Request // todo this read method should contain configuration parameters for the actual source + potential filter options
-  object Terminate extends Request
+object InputDataProvider extends ActorStopSupport[ProviderData] {
 
-  sealed trait Response
+  def apply(
+      osmConfig: OsmoGridConfig.Input
+  ): Behavior[InputDataEvent] = {
+    Behaviors.withStash[InputDataEvent](100) { buffer =>
+      Behaviors.setup[InputDataEvent] { ctx =>
+        idle(
+          ProviderData(ctx, buffer, OsmSource(osmConfig.osm, ctx))
+        )
+      }
+    }
+  }
 
-  def apply(cfg: OsmoGridConfig.Input): Behavior[Request] =
+  private def idle(providerData: ProviderData): Behavior[InputDataEvent] =
     Behaviors
-      .receive[Request] {
-        case (ctx, _: Read) =>
-          ctx.log.warn("Reading of data not yet implemented.")
-          Behaviors.same
-        case (ctx, Terminate) =>
-          ctx.log.info("Stopping input data provider")
-          Behaviors.stopped { () => cleanUp() }
+      .receive[InputDataEvent] { case (ctx, msg) =>
+        msg match {
+          case ReqOsm(replyTo, filter) =>
+            ctx.pipeToSelf(
+              providerData.osmSource.read(filter)
+            ) {
+              case Success(osmoGridModel: OsmoGridModel) =>
+                RepOsm(osmoGridModel)
+              case Failure(exception) =>
+                ctx.log.error(
+                  s"Error while reading osm data: $exception"
+                )
+                OsmReadFailed(exception)
+            }
+            readOsmData(providerData, replyTo)
+          case ReqAssetTypes(_) =>
+            ctx.log.info("Got request to provide asset types. But do nothing.")
+            Behaviors.same
+          case Terminate =>
+            terminate(ctx.log, providerData)
+          case invalid =>
+            ctx.log.error(
+              s"Received unexpected message '$invalid' in state Idle! Ignoring!"
+            )
+            Behaviors.same
+        }
       }
       .receiveSignal { case (ctx, PostStop) =>
-        ctx.log.info("Requested to stop.")
-        cleanUp()
-        Behaviors.same
+        postStopCleanUp(ctx.log, providerData)
       }
 
-  private def cleanUp(): Unit = ???
+  private def readOsmData(
+      providerData: ProviderData,
+      replyTo: ActorRef[Response]
+  ): Behaviors.Receive[InputDataEvent] =
+    Behaviors.receiveMessage {
+      case osmResponse: RepOsm =>
+        replyTo ! osmResponse
+        providerData.buffer.unstashAll(idle(providerData))
+      case readFailed: OsmReadFailed =>
+        replyTo ! readFailed
+        providerData.buffer.unstashAll(idle(providerData))
+      case other =>
+        providerData.buffer.stash(other)
+        Behaviors.same
+    }
+
+  override protected def cleanUp(providerData: ProviderData): Unit = {
+    providerData.osmSource.close()
+  }
 }

@@ -6,22 +6,16 @@
 
 package edu.ie3.osmogrid.io.output
 
-import akka.actor.typed.Behavior
-import akka.actor.typed.ActorRef
-import akka.actor.typed.PostStop
+import akka.actor.typed.{Behavior, PostStop}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer}
-import edu.ie3.datamodel.models.input.container.{
-  GridContainer,
-  JointGridContainer
-}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Output
 import edu.ie3.osmogrid.exception.IllegalConfigException
-import edu.ie3.osmogrid.io.output.ResultListenerProtocol.*
-import edu.ie3.osmogrid.io.output.ResultListenerProtocol.PersistenceListenerEvent.*
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol.PersistenceListenerEvent._
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol._
 
-import concurrent.ExecutionContext.Implicits.global
 import java.util.UUID
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 

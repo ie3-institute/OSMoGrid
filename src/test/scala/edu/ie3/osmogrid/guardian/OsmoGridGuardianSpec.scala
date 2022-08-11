@@ -7,7 +7,7 @@
 package edu.ie3.osmogrid.guardian
 
 import akka.actor.testkit.typed.CapturedLogEvent
-import akka.actor.testkit.typed.Effect.{MessageAdapter, Spawned}
+import akka.actor.testkit.typed.Effect.Spawned
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
 import akka.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
@@ -15,7 +15,6 @@ import edu.ie3.osmogrid.guardian.OsmoGridGuardian.{
   GuardianData,
   RunGuardianDied
 }
-import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.guardian.run.Request
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.test.common.UnitSpec
@@ -29,7 +28,7 @@ class OsmoGridGuardianSpec extends UnitSpec {
       val guardianData = OsmoGridGuardian.GuardianData(Seq.empty[UUID])
       val config = OsmoGridConfigFactory.defaultTestConfig
       val additionalListeners =
-        Seq.empty[ActorRef[ResultListenerProtocol.Request]]
+        Seq.empty[ActorRef[ResultListenerProtocol]]
       val runId = UUID.randomUUID()
 
       val idleTestKit = BehaviorTestKit(OsmoGridGuardian.idle(guardianData))

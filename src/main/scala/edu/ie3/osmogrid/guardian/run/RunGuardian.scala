@@ -6,15 +6,12 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.guardian.run.MessageAdapters
 import edu.ie3.osmogrid.guardian.run.MessageAdapters.WrappedLvCoordinatorResponse
-import edu.ie3.osmogrid.guardian.run.{RunSupport, StopSupport, SubGridHandling}
-import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
-import edu.ie3.osmogrid.lv.LvCoordinator
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol
+import edu.ie3.osmogrid.lv.coordinator
 
 import java.util.UUID
 import scala.util.{Failure, Success}
@@ -34,8 +31,7 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
     */
   def apply(
       cfg: OsmoGridConfig,
-      additionalListener: Seq[ActorRef[ResultListenerProtocol.Request]] =
-        Seq.empty,
+      additionalListener: Seq[ActorRef[ResultListenerProtocol]] = Seq.empty,
       runId: UUID
   ): Behavior[Request] = Behaviors.setup { ctx =>
     idle(
@@ -100,21 +96,17 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
     case (
           ctx,
           WrappedLvCoordinatorResponse(
-            LvCoordinator.RepLvGrids(subGridContainers)
+            coordinator.RepLvGrids(subGridContainers)
           )
         ) =>
       /* Handle the grid results and wait for the listener to report back */
-      val resultingGrid = handleLvResults(
+      handleLvResults(
         subGridContainers,
-        runGuardianData.cfg.generation
+        runGuardianData.cfg.generation,
+        childReferences.resultListeners,
+        runGuardianData.msgAdapters
       )(ctx.log)
 
-      // spin up listeners, watch them and wait until they terminate in this state
-      spawnResultListener(
-        runGuardianData.runId,
-        runGuardianData.cfg.output,
-        ctx
-      ).foreach(_ ! ResultListenerProtocol.GridResult(resultingGrid))
       Behaviors.same
 
     case (ctx, ResultEventListenerDied) =>
