@@ -16,16 +16,15 @@ import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.lv.{LvGridGenerator, MunicipalityCoordinator}
 import edu.ie3.test.common.UnitSpec
 import org.scalatest.BeforeAndAfterAll
-import org.scalatestplus.mockito.MockitoSugar.mock
 
 class LvRegionCoordinatorIT
     extends ScalaTestWithActorTestKit
     with UnitSpec
     with BeforeAndAfterAll {
 
-  private val osmoGridModel = LvRegionCoordinatorTestModel.osmoGridModel
-  private val lvConfig = LvRegionCoordinatorTestModel.lvConfig
-  private val assetInformation = LvRegionCoordinatorTestModel.assetInformation
+  private val osmoGridModel = LvTestModel.osmoGridModel
+  private val lvConfig = LvTestModel.lvConfig
+  private val assetInformation = LvTestModel.assetInformation
 
   "Partitioning osm data" when {
     "having more iterations to go" should {

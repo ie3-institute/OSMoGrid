@@ -28,9 +28,7 @@ import java.util.UUID
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
-object LvRegionCoordinatorTestModel
-    extends ScalaTestWithActorTestKit
-    with UnitSpec {
+object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
 
   private val actorTestKit = ActorTestKit("LvRegionCoordinatorIT")
 

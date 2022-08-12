@@ -37,7 +37,7 @@ import edu.ie3.osmogrid.lv.coordinator.MessageAdapters.{
 import edu.ie3.osmogrid.lv.{LvGridGenerator, coordinator}
 import edu.ie3.osmogrid.lv.coordinator.LvCoordinator.ResultData
 import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
-import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinatorTestModel.assetInformation
+import edu.ie3.osmogrid.lv.region_coordinator.LvTestModel.assetInformation
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.UnitSpec
@@ -224,7 +224,6 @@ class LvCoordinatorSpec
         )
       )
       "spawn a child actor only if all data has arrived" in {
-        val runId = UUID.randomUUID()
         val awaitingTestKit = BehaviorTestKit[Request](
           LvCoordinator invokePrivate PrivateMethod[Behavior[
             coordinator.Request
@@ -325,26 +324,6 @@ class LvCoordinatorSpec
         val mockedLvRegionCoordinator = asynchronousTestKit.spawn(
           Behaviors.monitor(regionCoordinatorProbe.ref, mockedBehavior)
         )
-//
-//        /* Mocking the lv grid generator */
-//        val generatedGrid = RepLvGrid(gridUuid, mockedSubgrid)
-//        val mockedGridGeneratorBehavior: Behavior[LvGridGenerator.Request] =
-//          Behaviors.receive[LvGridGenerator.Request] { case (ctx, msg) =>
-//            msg match {
-//              case GenerateGrid(replyTo, gridUuid, osmData, assetInformation, config) =>
-//                ctx.log.info(
-//                  s"Received the following message: '$msg'. Send out reply."
-//                )
-//                replyTo ! generatedGrid
-//                Behaviors.same
-//            }
-//          }
-//
-//        val gridGeneratorProbe =
-//          asynchronousTestKit.createTestProbe[LvGridGenerator.Request]()
-//        val mockedLvGridGenerator = asynchronousTestKit.spawn(
-//          Behaviors.monitor(gridGeneratorProbe.ref, mockedGridGeneratorBehavior)
-//        )
 
         val lvOsmoGridModel = LvOsmoGridModel(
           ParSeq.empty,
