@@ -8,26 +8,15 @@ package edu.ie3.osmogrid.lv.region_coordinator
 
 import akka.actor.testkit.typed.Effect.SpawnedAnonymous
 import akka.actor.testkit.typed.scaladsl.{
-  ActorTestKit,
   BehaviorTestKit,
   ScalaTestWithActorTestKit,
   TestProbe
 }
-import edu.ie3.datamodel.models.input.connector.`type`.{
-  LineTypeInput,
-  Transformer2WTypeInput
-}
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
-import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
-import edu.ie3.osmogrid.lv.MunicipalityCoordinator
-import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
+import edu.ie3.osmogrid.lv.{LvGridGenerator, MunicipalityCoordinator}
 import edu.ie3.test.common.UnitSpec
-import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
-import org.locationtech.jts.geom.Polygon
 import org.scalatest.BeforeAndAfterAll
 import org.scalatestplus.mockito.MockitoSugar.mock
-
-import java.util.UUID
 
 class LvRegionCoordinatorIT
     extends ScalaTestWithActorTestKit
@@ -42,7 +31,8 @@ class LvRegionCoordinatorIT
     "having more iterations to go" should {
       "start another partition task" in {
         val adminLevel = BoundaryAdminLevel.COUNTY_LEVEL
-        val replyTo = TestProbe[LvRegionCoordinator.Response]()
+        val regionCoordinatorReply = TestProbe[LvRegionCoordinator.Response]()
+        val gridGeneratorReply = TestProbe[LvGridGenerator.Response]
 
         val testKit = BehaviorTestKit(
           LvRegionCoordinator()
@@ -53,7 +43,8 @@ class LvRegionCoordinatorIT
             osmoGridModel = osmoGridModel,
             administrativeLevel = adminLevel,
             lvConfig = lvConfig,
-            replyTo = replyTo.ref,
+            lvCoordinatorGridGeneratorAdapter = gridGeneratorReply.ref,
+            lvCoordinatorRegionCoordinatorAdapter = regionCoordinatorReply.ref,
             assetInformation = assetInformation
           )
         )
@@ -75,7 +66,9 @@ class LvRegionCoordinatorIT
           _.administrativeLevel shouldBe BoundaryAdminLevel.AMT_LEVEL
         )
         messages.foreach(_.lvConfig shouldBe lvConfig)
-        messages.foreach(_.replyTo shouldBe replyTo.ref)
+        messages.foreach(
+          _.lvCoordinatorRegionCoordinatorAdapter shouldBe regionCoordinatorReply.ref
+        )
 
         // Recklinghausen
         models.exists { m =>
@@ -113,7 +106,10 @@ class LvRegionCoordinatorIT
     "having reached the last administrative level" should {
       "start MunicipalityCoordinators with the results" in {
         val adminLevel = BoundaryAdminLevel.COUNTY_LEVEL
-        val replyTo = TestProbe[LvRegionCoordinator.Response]()
+        val lvCoordinatorRegionCoordinatorAdapter =
+          TestProbe[LvRegionCoordinator.Response]()
+        val lvCoordinatorGridGeneratorAdapter =
+          TestProbe[LvGridGenerator.Response]()
 
         val testKit = BehaviorTestKit(
           LvRegionCoordinator()
@@ -129,7 +125,10 @@ class LvRegionCoordinatorIT
             osmoGridModel = osmoGridModel,
             administrativeLevel = adminLevel,
             lvConfig = lvConfigCapped,
-            replyTo = replyTo.ref,
+            lvCoordinatorGridGeneratorAdapter =
+              lvCoordinatorGridGeneratorAdapter.ref,
+            lvCoordinatorRegionCoordinatorAdapter =
+              lvCoordinatorRegionCoordinatorAdapter.ref,
             assetInformation = assetInformation
           )
         )

@@ -24,18 +24,25 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.RequestFailedException
 import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
 import edu.ie3.osmogrid.io.input.{BoundaryAdminLevel, InputDataProvider}
-import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator.Partition
+import edu.ie3.osmogrid.lv.LvGridGenerator.{GenerateGrid, RepLvGrid}
+import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator.{
+  GridToExpect,
+  Partition
+}
 import edu.ie3.osmogrid.lv.coordinator.MessageAdapters.{
+  WrappedGridGeneratorResponse,
   WrappedInputDataResponse,
   WrappedRegionResponse
 }
-import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.lv.{LvGridGenerator, coordinator}
+import edu.ie3.osmogrid.lv.coordinator.LvCoordinator.ResultData
 import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
 import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinatorTestModel.assetInformation
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.UnitSpec
 import org.scalatest.BeforeAndAfterAll
+import org.scalatestplus.mockito.MockitoSugar.mock
 import org.slf4j.event.Level
 
 import java.util.UUID
@@ -67,9 +74,14 @@ class LvCoordinatorSpec
       asynchronousTestKit.createTestProbe[LvRegionCoordinator.Response](
         "InputDataProviderAdapter"
       )
+    val gridGeneratorAdapter =
+      asynchronousTestKit.createTestProbe[LvGridGenerator.Response](
+        "GridGeneratorAdapter"
+      )
     val msgAdapters = MessageAdapters(
       inputDataProviderAdapter.ref,
-      regionCoordinatorAdapter.ref
+      regionCoordinatorAdapter.ref,
+      gridGeneratorAdapter.ref
     )
 
     "being initialized" should {
@@ -265,7 +277,11 @@ class LvCoordinatorSpec
         val awaitingTestKit = BehaviorTestKit(
           LvCoordinator invokePrivate PrivateMethod[Behavior[
             coordinator.Request
-          ]](Symbol("awaitResults"))(lvCoordinatorAdapter.ref, msgAdapters)
+          ]](Symbol("awaitResults"))(
+            lvCoordinatorAdapter.ref,
+            msgAdapters,
+            ResultData.empty
+          )
         )
 
         awaitingTestKit.run(coordinator.Terminate)
@@ -281,27 +297,55 @@ class LvCoordinatorSpec
         val awaitingTestKit = BehaviorTestKit[Request](
           LvCoordinator invokePrivate PrivateMethod[Behavior[
             coordinator.Request
-          ]](Symbol("awaitResults"))(lvCoordinatorAdapter.ref, msgAdapters)
+          ]](Symbol("awaitResults"))(
+            lvCoordinatorAdapter.ref,
+            msgAdapters,
+            ResultData.empty
+          )
         )
         /* Mocking the lv region generator */
-        val resultMsg =
-          LvRegionCoordinator.RepLvGrids(Seq.empty[SubGridContainer])
+        val gridUuid = UUID.randomUUID()
+        val mockedSubgrid = mock[SubGridContainer]
+        val gridToExpect =
+          LvRegionCoordinator.GridToExpect(gridUuid)
         val mockedBehavior: Behavior[LvRegionCoordinator.Request] =
           Behaviors.receive[LvRegionCoordinator.Request] { case (ctx, msg) =>
             msg match {
-              case Partition(_, _, _, _, replyTo) =>
+              case Partition(_, _, _, _, replyTo, _) =>
                 ctx.log.info(
                   s"Received the following message: '$msg'. Send out reply."
                 )
-                replyTo ! resultMsg
+                replyTo ! gridToExpect
             }
             Behaviors.same
           }
-        val probe =
+
+        val regionCoordinatorProbe =
           asynchronousTestKit.createTestProbe[LvRegionCoordinator.Request]()
         val mockedLvRegionCoordinator = asynchronousTestKit.spawn(
-          Behaviors.monitor(probe.ref, mockedBehavior)
+          Behaviors.monitor(regionCoordinatorProbe.ref, mockedBehavior)
         )
+//
+//        /* Mocking the lv grid generator */
+//        val generatedGrid = RepLvGrid(gridUuid, mockedSubgrid)
+//        val mockedGridGeneratorBehavior: Behavior[LvGridGenerator.Request] =
+//          Behaviors.receive[LvGridGenerator.Request] { case (ctx, msg) =>
+//            msg match {
+//              case GenerateGrid(replyTo, gridUuid, osmData, assetInformation, config) =>
+//                ctx.log.info(
+//                  s"Received the following message: '$msg'. Send out reply."
+//                )
+//                replyTo ! generatedGrid
+//                Behaviors.same
+//            }
+//          }
+//
+//        val gridGeneratorProbe =
+//          asynchronousTestKit.createTestProbe[LvGridGenerator.Request]()
+//        val mockedLvGridGenerator = asynchronousTestKit.spawn(
+//          Behaviors.monitor(gridGeneratorProbe.ref, mockedGridGeneratorBehavior)
+//        )
+
         val lvOsmoGridModel = LvOsmoGridModel(
           ParSeq.empty,
           ParSeq.empty,
@@ -320,12 +364,14 @@ class LvCoordinatorSpec
             assetInformation
           )
         )
-        probe.expectMessageType[LvRegionCoordinator.Partition] match {
+        regionCoordinatorProbe
+          .expectMessageType[LvRegionCoordinator.Partition] match {
           case Partition(
                 osmoGridModel,
                 assetInformation,
                 administrativeLevel,
                 config,
+                _,
                 _
               ) =>
             osmoGridModel shouldBe lvOsmoGridModel
@@ -335,16 +381,22 @@ class LvCoordinatorSpec
 
         /* The mocked behavior directly sends a reply -> Check that out */
         val regionResponse = regionCoordinatorAdapter
-          .expectMessageType[LvRegionCoordinator.RepLvGrids]
-        regionResponse shouldBe resultMsg
+          .expectMessageType[LvRegionCoordinator.GridToExpect]
+        regionResponse shouldBe gridToExpect
         awaitingTestKit.run(
           WrappedRegionResponse(regionResponse)
         ) // Forward from probe to actor
 
-        /* The result is forwarded */
+        /* The LvCoordinator now waits for the expected grid to be generated */
+        val repLvGrid = RepLvGrid(gridUuid, mockedSubgrid)
+        awaitingTestKit.run(
+          WrappedGridGeneratorResponse(repLvGrid)
+        )
+
+        /* The result is forwarded once we received all the grids we expect*/
         lvCoordinatorAdapter.expectMessageType[RepLvGrids] match {
           case RepLvGrids(grids) =>
-            grids should contain theSameElementsAs resultMsg.subGrids
+            grids should contain theSameElementsAs Seq(mockedSubgrid)
         }
 
         awaitingTestKit.isAlive shouldBe false

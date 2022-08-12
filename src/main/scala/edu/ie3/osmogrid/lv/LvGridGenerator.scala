@@ -6,10 +6,12 @@
 
 package edu.ie3.osmogrid.lv
 
+import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.buildGridGraph
 import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.buildGrid
@@ -18,10 +20,14 @@ import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 
+import java.util.UUID
+
 object LvGridGenerator extends LazyLogging {
   sealed trait Request
 
   final case class GenerateGrid(
+      replyTo: ActorRef[LvGridGenerator.Response],
+      gridUuid: UUID,
       osmData: LvOsmoGridModel,
       assetInformation: AssetInformation,
       config: OsmoGridConfig.Generation.Lv
@@ -30,6 +36,7 @@ object LvGridGenerator extends LazyLogging {
   sealed trait Response
 
   final case class RepLvGrid(
+      gridUuid: UUID,
       grid: SubGridContainer
   ) extends Response
 
@@ -39,11 +46,14 @@ object LvGridGenerator extends LazyLogging {
     case (
           ctx,
           GenerateGrid(
+            replyTo,
+            gridUuid,
             osmData,
             assetInformation,
             config
           )
         ) =>
+      ctx.log.info(s"Received request to generate grid: $gridUuid")
       val powerDensity = config.averagePowerDensity.asKiloWattPerSquareMetre
       val minDistance = Quantities.getQuantity(config.minDistance, Units.METRE)
       val (graph, buildingGraphConnections) =
@@ -53,7 +63,15 @@ object LvGridGenerator extends LazyLogging {
           minDistance,
           config.considerHouseConnectionPoints
         )
-      val lineType = ???
+      val lineType = assetInformation.lineTypes.headOption.getOrElse(
+        throw IllegalStateException(
+          "There are no line types within received asset types. Can not build the grid!"
+        )
+      )
+
+      ctx.log.info(
+        s"Finished building of grid graph. Starting to build electrical grid for grid: $gridUuid"
+      )
       val lvSubGrid = buildGrid(
         graph,
         buildingGraphConnections,
@@ -62,7 +80,12 @@ object LvGridGenerator extends LazyLogging {
         lineType,
         config.gridName
       )
-      ???
+
+      ctx.log.info(
+        s"Finished grid generation and sending results for grid: $gridUuid"
+      )
+      replyTo ! RepLvGrid(gridUuid, lvSubGrid)
+      Behaviors.stopped
     case (ctx, unsupported) =>
       ctx.log.warn(s"Received unsupported message '$unsupported'.")
       Behaviors.stopped

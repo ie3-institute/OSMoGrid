@@ -8,13 +8,12 @@ package edu.ie3.osmogrid.lv.region_coordinator
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
-import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel.BoundaryAdminLevelValue
 import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
+import edu.ie3.osmogrid.lv.LvGridGenerator
 import edu.ie3.osmogrid.lv.LvGridGenerator.GenerateGrid
-import edu.ie3.osmogrid.lv.{LvGridGenerator, MunicipalityCoordinator}
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 
 import java.util.UUID
@@ -33,7 +32,7 @@ object LvRegionCoordinator {
     *   The administrative boundary level at which to partition
     * @param lvConfig
     *   The configuration for lv grid generation
-    * @param replyTo
+    * @param lvCoordinatorGridGeneratorAdapter
     *   The actor which receives the generated grid data
     */
   final case class Partition(
@@ -41,14 +40,15 @@ object LvRegionCoordinator {
       assetInformation: AssetInformation,
       administrativeLevel: BoundaryAdminLevelValue,
       lvConfig: OsmoGridConfig.Generation.Lv,
-      replyTo: ActorRef[Response]
+      lvCoordinatorRegionCoordinatorAdapter: ActorRef[
+        LvRegionCoordinator.Response
+      ],
+      lvCoordinatorGridGeneratorAdapter: ActorRef[LvGridGenerator.Response]
   ) extends Request
 
   sealed trait Response
 
-  case object Done extends Response
-
-  final case class RepLvGrids(subGrids: Seq[SubGridContainer]) extends Response
+  final case class GridToExpect(gridUuid: UUID) extends Response
 
   def apply(): Behaviors.Receive[Request] = idle()
 
@@ -60,7 +60,8 @@ object LvRegionCoordinator {
               assetInformation,
               administrativeLevel,
               cfg,
-              replyTo
+              lvCoordinatorRegionCoordinatorAdapter,
+              lvCoordinatorGridGeneratorAdapter
             ) =>
           val areas =
             BoundaryFactory.buildBoundaryPolygons(
@@ -98,12 +99,16 @@ object LvRegionCoordinator {
                   assetInformation,
                   nextLevel,
                   cfg,
-                  replyTo
+                  lvCoordinatorRegionCoordinatorAdapter,
+                  lvCoordinatorGridGeneratorAdapter
                 )
               case None =>
-                val gridId = UUID.randomUUID()
                 val gridGenerator = ctx.spawnAnonymous(LvGridGenerator())
+                val gridUuid = UUID.randomUUID()
+                lvCoordinatorRegionCoordinatorAdapter ! GridToExpect(gridUuid)
                 gridGenerator ! GenerateGrid(
+                  lvCoordinatorGridGeneratorAdapter,
+                  gridUuid,
                   osmoGridModel,
                   assetInformation,
                   cfg

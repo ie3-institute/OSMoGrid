@@ -12,6 +12,7 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.RequestFailedException
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
+import edu.ie3.osmogrid.lv.LvGridGenerator
 import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import org.slf4j.Logger
@@ -42,12 +43,13 @@ object Terminate extends Request
   *
   * @param inputDataProvider
   *   Message adapter for responses from [[InputDataProvider]]
-  * @param regionCoordinator
+  * @param lvRegionCoordinator
   *   Message adapter for responses from [[LvRegionCoordinator]]
   */
 private final case class MessageAdapters(
     inputDataProvider: ActorRef[InputDataProvider.Response],
-    regionCoordinator: ActorRef[LvRegionCoordinator.Response]
+    lvRegionCoordinator: ActorRef[LvRegionCoordinator.Response],
+    lvGridGenerator: ActorRef[LvGridGenerator.Response]
 )
 
 private object MessageAdapters {
@@ -57,6 +59,10 @@ private object MessageAdapters {
 
   final case class WrappedRegionResponse(
       response: LvRegionCoordinator.Response
+  ) extends Request
+
+  final case class WrappedGridGeneratorResponse(
+      response: LvGridGenerator.Response
   ) extends Request
 }
 

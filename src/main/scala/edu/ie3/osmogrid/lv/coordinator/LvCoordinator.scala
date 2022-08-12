@@ -8,11 +8,18 @@ package edu.ie3.osmogrid.lv.coordinator
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
+import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.input.InputDataProvider.{ReqAssetTypes, ReqOsm}
+import edu.ie3.osmogrid.lv.LvGridGenerator
+import edu.ie3.osmogrid.lv.coordinator.MessageAdapters.{
+  WrappedGridGeneratorResponse,
+  WrappedRegionResponse
+}
 import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 
@@ -22,6 +29,39 @@ import scala.util.{Failure, Success}
 /** Actor to take care of the overall generation process for low voltage grids
   */
 object LvCoordinator extends ActorStopSupportStateless {
+
+  final case class ResultData(
+      expectedGrids: Set[UUID],
+      subGridContainers: Seq[SubGridContainer]
+  ) {
+
+    def update(expectedGrid: UUID): ResultData = {
+      ResultData(expectedGrids + expectedGrid, subGridContainers)
+    }
+
+    def update(
+        expectedGrid: UUID,
+        subGridContainer: SubGridContainer
+    ): ResultData = {
+      if (expectedGrids.contains(expectedGrid)) {
+        return ResultData(
+          expectedGrids - expectedGrid,
+          subGridContainers :+ subGridContainer
+        )
+      }
+      throw IllegalStateException(
+        s"Trying to update with subgrid container that was not expected. UUID: $expectedGrid"
+      )
+    }
+
+  }
+
+  object ResultData {
+    def empty: ResultData = {
+      ResultData(Set.empty[UUID], Seq.empty[SubGridContainer])
+    }
+
+  }
 
   /** Build a [[LvCoordinator]] with given additional information
     *
@@ -47,6 +87,9 @@ object LvCoordinator extends ActorStopSupportStateless {
         ),
         context.messageAdapter(msg =>
           MessageAdapters.WrappedRegionResponse(msg)
+        ),
+        context.messageAdapter(msg =>
+          MessageAdapters.WrappedGridGeneratorResponse(msg)
         )
       )
 
@@ -185,7 +228,11 @@ object LvCoordinator extends ActorStopSupportStateless {
       )
 
       /* Wait for results to come up */
-      awaitResults(awaitingData.guardian, awaitingData.msgAdapters)
+      awaitResults(
+        awaitingData.guardian,
+        awaitingData.msgAdapters,
+        ResultData.empty
+      )
     } else awaitInputData(awaitingData) // Wait for missing data
   }
 
@@ -200,7 +247,8 @@ object LvCoordinator extends ActorStopSupportStateless {
     */
   private def awaitResults(
       guardian: ActorRef[Response],
-      msgAdapters: MessageAdapters
+      msgAdapters: MessageAdapters,
+      resultData: ResultData
   ): Behavior[Request] =
     Behaviors
       .receive[Request] {
@@ -221,7 +269,8 @@ object LvCoordinator extends ActorStopSupportStateless {
                 assetInformation,
                 startingLevel,
                 cfg,
-                msgAdapters.regionCoordinator
+                msgAdapters.lvRegionCoordinator,
+                msgAdapters.lvGridGenerator
               )
               Behaviors.same
             case None =>
@@ -230,21 +279,42 @@ object LvCoordinator extends ActorStopSupportStateless {
               )
               stopBehavior
           }
-
-        case (
-              ctx,
-              MessageAdapters.WrappedRegionResponse(
-                LvRegionCoordinator.RepLvGrids(subGrids)
+        case (ctx, WrappedRegionResponse(response)) =>
+          response match {
+            case LvRegionCoordinator.GridToExpect(gridUuid) =>
+              ctx.log.info(
+                s"Expecting grid with UUID: $gridUuid to be generated."
               )
-            ) =>
-          ctx.log.info(
-            s"Low voltage grid generation succeeded."
-          )
 
-          /* Report back the collected grids */
-          guardian ! RepLvGrids(subGrids)
+              awaitResults(
+                guardian,
+                msgAdapters,
+                resultData.update(gridUuid)
+              )
+          }
+        case (ctx, WrappedGridGeneratorResponse(response)) =>
+          response match {
+            case LvGridGenerator.RepLvGrid(gridUuid, subGridContainer) =>
+              ctx.log.info(
+                s"Received expected grid: $gridUuid"
+              )
+              val updatedResultData =
+                resultData.update(gridUuid, subGridContainer)
 
-          stopBehavior
+              if (updatedResultData.expectedGrids.isEmpty) {
+                ctx.log.info(
+                  s"Received all expected grids! Will report back SubGridContainers"
+                )
+
+                /* Report back the collected grids */
+                guardian ! RepLvGrids(updatedResultData.subGridContainers)
+
+                stopBehavior
+              } else {
+                awaitResults(guardian, msgAdapters, updatedResultData)
+              }
+          }
+
         case (ctx, Terminate) =>
           terminate(ctx.log)
         case (ctx, unsupported) =>
