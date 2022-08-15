@@ -77,9 +77,6 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         /* Two message adapters are registered */
         idleTestKit
           .expectEffectType[MessageAdapter[coordinator.Response, Request]]
-        idleTestKit.expectEffectType[
-          MessageAdapter[ResultListenerProtocol.Request, Request]
-        ]
 
         /* Check if I/O actors and LvCoordinator are spawned and watched correctly */
         idleTestKit.expectEffectPF {
@@ -101,10 +98,9 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
             name shouldBe s"PersistenceResultListener_$runId"
         }
         idleTestKit
-          .expectEffectType[WatchedWith[ResultListenerProtocol.Request, Watch]]
-        idleTestKit.expectEffectPF {
-          case Spawned(_: Behavior[_], name, _) =>
-            name shouldBe s"LvCoordinator_$runId"
+          .expectEffectType[WatchedWith[ResultListenerProtocol, Watch]]
+        idleTestKit.expectEffectPF { case Spawned(_: Behavior[_], name, _) =>
+          name shouldBe s"LvCoordinator_$runId"
         }
         idleTestKit.expectEffectType[WatchedWith[coordinator.Request, Watch]]
 
