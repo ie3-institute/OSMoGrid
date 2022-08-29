@@ -11,9 +11,12 @@ import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
 import edu.ie3.util.osm.model.{OsmContainer, OsmEntity}
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
 import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
+
 import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
 import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
+
 import scala.collection.parallel.ParSeq
+import scala.reflect.ClassTag
 
 sealed trait OsmoGridModel {
   protected val filter: SourceFilter
@@ -35,7 +38,7 @@ object OsmoGridModel {
     filterForOsmType[ClosedWay, Node](entities)
   }
 
-  def filterForOsmType[E <: OsmEntity, S <: OsmEntity](
+  def filterForOsmType[E <: OsmEntity:ClassTag, S <: OsmEntity:ClassTag](
       entities: ParSeq[EnhancedOsmEntity]
   ): (ParSeq[E], Map[Long, S]) = {
     val (matchedEntities, matchedSubentities) = entities.foldLeft(
@@ -55,6 +58,7 @@ object OsmoGridModel {
               matchedEntities.appended(entity),
               matchedSubEntities ++ subEntities
             )
+          case _ => (matchedEntities, matchedSubEntities)
         }
     }
     (matchedEntities.par, matchedSubentities)

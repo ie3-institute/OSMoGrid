@@ -315,7 +315,8 @@ object LvGridGeneratorSupport extends LazyLogging {
                 buildLine(
                   currentNodeInput,
                   nextNodeInput,
-                  passedStreetNodes,
+                  // for building the line we want to consider the whole street section we went along
+                  currentNode +: passedStreetNodes :+ nextNode,
                   lineTypeInput
                 )
               val (visitedNodes, builtLines) = traverseGraph(
@@ -352,7 +353,7 @@ object LvGridGeneratorSupport extends LazyLogging {
     *   node at which the line starts
     * @param secondNode
     *   node at which the line ends
-    * @param passedStreetNodes
+    * @param streetNodes
     *   osm street nodes the line follows along
     * @param lineType
     *   type of the line to build
