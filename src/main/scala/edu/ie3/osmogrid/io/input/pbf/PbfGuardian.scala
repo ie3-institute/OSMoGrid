@@ -163,7 +163,7 @@ private[input] object PbfGuardian extends ActorStopSupport[StateData] {
       ) {
         ctx.log.debug(
           s"Finished reading ${stateData.noOfResponses} blobs ($currentProgress% of all blobs). Duration: ${(System
-            .currentTimeMillis() - stateData.startTime) / 1000}s"
+              .currentTimeMillis() - stateData.startTime) / 1000}s"
         )
       }
     }
