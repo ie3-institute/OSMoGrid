@@ -13,14 +13,11 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Osm
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input.InputDataProvider.InputDataEvent
 import edu.ie3.osmogrid.io.input.pbf.PbfGuardian
-import edu.ie3.osmogrid.io.input.pbf.PbfGuardian.Request
 import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 
-import java.io.{File, FileInputStream}
+import java.io.File
 import java.util.UUID
-import scala.concurrent.impl.Promise
 import scala.concurrent.{ExecutionContextExecutor, Future}
-import scala.util.{Try, Using}
 
 sealed trait OsmSource {
 
@@ -50,6 +47,7 @@ object OsmSource {
 
       import akka.actor.typed.scaladsl.AskPattern._
       import akka.util.Timeout
+
       import concurrent.duration.DurationInt
 
       // 3 hours should be more than sufficient - even for very large files on small computers

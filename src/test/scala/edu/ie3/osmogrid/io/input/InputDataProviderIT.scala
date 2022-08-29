@@ -10,7 +10,7 @@ import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import com.typesafe.config.ConfigFactory
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.$TsCfgValidator
-import edu.ie3.osmogrid.exception.PbfReadFailedException
+import edu.ie3.osmogrid.exception.{InputDataException, PbfReadFailedException}
 import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
@@ -105,10 +105,42 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
           case unexpected => fail(s"Unexpected message: $unexpected")
         }
       }
+      "return with failure for missing asset data" in {
+        val resourceName = "/empty_lv_assets"
+        val config: OsmoGridConfig.Input =
+          createConfig("/Witten_Stockum.pbf", resourceName)
+        val assetDir = getResourcePath(resourceName)
+
+        val requestProbe = testKit.createTestProbe[InputDataProvider.Response]()
+        val testActor = testKit.spawn(
+          InputDataProvider(config)
+        )
+
+        testActor ! InputDataProvider.ReqAssetTypes(
+          requestProbe.ref
+        )
+        requestProbe
+          .expectMessageType[InputDataProvider.Response](
+            3 seconds
+          ) match {
+          case InputDataProvider.AssetReadFailed(exception) =>
+            exception shouldBe InputDataException(
+              s"There are no or corrupt transformer types at: $assetDir"
+            )
+          case InputDataProvider.RepAssetTypes(
+                assetInformation: AssetInformation
+              ) =>
+            fail(
+              s"Provided asset information $assetInformation although it shouldn't"
+            )
+
+          case unexpected => fail(s"Unexpected message: $unexpected")
+        }
+      }
     }
 
     "having corrupt input data" should {
-      "return with failure" in {
+      "return with failure for courrupt osm data" in {
         val config: OsmoGridConfig.Input =
           createConfig("/Corrupted_Osm.pbf", "/lv_assets")
 
@@ -132,6 +164,39 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
             fail(s"Provided OsmoGridModel $lvModel although it shouldn't")
 
           case unexpected => fail(s"Unexpected message: $unexpected")
+        }
+      }
+      "return with failure for corrupt assets" in {
+        val resourceName = "/corrupted_lv_assets"
+        val config: OsmoGridConfig.Input =
+          createConfig("/Witten_Stockum.pbf", resourceName)
+        val assetDir = getResourcePath(resourceName)
+
+        val requestProbe = testKit.createTestProbe[InputDataProvider.Response]()
+        val testActor = testKit.spawn(
+          InputDataProvider(config)
+        )
+
+        testActor ! InputDataProvider.ReqAssetTypes(
+          requestProbe.ref
+        )
+        requestProbe
+          .expectMessageType[InputDataProvider.Response](
+            3 seconds
+          ) match {
+          case InputDataProvider.AssetReadFailed(exception) =>
+            exception shouldBe InputDataException(
+              s"There are no or corrupt transformer types at: $assetDir"
+            )
+          case InputDataProvider.RepAssetTypes(
+                assetInformation: AssetInformation
+              ) =>
+            fail(
+              s"Provided asset information $assetInformation although it shouldn't"
+            )
+
+          case unexpected => fail(s"Unexpected message: $unexpected")
+
         }
       }
     }

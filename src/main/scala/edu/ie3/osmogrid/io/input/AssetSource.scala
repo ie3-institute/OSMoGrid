@@ -16,17 +16,18 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
 import edu.ie3.osmogrid.exception.{IllegalConfigException, InputDataException}
 import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
+
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 trait AssetSource {
 
-  def read(): AssetInformation
-
+  def read(): Future[AssetInformation]
 }
 
 object AssetSource {
 
-  def apply(assetCfg: Asset): AssetSource = {
+  def apply(ec: ExecutionContextExecutor, assetCfg: Asset): AssetSource = {
     assetCfg match {
       case Asset(Some(File(directory, hierarchic, separator))) =>
         val namingStrategy = if (hierarchic) {
@@ -36,7 +37,7 @@ object AssetSource {
           )
         } else
           new FileNamingStrategy()
-        AssetFileSource(separator, directory, namingStrategy)
+        AssetFileSource(ec, separator, directory, namingStrategy)
       case Asset(None) =>
         throw IllegalConfigException(
           "You have to provide at least one input data type for asset type information!"
@@ -45,33 +46,32 @@ object AssetSource {
   }
 
   final case class AssetFileSource(
-      assetInformation: AssetInformation
+      executionContextExecutor: ExecutionContextExecutor,
+      csvSep: String,
+      directoryPath: String,
+      namingStrategy: FileNamingStrategy
   ) extends AssetSource {
 
-    override def read(): AssetInformation = {
-      assetInformation
-    }
-  }
-  object AssetFileSource {
-
-    def apply(
-        csvSep: String,
-        folderPath: String,
-        namingStrategy: FileNamingStrategy
-    ): AssetFileSource = {
-      val typeSource: CsvTypeSource =
-        new CsvTypeSource(csvSep, folderPath, namingStrategy)
-      val transformerTypes = typeSource.getTransformer2WTypes.asScala.toSeq
-      val lineTypes = typeSource.getLineTypes.asScala.toSeq
-      (transformerTypes, lineTypes) match {
-        case (transformerTypes, _) if transformerTypes.isEmpty =>
-          throw InputDataException(
-            s"There are no transformer types at: $folderPath"
-          )
-        case (_, lineTypes) if lineTypes.isEmpty =>
-          throw InputDataException(s"There are no line types at: $folderPath")
-        case (_, _) =>
-          AssetFileSource(AssetInformation(lineTypes, transformerTypes))
+    override def read(): Future[AssetInformation] = {
+      implicit val implicitEc: ExecutionContextExecutor =
+        executionContextExecutor
+      Future {
+        val typeSource: CsvTypeSource =
+          new CsvTypeSource(csvSep, directoryPath, namingStrategy)
+        val transformerTypes = typeSource.getTransformer2WTypes.asScala.toSeq
+        val lineTypes = typeSource.getLineTypes.asScala.toSeq
+        (transformerTypes, lineTypes) match {
+          case (transformerTypes, _) if transformerTypes.isEmpty =>
+            throw InputDataException(
+              s"There are no or corrupt transformer types at: $directoryPath"
+            )
+          case (_, lineTypes) if lineTypes.isEmpty =>
+            throw InputDataException(
+              s"There are no or corrupt line types at: $directoryPath"
+            )
+          case (_, _) =>
+            AssetInformation(lineTypes, transformerTypes)
+        }
       }
     }
   }
