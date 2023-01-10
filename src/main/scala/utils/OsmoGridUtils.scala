@@ -12,7 +12,7 @@ import edu.ie3.util.osm.OsmUtils.GeometryUtils.buildPolygon
 import edu.ie3.util.osm.model.OsmEntity.Node
 import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
 import edu.ie3.util.quantities.PowerSystemUnits
-import edu.ie3.util.quantities.QuantityUtils.round
+import edu.ie3.util.quantities.QuantityUtils.RichQuantity
 import edu.ie3.util.quantities.interfaces.Irradiance
 import org.locationtech.jts.geom.{Coordinate, Polygon}
 import tech.units.indriya.ComparableQuantity
@@ -75,6 +75,6 @@ object OsmoGridUtils {
       .multiply(powerDensity.to(PowerSystemUnits.WATT_PER_SQUAREMETRE))
       .asType(classOf[Power])
       .to(PowerSystemUnits.KILOWATT)
-    round(power, 4)
+    power.round(4)
   }
 }
