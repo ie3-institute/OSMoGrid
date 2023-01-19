@@ -23,8 +23,8 @@ import scala.concurrent.Future
 final case class ResultCsvSink(
     runId: UUID,
     saveFolderPath: String,
-    csvSeparator: String
-    // todo JH add support for hierarchic persistence
+    csvSeparator: String,
+    hierarchic: Boolean
 ) extends ResultSink {
 
   private val csvFileSink = new CsvFileSink(
@@ -32,7 +32,10 @@ final case class ResultCsvSink(
     new ProcessorProvider(),
     new FileNamingStrategy(
       new EntityPersistenceNamingStrategy(),
-      new FlatDirectoryHierarchy()
+      if (hierarchic)
+        new DefaultDirectoryHierarchy(saveFolderPath, "grid")
+      else
+        new FlatDirectoryHierarchy()
     ),
     false,
     csvSeparator

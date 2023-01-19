@@ -33,7 +33,7 @@ object ResultListener {
           case Failure(cause) =>
             InitFailed(cause)
         }
-        init(runId, cfg, ctx, buffer)
+        init(ctx, buffer)
       }
     }
   }
@@ -43,7 +43,7 @@ object ResultListener {
   ): Behavior[ResultListenerProtocol] =
     Behaviors
       .receiveMessagePartial[ResultListenerProtocol] {
-        case gridResult @ GridResult(grid) =>
+        case gridResult: GridResult =>
           stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
             case Success(_) =>
               ResultHandlingSucceeded
@@ -80,8 +80,6 @@ object ResultListener {
     }
 
   private def init(
-      runId: UUID,
-      cfg: OsmoGridConfig.Output,
       ctx: ActorContext[ResultListenerProtocol],
       buffer: StashBuffer[ResultListenerProtocol]
   ): Behavior[ResultListenerProtocol] =
@@ -104,7 +102,7 @@ object ResultListener {
     cfg match {
       case Output(Some(csv)) =>
         Future(
-          ResultCsvSink(runId, csv.directory, csv.separator)
+          ResultCsvSink(runId, csv.directory, csv.separator, csv.hierarchic)
         )
       case unsupported =>
         Future.failed(
