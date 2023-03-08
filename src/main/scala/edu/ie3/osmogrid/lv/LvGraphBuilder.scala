@@ -274,7 +274,7 @@ object LvGraphBuilder {
         id = UUID.randomUUID().getMostSignificantBits,
         latitude = orthogonalPt.y,
         longitude = orthogonalPt.x,
-        tags = Map(),
+        tags = Map.empty,
         metaInformation = None
       )
       Success(buildingCenter.haversineDistance(orthogonalPt), closestNode)
@@ -316,7 +316,7 @@ object LvGraphBuilder {
           bgc.building.id,
           bgc.center.y,
           bgc.center.x,
-          Map().empty,
+          Map.empty,
           None
         )
         graph.addVertex(buildingNode)

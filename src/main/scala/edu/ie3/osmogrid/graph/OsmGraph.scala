@@ -12,7 +12,6 @@ import edu.ie3.util.osm.model.OsmEntity.Node
 
 import tech.units.indriya.unit.Units.METRE
 import java.util.function.Supplier
-import javax.measure.Quantity
 import javax.measure.quantity.Length
 import org.jgrapht.graph.SimpleWeightedGraph
 import org.jgrapht.util.SupplierUtil
@@ -52,10 +51,4 @@ class OsmGraph(
     super.setEdgeWeight(edge, weightDouble)
   }
 
-  override final def setEdgeWeight(
-      edge: DistanceWeightedEdge,
-      distanceInMeters: Double
-  ): Unit = {
-    super.setEdgeWeight(edge, distanceInMeters)
-  }
 }
