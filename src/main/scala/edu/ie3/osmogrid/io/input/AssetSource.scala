@@ -61,11 +61,11 @@ object AssetSource {
         val transformerTypes = typeSource.getTransformer2WTypes.asScala.toSeq
         val lineTypes = typeSource.getLineTypes.asScala.toSeq
         (transformerTypes, lineTypes) match {
-          case (transformerTypes, _) if transformerTypes.isEmpty =>
+          case (Nil, _) =>
             throw InputDataException(
               s"There are no or corrupt transformer types at: $directoryPath"
             )
-          case (_, lineTypes) if lineTypes.isEmpty =>
+          case (_, Nil) =>
             throw InputDataException(
               s"There are no or corrupt line types at: $directoryPath"
             )

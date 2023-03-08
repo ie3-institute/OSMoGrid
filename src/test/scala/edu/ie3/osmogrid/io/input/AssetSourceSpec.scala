@@ -35,7 +35,7 @@ class AssetSourceSpec extends UnitSpec {
           .getUuid
           .toString shouldBe "4984f493-d6e5-4201-a040-c10722b30362"
       case Failure(exc) =>
-        fail("Could not read data. Reason:" + exc.getMessage)
+        fail("Could not read data.", exc)
     }
 
   }

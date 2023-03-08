@@ -74,7 +74,7 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
   ): Behavior[InputDataEvent] = {
     Behaviors.withStash[InputDataEvent](100) { buffer =>
       Behaviors.setup[InputDataEvent] { ctx =>
-        implicit val ec: ExecutionContextExecutor = ctx.system.executionContext
+        val ec: ExecutionContextExecutor = ctx.system.executionContext
         idle(
           ProviderData(
             ctx,
