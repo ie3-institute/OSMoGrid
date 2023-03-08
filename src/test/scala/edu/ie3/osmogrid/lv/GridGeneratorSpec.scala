@@ -6,7 +6,11 @@
 
 package edu.ie3.osmogrid.lv
 
-import akka.actor.testkit.typed.scaladsl.{ActorTestKit, BehaviorTestKit, ScalaTestWithActorTestKit}
+import akka.actor.testkit.typed.scaladsl.{
+  ActorTestKit,
+  BehaviorTestKit,
+  ScalaTestWithActorTestKit
+}
 import edu.ie3.osmogrid.lv.LvGridGenerator.RepLvGrid
 import edu.ie3.osmogrid.lv.region_coordinator.LvTestModel
 import edu.ie3.osmogrid.model.OsmTestData

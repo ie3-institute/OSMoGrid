@@ -8,7 +8,6 @@ package edu.ie3.osmogrid.lv
 
 import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
-import edu.ie3.datamodel.models.BdewLoadProfile
 import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
 import edu.ie3.datamodel.models.input.connector.{
   LineInput,
@@ -30,6 +29,7 @@ import edu.ie3.datamodel.models.input.graphics.{
 import edu.ie3.datamodel.models.input.system.{
   BmInput,
   ChpInput,
+  EmInput,
   EvInput,
   EvcsInput,
   FixedFeedInInput,
@@ -40,6 +40,7 @@ import edu.ie3.datamodel.models.input.system.{
   WecInput
 }
 import edu.ie3.datamodel.models.input.system.characteristic.CosPhiFixed
+import edu.ie3.datamodel.models.profile.BdewStandardLoadProfile
 import edu.ie3.datamodel.models.voltagelevels.{
   GermanVoltageLevelUtils,
   VoltageLevel
