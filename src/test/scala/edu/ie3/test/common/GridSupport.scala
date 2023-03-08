@@ -6,7 +6,6 @@
 
 package edu.ie3.test.common
 
-import edu.ie3.datamodel.models.BdewLoadProfile
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
   Transformer2WTypeInput,
@@ -36,6 +35,7 @@ import edu.ie3.datamodel.models.input.system._
 import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
 import edu.ie3.datamodel.models.StandardUnits
+import edu.ie3.datamodel.models.profile.BdewStandardLoadProfile
 import edu.ie3.datamodel.utils.GridAndGeoUtils
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.quantities.PowerSystemUnits._
@@ -86,7 +86,8 @@ trait GridSupport {
       Set.empty[LoadInput].asJava,
       Set.empty[PvInput].asJava,
       Set.empty[StorageInput].asJava,
-      Set.empty[WecInput].asJava
+      Set.empty[WecInput].asJava,
+      Set.empty[EmInput].asJava
     )
 
     val mockedGraphics = new GraphicElements(
@@ -228,7 +229,7 @@ trait GridSupport {
       s"Load in $subgridNo",
       nodeB,
       mock[ReactivePowerCharacteristic],
-      BdewLoadProfile.H0,
+      BdewStandardLoadProfile.H0,
       false,
       Quantities.getQuantity(3000d, KILOWATTHOUR),
       Quantities.getQuantity(10d, KILOWATT),
@@ -261,7 +262,8 @@ trait GridSupport {
       Set(loadInput).asJava,
       Set(pvInput).asJava,
       Set.empty[StorageInput].asJava,
-      Set.empty[WecInput].asJava
+      Set.empty[WecInput].asJava,
+      Set.empty[EmInput].asJava
     )
 
     // GRAPHICS (just mocked) //
