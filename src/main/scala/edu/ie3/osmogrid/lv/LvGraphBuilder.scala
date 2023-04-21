@@ -102,13 +102,10 @@ object LvGraphBuilder {
       minDistance
     )
     val streetGraph = buildStreetGraph(highways.seq.toSeq, highwayNodes)
-    (
-      updateGraphWithBuildingConnections(
-        streetGraph,
-        buildingGraphConnections,
-        considerBuildingConnections
-      ),
-      buildingGraphConnections
+    updateGraphWithBuildingConnections(
+      streetGraph,
+      buildingGraphConnections,
+      considerBuildingConnections
     )
   }
 
@@ -290,7 +287,7 @@ object LvGraphBuilder {
   }
 
   /** Updates the graph by adding the building graph connections and updating
-    * the edges of the surrounding nodes
+    * the edges of the surrounding nodes.
     *
     * @param graph
     *   the graph to update
@@ -303,8 +300,8 @@ object LvGraphBuilder {
       graph: OsmGraph,
       buildingGraphConnections: ParSeq[BuildingGraphConnection],
       considerBuildingConnections: Boolean
-  ): OsmGraph = {
-    buildingGraphConnections.foreach(bgc => {
+  ): (OsmGraph, ParSeq[BuildingGraphConnection]) = {
+    val updatedBgcs = buildingGraphConnections.map(bgc => {
       if (bgc.hasNewNode) {
         graph.addVertex(bgc.graphConnectionNode)
         graph.removeEdge(bgc.highwayNodeA, bgc.highwayNodeB)
@@ -322,8 +319,8 @@ object LvGraphBuilder {
         graph.addVertex(buildingNode)
         graph.addWeightedEdge(bgc.graphConnectionNode, buildingNode)
         bgc.copy(buildingNode = Some(buildingNode))
-      }
+      } else bgc
     })
-    graph
+    (graph, updatedBgcs)
   }
 }
