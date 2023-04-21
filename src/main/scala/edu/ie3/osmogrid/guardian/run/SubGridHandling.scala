@@ -489,7 +489,7 @@ object SubGridHandling {
     ).fold(
       exception =>
         throw GridException(
-          "Unable to update node references of wind energy converters.",
+          "Unable to update node references of em systems.",
           exception
         ),
       identity
