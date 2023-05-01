@@ -101,7 +101,7 @@ dependencies {
 
   // testing
   testImplementation "org.scalatest:scalatest_$scalaVersion:3.2.15"
-  testRuntimeOnly 'com.vladsch.flexmark:flexmark-all:0.64.0' //scalatest html output
+  testRuntimeOnly 'com.vladsch.flexmark:flexmark-all:0.64.2' //scalatest html output
   testImplementation 'org.pegdown:pegdown:1.6.0'
 
   testImplementation 'org.mockito:mockito-core:5.3.1' // mocking framework
