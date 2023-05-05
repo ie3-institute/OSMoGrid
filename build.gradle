@@ -97,7 +97,7 @@ dependencies {
   }
 
   // graphs
-  implementation 'org.jgrapht:jgrapht-core:1.5.1'
+  implementation 'org.jgrapht:jgrapht-core:1.5.2'
 
 
   implementation 'tech.units:indriya:2.1.4'
