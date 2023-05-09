@@ -114,7 +114,7 @@ class SubGridHandlingSpec
     *   the subgrid number that is expected for the computed sub grid
     */
   private def checkSubgridContainer(
-      given: SubGridContainer,
+      `given`: SubGridContainer,
       actual: SubGridContainer,
       expectedSubgridNo: Int
   ): Unit = {
@@ -198,7 +198,7 @@ class SubGridHandlingSpec
   }
 
   private def createMapByUUID[T <: UniqueEntity](
-      given: Iterable[T],
+      `given`: Iterable[T],
       actual: Iterable[T]
   )(implicit tag: ClassTag[T]): Map[T, T] = {
     val actualByUUID = actual.map { actualEntity =>

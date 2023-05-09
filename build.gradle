@@ -81,7 +81,7 @@ dependencies {
   // osm4scala
   implementation 'com.acervera.osm4scala:osm4scala-core_2.13:1.0.11'
 
-  //	 ie³ power system utils
+  // ie³ power system utils
   implementation('com.github.ie3-institute:PowerSystemUtils:2.0') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
@@ -89,22 +89,26 @@ dependencies {
     exclude group: 'com.github.johanneshiry', module: 'OSMonaut'
   }
 
-  //	 ie³ power system data model
-  implementation('com.github.ie3-institute:PowerSystemDataModel:2.1.0') {
+  // ie³ power system data model
+  implementation('com.github.ie3-institute:PowerSystemDataModel:3.0.0') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
   }
+
+  // graphs
+  implementation 'org.jgrapht:jgrapht-core:1.5.2'
+
 
   implementation 'tech.units:indriya:2.1.4'
   implementation 'org.locationtech.jts:jts-core:1.19.0'
 
   // testing
   testImplementation "org.scalatest:scalatest_$scalaVersion:3.2.15"
-  testRuntimeOnly 'com.vladsch.flexmark:flexmark-all:0.64.0' //scalatest html output
+  testRuntimeOnly 'com.vladsch.flexmark:flexmark-all:0.64.4' //scalatest html output
   testImplementation 'org.pegdown:pegdown:1.6.0'
 
-  testImplementation 'org.mockito:mockito-core:5.3.0' // mocking framework
+  testImplementation 'org.mockito:mockito-core:5.3.1' // mocking framework
   testImplementation "org.scalatestplus:mockito-3-12_$scalaVersion:3.2.10.0" // syntactic sugar
 }
 
