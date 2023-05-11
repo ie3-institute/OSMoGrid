@@ -12,7 +12,7 @@ import edu.ie3.osmogrid.io.output.ResultListenerProtocol.GridResult
 
 import scala.concurrent.Future
 
-/** Trait that should be mixed into each sink in [[edu.ie3.simona.io.result]] to
+/** Trait that should be mixed into each sink in [[edu.ie3.osmogrid.io.output]] to
   * allow an easy calling of different sinks e.g. csv-file sink or database sink
   */
 trait ResultSink {
