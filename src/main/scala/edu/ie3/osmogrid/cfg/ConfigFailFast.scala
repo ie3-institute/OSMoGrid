@@ -13,7 +13,7 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Input, Output}
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
-import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 
 import scala.util.Try
 
