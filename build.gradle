@@ -104,7 +104,7 @@ dependencies {
   implementation 'org.locationtech.jts:jts-core:1.19.0'
 
   // testing
-  testImplementation "org.scalatest:scalatest_$scalaVersion:3.2.15"
+  testImplementation "org.scalatest:scalatest_$scalaVersion:3.2.16"
   testRuntimeOnly 'com.vladsch.flexmark:flexmark-all:0.64.4' //scalatest html output
   testImplementation 'org.pegdown:pegdown:1.6.0'
 
