@@ -6,7 +6,6 @@
 
 package edu.ie3.osmogrid.io.output
 
-import edu.ie3.osmogrid.exception.ProcessResultException
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol.GridResult
 
 import scala.concurrent.Future
@@ -16,7 +15,6 @@ import scala.concurrent.Future
   */
 trait ResultSink {
 
-  @throws(classOf[ProcessResultException])
   def handleResult(gridResult: GridResult): Future[Unit]
 
   /** Contains all cleanup operations before closing this sink. Should be

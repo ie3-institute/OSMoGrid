@@ -14,7 +14,6 @@ import edu.ie3.datamodel.io.naming.{
 }
 import edu.ie3.datamodel.io.processor.ProcessorProvider
 import edu.ie3.datamodel.io.sink.CsvFileSink
-import edu.ie3.osmogrid.exception.ProcessResultException
 
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -41,7 +40,6 @@ final case class ResultCsvSink(
     csvSeparator
   )
 
-  @throws(classOf[ProcessResultException])
   def handleResult(
       gridResult: ResultListenerProtocol.GridResult
   ): Future[Unit] =
