@@ -49,17 +49,21 @@ class LvGridGeneratorSupportSpec extends UnitSpec with OsmTestData {
         0.4.asKiloVolt
       )
 
-      val subgridContainer = buildGrid(
+      buildGrid(
         osmGraph,
         buildingGraphConnections.par,
         ratedVoltage,
         considerHouseConnectionPoints = false,
         lineType,
         "testGrid"
-      )
-      subgridContainer.getRawGrid.getNodes.size() shouldBe 2
-      subgridContainer.getRawGrid.getLines.size() shouldBe 1
-      subgridContainer.getSystemParticipants.getLoads.size() shouldBe 2
+      ) match {
+        case Some(subGridContainer) =>
+          subGridContainer.getRawGrid.getNodes.size() shouldBe 2
+          subGridContainer.getRawGrid.getLines.size() shouldBe 1
+          subGridContainer.getSystemParticipants.getLoads.size() shouldBe 2
+        case None =>
+          fail("No grid received!")
+      }
 
       // Todo: Extend test by connecting another house at node 22L
     }
