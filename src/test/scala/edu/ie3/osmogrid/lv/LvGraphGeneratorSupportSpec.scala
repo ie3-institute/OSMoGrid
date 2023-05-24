@@ -9,7 +9,7 @@ package edu.ie3.osmogrid.lv
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.{
   BuildingGraphConnection,
-  buildGridGraph
+  buildConnectedGridGraphs
 }
 import edu.ie3.osmogrid.model.OsmTestData
 import edu.ie3.test.common.UnitSpec
@@ -41,12 +41,19 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
         val minDistance = 1.asKilometre
         val considerBuildingConnections = false
 
-        val (osmGraph, buildingGraphConnections) = buildGridGraph(
+        val (osmGraph, buildingGraphConnections) = buildConnectedGridGraphs(
           osmoGridModel,
           powerDensity,
           minDistance,
           considerBuildingConnections
-        )
+        ).unzip match {
+          case (Seq(osmGraph), Seq(buildingGraphConnections)) =>
+            (osmGraph, buildingGraphConnections)
+          case _ =>
+            fail(
+              "Expected exactly one graph and the corresponding building connections."
+            )
+        }
 
         // 1 building not in landuse and therefore filtered out
         buildingGraphConnections.size shouldBe 2

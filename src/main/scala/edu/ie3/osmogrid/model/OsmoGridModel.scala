@@ -38,7 +38,7 @@ object OsmoGridModel {
     filterForOsmType[ClosedWay, Node](entities)
   }
 
-  def filterForOsmType[E <: OsmEntity:ClassTag, S <: OsmEntity:ClassTag](
+  def filterForOsmType[E <: OsmEntity: ClassTag, S <: OsmEntity: ClassTag](
       entities: ParSeq[EnhancedOsmEntity]
   ): (ParSeq[E], Map[Long, S]) = {
     val (matchedEntities, matchedSubentities) = entities.foldLeft(
@@ -90,7 +90,7 @@ object OsmoGridModel {
               landuses,
               boundaries,
               existingSubstations,
-              filter
+              _
             ) if this.filter.equals(additional.filter) =>
           Some(
             LvOsmoGridModel(
@@ -133,11 +133,12 @@ object OsmoGridModel {
       )
     }
 
+    // todo: this is never used and filter nodes is not considered - remove?
     def mergeAll(
         models: ParSeq[LvOsmoGridModel],
         filterNodes: Boolean = true
     ): Option[OsmoGridModel] = {
-      models.headOption.flatMap { case lvHeadModel: LvOsmoGridModel =>
+      models.headOption.flatMap { lvHeadModel: LvOsmoGridModel =>
         if (models.forall(_.filter == lvHeadModel.filter)) {
           Some(
             LvOsmoGridModel(

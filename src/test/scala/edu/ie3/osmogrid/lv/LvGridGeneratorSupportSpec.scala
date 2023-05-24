@@ -7,13 +7,14 @@
 package edu.ie3.osmogrid.lv
 
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
-import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.buildGridGraph
+import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.buildConnectedGridGraphs
 import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.buildGrid
 import edu.ie3.osmogrid.model.OsmTestData
 import edu.ie3.test.common.UnitSpec
 import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
 
 import java.util.UUID
+import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
 
 class LvGridGeneratorSupportSpec extends UnitSpec with OsmTestData {
 
@@ -25,12 +26,16 @@ class LvGridGeneratorSupportSpec extends UnitSpec with OsmTestData {
       val minDistance = 0.002.asKilometre
       val considerBuildingConnections = false
 
-      val (osmGraph, buildingGraphConnections) = buildGridGraph(
+      val (osmGraph, buildingGraphConnections) = buildConnectedGridGraphs(
         osmoGridModel,
         powerDensity,
         minDistance,
         considerBuildingConnections
-      )
+      ).unzip match {
+        case (Seq(osmGraph), Seq(buildingGraphConnections)) =>
+          (osmGraph, buildingGraphConnections)
+        case _ => fail("Expected exactly one graph.")
+      }
 
       val ratedVoltage = 10.asKiloVolt
       val lineType = new LineTypeInput(
@@ -46,7 +51,7 @@ class LvGridGeneratorSupportSpec extends UnitSpec with OsmTestData {
 
       val subgridContainer = buildGrid(
         osmGraph,
-        buildingGraphConnections,
+        buildingGraphConnections.par,
         ratedVoltage,
         considerHouseConnectionPoints = false,
         lineType,
@@ -58,7 +63,5 @@ class LvGridGeneratorSupportSpec extends UnitSpec with OsmTestData {
 
       // Todo: Extend test by connecting another house at node 22L
     }
-
   }
-
 }

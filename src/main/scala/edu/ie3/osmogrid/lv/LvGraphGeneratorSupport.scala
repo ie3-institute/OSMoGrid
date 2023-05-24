@@ -22,11 +22,19 @@ import javax.measure.quantity.{Length, Power}
 import scala.collection.parallel.ParSeq
 import scala.util.{Success, Try}
 import edu.ie3.util.geo.RichGeometries.{RichCoordinate, RichPolygon}
+import org.jgrapht.{GraphTests, Graphs}
+import org.jgrapht.alg.connectivity.{
+  BiconnectivityInspector,
+  ConnectivityInspector
+}
+import org.jgrapht.graph.DefaultWeightedEdge
 import utils.OsmoGridUtils.{
   calcHouseholdPower,
   isInsideLanduse,
   safeBuildPolygon
 }
+
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 object LvGraphGeneratorSupport {
 
@@ -96,12 +104,12 @@ object LvGraphGeneratorSupport {
     *   for building connections
     * @return
     */
-  def buildGridGraph(
+  def buildConnectedGridGraphs(
       osmoGridModel: LvOsmoGridModel,
       powerDensity: ComparableQuantity[Irradiance],
       minDistance: ComparableQuantity[Length],
       considerBuildingConnections: Boolean
-  ): (OsmGraph, ParSeq[BuildingGraphConnection]) = {
+  ): Seq[(OsmGraph, Seq[BuildingGraphConnection])] = {
     val (highways, highwayNodes) =
       OsmoGridModel.filterForWays(osmoGridModel.highways)
     val (building, buildingNodes) =
@@ -120,12 +128,14 @@ object LvGraphGeneratorSupport {
       minDistance
     )
     val streetGraph = buildStreetGraph(highways.seq.toSeq, highwayNodes)
-    (
-      updateGraphWithBuildingConnections(
-        streetGraph,
-        buildingGraphConnections,
-        considerBuildingConnections
-      ),
+    val updatedGraph = updateGraphWithBuildingConnections(
+      streetGraph,
+      buildingGraphConnections,
+      considerBuildingConnections
+    )
+
+    divideDisconnectedGraphs(
+      updatedGraph,
       buildingGraphConnections
     )
   }
@@ -346,4 +356,103 @@ object LvGraphGeneratorSupport {
     })
     graph
   }
+
+  private def divideDisconnectedGraphs(
+      graph: OsmGraph,
+      buildingGraphConnections: ParSeq[
+        LvGraphGeneratorSupport.BuildingGraphConnection
+      ]
+  ): Seq[(OsmGraph, Seq[BuildingGraphConnection])] = {
+    val bgcMap =
+      buildingGraphConnections.map(bgc => bgc.graphConnectionNode -> bgc).toMap
+
+    val connectivityInspector = new ConnectivityInspector(graph)
+    val connectedSets = connectivityInspector.connectedSets().asScala
+
+    if (connectedSets.isEmpty) {
+      throw OsmDataException(
+        "Graph is empty, or no components could be determined."
+      )
+    } else if (connectedSets.size > 1) {
+      connectedSets.foldLeft(
+        Seq.empty[(OsmGraph, Seq[BuildingGraphConnection])]
+      )((graphSeq, connectedSet) => {
+        val subgraph = new OsmGraph()
+        connectedSet.forEach(node => subgraph.addVertex(node))
+        connectedSet.forEach { vertex =>
+          val edges = graph.edgesOf(vertex).asScala
+          edges.foreach { edge =>
+            val source = graph.getEdgeSource(edge)
+            val target = graph.getEdgeTarget(edge)
+            if (
+              connectedSet.contains(source) && connectedSet.contains(target)
+            ) {
+              subgraph.addEdge(source, target)
+            }
+          }
+        }
+        val connectivityInspector = new ConnectivityInspector(subgraph)
+        if (!connectivityInspector.isConnected) {
+          throw OsmDataException("Component is not connected")
+        }
+        val buildingGraphConnections =
+          subgraph.vertexSet().asScala.flatMap(node => bgcMap.get(node)).toSeq
+        graphSeq :+ (subgraph, buildingGraphConnections)
+      })
+
+    } else Seq((graph, buildingGraphConnections.seq.toSeq))
+  }
+
 }
+
+//      connectedSets.map(connectedSet => {
+//        Graphs.inducedSubgraph(graph, connectedSet)
+//        val connectedGraph = osmGraph.
+//        val osmGraph = new OsmGraph()
+//        val graphNodes = graph.vertexSet().asScala
+//
+//
+//        graphNodes.foreach(node => osmGraph.addVertex(node))
+//        graph.edgeSet().forEach(edge => osmGraph.addEdge(graph.getEdgeSource(edge), graph.getEdgeTarget(edge), edge))
+//
+
+//
+//        val buildingGraphConnections = graphNodes.flatMap(node => bgcMap.get(node)).toSeq
+//        (osmGraph, buildingGraphConnections)
+//      })
+//    }
+//    else Seq((graph, buildingGraphConnections.seq.toSeq))
+//    connectedNodes.map(nodes => {
+//      val subGraph = new OsmGraph()
+//      nodes.asScala.foreach(subGraph.addVertex)
+//      nodes.asScala.foreach(node => {
+//        graph
+//          .edgesOf(node)
+//          .asScala
+//          .foreach(edge => {
+//            if (! subGraph.containsEdge(edge)) {
+//              val source = graph.getEdgeSource(edge)
+//              val target = graph.getEdgeTarget(edge)
+//              // todo it can happen that the source or target node is not in the subgraph find out why
+//              if (node != source) {
+//                try {
+//                  subGraph.addWeightedEdge(source, node)
+//                }
+//                catch {
+//                  case e: IllegalArgumentException =>
+//                    println(s"Could not add edge $source -> $node")
+//                }
+//              } else
+//                try {
+//                  subGraph.addWeightedEdge(node, target)
+//                }
+//                catch {
+//                  case e: IllegalArgumentException =>
+//                    println(s"Could not add edge $source -> $node")
+//                }
+//            }
+//          })
+//      })
+//      val bgcs = nodes.asScala.toSeq.flatMap(node => bgcMap.get(node))
+//      (subGraph, bgcs)
+//}

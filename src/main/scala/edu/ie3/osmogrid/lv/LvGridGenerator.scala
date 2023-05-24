@@ -13,7 +13,7 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
-import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.buildGridGraph
+import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.buildConnectedGridGraphs
 import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.buildGrid
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
@@ -21,6 +21,7 @@ import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 
 import java.util.UUID
+import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
 
 object LvGridGenerator extends LazyLogging {
   sealed trait Request
@@ -37,7 +38,7 @@ object LvGridGenerator extends LazyLogging {
 
   final case class RepLvGrid(
       gridUuid: UUID,
-      grid: SubGridContainer
+      grid: Seq[SubGridContainer]
   ) extends Response
 
   def apply(): Behaviors.Receive[Request] = idle
@@ -56,8 +57,8 @@ object LvGridGenerator extends LazyLogging {
       ctx.log.info(s"Received request to generate grid: $gridUuid")
       val powerDensity = config.averagePowerDensity.asKiloWattPerSquareMetre
       val minDistance = Quantities.getQuantity(config.minDistance, Units.METRE)
-      val (graph, buildingGraphConnections) =
-        buildGridGraph(
+      val connectedGridGraphs =
+        buildConnectedGridGraphs(
           osmData,
           powerDensity,
           minDistance,
@@ -72,19 +73,22 @@ object LvGridGenerator extends LazyLogging {
       ctx.log.info(
         s"Finished building of grid graph. Starting to build electrical grid for grid: $gridUuid"
       )
-      val lvSubGrid = buildGrid(
-        graph,
-        buildingGraphConnections,
-        config.ratedVoltage.asKiloVolt,
-        config.considerHouseConnectionPoints,
-        lineType,
-        config.gridName
-      )
+      val lvSubGrids = connectedGridGraphs.map {
+        case (graph, buildingGraphConnections) =>
+          buildGrid(
+            graph,
+            buildingGraphConnections.par,
+            config.ratedVoltage.asKiloVolt,
+            config.considerHouseConnectionPoints,
+            lineType,
+            config.gridName
+          )
+      }
 
       ctx.log.info(
         s"Finished grid generation and sending results for grid: $gridUuid"
       )
-      replyTo ! RepLvGrid(gridUuid, lvSubGrid)
+      replyTo ! RepLvGrid(gridUuid, lvSubGrids.flatten)
       Behaviors.stopped
     case (ctx, unsupported) =>
       ctx.log.warn(s"Received unsupported message '$unsupported'.")

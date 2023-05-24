@@ -41,12 +41,12 @@ object LvCoordinator extends ActorStopSupportStateless {
 
     def update(
         expectedGrid: UUID,
-        subGridContainer: SubGridContainer
+        subGridContainer: Seq[SubGridContainer]
     ): ResultData = {
       if (expectedGrids.contains(expectedGrid)) {
         return ResultData(
           expectedGrids - expectedGrid,
-          subGridContainers :+ subGridContainer
+          subGridContainers ++ subGridContainer
         )
       }
       throw IllegalStateException(

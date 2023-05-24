@@ -49,8 +49,10 @@ class GridGeneratorSpec
       idleTestKit.run(generateGrid)
 
       lvCoordinator.expectMessageType[RepLvGrid] match {
-        case RepLvGrid(gridUuid, grid) =>
+        case RepLvGrid(gridUuid, grids) =>
           gridUuid shouldBe gridUuid
+          grids.size shouldBe 1
+          val grid = grids.headOption.getOrElse(fail("Expected a grid"))
           grid.getRawGrid.getNodes.size() > 0 shouldBe true
           grid.getSystemParticipants.getLoads.size() > 0 shouldBe true
       }

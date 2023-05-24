@@ -367,7 +367,7 @@ class LvCoordinatorSpec
         ) // Forward from probe to actor
 
         /* The LvCoordinator now waits for the expected grid to be generated */
-        val repLvGrid = RepLvGrid(gridUuid, mockedSubgrid)
+        val repLvGrid = RepLvGrid(gridUuid, Seq(mockedSubgrid))
         awaitingTestKit.run(
           WrappedGridGeneratorResponse(repLvGrid)
         )

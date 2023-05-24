@@ -111,7 +111,7 @@ object LvGridGeneratorSupport extends LazyLogging {
       considerHouseConnectionPoints: Boolean,
       lineType: LineTypeInput,
       gridName: String
-  ): SubGridContainer = {
+  ): Option[SubGridContainer] = {
 
     val nodesWithBuildings: ParMap[Node, BuildingGraphConnection] =
       buildingGraphConnections.map(bgc => (bgc.graphConnectionNode, bgc)).toMap
@@ -180,8 +180,13 @@ object LvGridGeneratorSupport extends LazyLogging {
             gridElements
         }
       })
+    if (gridElements.loads.isEmpty) {
+      return None
+    }
     val (startNode, startNodeInput) = gridElements.nodes.headOption.getOrElse(
-      throw new IllegalArgumentException("No nodes were converted.")
+      throw new IllegalArgumentException(
+        "We have no electrical nodes to convert."
+      )
     )
     val (visitedNodes, lineInputs) = traverseGraph(
       startNode,
@@ -194,17 +199,21 @@ object LvGridGeneratorSupport extends LazyLogging {
     )
 
     val unvisitedNodes = osmGraph.vertexSet().asScala.diff(visitedNodes)
+
+    // todo: happens with connected graphs with size of 1
     if (unvisitedNodes.nonEmpty) {
       logger.error(
         "We did not visit all nodes while taversing the graph. Unvisited Nodes: " + unvisitedNodes
       )
     }
 
-    buildGridContainer(
-      gridName,
-      gridElements.nodes.values.toSet.asJava,
-      lineInputs.asJava,
-      gridElements.loads.asJava
+    Some(
+      buildGridContainer(
+        gridName,
+        gridElements.nodes.values.toSet.asJava,
+        lineInputs.asJava,
+        gridElements.loads.asJava
+      )
     )
   }
 
@@ -255,7 +264,7 @@ object LvGridGeneratorSupport extends LazyLogging {
       id,
       node,
       CosPhiFixed.CONSTANT_CHARACTERISTIC,
-      BdewLoadProfile.H0,
+      BdewStandardLoadProfile.H0,
       false,
       // todo: What to do for econsannual?
       0.asWattHour,
@@ -296,7 +305,7 @@ object LvGridGeneratorSupport extends LazyLogging {
     if (alreadyVisited.contains(currentNode)) return (alreadyVisited, lines)
     val connectedEdges = osmGraph.edgesOf(currentNode).asScala
     // traverse through every edge of the current node to build lines
-    connectedEdges.foldLeft((alreadyVisited, lines)) {
+    connectedEdges.foldLeft((alreadyVisited + currentNode, lines)) {
       case ((updatedAlreadyVisited, updatedLines), edge) =>
         val nextNode = getOtherEdgeNode(osmGraph, currentNode, edge)
         if (!alreadyVisited.contains(nextNode)) {
@@ -354,7 +363,7 @@ object LvGridGeneratorSupport extends LazyLogging {
     *   node at which the line starts
     * @param secondNode
     *   node at which the line ends
-    * @param streetNodes
+    * @param passedStreetNodes
     *   osm street nodes the line follows along
     * @param lineType
     *   type of the line to build
@@ -509,7 +518,8 @@ object LvGridGeneratorSupport extends LazyLogging {
       loads,
       new util.HashSet[PvInput],
       new util.HashSet[StorageInput],
-      new util.HashSet[WecInput]
+      new util.HashSet[WecInput],
+      new util.HashSet[EmInput]
     )
     val graphicElements = new GraphicElements(
       new util.HashSet[NodeGraphicInput],
