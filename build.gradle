@@ -3,13 +3,13 @@ plugins {
   id 'java' //java support
   id 'scala'
   id 'pmd' // code check, working on source code
-  id 'com.diffplug.spotless' version '6.16.0'//code format
-  id 'com.github.spotbugs' version '5.0.13' // code check, working on byte code
-  id 'de.undercouch.download' version '5.3.1'
+  id 'com.diffplug.spotless' version '6.19.0'//code format
+  id 'com.github.spotbugs' version '5.0.14' // code check, working on byte code
+  id 'de.undercouch.download' version '5.4.0'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.32" // run scalatest without specific spec task
   id "org.sonarqube" version "4.0.0.2929" // sonarqube
-  id "org.scoverage" version "7.0.1" // scala code coverage scoverage
+  id "org.scoverage" version "8.0.2" // scala code coverage scoverage
   id 'net.thauvin.erik.gradle.semver' version '1.0.4' // semantic versioning
 }
 
@@ -72,7 +72,7 @@ dependencies {
 
   // logging
   implementation "com.typesafe.scala-logging:scala-logging_${scalaVersion}:3.9.5"
-  implementation 'ch.qos.logback:logback-classic:1.2.11'
+  implementation 'ch.qos.logback:logback-classic:1.2.12'
 
   // config
   implementation 'com.typesafe:config:1.4.2'
@@ -81,7 +81,7 @@ dependencies {
   // osm4scala
   implementation 'com.acervera.osm4scala:osm4scala-core_2.13:1.0.11'
 
-  //	 ie³ power system utils
+  // ie³ power system utils
   implementation('com.github.ie3-institute:PowerSystemUtils:2.0') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
@@ -89,24 +89,27 @@ dependencies {
     exclude group: 'com.github.johanneshiry', module: 'OSMonaut'
   }
 
-  //	 ie³ power system data model
-  implementation('com.github.ie3-institute:PowerSystemDataModel:2.1.0') {
+  // ie³ power system data model
+  implementation('com.github.ie3-institute:PowerSystemDataModel:3.0.0') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
   }
 
+  // graphs
+  implementation 'org.jgrapht:jgrapht-core:1.5.2'
+
+
   implementation 'tech.units:indriya:2.1.4'
   implementation 'org.locationtech.jts:jts-core:1.19.0'
 
   // testing
-  testImplementation "org.scalatest:scalatest_$scalaVersion:3.2.15"
-  testRuntimeOnly 'com.vladsch.flexmark:flexmark-all:0.64.0' //scalatest html output
+  testImplementation "org.scalatest:scalatest_$scalaVersion:3.2.16"
+  testRuntimeOnly 'com.vladsch.flexmark:flexmark-all:0.64.8' //scalatest html output
   testImplementation 'org.pegdown:pegdown:1.6.0'
 
-  testImplementation 'org.mockito:mockito-core:5.1.1' // mocking framework
+  testImplementation 'org.mockito:mockito-core:5.3.1' // mocking framework
   testImplementation "org.scalatestplus:mockito-3-12_$scalaVersion:3.2.10.0" // syntactic sugar
-
 }
 
 // scapegoat hook configuration
