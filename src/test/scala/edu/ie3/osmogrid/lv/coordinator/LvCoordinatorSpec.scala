@@ -194,10 +194,11 @@ class LvCoordinatorSpec
         )
 
         /* Send a failed request response */
+        val exc = new RuntimeException("Some random failure.")
         awaitingTestKit.run(
           WrappedInputDataResponse(
             InputDataProvider.OsmReadFailed(
-              new RuntimeException("Some random failure.")
+              exc
             )
           )
         )
@@ -207,7 +208,8 @@ class LvCoordinatorSpec
           "Request of needed input data failed. Stop low voltage grid generation.",
           Some(
             RequestFailedException(
-              "The requested OSM data cannot be read. Stop generation."
+              "The requested OSM data cannot be read. Stop generation. Exception:",
+              exc
             )
           ),
           None
@@ -215,15 +217,62 @@ class LvCoordinatorSpec
         awaitingTestKit.isAlive shouldBe false
       }
 
-      val awaitingData = AwaitingData.empty(
-        IdleData(
-          cfg,
-          inputDataProvider.ref,
-          lvCoordinatorAdapter.ref,
-          msgAdapters
+      "terminate, if an asset request has been answered with a failure" in {
+        val awaitingTestKit = BehaviorTestKit(
+          LvCoordinator invokePrivate PrivateMethod[Behavior[
+            coordinator.Request
+          ]](
+            Symbol(
+              "awaitInputData"
+            )
+          )(
+            AwaitingData.empty(
+              IdleData(
+                cfg,
+                inputDataProvider.ref,
+                lvCoordinatorAdapter.ref,
+                msgAdapters
+              )
+            )
+          )
         )
-      )
+
+        /* Send a failed request response */
+        val exc = new RuntimeException("Some random failure.")
+        awaitingTestKit.run(
+          WrappedInputDataResponse(
+            InputDataProvider.AssetReadFailed(
+              exc
+            )
+          )
+        )
+
+        awaitingTestKit.logEntries() should contain only CapturedLogEvent(
+          Level.ERROR,
+          "Request of needed input data failed. Stop low voltage grid generation.",
+          Some(
+            RequestFailedException(
+              "The requested asset data cannot be read. Stop generation. Exception:",
+              exc
+            )
+          ),
+          None
+        )
+        awaitingTestKit.isAlive shouldBe false
+      }
+
       "spawn a child actor only if all data has arrived" in {
+
+        val awaitingData = AwaitingData.empty(
+          IdleData(
+            cfg,
+            inputDataProvider.ref,
+            lvCoordinatorAdapter.ref,
+            msgAdapters
+          )
+        )
+
+        val runId = UUID.randomUUID()
         val awaitingTestKit = BehaviorTestKit[Request](
           LvCoordinator invokePrivate PrivateMethod[Behavior[
             coordinator.Request

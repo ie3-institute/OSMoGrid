@@ -57,7 +57,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
 
         // 1 building not in landuse and therefore filtered out
         buildingGraphConnections.size shouldBe 2
-        // the ways have a common point of connection which means 1 node is doubled therefore we expect 4 not 5
+        // the ways have common points of connection which means consecutive ways share a node. Therefore we expect 4 not 6
         osmGraph.vertexSet().size shouldBe 4
         new ConnectivityInspector(osmGraph).isConnected shouldBe true
       }
@@ -205,48 +205,65 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
           isSubstation = false
         )
         val updateGraphWithBuildingConnections =
-          PrivateMethod[OsmGraph](Symbol("updateGraphWithBuildingConnections"))
-
-        "not considering building graph connections these are not added to the graph" in {
-          val osmGraph = new OsmGraph()
-          osmGraph.addVertex(nodes.highway1Node1)
-          osmGraph.addVertex(nodes.highway1Node2)
-          osmGraph.addWeightedEdge(nodes.highway1Node1, nodes.highway1Node2)
-          val actual: OsmGraph =
-            LvGraphGeneratorSupport invokePrivate updateGraphWithBuildingConnections(
-              osmGraph,
-              Seq(buildingGraphConnection).par,
-              true
-            )
-          actual.vertexSet().size() shouldBe 4
-          actual.containsVertex(connectingNode) shouldBe true
-          actual.containsEdge(
-            nodes.highway1Node1,
-            nodes.highway1Node2
-          ) shouldBe false
-          actual.containsEdge(nodes.highway1Node1, connectingNode) shouldBe true
-          actual.containsEdge(connectingNode, nodes.highway1Node2) shouldBe true
-        }
+          PrivateMethod[(OsmGraph, ParSeq[BuildingGraphConnection])](
+            Symbol("updateGraphWithBuildingConnections")
+          )
 
         "considering building graph connections these are added to the graph" in {
           val osmGraph = new OsmGraph()
           osmGraph.addVertex(nodes.highway1Node1)
           osmGraph.addVertex(nodes.highway1Node2)
           osmGraph.addWeightedEdge(nodes.highway1Node1, nodes.highway1Node2)
-          val actual: OsmGraph =
+          val (graph, bgcs) =
+            LvGraphGeneratorSupport invokePrivate updateGraphWithBuildingConnections(
+              osmGraph,
+              Seq(buildingGraphConnection).par,
+              true
+            )
+          graph.vertexSet().size() shouldBe 4
+          graph.containsVertex(connectingNode) shouldBe true
+          graph.containsEdge(
+            nodes.highway1Node1,
+            nodes.highway1Node2
+          ) shouldBe false
+          graph.containsEdge(nodes.highway1Node1, connectingNode) shouldBe true
+          graph.containsEdge(connectingNode, nodes.highway1Node2) shouldBe true
+          bgcs.seq match {
+            case Nil => fail("Building graph connections are empty")
+            case Seq(bgc: BuildingGraphConnection) =>
+              graph.containsEdge(
+                connectingNode,
+                bgc.buildingNode.getOrElse(fail("Building node is not set"))
+              ) shouldBe true
+            case _ => fail("More than one building graph connection")
+          }
+        }
+
+        "not considering building graph connections these are not added to the graph" in {
+          val osmGraph = new OsmGraph()
+          osmGraph.addVertex(nodes.highway1Node1)
+          osmGraph.addVertex(nodes.highway1Node2)
+          osmGraph.addWeightedEdge(nodes.highway1Node1, nodes.highway1Node2)
+          val (graph, bgcs) =
             LvGraphGeneratorSupport invokePrivate updateGraphWithBuildingConnections(
               osmGraph,
               Seq(buildingGraphConnection).par,
               false
             )
-          actual.vertexSet().size() shouldBe 3
-          actual.containsVertex(connectingNode) shouldBe true
-          actual.containsEdge(
+          graph.vertexSet().size() shouldBe 3
+          graph.containsVertex(connectingNode) shouldBe true
+          graph.containsEdge(
             nodes.highway1Node1,
             nodes.highway1Node2
           ) shouldBe false
-          actual.containsEdge(nodes.highway1Node1, connectingNode) shouldBe true
-          actual.containsEdge(connectingNode, nodes.highway1Node2) shouldBe true
+          graph.containsEdge(nodes.highway1Node1, connectingNode) shouldBe true
+          graph.containsEdge(connectingNode, nodes.highway1Node2) shouldBe true
+          bgcs.seq match {
+            case Nil => fail("Building graph connections are empty")
+            case Seq(bgc: BuildingGraphConnection) =>
+              bgc.buildingNode shouldBe None
+            case _ => fail("More than one building graph connection")
+          }
         }
       }
     }

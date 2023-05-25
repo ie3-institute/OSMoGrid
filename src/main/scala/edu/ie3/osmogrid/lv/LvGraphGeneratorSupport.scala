@@ -320,7 +320,7 @@ object LvGraphGeneratorSupport {
   }
 
   /** Updates the graph by adding the building graph connections and updating
-    * the edges of the surrounding nodes
+    * the edges of the surrounding nodes.
     *
     * @param graph
     *   the graph to update
@@ -333,8 +333,8 @@ object LvGraphGeneratorSupport {
       graph: OsmGraph,
       buildingGraphConnections: ParSeq[BuildingGraphConnection],
       considerBuildingConnections: Boolean
-  ): OsmGraph = {
-    buildingGraphConnections.foreach(bgc => {
+  ): (OsmGraph, ParSeq[BuildingGraphConnection]) = {
+    val updatedBgcs = buildingGraphConnections.map(bgc => {
       if (bgc.hasNewNode) {
         graph.addVertex(bgc.graphConnectionNode)
         graph.removeEdge(bgc.highwayNodeA, bgc.highwayNodeB)
@@ -352,9 +352,9 @@ object LvGraphGeneratorSupport {
         graph.addVertex(buildingNode)
         graph.addWeightedEdge(bgc.graphConnectionNode, buildingNode)
         bgc.copy(buildingConnectionNode = Some(buildingNode))
-      }
+      } else bgc
     })
-    graph
+    (graph, updatedBgcs)
   }
 
   private def divideDisconnectedGraphs(

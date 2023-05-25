@@ -141,7 +141,15 @@ private final case class AwaitingData(
     case InputDataProvider.OsmReadFailed(reason) =>
       Failure(
         RequestFailedException(
-          "The requested OSM data cannot be read. Stop generation."
+          "The requested OSM data cannot be read. Stop generation. Exception:",
+          reason
+        )
+      )
+    case InputDataProvider.AssetReadFailed(reason) =>
+      Failure(
+        RequestFailedException(
+          "The requested asset data cannot be read. Stop generation. Exception:",
+          reason
         )
       )
   }
