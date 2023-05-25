@@ -120,8 +120,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
           )
         buildingGraphConnections.size shouldBe 2
         buildingGraphConnections.foreach {
-          case bgc: BuildingGraphConnection
-              if bgc.building == ways.building1 => {
+          case bgc: BuildingGraphConnection if bgc.building == ways.building1 =>
             val highWayCoordinateA = GeoUtils.buildCoordinate(
               nodes.highway1Node1.latitude,
               nodes.highway1Node1.longitude
@@ -140,7 +139,6 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
                 highWayCoordinateB,
                 1e-3
               ) shouldBe true
-          }
           case bgc: BuildingGraphConnection if bgc.building == ways.building2 =>
             bgc.highwayNodeA shouldBe nodes.highway2Node1
             bgc.highwayNodeB shouldBe nodes.highway2Node2
@@ -233,7 +231,9 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
             case Seq(bgc: BuildingGraphConnection) =>
               graph.containsEdge(
                 connectingNode,
-                bgc.buildingNode.getOrElse(fail("Building node is not set"))
+                bgc.buildingConnectionNode.getOrElse(
+                  fail("Building node is not set")
+                )
               ) shouldBe true
             case _ => fail("More than one building graph connection")
           }
@@ -261,7 +261,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
           bgcs.seq match {
             case Nil => fail("Building graph connections are empty")
             case Seq(bgc: BuildingGraphConnection) =>
-              bgc.buildingNode shouldBe None
+              bgc.buildingConnectionNode shouldBe None
             case _ => fail("More than one building graph connection")
           }
         }

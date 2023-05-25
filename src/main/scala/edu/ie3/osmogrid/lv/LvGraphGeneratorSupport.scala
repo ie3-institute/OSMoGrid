@@ -11,30 +11,24 @@ import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.util.geo.GeoUtils.{buildCoordinate, orthogonalProjection}
-import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
+import edu.ie3.util.geo.RichGeometries.{RichCoordinate, RichPolygon}
 import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
+import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
 import edu.ie3.util.quantities.interfaces.Irradiance
+import org.jgrapht.alg.connectivity.ConnectivityInspector
 import org.locationtech.jts.geom.Coordinate
 import tech.units.indriya.ComparableQuantity
-
-import java.util.UUID
-import javax.measure.quantity.{Length, Power}
-import scala.collection.parallel.ParSeq
-import scala.util.{Success, Try}
-import edu.ie3.util.geo.RichGeometries.{RichCoordinate, RichPolygon}
-import org.jgrapht.{GraphTests, Graphs}
-import org.jgrapht.alg.connectivity.{
-  BiconnectivityInspector,
-  ConnectivityInspector
-}
-import org.jgrapht.graph.DefaultWeightedEdge
 import utils.OsmoGridUtils.{
   calcHouseholdPower,
   isInsideLanduse,
   safeBuildPolygon
 }
 
+import java.util.UUID
+import javax.measure.quantity.{Length, Power}
+import scala.collection.parallel.ParSeq
 import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.util.{Success, Try}
 
 object LvGraphGeneratorSupport {
 
@@ -128,15 +122,16 @@ object LvGraphGeneratorSupport {
       minDistance
     )
     val streetGraph = buildStreetGraph(highways.seq.toSeq, highwayNodes)
-    val updatedGraph = updateGraphWithBuildingConnections(
-      streetGraph,
-      buildingGraphConnections,
-      considerBuildingConnections
-    )
+    val (updatedGraph, updatedBgcs) =
+      updateGraphWithBuildingConnections(
+        streetGraph,
+        buildingGraphConnections,
+        considerBuildingConnections
+      )
 
     divideDisconnectedGraphs(
       updatedGraph,
-      buildingGraphConnections
+      updatedBgcs
     )
   }
 
@@ -402,57 +397,4 @@ object LvGraphGeneratorSupport {
 
     } else Seq((graph, buildingGraphConnections.seq.toSeq))
   }
-
 }
-
-//      connectedSets.map(connectedSet => {
-//        Graphs.inducedSubgraph(graph, connectedSet)
-//        val connectedGraph = osmGraph.
-//        val osmGraph = new OsmGraph()
-//        val graphNodes = graph.vertexSet().asScala
-//
-//
-//        graphNodes.foreach(node => osmGraph.addVertex(node))
-//        graph.edgeSet().forEach(edge => osmGraph.addEdge(graph.getEdgeSource(edge), graph.getEdgeTarget(edge), edge))
-//
-
-//
-//        val buildingGraphConnections = graphNodes.flatMap(node => bgcMap.get(node)).toSeq
-//        (osmGraph, buildingGraphConnections)
-//      })
-//    }
-//    else Seq((graph, buildingGraphConnections.seq.toSeq))
-//    connectedNodes.map(nodes => {
-//      val subGraph = new OsmGraph()
-//      nodes.asScala.foreach(subGraph.addVertex)
-//      nodes.asScala.foreach(node => {
-//        graph
-//          .edgesOf(node)
-//          .asScala
-//          .foreach(edge => {
-//            if (! subGraph.containsEdge(edge)) {
-//              val source = graph.getEdgeSource(edge)
-//              val target = graph.getEdgeTarget(edge)
-//              // todo it can happen that the source or target node is not in the subgraph find out why
-//              if (node != source) {
-//                try {
-//                  subGraph.addWeightedEdge(source, node)
-//                }
-//                catch {
-//                  case e: IllegalArgumentException =>
-//                    println(s"Could not add edge $source -> $node")
-//                }
-//              } else
-//                try {
-//                  subGraph.addWeightedEdge(node, target)
-//                }
-//                catch {
-//                  case e: IllegalArgumentException =>
-//                    println(s"Could not add edge $source -> $node")
-//                }
-//            }
-//          })
-//      })
-//      val bgcs = nodes.asScala.toSeq.flatMap(node => bgcMap.get(node))
-//      (subGraph, bgcs)
-//}
