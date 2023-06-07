@@ -46,6 +46,9 @@ object ResultListener {
         case gridResult: GridResult =>
           stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
             case Success(_) =>
+              stateData.ctx.log.info(
+                s"Stash of ResultListener is not empty! This indicates an invalid system state!"
+              )
               ResultHandlingSucceeded
             case Failure(exception) =>
               ResultHandlingFailed(exception)
@@ -57,6 +60,7 @@ object ResultListener {
           context.log.warn(
             s"Stash of ResultListener is not empty! This indicates an invalid system state!"
           )
+        println("Close sinks")
         stateData.sink.close()
         context.log.info(s"ResultListener stopped!")
         Behaviors.stopped
@@ -68,7 +72,7 @@ object ResultListener {
     Behaviors.receiveMessage {
       case ResultHandlingFailed(cause) =>
         stateData.ctx.log.error(
-          s"Error during persistence of grid result. Shutting down!!",
+          s"Error during persistence of grid result. Shutting down!",
           cause
         )
         Behaviors.stopped
