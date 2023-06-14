@@ -8,6 +8,7 @@ package edu.ie3.osmogrid.io.output
 
 import akka.actor.typed.{Behavior, PostStop}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer}
+import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Output
 import edu.ie3.osmogrid.exception.IllegalConfigException
@@ -19,7 +20,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-object ResultListener {
+object ResultListener extends ActorStopSupport[ListenerStateData] {
 
   def apply(
       runId: UUID,
@@ -41,43 +42,41 @@ object ResultListener {
   private def idle(
       stateData: ListenerStateData
   ): Behavior[ResultListenerProtocol] =
-    Behaviors
-      .receiveMessagePartial[ResultListenerProtocol] {
-        case gridResult: GridResult =>
-          stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
-            case Success(_) =>
-              ResultHandlingSucceeded
-            case Failure(exception) =>
-              ResultHandlingFailed(exception)
-          }
-          save(stateData)
-      }
-      .receiveSignal { case (context, PostStop) =>
-        if (!stateData.buffer.isEmpty)
-          context.log.warn(
-            s"Stash of ResultListener is not empty! This indicates an invalid system state!"
-          )
-        stateData.sink.close()
-        context.log.info(s"ResultListener stopped!")
-        Behaviors.stopped
-      }
+    Behaviors.receiveMessagePartial {
+      case gridResult: GridResult =>
+        stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
+          case Success(_) =>
+            ResultHandlingSucceeded
+          case Failure(exception) =>
+            ResultHandlingFailed(exception)
+        }
+        save(stateData)
+    }
 
   private def save(
       stateData: ListenerStateData
   ): Behavior[ResultListenerProtocol] =
-    Behaviors.receiveMessage {
-      case ResultHandlingFailed(cause) =>
-        stateData.ctx.log.error(
-          s"Error during persistence of grid result. Shutting down!!",
-          cause
-        )
-        Behaviors.stopped
-      case ResultHandlingSucceeded =>
-        Behaviors.stopped
-      case other =>
-        stateData.buffer.stash(other)
-        Behaviors.same
-    }
+    Behaviors.
+      receiveMessage[ResultListenerProtocol] {
+        case ResultHandlingFailed(cause) =>
+          stateData.ctx.log.error(
+            s"Error during persistence of grid result. Shutting down!",
+            cause
+          )
+          Behaviors.stopped
+        case ResultHandlingSucceeded =>
+          Behaviors.stopped
+        case other =>
+          stateData.buffer.stash(other)
+          Behaviors.same
+      }
+      .receiveSignal { case (ctx, PostStop) =>
+        if (!stateData.buffer.isEmpty)
+          ctx.log.warn(
+            s"Stash of ResultListener is not empty! This indicates an invalid system state!"
+          )
+        postStopCleanUp(ctx.log, stateData)
+      }
 
   private def init(
       ctx: ActorContext[ResultListenerProtocol],
@@ -90,7 +89,7 @@ object ResultListener {
         ctx.log.error(s"Cannot instantiate ResultListener!", cause)
         Behaviors.stopped
       case other =>
-        // stash all other messages for later processing,
+        // stash all other messages for later processing
         buffer.stash(other)
         Behaviors.same
     }
@@ -112,4 +111,7 @@ object ResultListener {
         )
     }
 
+  override protected def cleanUp(stateData: ListenerStateData): Unit = {
+    stateData.sink.close()
+  }
 }
