@@ -48,11 +48,11 @@ object TestGridFactory {
     *   A JointGridContainer for testing purposes
     */
   def createJointGrid(
-                       gridName: String = "TestGrid",
-                       rawGridElements: RawGridElements = createEmptyRawGridElements(),
-                       systemParticipants: SystemParticipants = createEmptySystemParticipants(),
-                       graphicElements: GraphicElements = createEmptyGraphicElements()
-                     ): JointGridContainer =
+      gridName: String = "TestGrid",
+      rawGridElements: RawGridElements = createEmptyRawGridElements(),
+      systemParticipants: SystemParticipants = createEmptySystemParticipants(),
+      graphicElements: GraphicElements = createEmptyGraphicElements()
+  ): JointGridContainer =
     new JointGridContainer(
       gridName,
       rawGridElements,
@@ -80,12 +80,12 @@ object TestGridFactory {
     *   A SubGridContainer for testing purposes
     */
   def createSubGrid(
-                     gridName: String = "TestGrid",
-                     subgrid: Int = 100,
-                     rawGridElements: RawGridElements = createEmptyRawGridElements(),
-                     systemParticipants: SystemParticipants = createEmptySystemParticipants(),
-                     graphicElements: GraphicElements = createEmptyGraphicElements()
-                   ): SubGridContainer =
+      gridName: String = "TestGrid",
+      subgrid: Int = 100,
+      rawGridElements: RawGridElements = createEmptyRawGridElements(),
+      systemParticipants: SystemParticipants = createEmptySystemParticipants(),
+      graphicElements: GraphicElements = createEmptyGraphicElements()
+  ): SubGridContainer =
     new SubGridContainer(
       gridName,
       subgrid,

@@ -42,22 +42,21 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
   private def idle(
       stateData: ListenerStateData
   ): Behavior[ResultListenerProtocol] =
-    Behaviors.receiveMessagePartial {
-      case gridResult: GridResult =>
-        stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
-          case Success(_) =>
-            ResultHandlingSucceeded
-          case Failure(exception) =>
-            ResultHandlingFailed(exception)
-        }
-        save(stateData)
+    Behaviors.receiveMessagePartial { case gridResult: GridResult =>
+      stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
+        case Success(_) =>
+          ResultHandlingSucceeded
+        case Failure(exception) =>
+          ResultHandlingFailed(exception)
+      }
+      save(stateData)
     }
 
   private def save(
       stateData: ListenerStateData
   ): Behavior[ResultListenerProtocol] =
-    Behaviors.
-      receiveMessage[ResultListenerProtocol] {
+    Behaviors
+      .receiveMessage[ResultListenerProtocol] {
         case ResultHandlingFailed(cause) =>
           stateData.ctx.log.error(
             s"Error during persistence of grid result. Shutting down!",

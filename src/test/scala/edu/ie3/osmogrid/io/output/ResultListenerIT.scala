@@ -25,7 +25,7 @@ import scala.jdk.CollectionConverters._
 import java.util.UUID
 
 class ResultListenerIT
-  extends ScalaTestWithActorTestKit
+    extends ScalaTestWithActorTestKit
     with UnitSpec
     with IOTestCommons
     with ThreeWindingTestData {
@@ -49,7 +49,8 @@ class ResultListenerIT
       val initSinks = PrivateMethod[Future[ResultSink]](Symbol("initSinks"))
 
       "provide sinks correctly" in {
-        val sinkFuture = ResultListener invokePrivate initSinks(runId, validConfig)
+        val sinkFuture =
+          ResultListener invokePrivate initSinks(runId, validConfig)
 
         val sink = Await.result(sinkFuture, 5.seconds)
 
@@ -57,7 +58,8 @@ class ResultListenerIT
       }
 
       "throw exception in case of unsupported config" in {
-        val sinkFuture = ResultListener invokePrivate initSinks(runId, maliciousConfig)
+        val sinkFuture =
+          ResultListener invokePrivate initSinks(runId, maliciousConfig)
 
         assertThrows[IllegalConfigException] {
           Await.result(sinkFuture, 5.seconds)
@@ -85,7 +87,8 @@ class ResultListenerIT
         val parsedCfg = ConfigFactory.parseMap(
           Map("csv.directory" -> testTmpDir).asJava
         )
-        val config = OsmoGridConfig.Output(parsedCfg, "output", new $TsCfgValidator())
+        val config =
+          OsmoGridConfig.Output(parsedCfg, "output", new $TsCfgValidator())
 
         val testActor = testKit.spawn(
           Behaviors.monitor(

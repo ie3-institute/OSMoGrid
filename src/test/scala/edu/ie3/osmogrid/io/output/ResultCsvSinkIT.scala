@@ -16,9 +16,9 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.Await
 
 class ResultCsvSinkIT
-  extends UnitSpec
-  with IOTestCommons
-  with ThreeWindingTestData {
+    extends UnitSpec
+    with IOTestCommons
+    with ThreeWindingTestData {
 
   "A ResultCsvSink" should {
     "handle a given valid GridResult correctly" in {
