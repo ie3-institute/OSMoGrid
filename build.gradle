@@ -100,7 +100,7 @@ dependencies {
   implementation 'org.jgrapht:jgrapht-core:1.5.2'
 
 
-  implementation 'tech.units:indriya:2.1.4'
+  implementation 'tech.units:indriya:2.2'
   implementation 'org.locationtech.jts:jts-core:1.19.0'
 
   // testing
