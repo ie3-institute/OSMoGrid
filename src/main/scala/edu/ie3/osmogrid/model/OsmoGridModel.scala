@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.model
 
-import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
+import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter, MvFilter}
 import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
 import edu.ie3.util.osm.model.{OsmContainer, OsmEntity}
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
@@ -14,6 +14,8 @@ import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
 
 import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
 import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
+import org.openstreetmap.osmosis.osmbinary.osmformat
+
 import scala.collection.parallel.ParSeq
 
 sealed trait OsmoGridModel {
@@ -153,6 +155,17 @@ object OsmoGridModel {
 
     }
 
+  }
+
+  final case class MvOsmoGridModel(
+      highways: ParSeq[EnhancedOsmEntity],
+      hvSubstations: ParSeq[EnhancedOsmEntity],
+      lvSubstation: ParSeq[EnhancedOsmEntity],
+      filter: MvFilter
+  ) extends OsmoGridModel {
+    def filterForWays(): Seq[osmformat.Way] = ???
+
+    override def +(additional: OsmoGridModel): Option[OsmoGridModel] = ???
   }
 
   case class EnhancedOsmEntity(

@@ -74,4 +74,7 @@ object SourceFilter {
         substationFilter
       )
   }
+
+  final case class MvFilter(
+  ) extends SourceFilter
 }
