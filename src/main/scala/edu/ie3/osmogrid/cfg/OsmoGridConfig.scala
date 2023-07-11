@@ -1,5 +1,5 @@
 /*
- * © 2022. TU Dortmund University,
+ * © 2023. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
@@ -13,13 +13,15 @@ final case class OsmoGridConfig(
 )
 object OsmoGridConfig {
   final case class Generation(
-      lv: scala.Option[OsmoGridConfig.Generation.Lv]
+      lv: scala.Option[OsmoGridConfig.Generation.Lv],
+      mv: scala.Option[OsmoGridConfig.Generation.Mv]
   )
   object Generation {
     final case class Lv(
         boundaryAdminLevel: OsmoGridConfig.Generation.Lv.BoundaryAdminLevel,
         distinctHouseConnections: scala.Boolean,
-        osm: OsmoGridConfig.Generation.Lv.Osm
+        osm: OsmoGridConfig.Generation.Lv.Osm,
+        voltageLevel: scala.List[java.lang.String]
     )
     object Lv {
       final case class BoundaryAdminLevel(
@@ -109,7 +111,83 @@ object OsmoGridConfig {
             else com.typesafe.config.ConfigFactory.parseString("osm{}"),
             parentPath + "osm.",
             $tsCfgValidator
+          ),
+          voltageLevel =
+            $_L$_str(c.getList("voltageLevel"), parentPath, $tsCfgValidator)
+        )
+      }
+    }
+
+    final case class Mv(
+        osm: OsmoGridConfig.Generation.Mv.Osm,
+        spawnMissingHvNodes: scala.Boolean,
+        voltageLevel: scala.List[java.lang.String]
+    )
+    object Mv {
+      final case class Osm(
+          filter: scala.Option[OsmoGridConfig.Generation.Mv.Osm.Filter]
+      )
+      object Osm {
+        final case class Filter(
+            building: scala.List[java.lang.String],
+            highway: scala.List[java.lang.String],
+            landuse: scala.List[java.lang.String]
+        )
+        object Filter {
+          def apply(
+              c: com.typesafe.config.Config,
+              parentPath: java.lang.String,
+              $tsCfgValidator: $TsCfgValidator
+          ): OsmoGridConfig.Generation.Mv.Osm.Filter = {
+            OsmoGridConfig.Generation.Mv.Osm.Filter(
+              building =
+                $_L$_str(c.getList("building"), parentPath, $tsCfgValidator),
+              highway =
+                $_L$_str(c.getList("highway"), parentPath, $tsCfgValidator),
+              landuse =
+                $_L$_str(c.getList("landuse"), parentPath, $tsCfgValidator)
+            )
+          }
+        }
+
+        def apply(
+            c: com.typesafe.config.Config,
+            parentPath: java.lang.String,
+            $tsCfgValidator: $TsCfgValidator
+        ): OsmoGridConfig.Generation.Mv.Osm = {
+          OsmoGridConfig.Generation.Mv.Osm(
+            filter =
+              if (c.hasPathOrNull("filter"))
+                scala.Some(
+                  OsmoGridConfig.Generation.Mv.Osm.Filter(
+                    c.getConfig("filter"),
+                    parentPath + "filter.",
+                    $tsCfgValidator
+                  )
+                )
+              else None
           )
+        }
+      }
+
+      def apply(
+          c: com.typesafe.config.Config,
+          parentPath: java.lang.String,
+          $tsCfgValidator: $TsCfgValidator
+      ): OsmoGridConfig.Generation.Mv = {
+        OsmoGridConfig.Generation.Mv(
+          osm = OsmoGridConfig.Generation.Mv.Osm(
+            if (c.hasPathOrNull("osm")) c.getConfig("osm")
+            else com.typesafe.config.ConfigFactory.parseString("osm{}"),
+            parentPath + "osm.",
+            $tsCfgValidator
+          ),
+          spawnMissingHvNodes =
+            !c.hasPathOrNull("spawnMissingHvNodes") || c.getBoolean(
+              "spawnMissingHvNodes"
+            ),
+          voltageLevel =
+            $_L$_str(c.getList("voltageLevel"), parentPath, $tsCfgValidator)
         )
       }
     }
@@ -125,6 +203,13 @@ object OsmoGridConfig {
             scala.Some(
               OsmoGridConfig.Generation
                 .Lv(c.getConfig("lv"), parentPath + "lv.", $tsCfgValidator)
+            )
+          else None,
+        mv =
+          if (c.hasPathOrNull("mv"))
+            scala.Some(
+              OsmoGridConfig.Generation
+                .Mv(c.getConfig("mv"), parentPath + "mv.", $tsCfgValidator)
             )
           else None
       )

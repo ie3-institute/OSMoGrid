@@ -16,8 +16,6 @@ import org.jgrapht.alg.shortestpath.BFSShortestPath
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 
-import java.util.UUID
-
 object MvGraphBuilder {
 
   /** Method to find the closest [[Node]] for a given [[NodeInput]].

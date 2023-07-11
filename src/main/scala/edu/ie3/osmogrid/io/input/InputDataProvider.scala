@@ -12,6 +12,7 @@ import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
   Transformer2WTypeInput
 }
+import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.InputDataProvider.InputDataEvent
@@ -45,6 +46,16 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
   ) extends Request
       with InputDataEvent
 
+  final case class ReqLvAssets(
+      replyTo: ActorRef[InputDataProvider.Response]
+  ) extends Request
+      with InputDataEvent
+
+  final case class ReqHvAssets(
+      replyTo: ActorRef[InputDataProvider.Response]
+  ) extends Request
+      with InputDataEvent
+
   case object Terminate extends Request with InputDataEvent
 
   // external responses
@@ -57,6 +68,10 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
       with InputDataEvent
   final case class RepAssetTypes(assetInformation: AssetInformation)
       extends Response
+
+  final case class RepLv(lvData: List[SubGridContainer]) extends Response
+
+  final case class RepHv(hvData: List[SubGridContainer]) extends Response
 
   final case class AssetInformation(
       lineTypes: Seq[LineTypeInput],
@@ -94,6 +109,12 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
             readOsmData(providerData, replyTo)
           case ReqAssetTypes(_) =>
             ctx.log.info("Got request to provide asset types. But do nothing.")
+            Behaviors.same
+          case ReqLvAssets(replyTo) =>
+            // TODO: Implement lv grid data request
+            Behaviors.same
+          case ReqHvAssets(replyTo) =>
+            // TODO: Implement hv grid data request
             Behaviors.same
           case Terminate =>
             terminate(ctx.log, providerData)

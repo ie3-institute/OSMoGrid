@@ -18,6 +18,7 @@ import edu.ie3.osmogrid.lv.coordinator.{
   LvCoordinator,
   Request => LvCoordinatorRequest
 }
+import edu.ie3.osmogrid.mv.{MvCoordinator, MvRequest, MvResponse, ReqMvGrids}
 
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
@@ -50,7 +51,7 @@ trait RunSupport {
 
         /* Check, which voltage level configs are given. Start with lv level, if this is desired for. */
         validConfig.generation match {
-          case Generation(Some(lvConfig)) =>
+          case Generation(Some(lvConfig), Some(mvConfig)) =>
             ctx.log.info("Starting low voltage grid coordinator ...")
             val (inputProvider, resultEventListener) =
               spawnIoActors(
@@ -66,14 +67,23 @@ trait RunSupport {
               runGuardianData.msgAdapters.lvCoordinator,
               ctx
             )
+            val mvCoordinator = startMvGridGeneration(
+              runGuardianData.runId,
+              inputProvider,
+              mvConfig,
+              runGuardianData.msgAdapters.mvCoordinator,
+              ctx
+            )
             Success(
               ChildReferences(
                 inputProvider,
                 resultEventListener,
                 runGuardianData.additionalListener,
-                Some(lvCoordinator)
+                None,
+                Some(mvCoordinator)
               )
             )
+
           case unsupported =>
             ctx.log.error(
               s"Received unsupported grid generation config '$unsupported'. Stopping run with id '${runGuardianData.runId}'!"
@@ -208,6 +218,24 @@ trait RunSupport {
     lvCoordinator
   }
 
-  private def startMvGridGeneration() = ???
+  private def startMvGridGeneration(
+      runId: UUID,
+      inputDataProvider: ActorRef[InputDataProvider.InputDataEvent],
+      mvConfig: OsmoGridConfig.Generation.Mv,
+      mvCoordinatorAdapter: ActorRef[MvResponse],
+      ctx: ActorContext[Request]
+  ): ActorRef[MvRequest] = {
+    val mvCoordinator = ctx.spawn(
+      MvCoordinator(mvConfig, inputDataProvider, mvCoordinatorAdapter),
+      s"MvCoordinator_${runId.toString}"
+    )
+
+    ctx.watchWith(mvCoordinator, MvCoordinatorDied)
+
+    ctx.log.info("Stating mv grid generation ...")
+    mvCoordinator ! ReqMvGrids
+
+    mvCoordinator
+  }
 
 }
