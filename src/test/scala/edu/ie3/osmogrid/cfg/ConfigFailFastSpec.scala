@@ -16,6 +16,7 @@ class ConfigFailFastSpec extends UnitSpec {
       "fail on missing osm input definition" in {
         OsmoGridConfigFactory.parseWithoutFallback {
           """input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.separator = ","
             |input.asset.file.hierarchic = false
             |output.file.directory = "output_file_path"
             |generation.lv.distinctHouseConnections = true""".stripMargin
@@ -36,6 +37,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           """input.osm.pbf.file = ""
             |input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.separator = ","
             |input.asset.file.hierarchic = false
             |output.file.directory = "output_file_path"
             |generation.lv.distinctHouseConnections = true""".stripMargin
@@ -74,6 +76,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           """input.osm.pbf.file = "input_file_path"
             |input.asset.file.directory = ""
+            |input.asset.file.separator = ","
             |input.asset.file.hierarchic = false
             |output.file.directory = "output_file_path"
             |generation.lv.distinctHouseConnections = true""".stripMargin
@@ -94,6 +97,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           """input.osm.pbf.file = "input_file_path"
             |input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.separator = ","
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
             |generation.lv.boundaryAdminLevel.lowest = 99""".stripMargin
@@ -114,6 +118,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           """input.osm.pbf.file = "input_file_path"
             |input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.separator = ","
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
             |generation.lv.boundaryAdminLevel.starting = -1""".stripMargin
@@ -134,6 +139,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           """input.osm.pbf.file = "input_file_path"
             |input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.separator = ","
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"
             |generation.lv.boundaryAdminLevel.starting = 5
@@ -158,6 +164,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           """input.osm.pbf.file = "input_file_path"
             |input.asset.file.directory = "asset_input_dir"
+            |input.asset.file.separator = ","
             |input.asset.file.hierarchic = false
             |output.csv.directory = "output_file_path"""".stripMargin
         } match {
@@ -179,6 +186,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           """input.osm.pbf.file = "input_file_path"
           |input.asset.file.directory = "asset_input_dir"
+          |input.asset.file.separator = ","
           |input.asset.file.hierarchic = false
           |output.csv.directory = "output_file_path"
           |generation.lv.distinctHouseConnections = true""".stripMargin

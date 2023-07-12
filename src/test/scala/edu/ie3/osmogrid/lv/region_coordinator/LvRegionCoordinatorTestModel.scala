@@ -15,16 +15,14 @@ import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
-import org.scalatest.{OptionValues, TryValues}
+import edu.ie3.test.common.UnitSpec
 
-import java.nio.file.Paths
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
 object LvRegionCoordinatorTestModel
     extends ScalaTestWithActorTestKit
-    with OptionValues
-    with TryValues {
+    with UnitSpec {
 
   private val actorTestKit = ActorTestKit("LvRegionCoordinatorIT")
 
@@ -34,16 +32,13 @@ object LvRegionCoordinatorTestModel
       : (OsmoGridConfig.Generation.Lv, LvOsmoGridModel) = {
     val inputResource = getClass.getResource("DoBoCas.pbf")
     assert(inputResource != null)
-    val resourcePath =
-      Paths
-        .get(inputResource.toURI)
-        .toAbsolutePath
-        .toString
+    val resourcePath = getResourcePath("DoBoCas.pbf")
 
     val cfg = OsmoGridConfigFactory
       .parseWithoutFallback(
         s"""input.osm.pbf.file = "${resourcePath.replace("\\", "\\\\")}"
-           |input.asset.file.directory = "asset_input_dir"
+           |input.asset.file.directory = ${getResourcePath("/lv_assets")}
+           |input.asset.file.separator = ","
            |input.asset.file.hierarchic = false
            |output.csv.directory = "output_file_path"
            |generation.lv.distinctHouseConnections = true""".stripMargin
