@@ -20,7 +20,6 @@ import edu.ie3.osmogrid.io.input.InputDataProvider.{
 }
 import edu.ie3.osmogrid.model.SourceFilter.MvFilter
 
-import scala.:+
 import scala.util.{Failure, Success}
 
 object MvCoordinator extends ActorStopSupportStateless {
@@ -156,8 +155,8 @@ object MvCoordinator extends ActorStopSupportStateless {
   }
 
   // should start voronoi algorithm
-  // should start a VoronoiCoordinator (one for each voronoi polynomial)
-  // should call awaitResults
+  // should start VoronoiCoordinators (one for each voronoi polynomial)
+  // should call awaitMvGraphResults
   private def processInputData(
       guardian: ActorRef[MvResponse],
       msgAdapters: MvMessageAdapters
@@ -166,7 +165,8 @@ object MvCoordinator extends ActorStopSupportStateless {
       case (ctx, StartMvGeneration(cfg, lvGrids, hvGrids, osmGridModel)) =>
         val helper = VoronoiHelper(lvGrids, hvGrids, cfg, ctx)
 
-        val polynomials: List[VoronoiPolynomial] = helper.calculatePolynomials()
+        val polynomials: List[VoronoiPolynomial] =
+          helper.calculateVoronoiPolynomials()
 
         Behaviors.same
       case (ctx, MvTerminate) =>
@@ -193,9 +193,7 @@ object MvCoordinator extends ActorStopSupportStateless {
         val updatedData = awaitingMvGraphData
           .copy(graphs = awaitingMvGraphData.graphs :+ mvGraph)
 
-        if (!updatedData.isComplete) {
-          awaitMvGraphResults(updatedData)
-        } else {
+        if (updatedData.isComplete) {
           ctx.self ! StartMvGraphConversion(
             awaitingMvGraphData.cfg,
             awaitingMvGraphData.graphs
@@ -204,7 +202,7 @@ object MvCoordinator extends ActorStopSupportStateless {
             awaitingMvGraphData.guardian,
             awaitingMvGraphData.msgAdapters
           )
-        }
+        } else awaitMvGraphResults(updatedData)
       case (ctx, MvTerminate) =>
         terminate(ctx.log)
       case (ctx, unsupported) =>

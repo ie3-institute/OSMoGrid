@@ -8,7 +8,6 @@ package edu.ie3.osmogrid.mv
 
 import akka.actor.typed.Behavior
 import edu.ie3.osmogrid.ActorStopSupportStateless
-import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.MvOsmoGridModel
 
@@ -25,14 +24,19 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
   def awaitResult(): Behavior[MvResponse] = ???
 
   // should return the closest connections for all nodes in this voronoi polynomial
-  def findClosestConnections(
+  // the MvConnections can be used to build a mv graph
+  private def findClosestConnections(
       osmoGridModel: MvOsmoGridModel
   ): List[MvConnections] = {
     val (highways, highwayNodes) =
       OsmoGridModel.filterForWays(osmoGridModel.highways)
-    val streetGraph: OsmGraph =
-      MvGraphBuilder.buildStreetGraph(highways.seq.toSeq, highwayNodes)
-    MvGraphBuilder.findAllConnections(streetGraph, highwayNodes)
+
+    /*
+      TODO: Change closest connection calculation after alternative is properly tested
+      val streetGraph: OsmGraph = MvGraphBuilder.buildStreetGraph(highways.seq.toSeq, highwayNodes)
+      MvGraphBuilder.findAllConnections(streetGraph, highwayNodes)
+     */
+    MvGraphBuilder.findAllConnections(highwayNodes)
   }
 
   /** Function to perform cleanup tasks while shutting down

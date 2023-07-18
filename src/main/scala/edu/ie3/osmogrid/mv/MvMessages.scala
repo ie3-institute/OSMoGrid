@@ -152,8 +152,8 @@ final case class NodeConversion(
 final case class MvConnections(
     nodeA: Node,
     nodeB: Node,
-    distances: ComparableQuantity[Length],
-    path: GraphPath[Node, DistanceWeightedEdge]
+    distance: ComparableQuantity[Length],
+    path: Option[GraphPath[Node, DistanceWeightedEdge]]
 )
 
 final case class MvGraph(

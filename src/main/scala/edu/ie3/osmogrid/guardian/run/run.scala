@@ -26,8 +26,8 @@ object Run extends Request
   *
   * @param lvCoordinator
   *   Adapter for messages from [[LvCoordinator]]
- * @param mvCoordinator
- * Adapter for messages from [[MvCoordinator]]
+  * @param mvCoordinator
+  *   Adapter for messages from [[MvCoordinator]]
   * @param resultListener
   *   Adapter for messages from [[ResultEventListener]]
   */

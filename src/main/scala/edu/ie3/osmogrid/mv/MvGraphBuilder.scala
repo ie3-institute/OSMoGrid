@@ -44,6 +44,21 @@ object MvGraphBuilder {
     NodeConversion(node, sortedList(1)._1)
   }
 
+  // uses haversine formula to calculate the aerial distance between two OSM Nodes
+  // TODO: Replace it with the other findAllConnections method for possibly higher accuracy and less optimisation later
+  def findAllConnections(osmNodes: Map[Long, Node]): List[MvConnections] = {
+    val nodes: List[Node] = osmNodes.values.toList
+    val connections: List[(Node, Node)] = getAllPossibleConnections(nodes)
+
+    connections.map { case (nodeA, nodeB) =>
+      val distance = GeoUtils.calcHaversine(
+        nodeA.coordinate.getCoordinate,
+        nodeB.coordinate.getCoordinate
+      )
+      MvConnections(nodeA, nodeB, distance, None)
+    }
+  }
+
   // uses the street graph to find all connections between two OSM Nodes
   // returns a list of MvConnections
   // TODO: Testing if the selected shortest path algorithm is the best for our usecase
@@ -55,33 +70,45 @@ object MvGraphBuilder {
       new BFSShortestPath(osmGraph)
 
     val nodes = osmNodes.values.toList
-    val paths: List[(Node, SingleSourcePaths[Node, DistanceWeightedEdge])] =
-      nodes.map(node => (node, shortestPath.getPaths(node)))
+    val connections: List[(Node, Node)] = getAllPossibleConnections(nodes)
 
-    paths.flatMap(path => {
-      val startNode = path._1
-      val shortestPaths = path._2
+    val paths: Map[Node, SingleSourcePaths[Node, DistanceWeightedEdge]] =
+      nodes.map(node => (node, shortestPath.getPaths(node))).toMap
 
-      nodes
-        .flatMap { node =>
-          if (node != startNode) {
-            Some(startNode, shortestPaths.getPath(node))
-          } else {
-            None
-          }
-        }
-        .map { case (node, graphPath) =>
-          MvConnections(
-            node,
-            graphPath.getEndVertex,
-            Quantities.getQuantity(graphPath.getWeight, Units.METRE),
-            graphPath
-          )
-        }
-    })
+    connections.map { case (nodeA, nodeB) =>
+      val shortestPath = paths(nodeA)
+      val graphPath = shortestPath.getPath(nodeB)
+
+      MvConnections(
+        nodeA,
+        nodeB,
+        Quantities.getQuantity(graphPath.getWeight, Units.METRE),
+        Some(graphPath)
+      )
+    }
   }
 
   // builds a street graph
   def buildStreetGraph(ways: Seq[Way], nodes: Map[Long, Node]): OsmGraph = ???
 
+  // used to get all possible unique connections (a -> b == b -> a)
+  private def getAllPossibleConnections(
+      nodes: List[Node]
+  ): List[(Node, Node)] = {
+    val connections: List[(Node, Node)] = List.empty
+
+    // checks if a combination of two nodes is already found
+    // if not the combination is added
+    nodes.foreach(nodeA => {
+      nodes.foreach(nodeB => {
+        val t1 = (nodeA, nodeB)
+        val t2 = (nodeB, nodeA)
+        if (!connections.contains(t1) && !connections.contains(t2)) {
+          connections :+ t1
+        }
+      })
+    })
+
+    connections
+  }
 }
