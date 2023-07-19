@@ -57,9 +57,9 @@ trait RunSupport {
                 runGuardianData.runId,
                 validConfig.input,
                 ctx
-              ) // todo JH shift to process after generation!
+              )
 
-            // spin up listeners, watch them and wait until they terminate in this state FIXME actually do that?
+            // spin up listeners, watch them and wait until they terminate in this state
             val resultListener = spawnResultListener(
               runGuardianData.runId,
               runGuardianData.cfg.output,
