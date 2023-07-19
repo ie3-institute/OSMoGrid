@@ -19,6 +19,7 @@ import edu.ie3.osmogrid.io.input.InputDataProvider.{
   ReqOsm
 }
 import edu.ie3.osmogrid.model.SourceFilter.MvFilter
+import edu.ie3.osmogrid.mv.VoronoiHelper.VoronoiPolynomial
 
 import scala.util.{Failure, Success}
 
@@ -163,10 +164,9 @@ object MvCoordinator extends ActorStopSupportStateless {
   ): Behavior[MvRequest] = Behaviors
     .receive[MvRequest] {
       case (ctx, StartMvGeneration(cfg, lvGrids, hvGrids, osmGridModel)) =>
-        val helper = VoronoiHelper(lvGrids, hvGrids, cfg, ctx)
-
+        /* calculates all voronoi polynomials */
         val polynomials: List[VoronoiPolynomial] =
-          helper.calculateVoronoiPolynomials()
+          VoronoiHelper.calculateVoronoiPolynomials(lvGrids, hvGrids, cfg, ctx)
 
         Behaviors.same
       case (ctx, MvTerminate) =>

@@ -11,12 +11,26 @@ import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
+import org.jgrapht.GraphPath
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm.SingleSourcePaths
 import org.jgrapht.alg.shortestpath.BFSShortestPath
+import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 
+import javax.measure.quantity.Length
+
 object MvGraphBuilder {
+  final case class NodeConversion(
+      node: NodeInput,
+      osmNode: Node
+  )
+  final case class MvConnections(
+      nodeA: Node,
+      nodeB: Node,
+      distance: ComparableQuantity[Length],
+      path: Option[GraphPath[Node, DistanceWeightedEdge]]
+  )
 
   /** Method to find the closest [[Node]] for a given [[NodeInput]].
     * @param node
@@ -48,7 +62,7 @@ object MvGraphBuilder {
   // TODO: Replace it with the other findAllConnections method for possibly higher accuracy and less optimisation later
   def findAllConnections(osmNodes: Map[Long, Node]): List[MvConnections] = {
     val nodes: List[Node] = osmNodes.values.toList
-    val connections: List[(Node, Node)] = getAllPossibleConnections(nodes)
+    val connections: List[(Node, Node)] = getAllUniqueConnections(nodes)
 
     connections.map { case (nodeA, nodeB) =>
       val distance = GeoUtils.calcHaversine(
@@ -70,7 +84,7 @@ object MvGraphBuilder {
       new BFSShortestPath(osmGraph)
 
     val nodes = osmNodes.values.toList
-    val connections: List[(Node, Node)] = getAllPossibleConnections(nodes)
+    val connections: List[(Node, Node)] = getAllUniqueConnections(nodes)
 
     val paths: Map[Node, SingleSourcePaths[Node, DistanceWeightedEdge]] =
       nodes.map(node => (node, shortestPath.getPaths(node))).toMap
@@ -92,23 +106,29 @@ object MvGraphBuilder {
   def buildStreetGraph(ways: Seq[Way], nodes: Map[Long, Node]): OsmGraph = ???
 
   // used to get all possible unique connections (a -> b == b -> a)
-  private def getAllPossibleConnections(
+  private def getAllUniqueConnections(
       nodes: List[Node]
   ): List[(Node, Node)] = {
     val connections: List[(Node, Node)] = List.empty
 
-    // checks if a combination of two nodes is already found
-    // if not the combination is added
+    // algorithm to find all unique combinations
     nodes.foreach(nodeA => {
       nodes.foreach(nodeB => {
-        val t1 = (nodeA, nodeB)
-        val t2 = (nodeB, nodeA)
-        if (!connections.contains(t1) && !connections.contains(t2)) {
-          connections :+ t1
+        // it makes no sense to connect a node to itself => nodeA and nodeB cannot be the same
+        if (nodeA != nodeB) {
+          // two combinations possible
+          val t1 = (nodeA, nodeB)
+          val t2 = (nodeB, nodeA)
+
+          // if none of the combinations is already added, the first combination is added
+          if (!connections.contains(t1) && !connections.contains(t2)) {
+            connections :+ t1
+          }
         }
       })
     })
 
+    // returns all unique connections
     connections
   }
 }
