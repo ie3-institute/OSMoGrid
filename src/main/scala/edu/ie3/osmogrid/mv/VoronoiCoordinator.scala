@@ -10,6 +10,7 @@ import akka.actor.typed.Behavior
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.MvOsmoGridModel
+import edu.ie3.osmogrid.mv.MvGraphBuilder.MvConnections
 
 object VoronoiCoordinator extends ActorStopSupportStateless {
 

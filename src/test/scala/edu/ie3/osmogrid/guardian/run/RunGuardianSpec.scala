@@ -19,6 +19,7 @@ import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.io.output.ResultListener.{GridResult, ResultEvent}
 import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.mv.{MvRequest, MvResponse}
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.slf4j.event.Level
 
@@ -106,27 +107,37 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
       val running = PrivateMethod[Behavior[Request]](Symbol("running"))
 
       /* Test probes */
-      val lvCoordinatorAdapter =
+      val lvCoordinatorAdapter = {
         testKit.createTestProbe[coordinator.Response]()
+      }
+      val mvCoordinatorAdapter = {
+        testKit.createTestProbe[MvResponse]()
+      }
       val resultListenerAdapter =
         testKit.createTestProbe[ResultListener.Response]()
       val inputDataProvider =
         testKit.createTestProbe[InputDataProvider.InputDataEvent]()
       val resultListener = testKit.createTestProbe[ResultEvent]()
       val lvCoordinator = testKit.createTestProbe[coordinator.Request]()
+      val mvCoordinator = testKit.createTestProbe[MvRequest]()
 
       /* State data */
       val runGuardianData = RunGuardianData(
         runId,
         validConfig,
         Seq.empty[ActorRef[ResultEvent]],
-        MessageAdapters(lvCoordinatorAdapter.ref, resultListenerAdapter.ref)
+        MessageAdapters(
+          lvCoordinatorAdapter.ref,
+          mvCoordinatorAdapter.ref,
+          resultListenerAdapter.ref
+        )
       )
       val childReferences = ChildReferences(
         inputDataProvider.ref,
         Some(resultListener.ref),
         Seq.empty,
-        Some(lvCoordinator.ref)
+        Some(lvCoordinator.ref),
+        Some(mvCoordinator.ref)
       )
 
       val runningTestKit = BehaviorTestKit(

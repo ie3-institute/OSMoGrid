@@ -13,6 +13,7 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.io.output.ResultListener
 import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.mv.MvResponse
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.{Logger, LoggerFactory}
@@ -77,6 +78,8 @@ class SubGridHandlingSpec
 
       val lvCoordinatorAdapter =
         testKit.createTestProbe[coordinator.Response]("LvCoordinatorAdapter")
+      val mvCoordinatorAdapter =
+        testKit.createTestProbe[MvResponse]("MvCoordinatorAdapter")
       val resultListener =
         testKit.createTestProbe[ResultListener.ResultEvent]("ResultListener")
       val resultListenerAdapter =
@@ -91,6 +94,7 @@ class SubGridHandlingSpec
       val grids = Range.inclusive(11, 20).map(mockSubGrid)
       val messageAdapters = new MessageAdapters(
         lvCoordinatorAdapter.ref,
+        mvCoordinatorAdapter.ref,
         resultListenerAdapter.ref
       )
       val cfg = OsmoGridConfigFactory

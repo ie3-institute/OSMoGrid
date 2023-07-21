@@ -19,42 +19,18 @@ import utils.VoltageLevelUtils
 import scala.jdk.CollectionConverters._
 
 // TODO: Parts of this or maybe all of this could be moved to GeoUtils (PowerSystemUtils).
-object VoronoiHelper {
+object Voronoi {
 
   /** A voronoi polynomial.
-    * @param areaNumber
-    *   subgrid number
     * @param hvNode
     *   hv-mv transition point
     * @param mvNodes
     *   list of mv-lv transition points
     */
   final case class VoronoiPolynomial(
-      areaNumber: Int,
       hvNode: NodeInput,
       mvNodes: List[NodeInput]
   )
-
-  /** Method to calculate voronoi polynomials.
-    *
-    * @param lvGrids
-    *   list of lv [[SubGridContainer]]
-    * @param hvGrids
-    *   list of hv [[SubGridContainer]]
-    * @param cfg
-    *   config
-    * @param ctx
-    *   actor ref
-    * @return
-    *   a list of [[VoronoiPolynomial]]
-    */
-  def calculateVoronoiPolynomials(
-      lvGrids: List[SubGridContainer],
-      hvGrids: List[SubGridContainer],
-      cfg: OsmoGridConfig.Generation.Mv,
-      ctx: ActorContext[MvRequest]
-  ): List[VoronoiPolynomial] =
-    calculateVoronoiPolynomials(lvGrids, hvGrids, cfg, ctx, 99)
 
   /** Method to calculate voronoi polynomials.
     * @param lvGrids
@@ -73,17 +49,21 @@ object VoronoiHelper {
   def calculateVoronoiPolynomials(
       lvGrids: List[SubGridContainer],
       hvGrids: List[SubGridContainer],
+      additionalNodes: Option[List[NodeInput]],
       cfg: OsmoGridConfig.Generation.Mv,
-      ctx: ActorContext[MvRequest],
-      startNumber: Int
-  ): List[VoronoiPolynomial] = {
-    var areaNumber = startNumber
-
+      ctx: ActorContext[MvRequest]
+  )(implicit startNumber: Int = 99): List[VoronoiPolynomial] = {
     /* filters all nodes in all subgrid containers */
     val (hvToMvNodes, mvToLvNodes) = filter(lvGrids, hvGrids, cfg)
 
+    /* checking if additional nodes are provided */
+    val allNodes: List[NodeInput] = additionalNodes match {
+      case Some(nodes) => mvToLvNodes ++ nodes
+      case None        => mvToLvNodes
+    }
+
     /* list of nodes that are not assigned yet */
-    val notAssignedNodes: List[NodeInput] = mvToLvNodes
+    var notAssignedNodes: List[NodeInput] = allNodes
 
     /* creates a voronoi diagram with the hv-mv nodes as sites */
     getPolygons(hvToMvNodes).map { case (hvToMvNode, polygon) =>
@@ -97,14 +77,13 @@ object VoronoiHelper {
       }
 
       /* removes all found elements from list to reduce calculation each time */
-      notAssignedNodes.asJava.removeAll(mvNodes.asJava)
+      notAssignedNodes = notAssignedNodes.diff(mvNodes)
 
       /* each voronoi polynomial should have an unique area number */
-      areaNumber += 1
       ctx.log.debug("Create new voronoi polynomial.")
 
       /* create a new VoronoiPolynomial */
-      VoronoiPolynomial(areaNumber, hvToMvNode, mvNodes)
+      VoronoiPolynomial(hvToMvNode, mvNodes)
     }.toList
   }
 
@@ -161,7 +140,7 @@ object VoronoiHelper {
       cfg: OsmoGridConfig.Generation.Mv
   ): (List[NodeInput], List[NodeInput]) = {
     /* returns a list of all mv voltage levels */
-    val mvVoltLvl = VoltageLevelUtils.getVoltLvl(cfg.voltageLevel.mv)
+    val mvVoltLvl = VoltageLevelUtils.getVoltLvl("mv", cfg.voltageLevel)
     /* gets all hv-mv and mv-lv nodes */
     (getNodes(mvVoltLvl, hvGrids), getNodes(mvVoltLvl, lvGrids))
   }

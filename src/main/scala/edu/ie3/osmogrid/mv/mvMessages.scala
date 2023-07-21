@@ -7,7 +7,6 @@
 package edu.ie3.osmogrid.mv
 
 import akka.actor.typed.ActorRef
-import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.RequestFailedException
@@ -47,11 +46,11 @@ final case class FinishedMvGraph(
     mvGraph: MvGraph
 ) extends MvRequest
 
-private final case class MvMessageAdapters(
+final case class MvMessageAdapters(
     inputDataProvider: ActorRef[InputDataProvider.Response]
 )
 
-private object MvMessageAdapters {
+object MvMessageAdapters {
   final case class WrappedInputDataResponse(
       response: InputDataProvider.Response
   ) extends MvRequest
