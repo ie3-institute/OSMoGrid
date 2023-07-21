@@ -8,7 +8,7 @@ package edu.ie3.osmogrid.utils
 
 import com.typesafe.config.ConfigFactory
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
-import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.test.common.UnitSpec
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
@@ -56,10 +56,14 @@ class VoltageLevelUtilsSpec extends UnitSpec {
     "return a list of all lv voltage levels" in {
       val voltLvl = cfgWithVoltLvl.lv match {
         case Some(value) => value.voltageLevel
+        case None =>
+          throw new IllegalArgumentException(
+            s"Given config $cfgWithVoltLvl has no values for lv."
+          )
       }
 
       val levels: List[VoltageLevel] =
-        VoltageLevelUtils.getVoltLvl("lv", voltLvl)
+        VoltageLevelUtils.parseLv(voltLvl.lv)
 
       levels.size shouldBe 1
       val level = levels(0)

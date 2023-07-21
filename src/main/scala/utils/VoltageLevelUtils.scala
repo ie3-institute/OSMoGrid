@@ -8,72 +8,88 @@ package utils
 
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 
+import javax.measure.quantity.ElectricPotential
+
 object VoltageLevelUtils {
 
-  /** Converts [[OsmoGridConfig.VoltageLevelConfig]] into a list of
-    * [[VoltageLevel]].
+  /** Method to parse a [[OsmoGridConfig.VoltageLevelConfig.Lv]] easily.
+    * @param cfg
+    *   given config
+    * @return
+    *   a list of [[VoltageLevel]]
+    */
+  def parseLv(cfg: OsmoGridConfig.VoltageLevelConfig.Lv): List[VoltageLevel] = {
+    getVoltLvl(cfg.id, cfg.vNom, cfg.default)
+  }
+
+  /** Method to parse a [[OsmoGridConfig.VoltageLevelConfig.Mv]] easily.
+    *
+    * @param cfg
+    *   given config
+    * @return
+    *   a list of [[VoltageLevel]]
+    */
+  def parseMv(cfg: OsmoGridConfig.VoltageLevelConfig.Mv): List[VoltageLevel] = {
+    getVoltLvl(cfg.id, cfg.vNom, cfg.default)
+  }
+
+  /** Method to parse a [[OsmoGridConfig.VoltageLevelConfig.Hv]] easily.
+    *
+    * @param cfg
+    *   given config
+    * @return
+    *   a list of [[VoltageLevel]]
+    */
+  def parseHv(cfg: OsmoGridConfig.VoltageLevelConfig.Hv): List[VoltageLevel] = {
+    getVoltLvl(cfg.id, cfg.vNom, cfg.default)
+  }
+
+  /** Method to parse a [[OsmoGridConfig.VoltageLevelConfig.Ehv]] easily.
+    *
+    * @param cfg
+    *   given config
+    * @return
+    *   a list of [[VoltageLevel]]
+    */
+  def parseEhv(
+      cfg: OsmoGridConfig.VoltageLevelConfig.Ehv
+  ): List[VoltageLevel] = {
+    getVoltLvl(cfg.id, cfg.vNom, cfg.default)
+  }
+
+  /** Converts the given values into a list of [[VoltageLevel]].
     * @param id
     *   of the voltage level
-    * @param cfg
-    *   config
+    * @param vNom
+    *   option for nominal voltages
+    * @param default
+    *   voltage that is used if no nominal voltages are given
     * @return
     *   a list of [[VoltageLevel]]
     */
   def getVoltLvl(
       id: String,
-      cfg: OsmoGridConfig.VoltageLevelConfig
+      vNom: Option[List[Double]],
+      default: Double
   ): List[VoltageLevel] = {
-    val vNom: Option[List[Double]] = id match {
-      case "lv"  => cfg.lv.map(c => c.vNom)
-      case "mv"  => cfg.mv.map(c => c.vNom)
-      case "hv"  => cfg.hv.map(c => c.vNom)
-      case "ehv" => cfg.ehv.map(c => c.vNom)
-      case _ =>
-        throw new IllegalArgumentException(
-          s"Argument $id is not a valid argument. Valid arguments are {lv, mv, hv, ehv}."
-        )
-    }
-
     vNom match {
-      case Some(values) => values.map(value => getVoltLvl(id, value))
-      case None         => getDefaultVoltLvl(id)
+      case Some(voltages) =>
+        voltages.map(voltage => new VoltageLevel(id, toQuantity(voltage)))
+      case None => List(new VoltageLevel(id, toQuantity(default)))
     }
   }
 
-  /** Method to convert a given double into a [[VoltageLevel]].
-    * @param id
-    *   can be "lv", "mv", "hv" or "ehv"
+  /** Converts a [[Double]] value in a [[ComparableQuantity]] with the unit
+    * [[ElectricPotential]].
     * @param volt
-    *   electric potential in volt
+    *   given voltage in kV
     * @return
-    *   a new [[VoltageLevel]]
+    *   a new [[ComparableQuantity]]
     */
-  def getVoltLvl(
-      id: String,
-      volt: Double
-  ): VoltageLevel = {
-    new VoltageLevel(id, Quantities.getQuantity(volt * 1000, Units.VOLT))
-  }
-
-  /** Method to get the default voltage level for a given id.
-    *
-    * @param id
-    *   can be "lv", "mv", "hv" or "ehv"
-    * @return
-    *   a new [[VoltageLevel]]
-    */
-  private def getDefaultVoltLvl(id: String): List[VoltageLevel] =
-    id match {
-      case "lv"  => List(getVoltLvl("lv", 0.4))
-      case "mv"  => List(getVoltLvl("mv", 10.0))
-      case "hv"  => List(getVoltLvl("hv", 110.0))
-      case "ehv" => List(getVoltLvl("ehv", 380.0))
-      case _ =>
-        throw new IllegalArgumentException(
-          s"Argument $id is not a valid argument. Valid arguments are {lv, mv, hv, ehv}."
-        )
-    }
+  private def toQuantity(volt: Double): ComparableQuantity[ElectricPotential] =
+    Quantities.getQuantity(volt * 1000, Units.VOLT)
 }

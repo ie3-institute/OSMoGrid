@@ -140,7 +140,7 @@ object Voronoi {
       cfg: OsmoGridConfig.Generation.Mv
   ): (List[NodeInput], List[NodeInput]) = {
     /* returns a list of all mv voltage levels */
-    val mvVoltLvl = VoltageLevelUtils.getVoltLvl("mv", cfg.voltageLevel)
+    val mvVoltLvl = VoltageLevelUtils.parseMv(cfg.voltageLevel.mv)
     /* gets all hv-mv and mv-lv nodes */
     (getNodes(mvVoltLvl, hvGrids), getNodes(mvVoltLvl, lvGrids))
   }
