@@ -6,70 +6,48 @@
 
 package edu.ie3.osmogrid.utils
 
-import com.typesafe.config.ConfigFactory
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
-import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.test.common.UnitSpec
 import tech.units.indriya.quantity.Quantities
-import tech.units.indriya.unit.Units
+import tech.units.indriya.unit.Units.VOLT
 import utils.VoltageLevelUtils
-
-import java.nio.file.Paths
 
 class VoltageLevelUtilsSpec extends UnitSpec {
 
   "The VoltageLevelUtils" should {
-    val cfgWithVoltLvl: OsmoGridConfig.Generation = OsmoGridConfig(
-      ConfigFactory.parseFile(
-        Paths
-          .get(
-            "src",
-            "test",
-            "resources",
-            "edu",
-            "ie3",
-            "osmogrid",
-            "utils",
-            "definedVoltageLevels.conf"
-          )
-          .toFile
-      )
-    ).generation
+    val lv400 = new VoltageLevel("lv", Quantities.getQuantity(400, VOLT))
+    val lv230 = new VoltageLevel("lv", Quantities.getQuantity(230, VOLT))
+    val lv1000 = new VoltageLevel("lv", Quantities.getQuantity(1000, VOLT))
 
-    val cfgWithoutVoltLvl: OsmoGridConfig.Generation = OsmoGridConfig(
-      ConfigFactory.parseFile(
-        Paths
-          .get(
-            "src",
-            "test",
-            "resources",
-            "edu",
-            "ie3",
-            "osmogrid",
-            "utils",
-            "voltageLevel.conf"
-          )
-          .toFile
+    "should convert multiple given input to the correct voltage level" in {
+      val cases = Table(
+        ("id", "voltages", "default", "expectedVoltLvl"),
+        ("lv", Some(List(0.23, 1.0)), 0.4, List(lv230, lv1000)),
+        ("lv", None, 0.4, List(lv400))
       )
-    ).generation
 
-    "return a list of all lv voltage levels" in {
-      val voltLvl = cfgWithVoltLvl.lv match {
-        case Some(value) => value.voltageLevel
-        case None =>
-          throw new IllegalArgumentException(
-            s"Given config $cfgWithVoltLvl has no values for lv."
-          )
+      forAll(cases) { (id, voltages, default, expectedVoltLvl) =>
+        val voltLvl: List[VoltageLevel] =
+          VoltageLevelUtils.toVoltLvl(id, voltages, default)
+
+        voltLvl.size shouldBe expectedVoltLvl.size
+        voltLvl.foreach(lvl => expectedVoltLvl.contains(lvl))
       }
+    }
 
-      val levels: List[VoltageLevel] =
-        VoltageLevelUtils.parseLv(voltLvl.lv)
+    "should convert a given input to the correct voltage level" in {
+      val cases = Table(
+        ("id", "voltage", "expectedVoltLvl"),
+        ("lv", 0.4, lv400),
+        ("lv", 1.0, lv1000)
+      )
 
-      levels.size shouldBe 1
-      val level = levels(0)
+      forAll(cases) { (id, voltage, expectedVoltLvl) =>
+        val voltLvl: VoltageLevel = VoltageLevelUtils.toVoltLvl(id, voltage)
 
-      level.getId shouldBe "lv"
-      level.getNominalVoltage shouldBe Quantities.getQuantity(400, Units.VOLT)
+        voltLvl.getId shouldBe expectedVoltLvl.getId
+        voltLvl.getNominalVoltage shouldBe expectedVoltLvl.getNominalVoltage
+      }
     }
   }
 }

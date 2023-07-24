@@ -16,71 +16,49 @@ import javax.measure.quantity.ElectricPotential
 
 object VoltageLevelUtils {
 
-  /** Method to parse a [[OsmoGridConfig.VoltageLevelConfig.Lv]] easily.
-    * @param cfg
-    *   given config
-    * @return
-    *   a list of [[VoltageLevel]]
-    */
-  def parseLv(cfg: OsmoGridConfig.VoltageLevelConfig.Lv): List[VoltageLevel] = {
-    getVoltLvl(cfg.id, cfg.vNom, cfg.default)
-  }
-
-  /** Method to parse a [[OsmoGridConfig.VoltageLevelConfig.Mv]] easily.
+  /** Method to parse a [[OsmoGridConfig.Generation.Mv.VoltageLevel]] easily.
     *
     * @param cfg
     *   given config
     * @return
     *   a list of [[VoltageLevel]]
     */
-  def parseMv(cfg: OsmoGridConfig.VoltageLevelConfig.Mv): List[VoltageLevel] = {
-    getVoltLvl(cfg.id, cfg.vNom, cfg.default)
-  }
-
-  /** Method to parse a [[OsmoGridConfig.VoltageLevelConfig.Hv]] easily.
-    *
-    * @param cfg
-    *   given config
-    * @return
-    *   a list of [[VoltageLevel]]
-    */
-  def parseHv(cfg: OsmoGridConfig.VoltageLevelConfig.Hv): List[VoltageLevel] = {
-    getVoltLvl(cfg.id, cfg.vNom, cfg.default)
-  }
-
-  /** Method to parse a [[OsmoGridConfig.VoltageLevelConfig.Ehv]] easily.
-    *
-    * @param cfg
-    *   given config
-    * @return
-    *   a list of [[VoltageLevel]]
-    */
-  def parseEhv(
-      cfg: OsmoGridConfig.VoltageLevelConfig.Ehv
+  def parseMv(
+      cfg: OsmoGridConfig.Generation.Mv.VoltageLevel
   ): List[VoltageLevel] = {
-    getVoltLvl(cfg.id, cfg.vNom, cfg.default)
+    toVoltLvl(cfg.id, cfg.vNom, cfg.default)
   }
 
-  /** Converts the given values into a list of [[VoltageLevel]].
+  /** Utility to create a list of [[VoltageLevel]].
     * @param id
     *   of the voltage level
     * @param vNom
-    *   option for nominal voltages
+    *   option for multiple voltages in kV
     * @param default
-    *   voltage that is used if no nominal voltages are given
+    *   a default voltage that should be used, if vNom is an empty option
     * @return
-    *   a list of [[VoltageLevel]]
     */
-  def getVoltLvl(
+  def toVoltLvl(
       id: String,
       vNom: Option[List[Double]],
       default: Double
   ): List[VoltageLevel] = {
     vNom match {
-      case Some(voltages) =>
-        voltages.map(voltage => new VoltageLevel(id, toQuantity(voltage)))
-      case None => List(new VoltageLevel(id, toQuantity(default)))
+      case Some(voltages) => voltages.map(voltage => toVoltLvl(id, voltage))
+      case None           => List(toVoltLvl(id, default))
     }
+  }
+
+  /** Utility for creating a [[VoltageLevel]].
+    * @param id
+    *   of the voltage level
+    * @param lvl
+    *   value given in kV
+    * @return
+    *   a new [[VoltageLevel]]
+    */
+  def toVoltLvl(id: String, lvl: Double): VoltageLevel = {
+    new VoltageLevel(id, toQuantity(lvl))
   }
 
   /** Converts a [[Double]] value in a [[ComparableQuantity]] with the unit
