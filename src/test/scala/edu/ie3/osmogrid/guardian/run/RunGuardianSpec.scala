@@ -18,7 +18,7 @@ import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.coordinator
-import edu.ie3.test.common.UnitSpec
+import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.slf4j.event.Level
 
 import java.util.UUID
@@ -148,6 +148,41 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           Level.ERROR,
           s"Received a message, that I don't understand during active run $runId.\n\tMessage: $Run"
         )
+      }
+
+      "handles an incoming result" in new GridSupport {
+        runningTestKit.run(
+          MessageAdapters.WrappedLvCoordinatorResponse(
+            coordinator.RepLvGrids(Seq(mockSubGrid(1)))
+          )
+        )
+
+        /* Event is logged */
+        runningTestKit.logEntries() should contain allOf(CapturedLogEvent(
+          Level.INFO,
+          "All lv grids successfully generated."
+        ), CapturedLogEvent(
+          Level.DEBUG,
+          "No further generation steps intended. Hand over results to result handler."
+        ))
+
+        /* Result is forwarded to listener */
+        resultListener.expectMessageType[ResultListenerProtocol.GridResult]
+      }
+
+      "initiate coordinated shutdown, if somebody unexpectedly dies" in {
+        runningTestKit.run(LvCoordinatorDied)
+
+        /* Event is logged */
+        runningTestKit.logEntries() should contain(
+          CapturedLogEvent(
+            Level.WARN,
+            s"Lv coordinator for run $runId unexpectedly died. Start coordinated shut down phase for this run."
+          )
+        )
+        /* All children are sent a termination request */
+        lvCoordinator.expectMessage(coordinator.Terminate)
+        inputDataProvider.expectMessage(input.Terminate)
       }
     }
 
