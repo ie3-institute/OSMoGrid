@@ -98,7 +98,9 @@ trait StopSupport {
         ctx.log.warn(
           s"Lv coordinator for run $runId unexpectedly died. Start coordinated shut down phase for this run."
         )
-        stoppingData.copy(resultListenerTerminated = true)
+        stoppingData.copy(lvCoordinatorTerminated =
+          stoppingData.lvCoordinatorTerminated.map(_ => true)
+        )
     }
 
   }
