@@ -10,12 +10,14 @@ import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import com.typesafe.config.ConfigFactory
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.$TsCfgValidator
-import edu.ie3.osmogrid.exception.PbfReadFailedException
+import edu.ie3.osmogrid.exception.{InputDataException, PbfReadFailedException}
+import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.{InputDataCheck, UnitSpec}
 
-import java.nio.file.Paths
+import java.io.File
+import java.nio.file.{Files, Paths}
 import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters._
 import scala.language.postfixOps
@@ -26,7 +28,8 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
   "Reading input data from pbf file" when {
     "having proper input data" should {
       "provide full data set correctly" in {
-        val config: OsmoGridConfig.Input = createConfig("/Witten_Stockum.pbf")
+        val config: OsmoGridConfig.Input =
+          createConfig("/Witten_Stockum.pbf", "/lv_assets")
 
         val requestProbe = testKit.createTestProbe[InputDataProvider.Response]()
         val testActor = testKit.spawn(
@@ -50,11 +53,35 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
           case unexpected => fail(s"Unexpected message: $unexpected")
         }
       }
+
+      "provide asset information correctly" in {
+        val config: OsmoGridConfig.Input =
+          createConfig("/Witten_Stockum.pbf", "/lv_assets")
+
+        val requestProbe = testKit.createTestProbe[InputDataProvider.Response]()
+        val testActor = testKit.spawn(
+          InputDataProvider(config)
+        )
+
+        testActor ! InputDataProvider.ReqAssetTypes(requestProbe.ref)
+
+        requestProbe
+          .expectMessageType[InputDataProvider.RepAssetTypes](
+            30 seconds
+          ) match {
+          case InputDataProvider.RepAssetTypes(
+                assetInformation: AssetInformation
+              ) =>
+            assetInformation.lineTypes.length shouldBe 1
+            assetInformation.transformerTypes.length shouldBe 1
+        }
+      }
     }
 
     "having empty input data" should {
-      "return with failure" in {
-        val config: OsmoGridConfig.Input = createConfig("/Empty_Osm.pbf")
+      "return with failure for missing osm data" in {
+        val config: OsmoGridConfig.Input =
+          createConfig("/Empty_Osm.pbf", "/lv_assets")
 
         val requestProbe = testKit.createTestProbe[InputDataProvider.Response]()
         val testActor = testKit.spawn(
@@ -80,11 +107,44 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
           case unexpected => fail(s"Unexpected message: $unexpected")
         }
       }
+      "return with failure for missing asset data" in {
+        val resourceName = "/"
+        val config: OsmoGridConfig.Input =
+          createConfig("/Witten_Stockum.pbf", resourceName)
+        val assetDir = getResourcePath(resourceName)
+
+        val requestProbe = testKit.createTestProbe[InputDataProvider.Response]()
+        val testActor = testKit.spawn(
+          InputDataProvider(config)
+        )
+
+        testActor ! InputDataProvider.ReqAssetTypes(
+          requestProbe.ref
+        )
+        requestProbe
+          .expectMessageType[InputDataProvider.Response](
+            3 seconds
+          ) match {
+          case InputDataProvider.AssetReadFailed(exception) =>
+            exception shouldBe InputDataException(
+              s"There are no or corrupt transformer types at: $assetDir"
+            )
+          case InputDataProvider.RepAssetTypes(
+                assetInformation: AssetInformation
+              ) =>
+            fail(
+              s"Provided asset information $assetInformation although it shouldn't"
+            )
+
+          case unexpected => fail(s"Unexpected message: $unexpected")
+        }
+      }
     }
 
     "having corrupt input data" should {
-      "return with failure" in {
-        val config: OsmoGridConfig.Input = createConfig("/Corrupted_Osm.pbf")
+      "return with failure for courrupt osm data" in {
+        val config: OsmoGridConfig.Input =
+          createConfig("/Corrupted_Osm.pbf", "/lv_assets")
 
         val requestProbe = testKit.createTestProbe[InputDataProvider.Response]()
         val testActor = testKit.spawn(
@@ -108,17 +168,55 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
           case unexpected => fail(s"Unexpected message: $unexpected")
         }
       }
+      "return with failure for corrupt assets" in {
+        val resourceName = "/corrupted_lv_assets"
+        val config: OsmoGridConfig.Input =
+          createConfig("/Witten_Stockum.pbf", resourceName)
+        val assetDir = getResourcePath(resourceName)
+
+        val requestProbe = testKit.createTestProbe[InputDataProvider.Response]()
+        val testActor = testKit.spawn(
+          InputDataProvider(config)
+        )
+
+        testActor ! InputDataProvider.ReqAssetTypes(
+          requestProbe.ref
+        )
+        requestProbe
+          .expectMessageType[InputDataProvider.Response](
+            3 seconds
+          ) match {
+          case InputDataProvider.AssetReadFailed(exception) =>
+            exception shouldBe InputDataException(
+              s"There are no or corrupt transformer types at: $assetDir"
+            )
+          case InputDataProvider.RepAssetTypes(
+                assetInformation: AssetInformation
+              ) =>
+            fail(
+              s"Provided asset information $assetInformation although it shouldn't"
+            )
+
+          case unexpected => fail(s"Unexpected message: $unexpected")
+
+        }
+      }
     }
   }
 
-  private def createConfig(filePath: String) = {
-    val inputResource = getClass.getResource(filePath)
-    assert(inputResource != null)
-    val resourcePath =
-      Paths.get(inputResource.toURI).toAbsolutePath.toString
-
+  private def createConfig(
+      pbfFilePath: String,
+      assetDirPath: String,
+      assetSep: String = ",",
+      assetHierarchic: Boolean = false
+  ) = {
     val parsedCfg = ConfigFactory.parseMap(
-      Map("osm.pbf.file" -> resourcePath).asJava
+      Map(
+        "osm.pbf.file" -> getResourcePath(pbfFilePath),
+        "asset.file.directory" -> getResourcePath(assetDirPath),
+        "asset.file.separator" -> assetSep,
+        "asset.file.hierarchic" -> assetHierarchic
+      ).asJava
     )
     val config =
       OsmoGridConfig.Input(parsedCfg, "input", new $TsCfgValidator())
