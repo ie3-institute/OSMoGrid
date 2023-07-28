@@ -158,7 +158,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         )
 
         /* Event is logged */
-        runningTestKit.logEntries() should contain allOf(CapturedLogEvent(
+        runningTestKit.logEntries() should contain allOf (CapturedLogEvent(
           Level.INFO,
           "All lv grids successfully generated."
         ), CapturedLogEvent(

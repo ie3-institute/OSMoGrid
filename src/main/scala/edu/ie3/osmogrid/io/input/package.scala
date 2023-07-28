@@ -54,8 +54,8 @@ package object input {
       extends Response
       with InputDataEvent
   final case class AssetReadFailed(reason: Throwable)
-    extends Response
-    with InputDataEvent
+      extends Response
+      with InputDataEvent
 
   final case class AssetInformation(
       lineTypes: Seq[LineTypeInput],
