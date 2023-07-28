@@ -11,84 +11,66 @@ participant OsmoGridGuardian
 participant RunGuardian
 participant LvCoordinator
 participant LvRegionCoordinator
-participant MunicipalityCoordinator
-participant DistrictCoordinator
-participant SubDistrictCoordinator
 participant LvGridGenerator
 participant ResultListener
 
-== Init ==
-Main -> OsmoGridGuardian: <font color="red">!</font>Run(cfg, ...)
+==Init==
+Main --> OsmoGridGuardian: //Start//
+Main -> OsmoGridGuardian: <font color="red">!</font>Run(OsmoGridConfig)
 OsmoGridGuardian --> RunGuardian: //Spawn//
-OsmoGridGuardian -> RunGuardian: <font color="red">!</font>Run(cfg, ...)
+note right: Death watch of\n""RunGuardian""
+OsmoGridGuardian -> RunGuardian: <font color="red">!</font>Run
 RunGuardian --> InputDataProvider: //Spawn//
 
+note left: Death watch of\n""InputDataProvider""
 RunGuardian --> ResultListener: //Spawn//
 note right: Death watch of\n""ResultListener""
 
-== LV generation ==
+==LV generation==
 RunGuardian --> LvCoordinator: //Spawn//
-RunGuardian -> LvCoordinator: <font color="red">!</font>ReqLvGrids(...)
+note right: Death watch of\n""LvCoordinator""
+RunGuardian -> LvCoordinator: <font color="red">!</font>ReqLvGrids
 LvCoordinator -> InputDataProvider: <font color="red">!</font>ReqOsm(...)
 InputDataProvider <--> Input: //Read//
 LvCoordinator -> InputDataProvider: <font color="red">!</font>ReqAssetTypes(...)
 InputDataProvider <--> Input: //Read//
-InputDataProvider -> LvCoordinator: <font color="red">!</font>RepOsm(...)
-InputDataProvider -> LvCoordinator: <font color="red">!</font>RepAssetTypes(...)
-note right: Determine the highest\nadministrative boundary //n//
+InputDataProvider -> LvCoordinator: <font color="red">!</font>RepOsm(OsmoGridModel)
+InputDataProvider -> LvCoordinator: <font color="red">!</font>RepAssetTypes(AssetInformation)
+LvCoordinator -> LvCoordinator: <font color="red">!</font>StartGeneration(...)
 LvCoordinator --> LvRegionCoordinator: //Spawn//
 
-LvCoordinator -> LvRegionCoordinator: <font color="red">!</font>Partition(Region)
-note right: //n// is the highest apparent\nadministrative boundary\nwithin OSM data
+LvCoordinator -> LvRegionCoordinator: <font color="red">!</font>Partition(...)
 LvRegionCoordinator --> LvRegionCoordinator: //Spawn//
-LvRegionCoordinator -> LvRegionCoordinator: <font color="red">!</font>Partition(Region, n')
-... **Recursively spawn and divide regions until administrative boundary of a municipality is reached** ...
+LvRegionCoordinator -> LvRegionCoordinator: <font color="red">!</font>Partition(...)
+... **Recursively spawn and divide regions until lowest administrative boundary level is reached** ...
 
-LvRegionCoordinator --> MunicipalityCoordinator: //Spawn one per municipality//
-LvRegionCoordinator -> MunicipalityCoordinator: <font color="red">!</font>HandleMunicipality(Region)
-
-MunicipalityCoordinator --> DistrictCoordinator: //Spawn one per district//
-MunicipalityCoordinator -> DistrictCoordinator: <font color="red">!</font>HandleDistrict(Region)
-
-DistrictCoordinator --> SubDistrictCoordinator: //Spawn one per sub district//
-DistrictCoordinator -> SubDistrictCoordinator: <font color="red">!</font>HandleSubDistrict(Region)
-
-SubDistrictCoordinator --> LvGridGenerator: //Spawn one per secondary//\n//substation region//
-SubDistrictCoordinator -> LvGridGenerator: <font color="red">!</font>BuildGridModel(Region)
+LvRegionCoordinator --> LvGridGenerator: //Spawn one per secondary//\n//substation region//
+LvRegionCoordinator -> LvCoordinator: <font color="red">!</font>GridToExpect(UUID)
+LvRegionCoordinator -> LvGridGenerator: <font color="red">!</font>GenerateGrid(...)
 
 activate LvGridGenerator
 ... ...
-LvGridGenerator -> LvCoordinator: <font color="red">!</font>RepLvGrid(...)
-LvGridGenerator -> SubDistrictCoordinator: <font color="red">!</font>Done
-note left: Collects completions until\nall secondarysubstation\nregions are handled\n\nCompletion messages can\nbe realized with death watch!
+LvGridGenerator -> LvCoordinator: <font color="red">!</font>RepLvGrid(UUID, Seq[SubGridContainer])
 deactivate LvGridGenerator
 
-SubDistrictCoordinator -> DistrictCoordinator: <font color="red">!</font>Done
-DistrictCoordinator -> MunicipalityCoordinator: <font color="red">!</font>Done
-MunicipalityCoordinator -> LvRegionCoordinator: <font color="red">!</font>Done
-LvRegionCoordinator -> LvRegionCoordinator: <font color="red">!</font>Done
-... **Report recursively until all intermediate levels are passed** ...
-LvRegionCoordinator -> LvCoordinator: <font color="red">!</font>Done
-note left: All results are apparent;\nassign sub grid numbers
+... **Report back if all expected grids are received** ...
+LvCoordinator -> RunGuardian: <font color="red">!</font>RepLvGrids(Seq[SubGridContainer])
 
-LvCoordinator -> RunGuardian: <font color="red">!</font>RepLvGrids(...)
-
-== MV generation ==
+==MV generation==
 ... **To be defined in a later stage** ...
 
 == Result handling ==
-RunGuardian -> ResultListener: <font color="red">!</font>GridResult(...)
+RunGuardian -> ResultListener: <font color="red">!</font>GridResult(JointGridContainer)
 activate ResultListener
 ... ...
 ResultListener -> RunGuardian: <font color="red">!</font>ResultListenerDied
 deactivate ResultListener
-RunGuardian -> InputDataProvider: <font color="red">!</font>Terminate(...)
+RunGuardian -> LvCoordinator: <font color="red">!</font>Terminate
+RunGuardian -> InputDataProvider: <font color="red">!</font>Terminate
 InputDataProvider <--> Input: //Close//
 InputDataProvider -> RunGuardian: <font color="red">!</font>InputDataProviderDied
 
-RunGuardian -> OsmoGridGuardian: <font color="red">!</font>Done
-OsmoGridGuardian -> Main: <font color="red">!</font>Done
-
-'TODO: Don't forget to spawn and initialize the ResultListener
+RunGuardian -> OsmoGridGuardian: <font color="red">!</font>RunGuardianDied
+OsmoGridGuardian --> Main: //Done//
 
 @enduml
