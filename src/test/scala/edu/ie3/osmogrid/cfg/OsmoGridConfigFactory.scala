@@ -14,7 +14,7 @@ import scala.util.Try
 object OsmoGridConfigFactory {
   lazy val defaultTestConfig: OsmoGridConfig =
     OsmoGridConfig(
-      ConfigFactory.parseFile(new File("src/test/resources/testConfig.conf"))
+      ConfigFactory.parseFile(new File("src/test/resources/test_config.conf"))
     )
 
   def parse(config: String): Try[OsmoGridConfig] = Try {
@@ -23,7 +23,7 @@ object OsmoGridConfigFactory {
         .parseString(config)
         .withFallback(
           ConfigFactory.parseFile(
-            new File("src/test/resources/testConfig.conf")
+            new File("src/test/resources/test_config.conf")
           )
         )
     )

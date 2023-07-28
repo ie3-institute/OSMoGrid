@@ -12,6 +12,7 @@ import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.model.OsmoGridModel
 
+import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success}
 
 object InputDataProvider extends ActorStopSupport[ProviderData] {
@@ -21,8 +22,14 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
   ): Behavior[InputDataEvent] = {
     Behaviors.withStash[InputDataEvent](100) { buffer =>
       Behaviors.setup[InputDataEvent] { ctx =>
+        val ec: ExecutionContextExecutor = ctx.system.executionContext
         idle(
-          ProviderData(ctx, buffer, OsmSource(osmConfig.osm, ctx))
+          ProviderData(
+            ctx,
+            buffer,
+            OsmSource(osmConfig.osm, ctx),
+            AssetSource(ec, osmConfig.asset)
+          )
         )
       }
     }
@@ -45,9 +52,19 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
                 OsmReadFailed(exception)
             }
             readOsmData(providerData, replyTo)
-          case ReqAssetTypes(_) =>
-            ctx.log.info("Got request to provide asset types. But do nothing.")
-            Behaviors.same
+          case ReqAssetTypes(replyTo) =>
+            ctx.pipeToSelf(
+              providerData.assetSource.read()
+            ) {
+              case Success(assetInformation) =>
+                RepAssetTypes(assetInformation)
+              case Failure(exception) =>
+                ctx.log.error(
+                  s"Error while reading asset data: $exception"
+                )
+                AssetReadFailed(exception)
+            }
+            readAssetData(providerData, replyTo)
           case Terminate =>
             terminate(ctx.log, providerData)
           case invalid =>
@@ -76,6 +93,23 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
         providerData.buffer.stash(other)
         Behaviors.same
     }
+
+  private def readAssetData(
+      providerData: ProviderData,
+      replyTo: ActorRef[Response]
+  ): Behaviors.Receive[InputDataEvent] = {
+    Behaviors.receiveMessage {
+      case repAssetTypes: RepAssetTypes =>
+        replyTo ! repAssetTypes
+        providerData.buffer.unstashAll(idle(providerData))
+      case readFailed: AssetReadFailed =>
+        replyTo ! readFailed
+        providerData.buffer.unstashAll(idle(providerData))
+      case other =>
+        providerData.buffer.stash(other)
+        Behaviors.same
+    }
+  }
 
   override protected def cleanUp(providerData: ProviderData): Unit = {
     providerData.osmSource.close()

@@ -17,6 +17,8 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import java.nio.file.Paths
+
 trait UnitSpec
     extends AnyWordSpecLike
     with Matchers
@@ -25,4 +27,12 @@ trait UnitSpec
     with OptionValues
     with TryValues
     with GivenWhenThen
-    with LogCapturing
+    with LogCapturing {
+
+  def getResourcePath(filePath: String): String = {
+    val inputResource = getClass.getResource(filePath)
+    assert(inputResource != null)
+    Paths.get(inputResource.toURI).toAbsolutePath.toString
+  }
+
+}

@@ -46,6 +46,7 @@ object OsmSource {
 
       import akka.actor.typed.scaladsl.AskPattern._
       import akka.util.Timeout
+
       import concurrent.duration.DurationInt
 
       // 3 hours should be more than sufficient - even for very large files on small computers

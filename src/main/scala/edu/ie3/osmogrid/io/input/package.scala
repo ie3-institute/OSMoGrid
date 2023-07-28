@@ -19,7 +19,8 @@ package object input {
   final case class ProviderData(
       ctx: ActorContext[InputDataEvent],
       buffer: StashBuffer[InputDataEvent],
-      osmSource: OsmSource
+      osmSource: OsmSource,
+      assetSource: AssetSource
   )
 
   // external requests
@@ -51,6 +52,10 @@ package object input {
       with InputDataEvent
   final case class RepAssetTypes(assetInformation: AssetInformation)
       extends Response
+      with InputDataEvent
+  final case class AssetReadFailed(reason: Throwable)
+    extends Response
+    with InputDataEvent
 
   final case class AssetInformation(
       lineTypes: Seq[LineTypeInput],
