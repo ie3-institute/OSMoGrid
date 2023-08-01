@@ -55,20 +55,30 @@ trait NodeInputSupport {
 
   val nodeToHv1 = new NodeInput(
     UUID.randomUUID(),
-    s"Node 1 in 10",
+    s"Node 1 in 1",
     Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
     false,
-    GeoUtils.buildPoint(51.49340, 7.41635),
+    GeoUtils.buildPoint(51.48340, 7.31635),
     GermanVoltageLevelUtils.MV_10KV,
     1
   )
 
   val nodeToHv2 = new NodeInput(
     UUID.randomUUID(),
-    s"Node 2 in 10",
+    s"Node 2 in 2",
     Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
     false,
     GeoUtils.buildPoint(51.49570, 7.42505),
+    GermanVoltageLevelUtils.MV_10KV,
+    2
+  )
+
+  val nodeToHv3 = new NodeInput(
+    UUID.randomUUID(),
+    s"Node 3 in 2",
+    Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
+    false,
+    GeoUtils.buildPoint(51.45570, 7.47505),
     GermanVoltageLevelUtils.MV_10KV,
     2
   )

@@ -20,25 +20,44 @@ object VoronoiUtils {
 
   /** A voronoi polygons.
     *
-    * @param hvNode
+    * @param transitionPointToHigherVoltLvl
     *   hv-mv transition point
-    * @param mvNodes
+    * @param transitionPointsToLowerVoltLvl
     *   list of mv-lv transition points
     */
   final case class VoronoiPolygon(
-      hvNode: NodeInput,
-      mvNodes: List[NodeInput],
-      polygon: Polygon
+      transitionPointToHigherVoltLvl: NodeInput,
+      transitionPointsToLowerVoltLvl: List[NodeInput],
+      polygon: Option[Polygon]
   ) {
 
-    /** Method to add mv nodes to this voronoi polygon.
+    /** Method to add nodes, that are connected to a lower voltage level, to
+      * this voronoi polygon.
       * @param nodes
       *   that should be added
       * @return
       *   a copy of this object
       */
-    def addMvNodes(nodes: List[NodeInput]): VoronoiPolygon = {
-      copy(mvNodes = mvNodes ++ nodes)
+    def addTransitionPointsToLowerVoltLvl(
+        nodes: List[NodeInput]
+    ): VoronoiPolygon = {
+      copy(transitionPointsToLowerVoltLvl =
+        transitionPointsToLowerVoltLvl ++ nodes
+      )
+    }
+
+    /** Method to check if a given [[NodeInput]] is located inside this
+      * [[VoronoiPolygon]].
+      * @param node
+      *   to be checked
+      * @return
+      *   true, if the node is inside
+      */
+    def containsNode(node: NodeInput): Boolean = {
+      polygon match {
+        case Some(value) => value.contains(node.getGeoPosition)
+        case None        => false
+      }
     }
   }
 
@@ -89,14 +108,14 @@ object VoronoiUtils {
     val updatedPolygons = polygons.map { polygon =>
       /* assigns the mv-lv nodes to the found polygons */
       val mvNodes: List[NodeInput] = notAssignedNodes.par
-        .filter(node => polygon.polygon.contains(node.getGeoPosition))
+        .filter(node => polygon.containsNode(node))
         .toList
 
       /* removes all found elements from list to reduce calculation each time */
       notAssignedNodes = notAssignedNodes.diff(mvNodes)
 
       /* replace the polygon with a copy that contains */
-      polygon.addMvNodes(mvNodes)
+      polygon.addTransitionPointsToLowerVoltLvl(mvNodes)
     }
 
     /* logs a debug message */
@@ -123,31 +142,35 @@ object VoronoiUtils {
   def createPolygons(
       nodes: List[NodeInput]
   ): List[VoronoiPolygon] = {
-    /* retrieves the coordinates of all nodes */
-    val transitionPoints: List[Coordinate] = nodes.par.map { node =>
-      node.getGeoPosition.getCoordinate
-    }.toList
+    if (nodes.isEmpty) {
+      List.empty
+    } else {
+      /* retrieves the coordinates of all nodes */
+      val transitionPoints: List[Coordinate] = nodes.par.map { node =>
+        node.getGeoPosition.getCoordinate
+      }.toList
 
-    /* creates a new VoronoiDiagramBuilder */
-    val builder: VoronoiDiagramBuilder = new VoronoiDiagramBuilder()
-    builder.setSites(transitionPoints.asJava)
+      /* creates a new VoronoiDiagramBuilder */
+      val builder: VoronoiDiagramBuilder = new VoronoiDiagramBuilder()
+      builder.setSites(transitionPoints.asJava)
 
-    /* finds all subdivisions and returns them as polygons */
-    val polygons: List[Polygon] = builder.getSubdivision
-      .getVoronoiCellPolygons(
-        GeoUtils.DEFAULT_GEOMETRY_FACTORY
-      )
-      /* necessary to get proper polygons */
-      .asScala
-      .toList
-      .map(p => p.asInstanceOf[Polygon])
-
-    nodes.par.map { node =>
-      val polygon = polygons.par
-        .filter(polygon => polygon.contains(node.getGeoPosition))
+      /* finds all subdivisions and returns them as polygons */
+      val polygons: List[Polygon] = builder.getSubdivision
+        .getVoronoiCellPolygons(
+          GeoUtils.DEFAULT_GEOMETRY_FACTORY
+        )
+        /* necessary to get proper polygons */
+        .asScala
         .toList
-      /* creates the voronoi polygon with all known information */
-      VoronoiPolygon(node, List.empty, polygon(0))
-    }.toList
+        .map(p => p.asInstanceOf[Polygon])
+
+      nodes.par.map { node =>
+        val polygon = polygons.par
+          .filter(polygon => polygon.contains(node.getGeoPosition))
+          .toSeq
+        /* creates the voronoi polygon with all known information */
+        VoronoiPolygon(node, List.empty, polygon.headOption)
+      }.toList
+    }
   }
 }
