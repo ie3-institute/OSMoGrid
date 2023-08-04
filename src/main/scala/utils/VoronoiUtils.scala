@@ -8,8 +8,10 @@ package utils
 
 import akka.actor.typed.scaladsl.ActorContext
 import edu.ie3.datamodel.models.input.NodeInput
+import edu.ie3.util.exceptions.GeoException
 import edu.ie3.util.geo.GeoUtils
-import org.locationtech.jts.geom.{Coordinate, Polygon}
+import edu.ie3.util.geo.GeoUtils.buildCoordinate
+import org.locationtech.jts.geom.{Coordinate, Point, Polygon}
 import org.locationtech.jts.triangulate.VoronoiDiagramBuilder
 
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
@@ -24,11 +26,13 @@ object VoronoiUtils {
     *   hv-mv transition point
     * @param transitionPointsToLowerVoltLvl
     *   list of mv-lv transition points
+    * @param polygon
+    *   a [[Polygon]]
     */
   final case class VoronoiPolygon(
       transitionPointToHigherVoltLvl: NodeInput,
       transitionPointsToLowerVoltLvl: List[NodeInput],
-      polygon: Option[Polygon]
+      polygon: Polygon
   ) {
 
     /** Method to add nodes, that are connected to a lower voltage level, to
@@ -51,13 +55,11 @@ object VoronoiUtils {
       * @param node
       *   to be checked
       * @return
-      *   true, if the node is inside
+      *   true, if the node is inside, or false if the node is not inside the
+      *   polygon
       */
     def containsNode(node: NodeInput): Boolean = {
-      polygon match {
-        case Some(value) => value.contains(node.getGeoPosition)
-        case None        => false
-      }
+      polygon.contains(node.getGeoPosition)
     }
   }
 
@@ -97,7 +99,7 @@ object VoronoiUtils {
     * @return
     *   an updated list of [[VoronoiPolygon]]
     */
-  def updatePolygons[T](
+  private def updatePolygons[T](
       polygons: List[VoronoiPolygon],
       nodes: List[NodeInput],
       ctx: ActorContext[T]
@@ -132,45 +134,86 @@ object VoronoiUtils {
 
   /** This method uses a [[VoronoiDiagramBuilder]] to generate a voronoi diagram
     * with the given nodes a its sites. After the diagram is generated the
-    * resulting polygons are mapped to the corresponding hv-mv node.
+    * resulting polygons are mapped to the corresponding hv-mv node. The found
+    * [[Polygon]] is also added to the [[VoronoiPolygon]].
     *
     * @param nodes
     *   hv-mv transition points
     * @return
     *   a map: hv-mv transition points to polygons
     */
-  def createPolygons(
+  private def createPolygons(
       nodes: List[NodeInput]
   ): List[VoronoiPolygon] = {
     if (nodes.isEmpty) {
       List.empty
+    } else if (nodes.size == 1) {
+      val node = nodes(0)
+      val coordinate = node.getGeoPosition.getCoordinate
+
+      // in order to properly use the voronoi diagram, some helping coordinates need to be added
+      // without these additional coordinates no polygon is returned by the voronoi builder
+      val coordinates = List(
+        coordinate,
+        buildCoordinate(coordinate.getY + 3, coordinate.getX + 3),
+        buildCoordinate(coordinate.getY + 3, coordinate.getX - 3),
+        buildCoordinate(coordinate.getY - 3, coordinate.getX + 3),
+        buildCoordinate(coordinate.getY - 3, coordinate.getX - 3)
+      )
+
+      // with this the previously added coordinates will be filtered out, because we only want the actual polygon for the given NodeInput
+      val polygons = useBuilder(coordinates).filter(polygon =>
+        polygon.contains(node.getGeoPosition)
+      )
+
+      // if more than one point is present after filtering, an exception is thrown
+      if (polygons.size > 1) {
+        throw new GeoException(
+          "Number of returned polygons should equal 1, but " + polygons.size + " were returned."
+        )
+      } else {
+        List(VoronoiPolygon(node, List.empty, polygons(0)))
+      }
     } else {
       /* retrieves the coordinates of all nodes */
       val transitionPoints: List[Coordinate] = nodes.par.map { node =>
         node.getGeoPosition.getCoordinate
       }.toList
 
-      /* creates a new VoronoiDiagramBuilder */
-      val builder: VoronoiDiagramBuilder = new VoronoiDiagramBuilder()
-      builder.setSites(transitionPoints.asJava)
-
-      /* finds all subdivisions and returns them as polygons */
-      val polygons: List[Polygon] = builder.getSubdivision
-        .getVoronoiCellPolygons(
-          GeoUtils.DEFAULT_GEOMETRY_FACTORY
-        )
-        /* necessary to get proper polygons */
-        .asScala
-        .toList
-        .map(p => p.asInstanceOf[Polygon])
+      // calling the builder to generate the polygons
+      val polygons: List[Polygon] = useBuilder(transitionPoints)
 
       nodes.par.map { node =>
         val polygon = polygons.par
           .filter(polygon => polygon.contains(node.getGeoPosition))
           .toSeq
         /* creates the voronoi polygon with all known information */
-        VoronoiPolygon(node, List.empty, polygon.headOption)
+        VoronoiPolygon(node, List.empty, polygon(0))
       }.toList
     }
+  }
+
+  /** This method uses the [[VoronoiDiagramBuilder]] and the provided
+    * [[Coordinate]] to generate a list of [[Polygon]].
+    *
+    * @param nodes
+    *   centres of the generated polygons
+    * @return
+    *   a list of [[Polygon]]
+    */
+  private def useBuilder(nodes: List[Coordinate]): List[Polygon] = {
+    /* creates a new VoronoiDiagramBuilder */
+    val builder: VoronoiDiagramBuilder = new VoronoiDiagramBuilder()
+    builder.setSites(nodes.asJava)
+
+    /* finds all subdivisions and returns them as polygons */
+    builder.getSubdivision
+      .getVoronoiCellPolygons(
+        GeoUtils.DEFAULT_GEOMETRY_FACTORY
+      )
+      /* necessary to get proper polygons */
+      .asScala
+      .toList
+      .map(p => p.asInstanceOf[Polygon])
   }
 }

@@ -15,71 +15,81 @@ import tech.units.indriya.quantity.Quantities
 import java.util.UUID
 
 trait NodeInputSupport {
-  protected val nodeA = new NodeInput(
+  protected val nodeInMv1 = new NodeInput(
     UUID.randomUUID(),
-    s"Node A in 1",
+    s"Node 1 in mv",
     Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
     false,
-    GeoUtils.buildPoint(51.49249, 7.41105),
+    GeoUtils.buildPoint(51.49, 7.49),
     GermanVoltageLevelUtils.MV_10KV,
     1
   )
-  val nodeB = new NodeInput(
+  val nodeInMv2 = new NodeInput(
     UUID.randomUUID(),
-    s"Node B in 1",
+    s"Node 2 in mv",
     Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
     false,
-    GeoUtils.buildPoint(51.49276, 7.41657),
+    GeoUtils.buildPoint(51.51, 7.49),
     GermanVoltageLevelUtils.MV_10KV,
     1
   )
-  val nodeC = new NodeInput(
+  val nodeInMv3 = new NodeInput(
     UUID.randomUUID(),
-    s"Node C in 2",
+    s"Node 3 in mv",
     Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
     false,
-    GeoUtils.buildPoint(51.49350, 7.41605),
+    GeoUtils.buildPoint(51.49, 7.51),
     GermanVoltageLevelUtils.MV_10KV,
-    2
+    1
   )
 
-  val nodeD = new NodeInput(
+  val nodeInMv4 = new NodeInput(
     UUID.randomUUID(),
-    s"Node C in 2",
+    s"Node 4 in mv",
     Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
     false,
-    GeoUtils.buildPoint(51.49360, 7.41835),
+    GeoUtils.buildPoint(51.51, 7.51),
     GermanVoltageLevelUtils.MV_10KV,
-    2
+    1
   )
 
   val nodeToHv1 = new NodeInput(
     UUID.randomUUID(),
-    s"Node 1 in 1",
+    s"Node 1 to hv",
     Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
     false,
-    GeoUtils.buildPoint(51.48340, 7.31635),
+    GeoUtils.buildPoint(51.0, 7.0),
     GermanVoltageLevelUtils.MV_10KV,
     1
   )
 
   val nodeToHv2 = new NodeInput(
     UUID.randomUUID(),
-    s"Node 2 in 2",
+    s"Node 2 ti hv",
     Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
     false,
-    GeoUtils.buildPoint(51.49570, 7.42505),
+    GeoUtils.buildPoint(52.0, 7.0),
     GermanVoltageLevelUtils.MV_10KV,
-    2
+    1
   )
 
   val nodeToHv3 = new NodeInput(
     UUID.randomUUID(),
-    s"Node 3 in 2",
+    s"Node 3 to hv",
     Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
     false,
-    GeoUtils.buildPoint(51.45570, 7.47505),
+    GeoUtils.buildPoint(51.0, 8.0),
     GermanVoltageLevelUtils.MV_10KV,
-    2
+    1
+  )
+
+  val nodeToHv4 = new NodeInput(
+    UUID.randomUUID(),
+    s"Node 4 to hv",
+    Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
+    false,
+    GeoUtils.buildPoint(52.0, 8.0),
+    GermanVoltageLevelUtils.MV_10KV,
+    1
   )
 }
