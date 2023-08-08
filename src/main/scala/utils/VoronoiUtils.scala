@@ -11,8 +11,11 @@ import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.util.exceptions.GeoException
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.geo.GeoUtils.buildCoordinate
-import org.locationtech.jts.geom.{Coordinate, Point, Polygon}
+import org.locationtech.jts.geom.{Coordinate, Envelope, Polygon}
 import org.locationtech.jts.triangulate.VoronoiDiagramBuilder
+import org.slf4j.Logger
+import tech.units.indriya.quantity.Quantities
+import tech.units.indriya.unit.Units.METRE
 
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
 import scala.jdk.CollectionConverters._
@@ -86,7 +89,7 @@ object VoronoiUtils {
     val polygons = createPolygons(transitionPoints)
 
     /* updates the polygons with additional nodes */
-    updatePolygons(polygons, additionalPoints, ctx)
+    updatePolygons(polygons, additionalPoints, ctx.log)
   }
 
   /** Method to add a list of [[NodeInput]] to a list of [[VoronoiPolygon]].
@@ -94,15 +97,15 @@ object VoronoiUtils {
     *   a list of [[VoronoiPolygon]]
     * @param nodes
     *   that should be added
-    * @param ctx
-    *   actor context
+    * @param log
+    *   logger
     * @return
     *   an updated list of [[VoronoiPolygon]]
     */
-  private def updatePolygons[T](
+  private def updatePolygons(
       polygons: List[VoronoiPolygon],
       nodes: List[NodeInput],
-      ctx: ActorContext[T]
+      log: Logger
   ): (List[VoronoiPolygon], List[NodeInput]) = {
     /* list of nodes that are not assigned yet */
     var notAssignedNodes: List[NodeInput] = nodes
@@ -122,11 +125,11 @@ object VoronoiUtils {
 
     /* logs a debug message */
     if (notAssignedNodes.isEmpty) {
-      ctx.log.debug(
+      log.debug(
         s"The following nodes could not be assigned: $notAssignedNodes."
       )
     } else {
-      ctx.log.debug("All nodes have been assigned to the polygons.")
+      log.debug("All nodes have been assigned to the polygons.")
     }
 
     (updatedPolygons, notAssignedNodes)
@@ -149,16 +152,21 @@ object VoronoiUtils {
       List.empty
     } else if (nodes.size == 1) {
       val node = nodes(0)
-      val coordinate = node.getGeoPosition.getCoordinate
+      val coordinate = node.getGeoPosition
 
       // in order to properly use the voronoi diagram, some helping coordinates need to be added
       // without these additional coordinates no polygon is returned by the voronoi builder
-      val coordinates = List(
+      val envelope: Envelope = GeoUtils.calculateBoundingBox(
         coordinate,
-        buildCoordinate(coordinate.getY + 3, coordinate.getX + 3),
-        buildCoordinate(coordinate.getY + 3, coordinate.getX - 3),
-        buildCoordinate(coordinate.getY - 3, coordinate.getX + 3),
-        buildCoordinate(coordinate.getY - 3, coordinate.getX - 3)
+        Quantities.getQuantity(110000, METRE)
+      )
+
+      val coordinates = List(
+        coordinate.getCoordinate,
+        buildCoordinate(envelope.getMaxY, envelope.getMaxX),
+        buildCoordinate(envelope.getMaxY, envelope.getMinX),
+        buildCoordinate(envelope.getMinY, envelope.getMinX),
+        buildCoordinate(envelope.getMinY, envelope.getMaxX)
       )
 
       // with this the previously added coordinates will be filtered out, because we only want the actual polygon for the given NodeInput

@@ -6,8 +6,10 @@
 
 package edu.ie3.osmogrid.utils
 
+import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.test.common.{NodeInputSupport, UnitSpec}
 import org.locationtech.jts.geom.Polygon
+import org.slf4j.{Logger, LoggerFactory}
 import utils.VoronoiUtils
 import utils.VoronoiUtils.VoronoiPolygon
 
@@ -121,7 +123,25 @@ class VoronoiUtilsSpec extends UnitSpec with NodeInputSupport {
       polygon.containsNode(nodeInMv4) shouldBe true
     }
 
-    "update a voronoi polygon correctly" in {}
+    "update a voronoi polygon correctly" in {
+      val updatePolygons =
+        PrivateMethod[(List[VoronoiPolygon], List[NodeInput])](
+          Symbol("updatePolygons")
+        )
+      val log: Logger = LoggerFactory.getLogger(VoronoiUtils.getClass)
+
+      val polygons: List[VoronoiPolygon] = List(polygon)
+      val nodes = List(nodeInMv1, nodeInMv2, nodeInMv3, nodeOutside)
+      val (updatedPolygon, notAssigned) =
+        VoronoiUtils invokePrivate updatePolygons(polygons, nodes, log)
+
+      notAssigned shouldBe List(nodeOutside)
+      updatedPolygon(0).transitionPointsToLowerVoltLvl shouldBe List(
+        nodeInMv1,
+        nodeInMv2,
+        nodeInMv3
+      )
+    }
 
   }
 }

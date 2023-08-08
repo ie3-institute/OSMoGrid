@@ -9,6 +9,8 @@ package edu.ie3.osmogrid.mv
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.osmogrid.graph.OsmGraph
+import edu.ie3.osmogrid.model.OsmoGridModel
+import edu.ie3.osmogrid.model.OsmoGridModel.MvOsmoGridModel
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
 import org.jgrapht.GraphPath
@@ -22,64 +24,123 @@ import javax.measure.quantity.Length
 
 object MvGraphBuilder {
   final case class NodeConversion(
-      node: NodeInput,
-      osmNode: Node
-  )
-  final case class MvConnections(
+      conversionToOsm: Map[NodeInput, Node],
+      conversionToPSDM: Map[Node, NodeInput]
+  ) {
+    def getOsmNode(node: NodeInput): Node = {
+      conversionToOsm(node)
+    }
+
+    def getPSDMNode(node: Node): NodeInput = {
+      conversionToPSDM(node)
+    }
+  }
+
+  final case class MvConnection(
       nodeA: Node,
       nodeB: Node,
       distance: ComparableQuantity[Length],
       path: Option[GraphPath[Node, DistanceWeightedEdge]]
   )
 
-  /** Method to find the closest [[Node]] for a given [[NodeInput]].
-    * @param node
-    *   for which the closest osm node should be returned
+  final case class MvGraph(
+      nodeConversion: NodeConversion
+  )
+
+  def buildGraph(
+      nodeToHv: NodeInput,
+      nodesToLv: List[NodeInput],
+      osmoGridModel: MvOsmoGridModel
+  ): MvGraph = {
+    val (highways, highwayNodes) =
+      OsmoGridModel.filterForWays(osmoGridModel.highways)
+    val nodes = nodesToLv.appended(nodeToHv)
+
+    val conversion: NodeConversion = findClosestOsmNodes(nodes, highwayNodes)
+    val osmNodes: List[Node] = nodes.map(node => conversion.getOsmNode(node))
+
+    findClosestConnections(osmNodes)
+  }
+
+  /** Method to create [[NodeConversion]].
+    * @param nodes
+    *   for which the conversion should be created
     * @param osmNodes
     *   map containing osm nodes
     * @return
-    *   the closest [[Node]]
+    *   the [[NodeConversion]]
     */
-  def findClosestOsmNode(
-      node: NodeInput,
+  private def findClosestOsmNodes(
+      nodes: List[NodeInput],
       osmNodes: Map[Long, Node]
   ): NodeConversion = {
-    val coordinate = node.getGeoPosition.getCoordinate
 
-    val sortedList = osmNodes.values.toList
-      .map { node: Node =>
-        (
-          node,
-          GeoUtils.calcHaversine(coordinate, node.coordinate.getCoordinate)
-        )
-      }
-      .sortBy(_._2)
+    val conversion: Map[NodeInput, Node] = nodes.map { node =>
+      val coordinate = node.getGeoPosition.getCoordinate
 
-    NodeConversion(node, sortedList(1)._1)
+      val sortedList = osmNodes.values.toList
+        .map { node: Node =>
+          (
+            node,
+            GeoUtils.calcHaversine(coordinate, node.coordinate.getCoordinate)
+          )
+        }
+        .sortBy(_._2)
+
+      node -> sortedList(1)._1
+    }.toMap
+
+    NodeConversion(conversion, conversion.map { case (k, v) => v -> k })
   }
+
+  // should return the closest connections for all nodes in this voronoi polynomial
+  // the MvConnections can be used to build a mv graph
+  private def findClosestConnections(
+      osmNodes: List[Node]
+  ): MvGraph = {
+
+    /*
+      TODO: Change closest connection calculation after alternative is properly tested
+      val streetGraph: OsmGraph = MvGraphBuilder.buildStreetGraph(highways.seq.toSeq, highwayNodes)
+      val allConnections = findAllConnections(streetGraph, highwayNodes)
+     */
+
+    val allConnections = MvGraphBuilder.findAllConnections(osmNodes)
+
+    val graph = savingsAlgorithm(allConnections)
+    graphOptimizer(graph)
+  }
+
+  // builds a street graph
+  def buildStreetGraph(ways: Seq[Way], nodes: Map[Long, Node]): OsmGraph = ???
+
+  // uses saving algorithm to minimize the connection length
+  private def savingsAlgorithm(connections: List[MvConnection]): MvGraph = ???
+
+  // maybe necessary, when previous algorithm is not perfect
+  private def graphOptimizer(mvGraph: MvGraph): MvGraph = ???
 
   // uses haversine formula to calculate the aerial distance between two OSM Nodes
   // TODO: Replace it with the other findAllConnections method for possibly higher accuracy and less optimisation later
-  def findAllConnections(osmNodes: Map[Long, Node]): List[MvConnections] = {
-    val nodes: List[Node] = osmNodes.values.toList
-    val connections: List[(Node, Node)] = getAllUniqueConnections(nodes)
+  private def findAllConnections(osmNodes: List[Node]): List[MvConnection] = {
+    val connections: List[(Node, Node)] = getAllUniqueConnections(osmNodes)
 
     connections.map { case (nodeA, nodeB) =>
       val distance = GeoUtils.calcHaversine(
         nodeA.coordinate.getCoordinate,
         nodeB.coordinate.getCoordinate
       )
-      MvConnections(nodeA, nodeB, distance, None)
+      MvConnection(nodeA, nodeB, distance, None)
     }
   }
 
   // uses the street graph to find all connections between two OSM Nodes
   // returns a list of MvConnections
   // TODO: Testing if the selected shortest path algorithm is the best for our usecase
-  def findAllConnections(
+  private def findAllConnections(
       osmGraph: OsmGraph,
       osmNodes: Map[Long, Node]
-  ): List[MvConnections] = {
+  ): List[MvConnection] = {
     val shortestPath: BFSShortestPath[Node, DistanceWeightedEdge] =
       new BFSShortestPath(osmGraph)
 
@@ -93,7 +154,7 @@ object MvGraphBuilder {
       val shortestPath = paths(nodeA)
       val graphPath = shortestPath.getPath(nodeB)
 
-      MvConnections(
+      MvConnection(
         nodeA,
         nodeB,
         Quantities.getQuantity(graphPath.getWeight, Units.METRE),
@@ -101,9 +162,6 @@ object MvGraphBuilder {
       )
     }
   }
-
-  // builds a street graph
-  def buildStreetGraph(ways: Seq[Way], nodes: Map[Long, Node]): OsmGraph = ???
 
   // used to get all possible unique connections (a -> b == b -> a)
   private def getAllUniqueConnections(

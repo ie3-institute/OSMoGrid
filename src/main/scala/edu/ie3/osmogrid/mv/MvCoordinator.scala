@@ -170,6 +170,16 @@ object MvCoordinator extends ActorStopSupportStateless {
         val (polygons, notAssignedNodes) =
           VoronoiUtils.createVoronoiPolygons(hvToMv, mvToLv, ctx)
 
+        if (notAssignedNodes.nonEmpty) {
+          ctx.log.warn(
+            s"Found ${notAssignedNodes.size} nodes, that are not inside a voronoi polygon!"
+          )
+        }
+
+        polygons.foreach { polygon =>
+          VoronoiCoordinator(polygon, osmGridModel, ctx.self, ctx)
+        }
+
         Behaviors.same
       case (ctx, MvTerminate) =>
         terminate(ctx.log)

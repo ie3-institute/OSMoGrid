@@ -12,9 +12,10 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.RequestFailedException
 import edu.ie3.osmogrid.io.input.InputDataProvider
 import edu.ie3.osmogrid.model.OsmoGridModel.MvOsmoGridModel
+import edu.ie3.osmogrid.mv.MvGraphBuilder.MvGraph
 import org.slf4j.Logger
 
-import scala.util.{Success, Try, Failure}
+import scala.util.{Failure, Success, Try}
 
 sealed trait MvRequest
 sealed trait MvResponse
@@ -36,6 +37,8 @@ final case class StartMvGeneration(
     hvGrids: List[SubGridContainer],
     osmGridModel: MvOsmoGridModel
 ) extends MvRequest
+
+object StartMvGraphGeneration extends MvRequest
 
 final case class StartMvGraphConversion(
     cfg: OsmoGridConfig.Generation.Mv,
@@ -130,6 +133,3 @@ private object AwaitingMvGraphData {
       awaitingMvInputData.guardian
     )
 }
-
-final case class MvGraph(
-)

@@ -92,4 +92,14 @@ trait NodeInputSupport {
     GermanVoltageLevelUtils.MV_10KV,
     1
   )
+
+  val nodeOutside = new NodeInput(
+    UUID.randomUUID(),
+    s"Node that should no be inside a grid",
+    Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
+    false,
+    GeoUtils.buildPoint(0.0, 0.0),
+    GermanVoltageLevelUtils.MV_10KV,
+    20
+  )
 }
