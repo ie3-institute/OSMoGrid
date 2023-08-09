@@ -22,6 +22,7 @@ import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 
 import javax.measure.quantity.Length
+import scala.collection.mutable
 
 object MvGraphBuilder {
   final case class NodeConversion(
@@ -71,13 +72,14 @@ object MvGraphBuilder {
 
     // building all necessary data for savings algorithm
     val conversion: NodeConversion = findClosestOsmNodes(nodes, highwayNodes)
-    val osmNodesToLv: List[Node] = conversion.getOsmNodes(nodesToLv)
-    val connections: List[MvConnection] = findClosestConnections(osmNodesToLv)
+    val connections: Map[Node, List[MvConnection]] = findClosestConnections(
+      conversion.getOsmNodes(nodes)
+    )
 
     // using savings algorithm to generate a graph structure
     val graph = savingsAlgorithm(
       conversion.getOsmNode(nodeToHv),
-      osmNodesToLv,
+      conversion.getOsmNodes(nodesToLv),
       connections,
       conversion
     )
@@ -121,8 +123,10 @@ object MvGraphBuilder {
   // the MvConnections can be used to build a mv graph
   private def findClosestConnections(
       osmNodes: List[Node]
-  ): List[MvConnection] = {
-    val connections: List[(Node, Node)] = getAllUniqueConnections(osmNodes)
+  ): Map[Node, List[MvConnection]] = {
+    val possibleConnections: List[(Node, Node)] = getAllUniqueConnections(
+      osmNodes
+    )
 
     /*
       TODO: Change closest connection calculation after alternative is properly tested
@@ -132,13 +136,40 @@ object MvGraphBuilder {
 
     // uses haversine formula to calculate the aerial distance between two OSM Nodes
     // TODO: Replace it with the other findAllConnections method for possibly higher accuracy and less optimisation later
-    connections.map { case (nodeA, nodeB) =>
+    val connections = possibleConnections.map { case (nodeA, nodeB) =>
       val distance = GeoUtils.calcHaversine(
         nodeA.coordinate.getCoordinate,
         nodeB.coordinate.getCoordinate
       )
       MvConnection(nodeA, nodeB, distance, None)
     }
+
+    val mapping: Map[Node, List[MvConnection]] = osmNodes.map { node =>
+      node -> List()
+    }.toMap
+
+    connections.foreach { connection =>
+      val complementary: MvConnection = MvConnection(
+        connection.nodeB,
+        connection.nodeA,
+        connection.distance,
+        connection.path
+      )
+      val listA: List[MvConnection] = mapping(connection.nodeA)
+      val listB: List[MvConnection] = mapping(connection.nodeB)
+
+      if (!listA.contains(connection)) {
+        val updatedList = listA :+ connection
+        mapping ++ (connection.nodeA -> updatedList)
+      }
+
+      if (!listB.contains(complementary)) {
+        val updatedList = listB :+ complementary
+        mapping ++ (connection.nodeB, updatedList)
+      }
+    }
+
+    mapping
   }
 
   // builds a street graph

@@ -28,7 +28,7 @@ object Savings {
   def savingsAlgorithm(
       nodeToHv: Node,
       nodes: List[Node],
-      connections: List[MvConnection],
+      connections: Map[Node, List[MvConnection]],
       conversion: NodeConversion
   ): MvGraph = {
     val graph = new OsmGraph()
@@ -40,9 +40,6 @@ object Savings {
       graph.addWeightedEdge(nodeToHv, node)
       graph.addWeightedEdge(node, nodeToHv)
     }
-
-
-
 
     ???
   }
@@ -64,7 +61,11 @@ object Savings {
         val edgeA = copy.removeEdge(nodeToHv, connection.nodeA)
         val edgeB = copy.removeEdge(nodeToHv, connection.nodeB)
 
-        graph.addWeightedEdge(connection.nodeA, connection.nodeB)
+        graph.addWeightedEdge(
+          connection.nodeA,
+          connection.nodeB,
+          connection.distance
+        )
 
         val saving: Quantity[Length] =
           edgeA.getDistance.add(edgeB.getDistance).subtract(connection.distance)

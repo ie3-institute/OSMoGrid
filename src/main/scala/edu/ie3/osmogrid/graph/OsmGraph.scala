@@ -44,6 +44,16 @@ class OsmGraph(
     this.addEdge(nodeA, nodeB, edge)
   }
 
+  def addWeightedEdge(
+      nodeA: Node,
+      nodeB: Node,
+      weigth: ComparableQuantity[Length]
+  ): Unit = {
+    val edge = new DistanceWeightedEdge()
+    this.setEdgeWeight(edge, weigth)
+    this.addEdge(nodeA, nodeB, edge)
+  }
+
   def setEdgeWeight(
       edge: DistanceWeightedEdge,
       weight: ComparableQuantity[Length]
