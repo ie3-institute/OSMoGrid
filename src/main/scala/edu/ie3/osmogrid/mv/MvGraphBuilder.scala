@@ -11,18 +11,13 @@ import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.MvOsmoGridModel
-import edu.ie3.osmogrid.mv.Savings.savingsAlgorithm
+import edu.ie3.osmogrid.mv.Savings.{Connection, Connections, savingsAlgorithm}
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
-import org.jgrapht.GraphPath
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm.SingleSourcePaths
 import org.jgrapht.alg.shortestpath.BFSShortestPath
-import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
-
-import javax.measure.quantity.Length
-import scala.collection.mutable
 
 object MvGraphBuilder {
   final case class NodeConversion(
@@ -46,17 +41,10 @@ object MvGraphBuilder {
     }
   }
 
-  final case class MvConnection(
-      nodeA: Node,
-      nodeB: Node,
-      distance: ComparableQuantity[Length],
-      path: Option[GraphPath[Node, DistanceWeightedEdge]]
-  )
-
   final case class MvGraph(
       nodeToHv: Node,
       osmNodes: List[Node],
-      connections: List[MvConnection],
+      connections: List[Connection],
       nodeConversion: NodeConversion,
       graph: OsmGraph
   )
@@ -72,7 +60,7 @@ object MvGraphBuilder {
 
     // building all necessary data for savings algorithm
     val conversion: NodeConversion = findClosestOsmNodes(nodes, highwayNodes)
-    val connections: Map[Node, List[MvConnection]] = findClosestConnections(
+    val connections: Connections = findClosestConnections(
       conversion.getOsmNodes(nodes)
     )
 
@@ -123,7 +111,7 @@ object MvGraphBuilder {
   // the MvConnections can be used to build a mv graph
   private def findClosestConnections(
       osmNodes: List[Node]
-  ): Map[Node, List[MvConnection]] = {
+  ): Connections = {
     val possibleConnections: List[(Node, Node)] = getAllUniqueConnections(
       osmNodes
     )
@@ -141,35 +129,10 @@ object MvGraphBuilder {
         nodeA.coordinate.getCoordinate,
         nodeB.coordinate.getCoordinate
       )
-      MvConnection(nodeA, nodeB, distance, None)
+      Connection(nodeA, nodeB, distance, None)
     }
 
-    val mapping: Map[Node, List[MvConnection]] = osmNodes.map { node =>
-      node -> List()
-    }.toMap
-
-    connections.foreach { connection =>
-      val complementary: MvConnection = MvConnection(
-        connection.nodeB,
-        connection.nodeA,
-        connection.distance,
-        connection.path
-      )
-      val listA: List[MvConnection] = mapping(connection.nodeA)
-      val listB: List[MvConnection] = mapping(connection.nodeB)
-
-      if (!listA.contains(connection)) {
-        val updatedList = listA :+ connection
-        mapping ++ (connection.nodeA -> updatedList)
-      }
-
-      if (!listB.contains(complementary)) {
-        val updatedList = listB :+ complementary
-        mapping ++ (connection.nodeB, updatedList)
-      }
-    }
-
-    mapping
+    Connections(osmNodes, connections)
   }
 
   // builds a street graph
@@ -185,7 +148,7 @@ object MvGraphBuilder {
       osmGraph: OsmGraph,
       osmNodes: Map[Long, Node],
       connections: List[(Node, Node)]
-  ): List[MvConnection] = {
+  ): List[Connection] = {
     val shortestPath: BFSShortestPath[Node, DistanceWeightedEdge] =
       new BFSShortestPath(osmGraph)
 
@@ -199,7 +162,7 @@ object MvGraphBuilder {
       val shortestPath = paths(nodeA)
       val graphPath = shortestPath.getPath(nodeB)
 
-      MvConnection(
+      Connection(
         nodeA,
         nodeB,
         Quantities.getQuantity(graphPath.getWeight, Units.METRE),

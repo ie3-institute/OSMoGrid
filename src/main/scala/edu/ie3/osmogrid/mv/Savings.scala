@@ -6,20 +6,73 @@
 
 package edu.ie3.osmogrid.mv
 
+import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.mv.MvGraphBuilder.{
-  MvConnection,
-  MvGraph,
-  NodeConversion
-}
+import edu.ie3.osmogrid.mv.MvGraphBuilder.{MvGraph, NodeConversion}
 import edu.ie3.util.osm.model.OsmEntity.Node
+import org.jgrapht.GraphPath
+import tech.units.indriya.ComparableQuantity
 
 import javax.measure.Quantity
 import javax.measure.quantity.Length
 
 object Savings {
+  final case class Connection(
+      nodeA: Node,
+      nodeB: Node,
+      distance: ComparableQuantity[Length],
+      path: Option[GraphPath[Node, DistanceWeightedEdge]]
+  )
+
+  final case class Connections(
+      connections: Map[Node, List[Node]],
+      distance: Map[(Node, Node), Connection]
+  ) {
+    private def getConnection(nodeA: Node, nodeB: Node): Connection =
+      distance.get((nodeA, nodeB)) match {
+        case Some(value) => value
+        case None        => distance((nodeB, nodeA))
+      }
+
+    def getDistance(nodeA: Node, nodeB: Node): ComparableQuantity[Length] =
+      getConnection(nodeA, nodeB).distance
+
+    def getNearestNeighbour(node: Node): List[Node] = {
+      connections(node)
+        .map { nodeB => node -> getDistance(node, nodeB) }
+        .sortBy(_._2)
+        .map { case (node, _) => node }
+    }
+  }
+
+  object Connections {
+    def apply(
+        osmNodes: List[Node],
+        connections: List[Connection]
+    ): Connections = {
+      val connectionMap: Map[Node, List[Node]] = osmNodes.map { node =>
+        node -> List()
+      }.toMap
+
+      connections.foreach { connection =>
+        val listA: List[Node] = connectionMap(connection.nodeA)
+        val listB: List[Node] = connectionMap(connection.nodeB)
+
+        connectionMap ++ (connection.nodeA -> listA.appended(connection.nodeB))
+        connectionMap ++ (connection.nodeB -> listB.appended(connection.nodeA))
+      }
+
+      val distanceMap: Map[(Node, Node), Connection] = connections.map {
+        connection =>
+          (connection.nodeA, connection.nodeB) -> connection
+      }.toMap
+
+      Connections(connectionMap, distanceMap)
+    }
+  }
+
   final case class Saving(
-      usedConnection: MvConnection,
+      usedConnection: Connection,
       updatedGraph: OsmGraph,
       saving: Quantity[Length]
   )
@@ -28,7 +81,7 @@ object Savings {
   def savingsAlgorithm(
       nodeToHv: Node,
       nodes: List[Node],
-      connections: Map[Node, List[MvConnection]],
+      connections: Connections,
       conversion: NodeConversion
   ): MvGraph = {
     val graph = new OsmGraph()
@@ -46,7 +99,7 @@ object Savings {
 
   def calcSavings(
       nodeToHv: Node,
-      connections: List[MvConnection],
+      connections: List[Connection],
       graph: OsmGraph
   ): Seq[Saving] = {
     connections.flatMap { connection =>
