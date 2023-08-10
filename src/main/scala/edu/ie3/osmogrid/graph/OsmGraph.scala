@@ -7,6 +7,7 @@
 package edu.ie3.osmogrid.graph
 
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
+import edu.ie3.osmogrid.routingproblem.Definitions.Connection
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import tech.units.indriya.unit.Units.METRE
@@ -61,6 +62,22 @@ class OsmGraph(
     val weightDouble: Double =
       weight.to(METRE).getValue.doubleValue
     super.setEdgeWeight(edge, weightDouble)
+  }
+
+  def reconnectNodes(
+      common: Node,
+      connection: Connection
+  ): List[DistanceWeightedEdge] = {
+    val edgeA = removeEdge(common, connection.nodeA)
+    val edgeB = removeEdge(common, connection.nodeB)
+
+    addWeightedEdge(
+      connection.nodeA,
+      connection.nodeB,
+      connection.distance
+    )
+
+    List(edgeA, edgeB)
   }
 
   def copy(): OsmGraph = {

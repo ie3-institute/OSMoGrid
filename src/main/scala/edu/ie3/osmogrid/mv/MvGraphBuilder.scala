@@ -11,7 +11,8 @@ import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.MvOsmoGridModel
-import edu.ie3.osmogrid.mv.Savings.{Connection, Connections, savingsAlgorithm}
+import edu.ie3.osmogrid.routingproblem.Definitions.{Connection, Connections}
+import edu.ie3.osmogrid.routingproblem.Solver.savingsAlgorithm
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm.SingleSourcePaths
@@ -67,7 +68,6 @@ object MvGraphBuilder {
     // using savings algorithm to generate a graph structure
     val graph = savingsAlgorithm(
       conversion.getOsmNode(nodeToHv),
-      conversion.getOsmNodes(nodesToLv),
       connections,
       conversion
     )
