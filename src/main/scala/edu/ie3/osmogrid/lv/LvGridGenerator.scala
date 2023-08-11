@@ -81,7 +81,7 @@ object LvGridGenerator extends LazyLogging {
             config.ratedVoltage.asKiloVolt,
             config.considerHouseConnectionPoints,
             lineType,
-            config.gridName
+            gridUuid.toString
           )
       }
 

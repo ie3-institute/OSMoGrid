@@ -68,6 +68,9 @@ class LvRegionCoordinatorIT
         messages.foreach(
           _.lvCoordinatorRegionCoordinatorAdapter shouldBe regionCoordinatorReply.ref
         )
+        messages.foreach(
+          _.lvCoordinatorGridGeneratorAdapter shouldBe gridGeneratorReply.ref
+        )
 
         // Recklinghausen
         models.exists { m =>
@@ -103,7 +106,7 @@ class LvRegionCoordinatorIT
     }
 
     "having reached the last administrative level" should {
-      "start MunicipalityCoordinators with the results" in {
+      "start LvGridGenerators with the results" in {
         val adminLevel = BoundaryAdminLevel.COUNTY_LEVEL
         val lvCoordinatorRegionCoordinatorAdapter =
           TestProbe[LvRegionCoordinator.Response]()
@@ -134,7 +137,7 @@ class LvRegionCoordinatorIT
 
         Range(0, 3).foreach { _ =>
           testKit
-            .expectEffectType[SpawnedAnonymous[MunicipalityCoordinator.Request]]
+            .expectEffectType[SpawnedAnonymous[LvGridGenerator.Request]]
         }
       }
     }

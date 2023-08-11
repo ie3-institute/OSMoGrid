@@ -171,7 +171,7 @@ object LvGridGeneratorSupport extends LazyLogging {
 
           case None if osmGraph.degreeOf(osmNode) > 2 =>
             val node = nodeCreator(
-              s"Node highway: ${osmNode.id}",
+              s"Highway node: ${osmNode.id}",
               osmNode.coordinate,
               false
             )
@@ -203,7 +203,7 @@ object LvGridGeneratorSupport extends LazyLogging {
     // todo: happens with connected graphs with size of 1
     if (unvisitedNodes.nonEmpty) {
       logger.error(
-        "We did not visit all nodes while taversing the graph. Unvisited Nodes: " + unvisitedNodes
+        "We did not visit all nodes while traversing the graph. Unvisited Nodes: " + unvisitedNodes
       )
     }
 
@@ -379,8 +379,6 @@ object LvGridGeneratorSupport extends LazyLogging {
     val lineGeoNodes = passedStreetNodes
       .map(_.coordinate.getCoordinate)
       .toArray
-      .prepended(firstNode.getGeoPosition.getCoordinate)
-      .appended(secondNode.getGeoPosition.getCoordinate)
     val geoPosition = new LineString(
       new CoordinateArraySequence(
         lineGeoNodes

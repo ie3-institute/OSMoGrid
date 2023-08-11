@@ -55,7 +55,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
             )
         }
 
-        // 1 building not in landuse and therefore filtered out
+        // 2 buildings not in landuse and therefore filtered out
         buildingGraphConnections.size shouldBe 2
         // the ways have common points of connection which means consecutive ways share a node. Therefore we expect 4 not 6
         osmGraph.vertexSet().size shouldBe 4

@@ -65,7 +65,6 @@ class LvGridGeneratorSupportSpec extends UnitSpec with OsmTestData {
           fail("No grid received!")
       }
 
-      // Todo: Extend test by connecting another house at node 22L
     }
   }
 }

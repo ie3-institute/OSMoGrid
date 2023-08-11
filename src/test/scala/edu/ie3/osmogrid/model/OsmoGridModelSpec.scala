@@ -399,7 +399,7 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
       closedWayNodes.size shouldBe 1
       closedWayNodes.getOrElse(
         nodes.building1Node1.id,
-        fail("Collection sholudn't be empty")
+        fail("Collection shouldn't be empty")
       ) shouldBe nodes.building1Node1
 
     }

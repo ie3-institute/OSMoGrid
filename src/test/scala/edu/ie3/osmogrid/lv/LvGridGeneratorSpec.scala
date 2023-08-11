@@ -18,7 +18,7 @@ import edu.ie3.test.common.UnitSpec
 
 import java.util.UUID
 
-class GridGeneratorSpec
+class LvGridGeneratorSpec
     extends ScalaTestWithActorTestKit
     with UnitSpec
     with OsmTestData {

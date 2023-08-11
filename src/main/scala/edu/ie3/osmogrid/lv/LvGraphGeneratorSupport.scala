@@ -49,6 +49,10 @@ object LvGraphGeneratorSupport {
     *   node b of the highway section at which the building gets connected
     * @param graphConnectionNode
     *   the graph connection node
+    * @param isSubstation
+    *   whether the building is a substation
+    * @param buildingConnectionNode
+    *   the node that connects the building to the grid
     */
   final case class BuildingGraphConnection(
       building: ClosedWay,
@@ -74,10 +78,10 @@ object LvGraphGeneratorSupport {
     def createHighwayNodeName(considerHouseConnectionNode: Boolean): String = {
       if (considerHouseConnectionNode) {
         if (this.hasNewNode)
-          "Node highway between: " + highwayNodeA.id + " and " + highwayNodeB.id
+          "Highway node between: " + highwayNodeA.id + " and " + highwayNodeB.id
         else if (this.graphConnectionNode == this.highwayNodeA)
-          "Node highway: " + highwayNodeA.id
-        else "Node highway: " + highwayNodeB.id
+          "Highway node: " + highwayNodeA.id
+        else "Highway node: " + highwayNodeB.id
       } else "Building connection: " + this.building.id
     }
 
@@ -250,7 +254,7 @@ object LvGraphGeneratorSupport {
             closestOverall._3,
             closestOverall._4,
             closestOverall._2,
-            if (substations.toSet.contains(building)) true else false
+            substations.toSet.contains(building)
           )
         )
       } else None

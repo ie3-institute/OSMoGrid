@@ -28,12 +28,16 @@ object LvRegionCoordinator {
     *
     * @param osmoGridModel
     *   The OsmoGrid model to partition
+    * @param assetInformation
+    *   The asset type information with which to build the grid
     * @param administrativeLevel
     *   The administrative boundary level at which to partition
     * @param lvConfig
     *   The configuration for lv grid generation
+    * @param lvCoordinatorRegionCoordinatorAdapter
+    *   The actor reference that will be used to communicate expected grids
     * @param lvCoordinatorGridGeneratorAdapter
-    *   The actor which receives the generated grid data
+    *   The actor reference that will be used to send the generated grid to
     */
   final case class Partition(
       osmoGridModel: LvOsmoGridModel,

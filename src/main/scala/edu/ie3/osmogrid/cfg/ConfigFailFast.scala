@@ -55,7 +55,6 @@ object ConfigFailFast extends LazyLogging {
           _,
           _,
           _,
-          _,
           _
         ) =>
       (BoundaryAdminLevel.get(lowest), BoundaryAdminLevel.get(starting)) match {
@@ -132,8 +131,5 @@ object ConfigFailFast extends LazyLogging {
     throw IllegalConfigException(
       "Output directory and separator must be set when using .csv file sink!"
     )
-
-  // Todo: Do we need to Check RuntimeConfig?
-//  private def checkRuntimeConfig(runtime: Runtime): Unit = ???
 
 }

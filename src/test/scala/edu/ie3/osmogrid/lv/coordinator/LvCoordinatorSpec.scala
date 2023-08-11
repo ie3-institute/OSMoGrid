@@ -396,7 +396,7 @@ class LvCoordinatorSpec
           .expectMessageType[LvRegionCoordinator.Partition] match {
           case Partition(
                 osmoGridModel,
-                assetInformation,
+                _,
                 administrativeLevel,
                 config,
                 _,
