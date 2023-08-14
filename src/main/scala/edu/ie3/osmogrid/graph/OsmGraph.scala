@@ -17,7 +17,10 @@ import java.util.function.Supplier
 import javax.measure.quantity.Length
 import org.jgrapht.graph.SimpleWeightedGraph
 import org.jgrapht.util.SupplierUtil
+import org.locationtech.jts.geom.Polygon
 import tech.units.indriya.ComparableQuantity
+import tech.units.indriya.quantity.Quantities
+import tech.units.indriya.unit.Units
 
 import javax.measure.Quantity
 import scala.jdk.CollectionConverters._
@@ -88,6 +91,41 @@ class OsmGraph(
       case _ =>
         throw GraphCopyException()
     }
+  }
+
+  def subGraph(polygon: Polygon): OsmGraph = {
+    val vertexes: Set[Node] = vertexSet().asScala
+      .filter(vertex =>
+        polygon.contains(GeoUtils.buildPoint(vertex.latitude, vertex.longitude))
+      )
+      .toSet
+    val edges: Set[DistanceWeightedEdge] = edgeSet().asScala
+      .filter(edge =>
+        vertexes.contains(getEdgeSource(edge)) || vertexes.contains(
+          getEdgeTarget(edge)
+        )
+      )
+      .toSet
+
+    // copy of edges
+    val vertexMap: Map[Node, Node] = vertexes.map { v => v -> v.copy() }.toMap
+
+    val graph = new OsmGraph()
+    vertexMap.values.foreach { v => graph.addVertex(v) }
+
+    // adds edges with
+    edges.foreach { edge =>
+      val source = getEdgeSource(edge)
+      val target = getEdgeTarget(edge)
+
+      graph.addWeightedEdge(
+        vertexMap(source),
+        vertexMap(target),
+        Quantities.getQuantity(edge.getDistance.getValue, Units.METRE)
+      )
+    }
+
+    graph
   }
 
   def calcTotalWeight(): Double = {

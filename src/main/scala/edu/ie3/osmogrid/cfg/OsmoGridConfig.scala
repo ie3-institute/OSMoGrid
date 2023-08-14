@@ -90,36 +90,6 @@ object OsmoGridConfig {
         }
       }
 
-      final case class VoltageLevel(
-          id: java.lang.String,
-          lvDefault: scala.Double,
-          mvDefault: scala.Double,
-          vNom: scala.Option[scala.List[scala.Double]]
-      )
-      object VoltageLevel {
-        def apply(
-            c: com.typesafe.config.Config,
-            parentPath: java.lang.String,
-            $tsCfgValidator: $TsCfgValidator
-        ): OsmoGridConfig.Generation.Lv.VoltageLevel = {
-          OsmoGridConfig.Generation.Lv.VoltageLevel(
-            id = if (c.hasPathOrNull("id")) c.getString("id") else "lv",
-            lvDefault =
-              if (c.hasPathOrNull("lvDefault")) c.getDouble("lvDefault")
-              else 0.4,
-            mvDefault =
-              if (c.hasPathOrNull("mvDefault")) c.getDouble("mvDefault")
-              else 10.0,
-            vNom =
-              if (c.hasPathOrNull("vNom"))
-                scala.Some(
-                  $_L$_dbl(c.getList("vNom"), parentPath, $tsCfgValidator)
-                )
-              else None
-          )
-        }
-      }
-
       def apply(
           c: com.typesafe.config.Config,
           parentPath: java.lang.String,
@@ -149,9 +119,24 @@ object OsmoGridConfig {
           ),
           ratedVoltage =
             $_reqDbl(parentPath, c, "ratedVoltage", $tsCfgValidator)
-          )
         )
       }
+      private def $_reqDbl(
+          parentPath: java.lang.String,
+          c: com.typesafe.config.Config,
+          path: java.lang.String,
+          $tsCfgValidator: $TsCfgValidator
+      ): scala.Double = {
+        if (c == null) 0
+        else
+          try c.getDouble(path)
+          catch {
+            case e: com.typesafe.config.ConfigException =>
+              $tsCfgValidator.addBadPath(parentPath + path, e)
+              0
+          }
+      }
+
     }
 
     final case class Mv(
@@ -256,22 +241,6 @@ object OsmoGridConfig {
           )
         )
       }
-      private def $_reqDbl(
-          parentPath: java.lang.String,
-          c: com.typesafe.config.Config,
-          path: java.lang.String,
-          $tsCfgValidator: $TsCfgValidator
-      ): scala.Double = {
-        if (c == null) 0
-        else
-          try c.getDouble(path)
-          catch {
-            case e: com.typesafe.config.ConfigException =>
-              $tsCfgValidator.addBadPath(parentPath + path, e)
-              0
-          }
-      }
-
     }
 
     def apply(
