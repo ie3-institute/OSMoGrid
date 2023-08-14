@@ -14,9 +14,11 @@ import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
 
 import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
 import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
+
 import org.openstreetmap.osmosis.osmbinary.osmformat
 
 import scala.collection.parallel.ParSeq
+import scala.reflect.ClassTag
 
 sealed trait OsmoGridModel {
   protected val filter: SourceFilter
@@ -38,7 +40,7 @@ object OsmoGridModel {
     filterForOsmType[ClosedWay, Node](entities)
   }
 
-  def filterForOsmType[E <: OsmEntity, S <: OsmEntity](
+  def filterForOsmType[E <: OsmEntity: ClassTag, S <: OsmEntity: ClassTag](
       entities: ParSeq[EnhancedOsmEntity]
   ): (ParSeq[E], Map[Long, S]) = {
     val (matchedEntities, matchedSubentities) = entities.foldLeft(
@@ -58,6 +60,7 @@ object OsmoGridModel {
               matchedEntities.appended(entity),
               matchedSubEntities ++ subEntities
             )
+          case _ => (matchedEntities, matchedSubEntities)
         }
     }
     (matchedEntities.par, matchedSubentities)
@@ -89,7 +92,7 @@ object OsmoGridModel {
               landuses,
               boundaries,
               existingSubstations,
-              filter
+              _
             ) if this.filter.equals(additional.filter) =>
           Some(
             LvOsmoGridModel(
@@ -132,11 +135,12 @@ object OsmoGridModel {
       )
     }
 
+    // todo: this is never used and filter nodes is not considered - remove?
     def mergeAll(
         models: ParSeq[LvOsmoGridModel],
         filterNodes: Boolean = true
     ): Option[OsmoGridModel] = {
-      models.headOption.flatMap { case lvHeadModel: LvOsmoGridModel =>
+      models.headOption.flatMap { lvHeadModel: LvOsmoGridModel =>
         if (models.forall(_.filter == lvHeadModel.filter)) {
           Some(
             LvOsmoGridModel(

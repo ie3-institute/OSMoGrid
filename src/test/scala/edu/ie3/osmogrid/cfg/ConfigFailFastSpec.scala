@@ -6,6 +6,7 @@
 
 package edu.ie3.osmogrid.cfg
 
+import edu.ie3.osmogrid.cfg.ConfigFailFastSpec.viableConfigurationString
 import edu.ie3.test.common.UnitSpec
 
 import scala.util.{Failure, Success}
@@ -15,10 +16,10 @@ class ConfigFailFastSpec extends UnitSpec {
     "having malicious input definition" should {
       "fail on missing osm input definition" in {
         OsmoGridConfigFactory.parseWithoutFallback {
-          """input.asset.file.directory = "asset_input_dir"
-            |input.asset.file.hierarchic = false
-            |output.file.directory = "output_file_path"
-            |generation.lv.distinctHouseConnections = true""".stripMargin
+          viableConfigurationString.replace(
+            "input.osm.pbf.file = \"pbf_file\"",
+            ""
+          )
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
@@ -34,11 +35,7 @@ class ConfigFailFastSpec extends UnitSpec {
 
       "fail on empty osm input definition" in {
         OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = ""
-            |input.asset.file.directory = "asset_input_dir"
-            |input.asset.file.hierarchic = false
-            |output.file.directory = "output_file_path"
-            |generation.lv.distinctHouseConnections = true""".stripMargin
+          viableConfigurationString.replace("\"pbf_file\"", "\"\"")
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
@@ -54,9 +51,7 @@ class ConfigFailFastSpec extends UnitSpec {
 
       "fail on missing asset input definition" in {
         OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
-            |output.file.directory = "output_file_path"
-            |generation.lv.distinctHouseConnections = true""".stripMargin
+          viableConfigurationString.replaceAll("(?m)^.*input.asset.*$", "")
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
@@ -72,11 +67,7 @@ class ConfigFailFastSpec extends UnitSpec {
 
       "fail on empty asset directory definition" in {
         OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
-            |input.asset.file.directory = ""
-            |input.asset.file.hierarchic = false
-            |output.file.directory = "output_file_path"
-            |generation.lv.distinctHouseConnections = true""".stripMargin
+          viableConfigurationString.replace("\"asset_input_dir\"", "\"\"")
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
@@ -92,11 +83,10 @@ class ConfigFailFastSpec extends UnitSpec {
 
       "fail on invalid lowest admin level" in {
         OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
-            |input.asset.file.directory = "asset_input_dir"
-            |input.asset.file.hierarchic = false
-            |output.csv.directory = "output_file_path"
-            |generation.lv.boundaryAdminLevel.lowest = 99""".stripMargin
+          viableConfigurationString.replace(
+            "boundaryAdminLevel.lowest = 8",
+            "boundaryAdminLevel.lowest = 99"
+          )
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
@@ -112,11 +102,10 @@ class ConfigFailFastSpec extends UnitSpec {
 
       "fail on invalid starting admin level" in {
         OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
-            |input.asset.file.directory = "asset_input_dir"
-            |input.asset.file.hierarchic = false
-            |output.csv.directory = "output_file_path"
-            |generation.lv.boundaryAdminLevel.starting = -1""".stripMargin
+          viableConfigurationString.replace(
+            "boundaryAdminLevel.starting = 4",
+            "boundaryAdminLevel.starting = -1"
+          )
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
@@ -132,18 +121,16 @@ class ConfigFailFastSpec extends UnitSpec {
 
       "fail on starting level bigger than lowest level" in {
         OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
-            |input.asset.file.directory = "asset_input_dir"
-            |input.asset.file.hierarchic = false
-            |output.csv.directory = "output_file_path"
-            |generation.lv.boundaryAdminLevel.starting = 5
-            |generation.lv.boundaryAdminLevel.lowest = 4""".stripMargin
+          viableConfigurationString.replace(
+            "boundaryAdminLevel.lowest = 8",
+            "boundaryAdminLevel.lowest = 2"
+          )
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
               case Failure(exception) =>
-                exception.getMessage shouldBe "The starting admin level (provided: STATE_DISTRICT_LEVEL) " +
-                  "has to be higher than the lowest admin level (provided: FEDERAL_STATE_LEVEL)."
+                exception.getMessage shouldBe "The starting admin level (provided: FEDERAL_STATE_LEVEL) " +
+                  "has to be higher than the lowest admin level (provided: NATION_LEVEL)."
               case Success(_) =>
                 fail("Config check succeeded, but was meant to fail.")
             }
@@ -156,10 +143,8 @@ class ConfigFailFastSpec extends UnitSpec {
     "having missing generation configs" should {
       "fail" in {
         OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
-            |input.asset.file.directory = "asset_input_dir"
-            |input.asset.file.hierarchic = false
-            |output.csv.directory = "output_file_path"""".stripMargin
+          // (?m) allows matching against multiline strings so the anchors ^ and $ match individual lines not the whole string
+          viableConfigurationString.replaceAll("(?m)^.*generation.lv.*$", "")
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
@@ -177,11 +162,7 @@ class ConfigFailFastSpec extends UnitSpec {
     "having a valid config" should {
       "pass" in {
         OsmoGridConfigFactory.parseWithoutFallback {
-          """input.osm.pbf.file = "input_file_path"
-          |input.asset.file.directory = "asset_input_dir"
-          |input.asset.file.hierarchic = false
-          |output.csv.directory = "output_file_path"
-          |generation.lv.distinctHouseConnections = true""".stripMargin
+          viableConfigurationString.stripMargin
         } match {
           case Success(cfg) => ConfigFailFast.check(cfg) shouldBe Success(cfg)
           case Failure(exception) =>
@@ -190,4 +171,22 @@ class ConfigFailFastSpec extends UnitSpec {
       }
     }
   }
+}
+object ConfigFailFastSpec {
+
+  val viableConfigurationString: String =
+    """input.osm.pbf.file = "pbf_file"
+      |input.asset.file.directory = "asset_input_dir"
+      |input.asset.file.separator = ","
+      |input.asset.file.hierarchic = false
+      |output.csv.directory = "output_file_path"
+      |output.gridName = "test_grid"
+      |generation.lv.gridName = "testLvGrid"
+      |generation.lv.averagePowerDensity = 12.5
+      |generation.lv.ratedVoltage = 0.4
+      |generation.lv.considerHouseConnectionPoints = false
+      |generation.lv.boundaryAdminLevel.starting = 4
+      |generation.lv.boundaryAdminLevel.lowest = 8
+      |generation.lv.minDistance = 10
+      |""".stripMargin
 }

@@ -104,7 +104,8 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
             nodes.landuse1Node1,
             nodes.landuse1Node2,
             nodes.landuse1Node3,
-            nodes.landuse1Node4
+            nodes.landuse1Node4,
+            nodes.landuse1Node1
           )
         )
       )
@@ -367,6 +368,39 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
           )
         )
       )
+
+    }
+    "filter for closed ways correctly" in {
+      val relation = EnhancedOsmEntity(
+        relations.boundary,
+        Map(nodes.boundaryNode1.id -> nodes.boundaryNode1)
+      )
+      val building = EnhancedOsmEntity(
+        ways.building1,
+        Map(nodes.building1Node1.id -> nodes.building1Node1)
+      )
+      val highway = EnhancedOsmEntity(
+        ways.highway1,
+        Map(nodes.highway1Node1.id -> nodes.highway1Node1)
+      )
+      val input = ParSeq(
+        relation,
+        building,
+        highway
+      )
+
+      val (closedWays, closedWayNodes) =
+        OsmoGridModel.filterForClosedWays(input)
+
+      closedWays.size shouldBe 1
+      closedWays.headOption.getOrElse(
+        fail("Collection shouldn't be empty")
+      ) shouldBe ways.building1
+      closedWayNodes.size shouldBe 1
+      closedWayNodes.getOrElse(
+        nodes.building1Node1.id,
+        fail("Collection shouldn't be empty")
+      ) shouldBe nodes.building1Node1
 
     }
   }

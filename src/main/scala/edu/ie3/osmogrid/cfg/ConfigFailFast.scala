@@ -49,12 +49,15 @@ object ConfigFailFast extends LazyLogging {
         mv.foreach(checkMvConfig)
     }
 
+  // TODO Check Filter for osm
   private def checkLvConfig(lv: OsmoGridConfig.Generation.Lv): Unit = lv match {
     case Lv(
+          _,
           Lv.BoundaryAdminLevel(
             lowest,
             starting
           ),
+          _,
           _,
           _,
           _
@@ -119,13 +122,13 @@ object ConfigFailFast extends LazyLogging {
       additionalListener: Seq[ActorRef[ResultListener.ResultEvent]]
   ): Unit =
     output match {
-      case Output(Some(file)) =>
+      case Output(Some(file), _) =>
         checkOutputFile(file)
-      case Output(None) if additionalListener.nonEmpty =>
+      case Output(None, _) if additionalListener.nonEmpty =>
         logger.info(
           "No output data type defined, but other listener provided. Will use them accordingly!"
         )
-      case Output(None) =>
+      case Output(None, _) =>
         throw IllegalConfigException(
           "You have to provide at least one output data sink, e.g. to .csv-files!"
         )
@@ -137,4 +140,5 @@ object ConfigFailFast extends LazyLogging {
     throw IllegalConfigException(
       "Output directory and separator must be set when using .csv file sink!"
     )
+
 }
