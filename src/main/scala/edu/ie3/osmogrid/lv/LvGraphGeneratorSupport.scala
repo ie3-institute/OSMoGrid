@@ -11,24 +11,26 @@ import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.util.geo.GeoUtils.{buildCoordinate, orthogonalProjection}
-import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
+import edu.ie3.util.geo.RichGeometries.{RichCoordinate, RichPolygon}
 import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
+import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
 import edu.ie3.util.quantities.interfaces.Irradiance
+import org.jgrapht.alg.connectivity.ConnectivityInspector
 import org.locationtech.jts.geom.Coordinate
 import tech.units.indriya.ComparableQuantity
-
-import java.util.UUID
-import javax.measure.quantity.{Length, Power}
-import scala.collection.parallel.ParSeq
-import scala.util.{Success, Try}
-import edu.ie3.util.geo.RichGeometries.{RichCoordinate, RichPolygon}
-import utils.OsmogridUtils.{
+import utils.OsmoGridUtils.{
   calcHouseholdPower,
   isInsideLanduse,
   safeBuildPolygon
 }
 
-object LvGraphBuilder {
+import java.util.UUID
+import javax.measure.quantity.{Length, Power}
+import scala.collection.parallel.ParSeq
+import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.util.{Success, Try}
+
+object LvGraphGeneratorSupport {
 
   /** Resembles a calculated connection between a building and a grid. Every
     * building gets connected on the nearest point at the nearest highway
@@ -47,6 +49,10 @@ object LvGraphBuilder {
     *   node b of the highway section at which the building gets connected
     * @param graphConnectionNode
     *   the graph connection node
+    * @param isSubstation
+    *   whether the building is a substation
+    * @param buildingConnectionNode
+    *   the node that connects the building to the grid
     */
   final case class BuildingGraphConnection(
       building: ClosedWay,
@@ -55,7 +61,8 @@ object LvGraphBuilder {
       highwayNodeA: Node,
       highwayNodeB: Node,
       graphConnectionNode: Node,
-      buildingNode: Option[Node] = None
+      isSubstation: Boolean,
+      buildingConnectionNode: Option[Node] = None
   ) {
 
     /** Checks whether the graph connection node is a new node. If not it is one
@@ -66,6 +73,20 @@ object LvGraphBuilder {
       */
     def hasNewNode: Boolean = {
       (graphConnectionNode != highwayNodeA) && (graphConnectionNode != highwayNodeB)
+    }
+
+    def createHighwayNodeName(considerHouseConnectionNode: Boolean): String = {
+      if (considerHouseConnectionNode) {
+        if (this.hasNewNode)
+          "Highway node between: " + highwayNodeA.id + " and " + highwayNodeB.id
+        else if (this.graphConnectionNode == this.highwayNodeA)
+          "Highway node: " + highwayNodeA.id
+        else "Highway node: " + highwayNodeB.id
+      } else "Building connection: " + this.building.id
+    }
+
+    def createBuildingNodeName(): String = {
+      "Building connection: " + this.building.id
     }
   }
 
@@ -81,31 +102,40 @@ object LvGraphBuilder {
     *   for building connections
     * @return
     */
-  def buildGridGraph(
+  def buildConnectedGridGraphs(
       osmoGridModel: LvOsmoGridModel,
       powerDensity: ComparableQuantity[Irradiance],
       minDistance: ComparableQuantity[Length],
       considerBuildingConnections: Boolean
-  ): (OsmGraph, ParSeq[BuildingGraphConnection]) = {
+  ): Seq[(OsmGraph, Seq[BuildingGraphConnection])] = {
     val (highways, highwayNodes) =
       OsmoGridModel.filterForWays(osmoGridModel.highways)
     val (building, buildingNodes) =
       OsmoGridModel.filterForClosedWays(osmoGridModel.buildings)
     val (landuses, landUseNodes) =
       OsmoGridModel.filterForClosedWays(osmoGridModel.landuses)
+    val (substations, substationNodes) =
+      OsmoGridModel.filterForClosedWays(osmoGridModel.existingSubstations)
     val buildingGraphConnections = calcBuildingGraphConnections(
       landuses,
       building,
+      substations,
       highways,
-      highwayNodes ++ buildingNodes ++ landUseNodes,
+      highwayNodes ++ buildingNodes ++ landUseNodes ++ substationNodes,
       powerDensity,
       minDistance
     )
     val streetGraph = buildStreetGraph(highways.seq.toSeq, highwayNodes)
-    updateGraphWithBuildingConnections(
-      streetGraph,
-      buildingGraphConnections,
-      considerBuildingConnections
+    val (updatedGraph, updatedBgcs) =
+      updateGraphWithBuildingConnections(
+        streetGraph,
+        buildingGraphConnections,
+        considerBuildingConnections
+      )
+
+    divideDisconnectedGraphs(
+      updatedGraph,
+      updatedBgcs
     )
   }
 
@@ -168,6 +198,7 @@ object LvGraphBuilder {
   private def calcBuildingGraphConnections(
       landuses: ParSeq[ClosedWay],
       buildings: ParSeq[ClosedWay],
+      substations: ParSeq[ClosedWay],
       highways: ParSeq[Way],
       nodes: Map[Long, Node],
       powerDensity: ComparableQuantity[Irradiance],
@@ -175,7 +206,7 @@ object LvGraphBuilder {
   ): ParSeq[BuildingGraphConnection] = {
     val landusePolygons =
       landuses.map(closedWay => safeBuildPolygon(closedWay, nodes))
-    buildings.flatMap(building => {
+    (buildings ++ substations).flatMap(building => {
       val buildingPolygon = safeBuildPolygon(building, nodes)
       val buildingCenter: Coordinate = buildingPolygon.getCentroid.getCoordinate
       // check if building is inside residential area
@@ -222,7 +253,8 @@ object LvGraphBuilder {
             load,
             closestOverall._3,
             closestOverall._4,
-            closestOverall._2
+            closestOverall._2,
+            substations.toSet.contains(building)
           )
         )
       } else None
@@ -318,9 +350,55 @@ object LvGraphBuilder {
         )
         graph.addVertex(buildingNode)
         graph.addWeightedEdge(bgc.graphConnectionNode, buildingNode)
-        bgc.copy(buildingNode = Some(buildingNode))
+        bgc.copy(buildingConnectionNode = Some(buildingNode))
       } else bgc
     })
     (graph, updatedBgcs)
+  }
+
+  private def divideDisconnectedGraphs(
+      graph: OsmGraph,
+      buildingGraphConnections: ParSeq[
+        LvGraphGeneratorSupport.BuildingGraphConnection
+      ]
+  ): Seq[(OsmGraph, Seq[BuildingGraphConnection])] = {
+    val bgcMap =
+      buildingGraphConnections.map(bgc => bgc.graphConnectionNode -> bgc).toMap
+
+    val connectivityInspector = new ConnectivityInspector(graph)
+    val connectedSets = connectivityInspector.connectedSets().asScala
+
+    if (connectedSets.isEmpty) {
+      throw OsmDataException(
+        "Graph is empty, or no components could be determined."
+      )
+    } else if (connectedSets.size > 1) {
+      connectedSets.foldLeft(
+        Seq.empty[(OsmGraph, Seq[BuildingGraphConnection])]
+      )((graphSeq, connectedSet) => {
+        val subgraph = new OsmGraph()
+        connectedSet.forEach(node => subgraph.addVertex(node))
+        connectedSet.forEach { vertex =>
+          val edges = graph.edgesOf(vertex).asScala
+          edges.foreach { edge =>
+            val source = graph.getEdgeSource(edge)
+            val target = graph.getEdgeTarget(edge)
+            if (
+              connectedSet.contains(source) && connectedSet.contains(target)
+            ) {
+              subgraph.addEdge(source, target)
+            }
+          }
+        }
+        val connectivityInspector = new ConnectivityInspector(subgraph)
+        if (!connectivityInspector.isConnected) {
+          throw OsmDataException("Component is not connected")
+        }
+        val buildingGraphConnections =
+          subgraph.vertexSet().asScala.flatMap(node => bgcMap.get(node)).toSeq
+        graphSeq :+ (subgraph, buildingGraphConnections)
+      })
+
+    } else Seq((graph, buildingGraphConnections.seq.toSeq))
   }
 }

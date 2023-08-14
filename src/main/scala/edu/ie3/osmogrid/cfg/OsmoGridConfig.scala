@@ -1,5 +1,5 @@
 /*
- * © 2022. TU Dortmund University,
+ * © 2023. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
@@ -17,9 +17,12 @@ object OsmoGridConfig {
   )
   object Generation {
     final case class Lv(
+        averagePowerDensity: scala.Double,
         boundaryAdminLevel: OsmoGridConfig.Generation.Lv.BoundaryAdminLevel,
-        distinctHouseConnections: scala.Boolean,
-        osm: OsmoGridConfig.Generation.Lv.Osm
+        considerHouseConnectionPoints: scala.Boolean,
+        minDistance: scala.Double,
+        osm: OsmoGridConfig.Generation.Lv.Osm,
+        ratedVoltage: scala.Double
     )
     object Lv {
       final case class BoundaryAdminLevel(
@@ -92,6 +95,8 @@ object OsmoGridConfig {
           $tsCfgValidator: $TsCfgValidator
       ): OsmoGridConfig.Generation.Lv = {
         OsmoGridConfig.Generation.Lv(
+          averagePowerDensity =
+            $_reqDbl(parentPath, c, "averagePowerDensity", $tsCfgValidator),
           boundaryAdminLevel = OsmoGridConfig.Generation.Lv.BoundaryAdminLevel(
             if (c.hasPathOrNull("boundaryAdminLevel"))
               c.getConfig("boundaryAdminLevel")
@@ -101,17 +106,36 @@ object OsmoGridConfig {
             parentPath + "boundaryAdminLevel.",
             $tsCfgValidator
           ),
-          distinctHouseConnections = c.hasPathOrNull(
-            "distinctHouseConnections"
-          ) && c.getBoolean("distinctHouseConnections"),
+          considerHouseConnectionPoints = c.hasPathOrNull(
+            "considerHouseConnectionPoints"
+          ) && c.getBoolean("considerHouseConnectionPoints"),
+          minDistance = $_reqDbl(parentPath, c, "minDistance", $tsCfgValidator),
           osm = OsmoGridConfig.Generation.Lv.Osm(
             if (c.hasPathOrNull("osm")) c.getConfig("osm")
             else com.typesafe.config.ConfigFactory.parseString("osm{}"),
             parentPath + "osm.",
             $tsCfgValidator
-          )
+          ),
+          ratedVoltage =
+            $_reqDbl(parentPath, c, "ratedVoltage", $tsCfgValidator)
         )
       }
+      private def $_reqDbl(
+          parentPath: java.lang.String,
+          c: com.typesafe.config.Config,
+          path: java.lang.String,
+          $tsCfgValidator: $TsCfgValidator
+      ): scala.Double = {
+        if (c == null) 0
+        else
+          try c.getDouble(path)
+          catch {
+            case e: com.typesafe.config.ConfigException =>
+              $tsCfgValidator.addBadPath(parentPath + path, e)
+              0
+          }
+      }
+
     }
 
     def apply(
@@ -271,7 +295,8 @@ object OsmoGridConfig {
   }
 
   final case class Output(
-      csv: scala.Option[OsmoGridConfig.Output.Csv]
+      csv: scala.Option[OsmoGridConfig.Output.Csv],
+      gridName: java.lang.String
   )
   object Output {
     final case class Csv(
@@ -323,9 +348,26 @@ object OsmoGridConfig {
               OsmoGridConfig.Output
                 .Csv(c.getConfig("csv"), parentPath + "csv.", $tsCfgValidator)
             )
-          else None
+          else None,
+        gridName = $_reqStr(parentPath, c, "gridName", $tsCfgValidator)
       )
     }
+    private def $_reqStr(
+        parentPath: java.lang.String,
+        c: com.typesafe.config.Config,
+        path: java.lang.String,
+        $tsCfgValidator: $TsCfgValidator
+    ): java.lang.String = {
+      if (c == null) null
+      else
+        try c.getString(path)
+        catch {
+          case e: com.typesafe.config.ConfigException =>
+            $tsCfgValidator.addBadPath(parentPath + path, e)
+            null
+        }
+    }
+
   }
 
   def apply(c: com.typesafe.config.Config): OsmoGridConfig = {

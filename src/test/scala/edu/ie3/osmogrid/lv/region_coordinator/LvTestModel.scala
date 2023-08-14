@@ -11,22 +11,43 @@ import akka.actor.testkit.typed.scaladsl.{
   ScalaTestWithActorTestKit,
   TestProbe
 }
+import edu.ie3.datamodel.models.input.connector.`type`.{
+  LineTypeInput,
+  Transformer2WTypeInput
+}
 import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
 import edu.ie3.osmogrid.io.input.InputDataProvider
+import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.UnitSpec
+import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
+import org.scalatestplus.mockito.MockitoSugar.mock
 
+import java.util.UUID
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
-object LvRegionCoordinatorTestModel
-    extends ScalaTestWithActorTestKit
-    with UnitSpec {
+object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
 
   private val actorTestKit = ActorTestKit("LvRegionCoordinatorIT")
 
   lazy val (lvConfig, osmoGridModel) = readOsmModel()
+  val assetInformation: AssetInformation = AssetInformation(
+    Seq(
+      new LineTypeInput(
+        UUID.randomUUID,
+        "Default generated line type",
+        0.0.asSiemensPerKilometre,
+        0.07.asSiemensPerKilometre,
+        0.32.asOhmPerKilometre,
+        0.07.asOhmPerKilometre,
+        235.0.asAmpere,
+        0.4.asKiloVolt
+      )
+    ),
+    Seq(mock[Transformer2WTypeInput])
+  )
 
   protected def readOsmModel()
       : (OsmoGridConfig.Generation.Lv, LvOsmoGridModel) = {
@@ -40,8 +61,16 @@ object LvRegionCoordinatorTestModel
            |input.asset.file.directory = ${getResourcePath("/lv_assets")}
            |input.asset.file.separator = ","
            |input.asset.file.hierarchic = false
+           |output.gridName = "test_grid"
            |output.csv.directory = "output_file_path"
-           |generation.lv.distinctHouseConnections = true""".stripMargin
+           |generation.lv.averagePowerDensity = 12.5
+           |generation.lv.ratedVoltage = 0.4
+           |generation.lv.gridName = "testLvGrid"
+           |generation.lv.considerHouseConnectionPoints = false
+           |generation.lv.boundaryAdminLevel.starting = 2
+           |generation.lv.boundaryAdminLevel.lowest = 8
+           |generation.lv.minDistance = 10
+           |""".stripMargin
       )
       .success
       .value
