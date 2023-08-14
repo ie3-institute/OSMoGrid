@@ -14,6 +14,7 @@ import tech.units.indriya.ComparableQuantity
 
 import javax.measure.Quantity
 import javax.measure.quantity.Length
+import scala.collection.mutable
 
 /** Definitions for a routing problem.
   */
@@ -52,16 +53,22 @@ object Definitions {
         osmNodes: List[Node],
         connections: List[Connection]
     ): Connections = {
-      val connectionMap: Map[Node, List[Node]] = osmNodes.map { node =>
-        node -> List()
-      }.toMap
+      val connectionMap: mutable.Map[Node, List[Node]] =
+        new mutable.HashMap[Node, List[Node]]
+      osmNodes.map { node =>
+        connectionMap.addOne(node -> List())
+      }
 
       connections.foreach { connection =>
         val listA: List[Node] = connectionMap(connection.nodeA)
         val listB: List[Node] = connectionMap(connection.nodeB)
 
-        connectionMap ++ (connection.nodeA -> listA.appended(connection.nodeB))
-        connectionMap ++ (connection.nodeB -> listB.appended(connection.nodeA))
+        connectionMap.addOne(
+          connection.nodeA -> listA.appended(connection.nodeB)
+        )
+        connectionMap.addOne(
+          connection.nodeB -> listB.appended(connection.nodeA)
+        )
       }
 
       val distanceMap: Map[(Node, Node), Connection] = connections.map {
@@ -69,7 +76,7 @@ object Definitions {
           (connection.nodeA, connection.nodeB) -> connection
       }.toMap
 
-      Connections(osmNodes, connectionMap, distanceMap)
+      Connections(osmNodes, connectionMap.toMap, distanceMap)
     }
   }
 

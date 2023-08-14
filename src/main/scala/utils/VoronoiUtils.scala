@@ -35,7 +35,7 @@ object VoronoiUtils {
   final case class VoronoiPolygon(
       transitionPointToHigherVoltLvl: NodeInput,
       transitionPointsToLowerVoltLvl: List[NodeInput],
-      polygon: Polygon
+      polygon: Option[Polygon]
   ) {
 
     /** Method to add nodes, that are connected to a lower voltage level, to
@@ -54,7 +54,7 @@ object VoronoiUtils {
     }
 
     /** Method to check if a given [[NodeInput]] is located inside this
-      * [[VoronoiPolygon]].
+      * [[VoronoiPolygon]]. If the polygon option is [[None]], true is returned.
       * @param node
       *   to be checked
       * @return
@@ -62,7 +62,10 @@ object VoronoiUtils {
       *   polygon
       */
     def containsNode(node: NodeInput): Boolean = {
-      polygon.contains(node.getGeoPosition)
+      polygon match {
+        case Some(geom) => geom.contains(node.getGeoPosition)
+        case None       => true
+      }
     }
   }
 
@@ -151,37 +154,8 @@ object VoronoiUtils {
     if (nodes.isEmpty) {
       List.empty
     } else if (nodes.size == 1) {
-      val node = nodes(0)
-      val coordinate = node.getGeoPosition
-
-      // in order to properly use the voronoi diagram, some helping coordinates need to be added
-      // without these additional coordinates no polygon is returned by the voronoi builder
-      val envelope: Envelope = GeoUtils.calculateBoundingBox(
-        coordinate,
-        Quantities.getQuantity(110000, METRE)
-      )
-
-      val coordinates = List(
-        coordinate.getCoordinate,
-        buildCoordinate(envelope.getMaxY, envelope.getMaxX),
-        buildCoordinate(envelope.getMaxY, envelope.getMinX),
-        buildCoordinate(envelope.getMinY, envelope.getMinX),
-        buildCoordinate(envelope.getMinY, envelope.getMaxX)
-      )
-
-      // with this the previously added coordinates will be filtered out, because we only want the actual polygon for the given NodeInput
-      val polygons = useBuilder(coordinates).filter(polygon =>
-        polygon.contains(node.getGeoPosition)
-      )
-
-      // if more than one point is present after filtering, an exception is thrown
-      if (polygons.size > 1) {
-        throw new GeoException(
-          "Number of returned polygons should equal 1, but " + polygons.size + " were returned."
-        )
-      } else {
-        List(VoronoiPolygon(node, List.empty, polygons(0)))
-      }
+      // returns only one voronoi polygon
+      List(VoronoiPolygon(nodes(0), List.empty, None))
     } else {
       /* retrieves the coordinates of all nodes */
       val transitionPoints: List[Coordinate] = nodes.par.map { node =>
@@ -196,7 +170,7 @@ object VoronoiUtils {
           .filter(polygon => polygon.contains(node.getGeoPosition))
           .toSeq
         /* creates the voronoi polygon with all known information */
-        VoronoiPolygon(node, List.empty, polygon(0))
+        VoronoiPolygon(node, List.empty, Some(polygon(0)))
       }.toList
     }
   }
@@ -221,7 +195,12 @@ object VoronoiUtils {
       )
       /* necessary to get proper polygons */
       .asScala
-      .toList
-      .map(p => p.asInstanceOf[Polygon])
+      .toList match {
+      case polygons: List[Polygon] => polygons
+      case wrongType =>
+        throw new GeoException(
+          s"Expected a list of polygons as a result, but got $wrongType instead."
+        )
+    }
   }
 }

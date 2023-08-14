@@ -131,11 +131,11 @@ class VoronoiUtilsSpec extends UnitSpec with NodeInputSupport {
       val log: Logger = LoggerFactory.getLogger(VoronoiUtils.getClass)
 
       val polygons: List[VoronoiPolygon] = List(polygon)
-      val nodes = List(nodeInMv1, nodeInMv2, nodeInMv3, nodeOutside)
+      val nodes = List(nodeInMv1, nodeInMv2, nodeInMv3)
       val (updatedPolygon, notAssigned) =
         VoronoiUtils invokePrivate updatePolygons(polygons, nodes, log)
 
-      notAssigned shouldBe List(nodeOutside)
+      notAssigned shouldBe List()
       updatedPolygon(0).transitionPointsToLowerVoltLvl shouldBe List(
         nodeInMv1,
         nodeInMv2,
@@ -143,5 +143,65 @@ class VoronoiUtilsSpec extends UnitSpec with NodeInputSupport {
       )
     }
 
+    "update a voronoi polygons correctly" in {
+      val updatePolygons =
+        PrivateMethod[(List[VoronoiPolygon], List[NodeInput])](
+          Symbol("updatePolygons")
+        )
+      val log: Logger = LoggerFactory.getLogger(VoronoiUtils.getClass)
+
+      val polygons: List[VoronoiPolygon] =
+        VoronoiUtils invokePrivate createPolygons(
+          List(nodeToHv1, nodeToHv2, nodeToHv3, nodeToHv4)
+        )
+
+      val cases = Table(
+        ("nodes", "expectedNotAssigned", "l1", "l2", "l3", "l4"),
+        (List(nodeOutside), List(nodeOutside), List(), List(), List(), List()),
+        (
+          List(nodeInMv1, nodeOutside),
+          List(nodeOutside),
+          List(nodeInMv1),
+          List(),
+          List(),
+          List()
+        ),
+        (
+          List(nodeInMv1, nodeInMv2),
+          List(),
+          List(nodeInMv1),
+          List(nodeInMv2),
+          List(),
+          List()
+        ),
+        (
+          List(nodeInMv1, nodeInMv3, nodeOutside),
+          List(nodeOutside),
+          List(nodeInMv1),
+          List(),
+          List(nodeInMv3),
+          List()
+        ),
+        (
+          List(nodeInMv1, nodeInMv2, nodeInMv4, nodeOutside),
+          List(nodeOutside),
+          List(nodeInMv1),
+          List(nodeInMv2),
+          List(),
+          List(nodeInMv4)
+        )
+      )
+
+      forAll(cases) { (nodes, expectedNotAssigned, l1, l2, l3, l4) =>
+        val (updatedPolygon, notAssigned) =
+          VoronoiUtils invokePrivate updatePolygons(polygons, nodes, log)
+
+        notAssigned shouldBe expectedNotAssigned
+        updatedPolygon(0).transitionPointsToLowerVoltLvl shouldBe l1
+        updatedPolygon(1).transitionPointsToLowerVoltLvl shouldBe l2
+        updatedPolygon(2).transitionPointsToLowerVoltLvl shouldBe l3
+        updatedPolygon(3).transitionPointsToLowerVoltLvl shouldBe l4
+      }
+    }
   }
 }
