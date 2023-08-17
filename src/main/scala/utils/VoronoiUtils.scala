@@ -10,12 +10,9 @@ import akka.actor.typed.scaladsl.ActorContext
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.util.exceptions.GeoException
 import edu.ie3.util.geo.GeoUtils
-import edu.ie3.util.geo.GeoUtils.buildCoordinate
-import org.locationtech.jts.geom.{Coordinate, Envelope, Polygon}
+import org.locationtech.jts.geom.{Coordinate, Polygon}
 import org.locationtech.jts.triangulate.VoronoiDiagramBuilder
 import org.slf4j.Logger
-import tech.units.indriya.quantity.Quantities
-import tech.units.indriya.unit.Units.METRE
 
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
 import scala.jdk.CollectionConverters._
