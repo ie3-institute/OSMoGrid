@@ -13,11 +13,7 @@ import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.MissingInputDataException
 import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.input.InputDataProvider.{
-  ReqHvAssets,
-  ReqLvAssets,
-  ReqOsm
-}
+import edu.ie3.osmogrid.io.input.InputDataProvider.ReqOsm
 import edu.ie3.osmogrid.model.SourceFilter.MvFilter
 import utils.{SubGridContainerUtils, VoronoiUtils}
 
@@ -65,14 +61,6 @@ object MvCoordinator extends ActorStopSupportStateless {
         stateData.inputDataProvider ! ReqOsm(
           replyTo = replyToSelf,
           filter = filter
-        )
-        /* Ask for lv grid data */
-        stateData.inputDataProvider ! ReqLvAssets(
-          replyTo = replyToSelf
-        )
-        /* Ask for hv grid data */
-        stateData.inputDataProvider ! ReqHvAssets(
-          replyTo = replyToSelf
         )
 
         /* Change state and await incoming data */
@@ -136,18 +124,10 @@ object MvCoordinator extends ActorStopSupportStateless {
         throw MissingInputDataException("MvOsmoGridModel is missing!")
       )
 
-      val lvGrids = awaitingMvData.lvGridData.getOrElse(
-        throw MissingInputDataException("Lv grid data is missing!")
-      )
-
-      val hvGrids = awaitingMvData.hvGridData.getOrElse(
-        throw MissingInputDataException("Hv grid data is missing!")
-      )
-
       ctx.self ! StartMvGeneration(
         awaitingMvData.cfg,
-        lvGrids,
-        hvGrids,
+        lvGrids = null,
+        hvGrids = null,
         osmGridModel
       )
 

@@ -11,8 +11,8 @@ import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.MvOsmoGridModel
-import edu.ie3.osmogrid.routingproblem.Definitions.{Connection, Connections}
-import edu.ie3.osmogrid.routingproblem.Solver.savingsAlgorithm
+import edu.ie3.osmogrid.routingproblem.Definitions.{Connection, Connections, NodeConversion}
+import edu.ie3.osmogrid.routingproblem.Solver.solve
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm.SingleSourcePaths
@@ -21,26 +21,6 @@ import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 
 object MvGraphBuilder {
-  final case class NodeConversion(
-      conversionToOsm: Map[NodeInput, Node],
-      conversionToPSDM: Map[Node, NodeInput]
-  ) {
-    def getOsmNode(node: NodeInput): Node = {
-      conversionToOsm(node)
-    }
-
-    def getOsmNodes(nodes: List[NodeInput]): List[Node] = {
-      nodes.map { node => conversionToOsm(node) }
-    }
-
-    def getPSDMNode(node: Node): NodeInput = {
-      conversionToPSDM(node)
-    }
-
-    def getPSDMNodes(nodes: List[Node]): List[NodeInput] = {
-      nodes.map { node => conversionToPSDM(node) }
-    }
-  }
 
   final case class MvGraph(
       nodeToHv: Node,
@@ -66,7 +46,7 @@ object MvGraphBuilder {
     )
 
     // using savings algorithm to generate a graph structure
-    val graph = savingsAlgorithm(
+    val graph = solve(
       conversion.getOsmNode(nodeToHv),
       connections,
       conversion

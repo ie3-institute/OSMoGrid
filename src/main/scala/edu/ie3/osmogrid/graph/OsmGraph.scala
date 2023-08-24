@@ -11,7 +11,7 @@ import edu.ie3.osmogrid.exception.GraphCopyException
 import edu.ie3.osmogrid.routingproblem.Definitions.Connection
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
-import tech.units.indriya.unit.Units.{METRE, getInstance}
+import tech.units.indriya.unit.Units.METRE
 
 import java.util.function.Supplier
 import javax.measure.quantity.Length
@@ -59,6 +59,9 @@ class OsmGraph(
     this.setEdgeWeight(edge, weigth)
     this.addEdge(nodeA, nodeB, edge)
   }
+
+  def addConnection(connection: Connection): Unit =
+    addWeightedEdge(connection.nodeA, connection.nodeB, connection.distance)
 
   def setEdgeWeight(
       edge: DistanceWeightedEdge,

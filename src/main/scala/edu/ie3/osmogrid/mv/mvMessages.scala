@@ -61,8 +61,6 @@ object MvMessageAdapters {
 
 private final case class AwaitingMvInputData(
     osmData: Option[MvOsmoGridModel],
-    lvGridData: Option[List[SubGridContainer]],
-    hvGridData: Option[List[SubGridContainer]],
     cfg: OsmoGridConfig.Generation.Mv,
     msgAdapters: MvMessageAdapters,
     guardian: ActorRef[MvResponse]
@@ -74,12 +72,6 @@ private final case class AwaitingMvInputData(
     case InputDataProvider.RepOsm(osmModel: MvOsmoGridModel) =>
       log.debug(s"Received MV osm model.")
       Success(copy(osmData = Some(osmModel)))
-    case InputDataProvider.RepLv(lvData) =>
-      log.debug("Received LV grid data.")
-      Success(copy(lvGridData = Some(lvData)))
-    case InputDataProvider.RepHv(hvData) =>
-      log.debug("Received HV grid data.")
-      Success(copy(hvGridData = Some(hvData)))
     /* Those states correspond to failed operation */
     case InputDataProvider.OsmReadFailed(reason) =>
       Failure(
@@ -90,15 +82,12 @@ private final case class AwaitingMvInputData(
       )
   }
 
-  def isComplete: Boolean =
-    osmData.isDefined && lvGridData.isDefined && hvGridData.isDefined
+  def isComplete: Boolean = osmData.isDefined
 }
 
 private object AwaitingMvInputData {
   def empty(mvCoordinatorData: IdleData): AwaitingMvInputData =
     AwaitingMvInputData(
-      None,
-      None,
       None,
       mvCoordinatorData.cfg,
       mvCoordinatorData.msgAdapter,

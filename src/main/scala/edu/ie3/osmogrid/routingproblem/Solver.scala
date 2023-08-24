@@ -7,10 +7,11 @@
 package edu.ie3.osmogrid.routingproblem
 
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.mv.MvGraphBuilder.{MvGraph, NodeConversion}
+import edu.ie3.osmogrid.mv.MvGraphBuilder.MvGraph
 import edu.ie3.osmogrid.routingproblem.Definitions.{
   Connection,
   Connections,
+  NodeConversion,
   Saving
 }
 import edu.ie3.util.osm.model.OsmEntity.Node
@@ -23,12 +24,8 @@ import javax.measure.quantity.Length
   */
 object Solver {
 
-  // uses saving algorithm to minimize the connection length
-  def savingsAlgorithm(
-      nodeToHv: Node,
-      connections: Connections,
-      conversion: NodeConversion
-  ): MvGraph = {
+  // method to solve the routing problem
+  def solve(nodeToHv: Node, connections: Connections, conversion: NodeConversion): MvGraph = {
     val graph = firstStep(nodeToHv, connections)
 
     ???
@@ -60,16 +57,18 @@ object Solver {
   }
 
   // first step of the algorithm
-  // return a graph double edge connections to all nodes, except the two closest nodes
-  private def firstStep(nodeToHv: Node, connections: Connections): OsmGraph = {
+  // return a graph and a list of nodes with only one connection to the transition point
+  private def firstStep(
+      nodeToHv: Node,
+      connections: Connections
+  ): (OsmGraph, List[Node]) = {
     val graph = new OsmGraph()
     graph.addVertex(nodeToHv)
 
     // add nodes to graph and connects every node with two edges to the start node
-    connections.nodes.foreach { node =>
-      graph.addVertex(node)
-      graph.addWeightedEdge(nodeToHv, node)
-      graph.addWeightedEdge(node, nodeToHv)
+    connections.nodes.foreach { node => graph.addVertex(node) }
+    connections.getConnections(nodeToHv).foreach { connection =>
+      graph.addConnection(connection)
     }
 
     val nearestNeighbour: List[Node] = connections.getNearestNeighbour(nodeToHv)
@@ -79,7 +78,19 @@ object Solver {
     // adding the two closest nodes directly to the nodeToHv
     graph.reconnectNodes(nodeToHv, connections.getConnection(nodeA, nodeB))
 
-    graph
+    // re-adding one connection between the transition point and nodeA/nodeB
+    graph.addWeightedEdge(
+      nodeToHv,
+      nodeA,
+      connections.distance((nodeToHv, nodeA)).distance
+    )
+    graph.addWeightedEdge(
+      nodeToHv,
+      nodeB,
+      connections.distance((nodeToHv, nodeB)).distance
+    )
+
+    (graph, List(nodeA, nodeB))
   }
 
 }
