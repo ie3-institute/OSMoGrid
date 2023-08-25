@@ -60,8 +60,10 @@ class OsmGraph(
     this.addEdge(nodeA, nodeB, edge)
   }
 
-  def addConnection(connection: Connection): Unit =
+  def addConnection(connection: Connection): DistanceWeightedEdge = {
     addWeightedEdge(connection.nodeA, connection.nodeB, connection.distance)
+    getEdge(connection.nodeA, connection.nodeB)
+  }
 
   def setEdgeWeight(
       edge: DistanceWeightedEdge,
@@ -74,7 +76,8 @@ class OsmGraph(
 
   def reconnectNodes(
       common: Node,
-      connection: Connection
+      connection: Connection,
+      doubleEdges: List[DistanceWeightedEdge]
   ): List[DistanceWeightedEdge] = {
     val edgeA = removeEdge(common, connection.nodeA)
     val edgeB = removeEdge(common, connection.nodeB)
@@ -85,7 +88,15 @@ class OsmGraph(
       connection.distance
     )
 
-    List(edgeA, edgeB)
+    // the graph will not save two identical edges, therefore we need to re-add one edge of the double edge
+    if (doubleEdges.contains(edgeA)) {
+      addEdge(common, connection.nodeA, edgeA)
+    }
+    if (doubleEdges.contains(edgeB)) {
+      addEdge(common, connection.nodeB, edgeB)
+    }
+
+    doubleEdges.diff(List(edgeA, edgeB))
   }
 
   def copy(): OsmGraph = {

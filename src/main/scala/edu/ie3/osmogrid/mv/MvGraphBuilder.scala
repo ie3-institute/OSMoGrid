@@ -11,7 +11,11 @@ import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.MvOsmoGridModel
-import edu.ie3.osmogrid.routingproblem.Definitions.{Connection, Connections, NodeConversion}
+import edu.ie3.osmogrid.routingproblem.Definitions.{
+  Connection,
+  Connections,
+  NodeConversion
+}
 import edu.ie3.osmogrid.routingproblem.Solver.solve
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.{Node, Way}

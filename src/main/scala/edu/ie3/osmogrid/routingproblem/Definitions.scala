@@ -40,28 +40,22 @@ object Definitions {
       nodes.map { node => conversionToPSDM(node) }
     }
   }
-  final case class Connection(
-      nodeA: Node,
-      nodeB: Node,
-      distance: ComparableQuantity[Length],
-      path: Option[GraphPath[Node, DistanceWeightedEdge]]
-  )
 
   final case class Connections(
       nodes: List[Node],
       connections: Map[Node, List[Node]],
-      distance: Map[(Node, Node), Connection]
+      connectionMap: Map[(Node, Node), Connection]
   ) {
     def getConnections(node: Node): List[Connection] = {
       connections(node).map { nodeB => (node, nodeB) }.map { tuple =>
-        distance(tuple)
+        connectionMap(tuple)
       }
     }
 
     def getConnection(nodeA: Node, nodeB: Node): Connection =
-      distance.get((nodeA, nodeB)) match {
+      connectionMap.get((nodeA, nodeB)) match {
         case Some(value) => value
-        case None        => distance((nodeB, nodeA))
+        case None        => connectionMap((nodeB, nodeA))
       }
 
     def getDistance(nodeA: Node, nodeB: Node): ComparableQuantity[Length] =
@@ -103,9 +97,21 @@ object Definitions {
           (connection.nodeA, connection.nodeB) -> connection
       }.toMap
 
-      Connections(osmNodes, connectionMap.toMap, distanceMap)
+      val distanceMapAlt: Map[(Node, Node), Connection] = distanceMap.map {
+        case (tuple, connection) =>
+          (tuple._2, tuple._1) -> connection
+      }
+
+      Connections(osmNodes, connectionMap.toMap, distanceMap ++ distanceMapAlt)
     }
   }
+
+  final case class Connection(
+      nodeA: Node,
+      nodeB: Node,
+      distance: ComparableQuantity[Length],
+      path: Option[GraphPath[Node, DistanceWeightedEdge]]
+  )
 
   final case class Saving(
       usedConnection: Connection,
