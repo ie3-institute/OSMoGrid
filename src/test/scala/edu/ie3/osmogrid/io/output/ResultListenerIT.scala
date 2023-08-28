@@ -12,6 +12,7 @@ import com.typesafe.config.ConfigFactory
 import edu.ie3.datamodel.io.source.csv.CsvJointGridContainerSource
 import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.$TsCfgValidator
+import edu.ie3.osmogrid.cfg.ConfigFailFastSpec.viableConfigurationString
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol._
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol.PersistenceListenerEvent._
@@ -35,7 +36,7 @@ class ResultListenerIT
 
   private val validConfig = OsmoGridConfigFactory.defaultTestConfig.output
   private val maliciousConfig = OsmoGridConfigFactory
-    .parseWithoutFallback("")
+    .parseWithoutFallback(viableConfigurationString.replaceAll("(?m)^.*output.csv.*$", ""))
     .getOrElse(fail("Unable to parse malicious config"))
     .output
 

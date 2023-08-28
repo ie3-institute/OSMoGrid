@@ -24,7 +24,7 @@ import edu.ie3.datamodel.models.input.{
   OperatorInput
 }
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
-import edu.ie3.osmogrid.util.TestGridFactory
+import edu.ie3.osmogrid.utils.TestGridFactory
 import edu.ie3.util.quantities.PowerSystemUnits._
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units._
