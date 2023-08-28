@@ -12,7 +12,7 @@ import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.IllegalStateException
-import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
+import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.buildConnectedGridGraphs
 import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.buildGrid
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel

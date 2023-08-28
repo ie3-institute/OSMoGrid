@@ -98,7 +98,7 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
       cfg: OsmoGridConfig.Output
   ): Future[ResultSink] =
     cfg match {
-      case Output(Some(csv)) =>
+      case Output(Some(csv), _) =>
         Future(
           ResultCsvSink(runId, csv.directory, csv.separator, csv.hierarchic)
         )
