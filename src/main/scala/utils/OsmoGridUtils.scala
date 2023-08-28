@@ -22,7 +22,7 @@ import javax.measure.quantity.{Area, Power}
 import scala.collection.parallel.ParSeq
 import scala.util.{Failure, Success}
 
-object OsmogridUtils {
+object OsmoGridUtils {
 
   /** Checks whether or not the center of a building is within a landuse
     *

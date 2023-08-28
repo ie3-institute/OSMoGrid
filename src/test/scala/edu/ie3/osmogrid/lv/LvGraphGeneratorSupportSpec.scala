@@ -4,33 +4,32 @@
  * Research group Distribution grid planning and operation
  */
 
-package edu.ie3.osmogrid.lv.coordinator
+package edu.ie3.osmogrid.lv
 
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.lv.LvGraphBuilder
+import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.{
+  BuildingGraphConnection,
+  buildConnectedGridGraphs
+}
 import edu.ie3.osmogrid.model.OsmTestData
 import edu.ie3.test.common.UnitSpec
 import edu.ie3.util.geo.GeoUtils
+import edu.ie3.util.geo.RichGeometries.RichCoordinate
 import edu.ie3.util.osm.model.OsmEntity.Node
 import edu.ie3.util.quantities.QuantityMatchers.equalWithTolerance
 import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
-import tech.units.indriya.ComparableQuantity
-import edu.ie3.util.geo.RichGeometries.RichCoordinate
+import org.jgrapht.alg.connectivity.ConnectivityInspector
 import org.locationtech.jts.geom.Coordinate
 import org.scalatestplus.mockito.MockitoSugar.mock
-import edu.ie3.osmogrid.lv.LvGraphBuilder.{
-  BuildingGraphConnection,
-  buildGridGraph
-}
+import tech.units.indriya.ComparableQuantity
 import edu.ie3.util.geo.GeoUtils.orthogonalProjection
 import tech.units.indriya.unit.Units
-
 import collection.parallel.CollectionConverters.seqIsParallelizable
 import javax.measure.quantity.Length
 import scala.collection.parallel.ParSeq
 import scala.util.{Failure, Success, Try}
 
-class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
+class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
 
   "A lv grid generator spec" when {
     "building a complete grid graph" should {
@@ -42,17 +41,25 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
         val minDistance = 1.asKilometre
         val considerBuildingConnections = false
 
-        val (osmGraph, buildingGraphConnections) = buildGridGraph(
+        val (osmGraph, buildingGraphConnections) = buildConnectedGridGraphs(
           osmoGridModel,
           powerDensity,
           minDistance,
           considerBuildingConnections
-        )
+        ).unzip match {
+          case (Seq(osmGraph), Seq(buildingGraphConnections)) =>
+            (osmGraph, buildingGraphConnections)
+          case _ =>
+            fail(
+              "Expected exactly one graph and the corresponding building connections."
+            )
+        }
 
-        // 1 building not in landuse and therefore filtered out
-        buildingGraphConnections.size shouldBe 1
+        // 2 buildings not in landuse and therefore filtered out
+        buildingGraphConnections.size shouldBe 2
         // the ways have common points of connection which means consecutive ways share a node. Therefore we expect 4 not 6
         osmGraph.vertexSet().size shouldBe 4
+        new ConnectivityInspector(osmGraph).isConnected shouldBe true
       }
     }
 
@@ -61,7 +68,10 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
       val wayNodes = ways.highway1.nodes ++ ways.highway2.nodes
       val buildStreetGraph = PrivateMethod[OsmGraph](Symbol("buildStreetGraph"))
       val actual: OsmGraph =
-        LvGraphBuilder invokePrivate buildStreetGraph(waySeq, nodes.nodesMap)
+        LvGraphGeneratorSupport invokePrivate buildStreetGraph(
+          waySeq,
+          nodes.nodesMap
+        )
 
       "build a graph with all nodes and edges" in {
         actual.vertexSet().size() shouldBe 4
@@ -99,9 +109,10 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
         val highways = Seq(ways.highway1, ways.highway2).par
 
         val buildingGraphConnections: ParSeq[BuildingGraphConnection] =
-          LvGraphBuilder invokePrivate calcBuildingGraphConnections(
+          LvGraphGeneratorSupport invokePrivate calcBuildingGraphConnections(
             landuses,
             buildings,
+            Seq.empty.par,
             highways,
             nodes.nodesMap,
             0.5d.asKiloWattPerSquareMetre,
@@ -109,8 +120,7 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
           )
         buildingGraphConnections.size shouldBe 2
         buildingGraphConnections.foreach {
-          case bgc: BuildingGraphConnection
-              if bgc.building == ways.building1 => {
+          case bgc: BuildingGraphConnection if bgc.building == ways.building1 =>
             val highWayCoordinateA = GeoUtils.buildCoordinate(
               nodes.highway1Node1.latitude,
               nodes.highway1Node1.longitude
@@ -129,7 +139,6 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
                 highWayCoordinateB,
                 1e-3
               ) shouldBe true
-          }
           case bgc: BuildingGraphConnection if bgc.building == ways.building2 =>
             bgc.highwayNodeA shouldBe nodes.highway2Node1
             bgc.highwayNodeB shouldBe nodes.highway2Node2
@@ -147,7 +156,7 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
           PrivateMethod[Try[(ComparableQuantity[Length], Node)]](
             Symbol("getClosest")
           )
-        LvGraphBuilder invokePrivate getClosest(
+        LvGraphGeneratorSupport invokePrivate getClosest(
           lineNodeA,
           lineNodeB,
           buildingCenter,
@@ -190,7 +199,8 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
           10.asKiloWatt,
           nodes.highway1Node1,
           nodes.highway1Node2,
-          connectingNode
+          connectingNode,
+          isSubstation = false
         )
         val updateGraphWithBuildingConnections =
           PrivateMethod[(OsmGraph, ParSeq[BuildingGraphConnection])](
@@ -203,7 +213,7 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
           osmGraph.addVertex(nodes.highway1Node2)
           osmGraph.addWeightedEdge(nodes.highway1Node1, nodes.highway1Node2)
           val (graph, bgcs) =
-            LvGraphBuilder invokePrivate updateGraphWithBuildingConnections(
+            LvGraphGeneratorSupport invokePrivate updateGraphWithBuildingConnections(
               osmGraph,
               Seq(buildingGraphConnection).par,
               true
@@ -221,7 +231,9 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
             case Seq(bgc: BuildingGraphConnection) =>
               graph.containsEdge(
                 connectingNode,
-                bgc.buildingNode.getOrElse(fail("Building node is not set"))
+                bgc.buildingConnectionNode.getOrElse(
+                  fail("Building node is not set")
+                )
               ) shouldBe true
             case _ => fail("More than one building graph connection")
           }
@@ -233,7 +245,7 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
           osmGraph.addVertex(nodes.highway1Node2)
           osmGraph.addWeightedEdge(nodes.highway1Node1, nodes.highway1Node2)
           val (graph, bgcs) =
-            LvGraphBuilder invokePrivate updateGraphWithBuildingConnections(
+            LvGraphGeneratorSupport invokePrivate updateGraphWithBuildingConnections(
               osmGraph,
               Seq(buildingGraphConnection).par,
               false
@@ -249,7 +261,7 @@ class LvGraphBuilderSpec extends UnitSpec with OsmTestData {
           bgcs.seq match {
             case Nil => fail("Building graph connections are empty")
             case Seq(bgc: BuildingGraphConnection) =>
-              bgc.buildingNode shouldBe None
+              bgc.buildingConnectionNode shouldBe None
             case _ => fail("More than one building graph connection")
           }
         }
