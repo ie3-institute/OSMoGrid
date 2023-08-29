@@ -65,7 +65,7 @@ trait NodeInputSupport {
 
   val nodeToHv2 = new NodeInput(
     UUID.randomUUID(),
-    s"Node 2 ti hv",
+    s"Node 2 to hv",
     Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
     false,
     GeoUtils.buildPoint(52.0, 7.0),
@@ -95,7 +95,7 @@ trait NodeInputSupport {
 
   val nodeOutside = new NodeInput(
     UUID.randomUUID(),
-    s"Node that should no be inside a grid",
+    s"Node that should not be inside a grid",
     Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
     false,
     GeoUtils.buildPoint(0.0, 0.0),

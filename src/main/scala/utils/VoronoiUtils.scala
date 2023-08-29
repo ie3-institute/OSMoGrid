@@ -136,7 +136,7 @@ object VoronoiUtils {
   }
 
   /** This method uses a [[VoronoiDiagramBuilder]] to generate a voronoi diagram
-    * with the given nodes a its sites. After the diagram is generated the
+    * with the given nodes as its sites. After the diagram is generated the
     * resulting polygons are mapped to the corresponding hv-mv node. The found
     * [[Polygon]] is also added to the [[VoronoiPolygon]].
     *

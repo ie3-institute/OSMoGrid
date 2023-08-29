@@ -53,7 +53,7 @@ class VoronoiUtilsSpec extends UnitSpec with NodeInputSupport {
       val polygon: VoronoiPolygon = polygons(0)
       polygon.transitionPointToHigherVoltLvl shouldBe nodeToHv1
       polygon.transitionPointsToLowerVoltLvl.size shouldBe 0
-      polygon.containsNode(nodeToHv1)
+      polygon.containsNode(nodeToHv1) shouldBe true
       polygon.containsNode(nodeToHv2) shouldBe true
       polygon.containsNode(nodeToHv3) shouldBe true
     }
@@ -89,28 +89,28 @@ class VoronoiUtilsSpec extends UnitSpec with NodeInputSupport {
 
       polygons(0).transitionPointToHigherVoltLvl shouldBe nodeToHv1
       polygons(0).transitionPointsToLowerVoltLvl.size shouldBe 0
-      polygons(0).containsNode(nodeToHv1)
+      polygons(0).containsNode(nodeToHv1) shouldBe true
       polygons(0).containsNode(nodeToHv2) shouldBe false
       polygons(0).containsNode(nodeToHv3) shouldBe false
       polygons(0).containsNode(nodeToHv4) shouldBe false
 
       polygons(1).transitionPointToHigherVoltLvl shouldBe nodeToHv2
       polygons(1).transitionPointsToLowerVoltLvl.size shouldBe 0
-      polygons(1).containsNode(nodeToHv2)
+      polygons(1).containsNode(nodeToHv2) shouldBe true
       polygons(1).containsNode(nodeToHv1) shouldBe false
       polygons(1).containsNode(nodeToHv3) shouldBe false
       polygons(1).containsNode(nodeToHv4) shouldBe false
 
       polygons(2).transitionPointToHigherVoltLvl shouldBe nodeToHv3
       polygons(2).transitionPointsToLowerVoltLvl.size shouldBe 0
-      polygons(2).containsNode(nodeToHv3)
+      polygons(2).containsNode(nodeToHv3) shouldBe true
       polygons(2).containsNode(nodeToHv1) shouldBe false
       polygons(2).containsNode(nodeToHv2) shouldBe false
       polygons(2).containsNode(nodeToHv4) shouldBe false
 
       polygons(3).transitionPointToHigherVoltLvl shouldBe nodeToHv4
       polygons(3).transitionPointsToLowerVoltLvl.size shouldBe 0
-      polygons(3).containsNode(nodeToHv4)
+      polygons(3).containsNode(nodeToHv4) shouldBe true
       polygons(3).containsNode(nodeToHv1) shouldBe false
       polygons(3).containsNode(nodeToHv2) shouldBe false
       polygons(3).containsNode(nodeToHv3) shouldBe false
