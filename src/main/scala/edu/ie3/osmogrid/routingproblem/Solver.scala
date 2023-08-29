@@ -7,6 +7,7 @@
 package edu.ie3.osmogrid.routingproblem
 
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
+import edu.ie3.osmogrid.exception.GraphModifyException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.mv.MvGraphBuilder.MvGraph
 import edu.ie3.osmogrid.routingproblem.Definitions.{
@@ -16,9 +17,12 @@ import edu.ie3.osmogrid.routingproblem.Definitions.{
   Saving
 }
 import edu.ie3.util.osm.model.OsmEntity.Node
+import tech.units.indriya.quantity.Quantities
+import tech.units.indriya.unit.Units
 
 import javax.measure.Quantity
 import javax.measure.quantity.Length
+import scala.jdk.CollectionConverters._
 
 /** Solver for the routing problem. Uses a combination of savings algorithm,
   * tabu lists and nearest neighbour search.
@@ -60,11 +64,106 @@ object Solver {
       removedEdges(0).getDistance
         .add(removedEdges(1).getDistance)
         .subtract(connection.distance)
-    Saving(connection, graph, saving)
+    ???
+  }
+
+  private def step(
+      nodeToHv: Node,
+      current: Node,
+      connections: Connections,
+      doubleEdges: List[DistanceWeightedEdge],
+      osmGraph: OsmGraph
+  ): (OsmGraph, Node, List[DistanceWeightedEdge]) = {
+
+    val nearestNeighbors: List[Node] = connections.getNearestNeighbors(current)
+    val edges: List[DistanceWeightedEdge] = osmGraph.getSortedEdges(current)
+    val totalWeight = osmGraph.calcTotalWeight()
+
+    val savings: List[Saving] = nearestNeighbors.flatMap { node =>
+      calcSavings(
+        nodeToHv,
+        current,
+        node,
+        osmGraph,
+        edges,
+        doubleEdges,
+        connections
+      )
+    }
+
+    ???
+  }
+
+  private def calcSavings(
+      nodeToHv: Node,
+      current: Node,
+      neighbor: Node,
+      osmGraph: OsmGraph,
+      edges: List[DistanceWeightedEdge],
+      doubleEdges: List[DistanceWeightedEdge],
+      connections: Connections
+  ): List[Saving] = {
+
+    val edge = osmGraph.getEdge(current, neighbor)
+
+    if (edge != null && !doubleEdges.contains(edge)) {
+      // if the current node is connected to the neighbor with only one edge, no further calculation is needed
+      List.empty
+    } else {
+      edges.flatMap { edge =>
+        val source: Node = osmGraph.getEdgeSource(edge)
+        val target: Node = osmGraph.getEdgeTarget(edge)
+
+        if (source == nodeToHv || target == nodeToHv) {
+          // return nothing if either the source of the target of the edge is the transition point
+          None
+        } else {
+          val copy = osmGraph.copy()
+          copy.removeEdge(source, target)
+          val removedDoubleEdge = copy.removeEdge(nodeToHv, neighbor)
+
+          val (connection1, connection2): (Connection, Connection) =
+            if (source == current) {
+              (
+                connections.getConnection(current, neighbor),
+                connections.getConnection(neighbor, target)
+              )
+            } else if (target == current) {
+              (
+                connections.getConnection(target, neighbor),
+                connections.getConnection(neighbor, current)
+              )
+            } else {
+              throw GraphModifyException(
+                s"Found edge $edge is not connected to the given vertex $current. This should not happen!"
+              )
+            }
+
+          copy.addConnection(connection1)
+          copy.addConnection(connection2)
+
+          val saving = removedDoubleEdge.getDistance
+            .multiply(2)
+            .subtract(connection1.distance.add(connection2.distance))
+
+          Some(
+            Saving(
+              connection1,
+              connection2,
+              edge,
+              Some(removedDoubleEdge),
+              copy,
+              saving
+            )
+          )
+        }
+      }
+    }
   }
 
   /** Method to set up the graph for further calculations. The two closest nodes
     * are connected with one edge to the start point and one edge to each other.
+    * A [[Node]] is returned, that can be used as a start point for next steps.
     * Also a list of edges, which should be considered as double edges, is
     * returned.
     * @param nodeToHv
@@ -72,12 +171,12 @@ object Solver {
     * @param connections
     *   all [[Connections]] that should be considered
     * @return
-    *   a graph and a list containing double edges
+    *   a graph, the next node and a list containing double edges
     */
   private def firstStep(
       nodeToHv: Node,
       connections: Connections
-  ): (OsmGraph, List[DistanceWeightedEdge]) = {
+  ): (OsmGraph, Node, List[DistanceWeightedEdge]) = {
     val graph = new OsmGraph()
     graph.addVertex(nodeToHv)
 
@@ -87,9 +186,9 @@ object Solver {
       graph.addConnection(connection)
     }
 
-    val nearestNeighbour: List[Node] = connections.getNearestNeighbour(nodeToHv)
-    val nodeA = nearestNeighbour(0)
-    val nodeB = nearestNeighbour(1)
+    val nearestNeighbors: List[Node] = connections.getNearestNeighbors(nodeToHv)
+    val nodeA = nearestNeighbors(0)
+    val nodeB = nearestNeighbors(1)
 
     // adding the two closest nodes directly to the nodeToHv
     val updatedDoubleEdge = graph.reconnectNodes(
@@ -110,7 +209,7 @@ object Solver {
       connections.connectionMap((nodeToHv, nodeB)).distance
     )
 
-    (graph, updatedDoubleEdge)
+    (graph, nodeA, updatedDoubleEdge)
   }
 
 }

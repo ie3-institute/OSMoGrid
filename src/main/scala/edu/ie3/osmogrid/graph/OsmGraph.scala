@@ -74,6 +74,12 @@ class OsmGraph(
     super.setEdgeWeight(edge, weightDouble)
   }
 
+  def getSortedEdges(node: Node): List[DistanceWeightedEdge] = {
+    edgesOf(node).asScala.toList.sortBy(e =>
+      e.getDistance.getValue.doubleValue()
+    )
+  }
+
   def reconnectNodes(
       common: Node,
       connection: Connection,

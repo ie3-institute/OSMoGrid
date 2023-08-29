@@ -61,7 +61,7 @@ object Definitions {
     def getDistance(nodeA: Node, nodeB: Node): ComparableQuantity[Length] =
       getConnection(nodeA, nodeB).distance
 
-    def getNearestNeighbour(node: Node): List[Node] = {
+    def getNearestNeighbors(node: Node): List[Node] = {
       connections(node)
         .map { nodeB => nodeB -> getDistance(node, nodeB) }
         .sortBy(_._2)
@@ -114,7 +114,10 @@ object Definitions {
   )
 
   final case class Saving(
-      usedConnection: Connection,
+      usedConnectionA: Connection,
+      usedConnectionB: Connection,
+      removedEdge: DistanceWeightedEdge,
+      removedDoubleEdge: Option[DistanceWeightedEdge],
       updatedGraph: OsmGraph,
       saving: Quantity[Length]
   )

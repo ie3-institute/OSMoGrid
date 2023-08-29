@@ -9,7 +9,6 @@ package edu.ie3.osmogrid.routingproblem
 import edu.ie3.osmogrid.routingproblem.Definitions.{Connection, Connections}
 import edu.ie3.test.common.{DefinitionsTestData, UnitSpec}
 import edu.ie3.util.osm.model.OsmEntity.Node
-import fastparse.Parsed.{Failure, Success}
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 
@@ -121,20 +120,20 @@ class DefinitionsSpec extends UnitSpec with DefinitionsTestData {
       None
     )
     val connection2 = Connection(
-      osmNode1,
+      transitionPoint,
       osmNode2,
       Quantities.getQuantity(0d, Units.METRE),
       None
     )
     val connection3 = Connection(
-      osmNode2,
+      osmNode1,
       osmNode3,
       Quantities.getQuantity(0d, Units.METRE),
       None
     )
     val connection4 = Connection(
       osmNode3,
-      transitionPoint,
+      osmNode2,
       Quantities.getQuantity(0d, Units.METRE),
       None
     )
@@ -147,30 +146,30 @@ class DefinitionsSpec extends UnitSpec with DefinitionsTestData {
     "be created correctly" in {
       connections.nodes shouldBe nodes
       connections.connections shouldBe Map(
-        transitionPoint -> List(osmNode1, osmNode3),
-        osmNode1 -> List(transitionPoint, osmNode2),
-        osmNode2 -> List(osmNode1, osmNode3),
-        osmNode3 -> List(osmNode2, transitionPoint)
+        transitionPoint -> List(osmNode1, osmNode2),
+        osmNode1 -> List(transitionPoint, osmNode3),
+        osmNode2 -> List(transitionPoint, osmNode3),
+        osmNode3 -> List(osmNode1, osmNode2)
       )
 
       connections.connectionMap shouldBe Map(
         (transitionPoint, osmNode1) -> connection1,
-        (transitionPoint, osmNode3) -> connection4,
+        (transitionPoint, osmNode2) -> connection2,
         (osmNode1, transitionPoint) -> connection1,
-        (osmNode1, osmNode2) -> connection2,
-        (osmNode2, osmNode1) -> connection2,
-        (osmNode2, osmNode3) -> connection3,
-        (osmNode3, transitionPoint) -> connection4,
-        (osmNode3, osmNode2) -> connection3
+        (osmNode1, osmNode3) -> connection3,
+        (osmNode2, transitionPoint) -> connection2,
+        (osmNode2, osmNode3) -> connection4,
+        (osmNode3, osmNode1) -> connection3,
+        (osmNode3, osmNode2) -> connection4
       )
     }
 
     "return all connections" in {
       val cases = Table(
         ("node", "expectedConnections"),
-        (transitionPoint, List(connection1, connection4)),
-        (osmNode1, List(connection1, connection2)),
-        (osmNode2, List(connection2, connection3)),
+        (transitionPoint, List(connection1, connection2)),
+        (osmNode1, List(connection1, connection3)),
+        (osmNode2, List(connection2, connection4)),
         (osmNode3, List(connection3, connection4))
       )
 
@@ -192,7 +191,7 @@ class DefinitionsSpec extends UnitSpec with DefinitionsTestData {
         ("nodeA", "nodeB", "connection"),
         (transitionPoint, osmNode1, connection1),
         (osmNode1, transitionPoint, connection1),
-        (transitionPoint, osmNode3, connection4)
+        (transitionPoint, osmNode2, connection2)
       )
 
       forAll(cases) { (nodeA, nodeB, connection) =>
@@ -200,11 +199,46 @@ class DefinitionsSpec extends UnitSpec with DefinitionsTestData {
       }
     }
 
-    "throws an exception for not known node combinations" in {
+    "throws an exception for not known node combinations when retrieving connection" in {
       Try(connections.getConnection(osmNode1, osmNode6)) match {
         case util.Failure(exception) =>
           exception.getMessage shouldBe "key not found: (Node(6,50.5,8.5,Map(),None),Node(1,50.5,7.0,Map(),None))"
         case util.Success(_) => throw new Error("The test should not pass!")
+      }
+    }
+
+    "return the correct distance between tow nodes" in {
+      val cases = Table(
+        ("nodeA", "nodeB", "distance"),
+        (transitionPoint, osmNode1, connection1.distance),
+        (osmNode1, transitionPoint, connection1.distance),
+        (transitionPoint, osmNode2, connection2.distance)
+      )
+
+      forAll(cases) { (nodeA, nodeB, distance) =>
+        connections.getDistance(nodeA, nodeB) shouldBe distance
+      }
+    }
+
+    "throws an exception for not known node combinations when retrieving distance" in {
+      Try(connections.getDistance(osmNode1, osmNode6)) match {
+        case util.Failure(exception) =>
+          exception.getMessage shouldBe "key not found: (Node(6,50.5,8.5,Map(),None),Node(1,50.5,7.0,Map(),None))"
+        case util.Success(_) => throw new Error("The test should not pass!")
+      }
+    }
+
+    "return the nearest neighbors for a given node" in {
+      val cases = Table(
+        ("node", "nearestNeighbours"),
+        (transitionPoint, List(osmNode1, osmNode2)),
+        (osmNode1, List(transitionPoint, osmNode3)),
+        (osmNode2, List(transitionPoint, osmNode3)),
+        (osmNode3, List(osmNode1, osmNode2))
+      )
+
+      forAll(cases) { (node, nearestNeighbours) =>
+        connections.getNearestNeighbors(node) shouldBe nearestNeighbours
       }
     }
 
