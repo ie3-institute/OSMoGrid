@@ -96,9 +96,10 @@ object MvGraphBuilder {
   private def findClosestConnections(
       osmNodes: List[Node]
   ): Connections = {
-    val possibleConnections: List[(Node, Node)] = getAllUniqueConnections(
-      osmNodes
-    )
+    val possibleConnections: List[(Node, Node)] =
+      Connections.getAllUniqueCombinations(
+        osmNodes
+      )
 
     /*
       TODO: Change closest connection calculation after alternative is properly tested
@@ -137,7 +138,8 @@ object MvGraphBuilder {
       new BFSShortestPath(osmGraph)
 
     val nodes = osmNodes.values.toList
-    val connections: List[(Node, Node)] = getAllUniqueConnections(nodes)
+    val connections: List[(Node, Node)] =
+      Connections.getAllUniqueCombinations(nodes)
 
     val paths: Map[Node, SingleSourcePaths[Node, DistanceWeightedEdge]] =
       nodes.map(node => (node, shortestPath.getPaths(node))).toMap
@@ -153,32 +155,5 @@ object MvGraphBuilder {
         Some(graphPath)
       )
     }
-  }
-
-  // used to get all possible unique connections (a -> b == b -> a)
-  private def getAllUniqueConnections(
-      nodes: List[Node]
-  ): List[(Node, Node)] = {
-    val connections: List[(Node, Node)] = List.empty
-
-    // algorithm to find all unique combinations
-    nodes.foreach(nodeA => {
-      nodes.foreach(nodeB => {
-        // it makes no sense to connect a node to itself => nodeA and nodeB cannot be the same
-        if (nodeA != nodeB) {
-          // two combinations possible
-          val t1 = (nodeA, nodeB)
-          val t2 = (nodeB, nodeA)
-
-          // if none of the combinations is already added, the first combination is added
-          if (!connections.contains(t1) && !connections.contains(t2)) {
-            connections :+ t1
-          }
-        }
-      })
-    })
-
-    // returns all unique connections
-    connections
   }
 }

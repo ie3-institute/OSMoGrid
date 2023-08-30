@@ -159,35 +159,25 @@ trait DefinitionsTestData {
     NodeConversion(conversion, conversion.map { case (k, v) => v -> k })
   }
   val connections: Connections = {
-    val uniqueConnections = List(
-      (transitionPoint, osmNode1),
-      (transitionPoint, osmNode2),
-      (transitionPoint, osmNode3),
-      (transitionPoint, osmNode4),
-      (transitionPoint, osmNode5),
-      (transitionPoint, osmNode6),
-      (osmNode1, osmNode2),
-      (osmNode1, osmNode3),
-      (osmNode1, osmNode4),
-      (osmNode1, osmNode5),
-      (osmNode1, osmNode6),
-      (osmNode2, osmNode3),
-      (osmNode2, osmNode4),
-      (osmNode2, osmNode5),
-      (osmNode2, osmNode6),
-      (osmNode3, osmNode4),
-      (osmNode3, osmNode5),
-      (osmNode3, osmNode6),
-      (osmNode4, osmNode5),
-      (osmNode4, osmNode6),
-      (osmNode5, osmNode6)
-    ).map { case (nodeA, nodeB) =>
-      val distance = GeoUtils.calcHaversine(
-        nodeA.coordinate.getCoordinate,
-        nodeB.coordinate.getCoordinate
+    val uniqueConnections = Connections
+      .getAllUniqueCombinations(
+        List(
+          transitionPoint,
+          osmNode1,
+          osmNode2,
+          osmNode3,
+          osmNode4,
+          osmNode5,
+          osmNode6
+        )
       )
-      Connection(nodeA, nodeB, distance, None)
-    }
+      .map { case (nodeA, nodeB) =>
+        val distance = GeoUtils.calcHaversine(
+          nodeA.coordinate.getCoordinate,
+          nodeB.coordinate.getCoordinate
+        )
+        Connection(nodeA, nodeB, distance, None)
+      }
 
     val osmNodes = List(
       transitionPoint,

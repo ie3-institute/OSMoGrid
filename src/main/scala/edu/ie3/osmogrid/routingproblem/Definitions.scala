@@ -13,9 +13,11 @@ import edu.ie3.util.osm.model.OsmEntity.Node
 import org.jgrapht.GraphPath
 import tech.units.indriya.ComparableQuantity
 
+import java.util
 import javax.measure.Quantity
 import javax.measure.quantity.Length
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 
 /** Definitions for a routing problem.
   */
@@ -104,6 +106,34 @@ object Definitions {
 
       Connections(osmNodes, connectionMap.toMap, distanceMap ++ distanceMapAlt)
     }
+
+    // used to get all possible unique connections (a -> b == b -> a)
+    def getAllUniqueCombinations(
+        nodes: List[Node]
+    ): List[(Node, Node)] = {
+      val connections: util.List[(Node, Node)] =
+        new util.ArrayList[(Node, Node)]
+
+      // algorithm to find all unique combinations
+      nodes.foreach(nodeA => {
+        nodes.foreach(nodeB => {
+          // it makes no sense to connect a node to itself => nodeA and nodeB cannot be the same
+          if (nodeA != nodeB) {
+            // two combinations possible
+            val t1 = (nodeA, nodeB)
+            val t2 = (nodeB, nodeA)
+
+            // if none of the combinations is already added, the first combination is added
+            if (!connections.contains(t1) && !connections.contains(t2)) {
+              connections.add(t1)
+            }
+          }
+        })
+      })
+
+      // returns all unique connections
+      connections.asScala.toList
+    }
   }
 
   final case class Connection(
@@ -113,13 +143,18 @@ object Definitions {
       path: Option[GraphPath[Node, DistanceWeightedEdge]]
   )
 
-  final case class Saving(
-      usedConnectionA: Connection,
-      usedConnectionB: Connection,
+  final case class StepResult(
+      graph: OsmGraph,
+      nextNode: Node,
+      notConnectedNodes: List[Node]
+  )
+
+  final case class StepResultOption(
+      graph: OsmGraph,
+      nextNode: Node,
+      usedConnections: List[Connection],
       removedEdge: DistanceWeightedEdge,
-      removedDoubleEdge: Option[DistanceWeightedEdge],
-      updatedGraph: OsmGraph,
-      saving: Quantity[Length]
+      addedWeight: Quantity[Length]
   )
 
 }
