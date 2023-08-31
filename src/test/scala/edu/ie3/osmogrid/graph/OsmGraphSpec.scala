@@ -99,5 +99,29 @@ class OsmGraphSpec extends UnitSpec with DefinitionsTestData {
         )
       }
     }
+
+    "check if edges intersects each other correctly" in {
+      val graph = new OsmGraph()
+      connections.nodes.foreach { node => graph.addVertex(node) }
+      graph.addEdge(osmNode1, osmNode4)
+      graph.addEdge(transitionPoint, osmNode5)
+
+      val cases = Table(
+        ("source", "target", "result"),
+        (transitionPoint, osmNode1, false),
+        (osmNode1, osmNode2, true),
+        (osmNode3, osmNode4, false),
+        (osmNode3, osmNode6, true),
+        (osmNode2, osmNode3, true),
+        (osmNode4, osmNode5, false)
+      )
+
+      forAll(cases) { (source, target, result) =>
+        val copy = graph.copy()
+        copy.addEdge(source, target)
+
+        copy.containsEdgeIntersection() shouldBe result
+      }
+    }
   }
 }

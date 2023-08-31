@@ -9,14 +9,17 @@ package edu.ie3.test.common
 import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
+import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.routingproblem.Definitions.{
   Connection,
   Connections,
-  NodeConversion
+  NodeConversion,
+  StepResultOption
 }
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import tech.units.indriya.quantity.Quantities
+import tech.units.indriya.unit.Units
 
 import java.util.UUID
 
@@ -190,6 +193,63 @@ trait DefinitionsTestData {
     )
 
     Connections(osmNodes, uniqueConnections)
+  }
+
+  val graphAfterTwoSteps: OsmGraph = {
+    val osmGraph: OsmGraph = new OsmGraph()
+    connections.nodes.foreach { node => osmGraph.addVertex(node) }
+    osmGraph.addConnection(
+      connections.getConnection(transitionPoint, osmNode1)
+    )
+    osmGraph.addConnection(
+      connections.getConnection(transitionPoint, osmNode2)
+    )
+    osmGraph.addConnection(connections.getConnection(osmNode1, osmNode3))
+    osmGraph.addConnection(connections.getConnection(osmNode3, osmNode2))
+
+    osmGraph
+  }
+
+  val stepResultOptionsForThirdStep: List[StepResultOption] = {
+    val copy1: OsmGraph = graphAfterTwoSteps.copy()
+    val copy2: OsmGraph = graphAfterTwoSteps.copy()
+
+    val removedEdge1 = copy1.removeEdge(osmNode3, osmNode2)
+    val usedConnections1 = List(
+      connections.getConnection(osmNode2, osmNode4),
+      connections.getConnection(osmNode3, osmNode4)
+    )
+    usedConnections1.foreach(c => copy1.addConnection(c))
+    val addedWeight1 = usedConnections1(0).distance
+      .add(usedConnections1(1).distance)
+      .subtract(removedEdge1.getDistance)
+
+    val removedEdge2 = copy2.removeEdge(osmNode1, osmNode3)
+    val usedConnections2 = List(
+      connections.getConnection(osmNode1, osmNode4),
+      connections.getConnection(osmNode3, osmNode4)
+    )
+    usedConnections2.foreach(c => copy2.addConnection(c))
+    val addedWeight2 = usedConnections2(0).distance
+      .add(usedConnections2(1).distance)
+      .subtract(removedEdge2.getDistance)
+
+    List(
+      StepResultOption(
+        copy1,
+        osmNode4,
+        usedConnections1,
+        graphAfterTwoSteps.getEdge(osmNode3, osmNode2),
+        addedWeight1
+      ),
+      StepResultOption(
+        copy2,
+        osmNode4,
+        usedConnections2,
+        graphAfterTwoSteps.getEdge(osmNode1, osmNode3),
+        addedWeight2
+      )
+    )
   }
 
 }

@@ -62,12 +62,16 @@ object Solver {
 
     // check the options and return the the result of this step
     checkStepResultOptions(stepResultOptions)
+
+    ???
   }
 
   private def checkStepResultOptions(
       options: List[StepResultOption]
-  ): StepResult = {
-    ???
+  ): List[StepResultOption] = {
+    options
+      .filter(option => !option.graph.containsEdgeIntersection())
+      .sortBy(option => option.addedWeight.getValue.doubleValue())
   }
 
   // neighbor should not be connected to another node

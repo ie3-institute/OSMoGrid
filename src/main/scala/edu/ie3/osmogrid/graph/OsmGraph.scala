@@ -21,7 +21,9 @@ import org.locationtech.jts.geom.Polygon
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
+import utils.OsmoGridUtils.{getLineSegmentBetweenNodes, hasIntersection}
 
+import java.util
 import javax.measure.Quantity
 import scala.jdk.CollectionConverters._
 
@@ -111,6 +113,52 @@ class OsmGraph(
       case _ =>
         throw GraphCopyException()
     }
+  }
+
+  /** Returns true if at least two edges of this graph intersects each other.
+    */
+  def containsEdgeIntersection(): Boolean = {
+    val edges = edgeSet().asScala
+
+    val connections: util.List[(DistanceWeightedEdge, DistanceWeightedEdge)] =
+      new util.ArrayList[(DistanceWeightedEdge, DistanceWeightedEdge)]
+
+    // algorithm to check if two edges intersects each other
+    edges.foreach(edgeA => {
+      val sourceA = getEdgeSource(edgeA)
+      val targetA = getEdgeTarget(edgeA)
+
+      edges.foreach(edgeB => {
+        // an edge cannot intersect itself, therefore these combination are not tested
+        if (edgeA != edgeB) {
+          // two combinations possible
+          val t1 = (edgeA, edgeB)
+          val t2 = (edgeB, edgeA)
+
+          // check if the possible combinations are already tested
+          if (!connections.contains(t1) && !connections.contains(t2)) {
+            connections.add(t1)
+
+            val sourceB = getEdgeSource(edgeB)
+            val targetB = getEdgeTarget(edgeB)
+
+            val lineA =
+              getLineSegmentBetweenNodes(sourceA, targetA)
+            val lineB =
+              getLineSegmentBetweenNodes(sourceB, targetB)
+
+            // checks if the two line intersects each other
+            val intersection = hasIntersection(lineA, lineB)
+
+            if (intersection) {
+              return true
+            }
+          }
+        }
+      })
+    })
+
+    false
   }
 
   def subGraph(polygon: Polygon): OsmGraph = {

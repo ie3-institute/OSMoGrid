@@ -12,6 +12,8 @@ import edu.ie3.osmogrid.routingproblem.Definitions.{
   StepResultOption
 }
 import edu.ie3.test.common.{DefinitionsTestData, UnitSpec}
+import tech.units.indriya.quantity.Quantities
+import tech.units.indriya.unit.Units
 
 import scala.jdk.CollectionConverters._
 
@@ -23,7 +25,6 @@ class SolverSpec extends UnitSpec with DefinitionsTestData {
 
     val calcStepResultOptions =
       PrivateMethod[List[StepResultOption]](Symbol("calcStepResultOptions"))
-
 
     "calculate the first step correctly" in {
       val stepResult =
@@ -156,16 +157,7 @@ class SolverSpec extends UnitSpec with DefinitionsTestData {
 
     "calculate step result options for any step correctly" in {
       // ring: tp -> 1 -> 3 -> 2 -> tp
-      val osmGraph: OsmGraph = new OsmGraph()
-      connections.nodes.foreach { node => osmGraph.addVertex(node) }
-      osmGraph.addConnection(
-        connections.getConnection(transitionPoint, osmNode1)
-      )
-      osmGraph.addConnection(
-        connections.getConnection(transitionPoint, osmNode2)
-      )
-      osmGraph.addConnection(connections.getConnection(osmNode1, osmNode3))
-      osmGraph.addConnection(connections.getConnection(osmNode3, osmNode2))
+      val osmGraph: OsmGraph = graphAfterTwoSteps
 
       val stepResultOptions: List[StepResultOption] =
         Solver invokePrivate calcStepResultOptions(
@@ -188,13 +180,14 @@ class SolverSpec extends UnitSpec with DefinitionsTestData {
               addedWeight
             ) =>
           graph.edgeSet().size() shouldBe 5
-          nextNode shouldBe osmNode4
-          usedConnections shouldBe List(
-            connections.getConnection(osmNode2, osmNode4),
-            connections.getConnection(osmNode3, osmNode4)
-          )
-          removedEdge shouldBe osmGraph.getEdge(osmNode3, osmNode2)
-          addedWeight.getValue.doubleValue() shouldBe 69297.473649269166029667
+          nextNode shouldBe stepResultOptionsForThirdStep(0).nextNode
+          usedConnections shouldBe stepResultOptionsForThirdStep(
+            0
+          ).usedConnections
+          removedEdge shouldBe stepResultOptionsForThirdStep(0).removedEdge
+          addedWeight.isEquivalentTo(
+            stepResultOptionsForThirdStep(0).addedWeight
+          ) shouldBe true
         case _ => throw new Error("This should not happen!")
       }
 
@@ -207,14 +200,60 @@ class SolverSpec extends UnitSpec with DefinitionsTestData {
               addedWeight
             ) =>
           graph.edgeSet().size() shouldBe 5
-          nextNode shouldBe osmNode4
-          usedConnections shouldBe List(
-            connections.getConnection(osmNode1, osmNode4),
-            connections.getConnection(osmNode3, osmNode4)
-          )
-          removedEdge shouldBe osmGraph.getEdge(osmNode1, osmNode3)
-          addedWeight.getValue.doubleValue() shouldBe 105675.017994970336106371
+          nextNode shouldBe stepResultOptionsForThirdStep(1).nextNode
+          usedConnections shouldBe stepResultOptionsForThirdStep(
+            1
+          ).usedConnections
+          removedEdge shouldBe stepResultOptionsForThirdStep(1).removedEdge
+          addedWeight.isEquivalentTo(
+            stepResultOptionsForThirdStep(1).addedWeight
+          ) shouldBe true
         case _ => throw new Error("This should not happen!")
+      }
+    }
+
+    "check step result options correctly" in {
+      val checkStepResultOptions =
+        PrivateMethod[List[StepResultOption]](Symbol("checkStepResultOptions"))
+
+      val res1 = StepResultOption(
+        new OsmGraph(),
+        osmNode1,
+        List.empty,
+        null,
+        Quantities.getQuantity(3, Units.METRE)
+      )
+      val res2 = StepResultOption(
+        new OsmGraph(),
+        osmNode1,
+        List.empty,
+        null,
+        Quantities.getQuantity(6, Units.METRE)
+      )
+      val res3 = StepResultOption(
+        new OsmGraph(),
+        osmNode1,
+        List.empty,
+        null,
+        Quantities.getQuantity(1, Units.METRE)
+      )
+
+      val cases = Table(
+        ("stepResultOptions", "checked"),
+        (List.empty, List.empty),
+        (
+          List(stepResultOptionsForThirdStep(0)),
+          List(stepResultOptionsForThirdStep(0))
+        ),
+        (List(stepResultOptionsForThirdStep(1)), List.empty),
+        (stepResultOptionsForThirdStep, List(stepResultOptionsForThirdStep(0))),
+        (List(res1, res2, res3), List(res3, res1, res2))
+      )
+
+      forAll(cases) { (stepResultOptions, checked) =>
+        val result =
+          Solver invokePrivate checkStepResultOptions(stepResultOptions)
+        result shouldBe checked
       }
     }
   }
