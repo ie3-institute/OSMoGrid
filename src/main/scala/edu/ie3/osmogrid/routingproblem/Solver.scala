@@ -7,11 +7,10 @@
 package edu.ie3.osmogrid.routingproblem
 
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
+import edu.ie3.osmogrid.exception.SolverException
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.mv.MvGraphBuilder.MvGraph
 import edu.ie3.osmogrid.routingproblem.Definitions.{
   Connections,
-  NodeConversion,
   StepResult,
   StepResultOption
 }
@@ -19,6 +18,7 @@ import edu.ie3.util.osm.model.OsmEntity.Node
 
 import javax.measure.Quantity
 import javax.measure.quantity.Length
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 /** Solver for the routing problem. Uses a combination of savings algorithm,
   * tabu lists and nearest neighbour search.
@@ -28,23 +28,53 @@ object Solver {
   // method to solve the routing problem
   def solve(
       nodeToHv: Node,
-      connections: Connections,
-      conversion: NodeConversion
-  ): MvGraph = {
-    val stepResult = firstStep(nodeToHv, connections)
+      connections: Connections
+  ): OsmGraph = {
+    // calculating the first step
+    var stepResult = firstStep(nodeToHv, connections)
 
-    ???
+    // calculating next steps
+    while (!stepResult.finished() && stepResult.notConnectedNodes.nonEmpty) {
+      stepResult = step(
+        nodeToHv,
+        stepResult,
+        connections
+      )
+    }
+
+    val graph = stepResult.graph
+    val notConnectedNodes = stepResult.notConnectedNodes
+
+    // finishing the mv graph
+    finishMvGraph(graph, notConnectedNodes, connections)
+  }
+
+  private def finishMvGraph(
+      graph: OsmGraph,
+      notConnectedNodes: List[Node],
+      connections: Connections
+  ): OsmGraph = {
+    if (notConnectedNodes.isEmpty) {
+      graph
+    } else {
+      notConnectedNodes.foreach { node =>
+        connectNode(graph, node, connections)
+      }
+      graph
+    }
   }
 
   private def step(
       nodeToHv: Node,
-      current: Node,
-      connections: Connections,
-      notConnectedNodes: List[Node],
-      osmGraph: OsmGraph
+      stepResult: StepResult,
+      connections: Connections
   ): StepResult = {
+    val current = stepResult.nextNode
+    val graph = stepResult.graph
+    val notConnectedNodes = stepResult.notConnectedNodes
+
     val nearestNeighbors: List[Node] = connections.getNearestNeighbors(current)
-    val edges: List[DistanceWeightedEdge] = osmGraph.getSortedEdges(current)
+    val edges: List[DistanceWeightedEdge] = graph.getSortedEdges(current)
 
     // calculate all possible result options for this step
     val stepResultOptions: List[StepResultOption] = nearestNeighbors
@@ -54,24 +84,38 @@ object Solver {
           nodeToHv,
           current,
           neighbor,
-          osmGraph,
+          graph,
           edges,
           connections
         )
       }
 
     // check the options and return the the result of this step
-    checkStepResultOptions(stepResultOptions)
-
-    ???
+    evaluateStepResultOptions(
+      stepResultOptions,
+      stepResult.endNode,
+      notConnectedNodes
+    )
   }
 
-  private def checkStepResultOptions(
-      options: List[StepResultOption]
-  ): List[StepResultOption] = {
+  private def evaluateStepResultOptions(
+      options: List[StepResultOption],
+      endNode: Node,
+      notConnectedNodes: List[Node]
+  ): StepResult = {
     options
       .filter(option => !option.graph.containsEdgeIntersection())
       .sortBy(option => option.addedWeight.getValue.doubleValue())
+      .headOption match {
+      case Some(stepResultOption) =>
+        StepResult(
+          stepResultOption.graph,
+          stepResultOption.nextNode,
+          endNode,
+          notConnectedNodes.diff(Seq(stepResultOption.nextNode))
+        )
+      case None => throw SolverException("No step result options were found.")
+    }
   }
 
   // neighbor should not be connected to another node
@@ -128,6 +172,18 @@ object Solver {
     }
   }
 
+  // connects a node to the graph
+  private def connectNode(
+      graph: OsmGraph,
+      node: Node,
+      connections: Connections
+  ): Unit = {
+    val neighbors = connections.getNearestNeighbors(node)
+    val edges = graph.edgesOf(neighbors(0)).asScala.toList
+
+    System.out.print("Not implemented!")
+  }
+
   /** Method to set up the graph for further calculations. The two closest nodes
     * are connected with one edge to the start point and one edge to each other.
     * A [[Node]] is returned, that can be used as a start point for next steps.
@@ -170,6 +226,6 @@ object Solver {
     // connecting nodeA and nodeB
     graph.addConnection(connections.getConnection(nodeA, nodeB))
 
-    StepResult(graph, nodeA, nodes.diff(List(nodeToHv, nodeA, nodeB)))
+    StepResult(graph, nodeA, nodeB, nodes.diff(List(nodeToHv, nodeA, nodeB)))
   }
 }

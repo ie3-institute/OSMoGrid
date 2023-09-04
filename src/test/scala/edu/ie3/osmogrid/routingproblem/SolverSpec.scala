@@ -212,9 +212,12 @@ class SolverSpec extends UnitSpec with DefinitionsTestData {
       }
     }
 
-    "check step result options correctly" in {
-      val checkStepResultOptions =
-        PrivateMethod[List[StepResultOption]](Symbol("checkStepResultOptions"))
+    "evaluate step result options correctly" in {
+      val evaluateStepResultOptions =
+        PrivateMethod[StepResult](Symbol("evaluateStepResultOptions"))
+      val endNode = osmNode4
+      val notConnectedNodes =
+        List(osmNode1, osmNode2, osmNode3, osmNode5, osmNode6)
 
       val res1 = StepResultOption(
         new OsmGraph(),
@@ -225,36 +228,99 @@ class SolverSpec extends UnitSpec with DefinitionsTestData {
       )
       val res2 = StepResultOption(
         new OsmGraph(),
-        osmNode1,
+        osmNode2,
         List.empty,
         null,
         Quantities.getQuantity(6, Units.METRE)
       )
       val res3 = StepResultOption(
         new OsmGraph(),
-        osmNode1,
+        osmNode3,
         List.empty,
         null,
         Quantities.getQuantity(1, Units.METRE)
       )
 
       val cases = Table(
-        ("stepResultOptions", "checked"),
-        (List.empty, List.empty),
+        ("options", "result"),
         (
-          List(stepResultOptionsForThirdStep(0)),
-          List(stepResultOptionsForThirdStep(0))
+          List(res1),
+          StepResult(
+            new OsmGraph(),
+            osmNode1,
+            osmNode4,
+            List(osmNode2, osmNode3, osmNode5, osmNode6)
+          )
         ),
-        (List(stepResultOptionsForThirdStep(1)), List.empty),
-        (stepResultOptionsForThirdStep, List(stepResultOptionsForThirdStep(0))),
-        (List(res1, res2, res3), List(res3, res1, res2))
+        (
+          List(res2),
+          StepResult(
+            new OsmGraph(),
+            osmNode2,
+            osmNode4,
+            List(osmNode1, osmNode3, osmNode5, osmNode6)
+          )
+        ),
+        (
+          List(res1, res2),
+          StepResult(
+            new OsmGraph(),
+            osmNode1,
+            osmNode4,
+            List(osmNode2, osmNode3, osmNode5, osmNode6)
+          )
+        ),
+        (
+          List(res1, res3),
+          StepResult(
+            new OsmGraph(),
+            osmNode3,
+            osmNode4,
+            List(osmNode1, osmNode2, osmNode5, osmNode6)
+          )
+        ),
+        (
+          List(res1, res2, res3),
+          StepResult(
+            new OsmGraph(),
+            osmNode3,
+            osmNode4,
+            List(osmNode1, osmNode2, osmNode5, osmNode6)
+          )
+        )
       )
 
-      forAll(cases) { (stepResultOptions, checked) =>
-        val result =
-          Solver invokePrivate checkStepResultOptions(stepResultOptions)
-        result shouldBe checked
+      forAll(cases) { (options, result) =>
+        val stepResult: StepResult =
+          Solver invokePrivate evaluateStepResultOptions(
+            options,
+            endNode,
+            notConnectedNodes
+          )
+
+        stepResult.graph shouldBe result.graph
+        stepResult.nextNode shouldBe result.nextNode
+        stepResult.endNode shouldBe result.endNode
+        stepResult.notConnectedNodes shouldBe result.notConnectedNodes
       }
+    }
+
+    "work correctly" in {
+      val graph = Solver.solve(transitionPoint, connections)
+      val vertexes = graph.vertexSet().asScala.toList
+      val edges = graph.edgeSet().asScala
+
+      vertexes.size shouldBe 7
+      edges.size shouldBe 7
+
+      vertexes shouldBe connections.nodes
+      edges.contains(graph.getEdge(transitionPoint, osmNode1)) shouldBe true
+      edges.contains(graph.getEdge(transitionPoint, osmNode2)) shouldBe true
+      edges.contains(graph.getEdge(osmNode1, osmNode3)) shouldBe true
+      edges.contains(graph.getEdge(osmNode2, osmNode6)) shouldBe true
+      edges.contains(graph.getEdge(osmNode3, osmNode4)) shouldBe true
+      edges.contains(graph.getEdge(osmNode4, osmNode5)) shouldBe true
+      edges.contains(graph.getEdge(osmNode5, osmNode6)) shouldBe true
     }
   }
 }

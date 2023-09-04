@@ -146,8 +146,11 @@ object Definitions {
   final case class StepResult(
       graph: OsmGraph,
       nextNode: Node,
+      endNode: Node,
       notConnectedNodes: List[Node]
-  )
+  ) {
+    def finished(): Boolean = nextNode == endNode
+  }
 
   final case class StepResultOption(
       graph: OsmGraph,

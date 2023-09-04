@@ -52,12 +52,13 @@ object MvGraphBuilder {
     // using savings algorithm to generate a graph structure
     val graph = solve(
       conversion.getOsmNode(nodeToHv),
-      connections,
-      conversion
+      connections
     )
 
     // optional optimization step
-    graphOptimizer(graph)
+    // graphOptimizer(graph)
+
+    ???
   }
 
   /** Method to create [[NodeConversion]].

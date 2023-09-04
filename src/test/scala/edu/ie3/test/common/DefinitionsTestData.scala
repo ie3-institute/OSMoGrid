@@ -32,7 +32,7 @@ trait DefinitionsTestData {
   // 50.5 |  1           6
   // 50.0 |  0       2
 
-  // corresponding osm nodes
+  // corresponding osm and PSDM nodes
   protected val transitionPoint: Node = Node(
     id = 0L,
     latitude = 50.0,
@@ -40,50 +40,6 @@ trait DefinitionsTestData {
     tags = Map.empty,
     metaInformation = None
   )
-  protected val osmNode1: Node = Node(
-    id = 1L,
-    latitude = 50.5,
-    longitude = 7.0,
-    tags = Map.empty,
-    metaInformation = None
-  )
-  protected val osmNode2: Node = Node(
-    id = 2L,
-    latitude = 50.0,
-    longitude = 8.0,
-    tags = Map.empty,
-    metaInformation = None
-  )
-  protected val osmNode3: Node = Node(
-    id = 3L,
-    latitude = 51.5,
-    longitude = 7.5,
-    tags = Map.empty,
-    metaInformation = None
-  )
-  protected val osmNode4: Node = Node(
-    id = 4L,
-    latitude = 51.5,
-    longitude = 8.5,
-    tags = Map.empty,
-    metaInformation = None
-  )
-  protected val osmNode5: Node = Node(
-    id = 5L,
-    latitude = 51.0,
-    longitude = 9.0,
-    tags = Map.empty,
-    metaInformation = None
-  )
-  protected val osmNode6: Node = Node(
-    id = 6L,
-    latitude = 50.5,
-    longitude = 8.5,
-    tags = Map.empty,
-    metaInformation = None
-  )
-
-  // corresponding PSDM nodes
   val nodeToHv = new NodeInput(
     UUID.randomUUID(),
     s"Transition point",
@@ -93,60 +49,27 @@ trait DefinitionsTestData {
     GermanVoltageLevelUtils.MV_10KV,
     1
   )
-  protected val nodeInMv1 = new NodeInput(
-    UUID.randomUUID(),
-    s"Node 1",
-    Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
-    false,
-    GeoUtils.buildPoint(50.5, 7.0),
-    GermanVoltageLevelUtils.MV_10KV,
-    1
-  )
-  val nodeInMv2 = new NodeInput(
-    UUID.randomUUID(),
-    s"Node 2",
-    Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
-    false,
-    GeoUtils.buildPoint(50.0, 8.0),
-    GermanVoltageLevelUtils.MV_10KV,
-    1
-  )
-  val nodeInMv3 = new NodeInput(
-    UUID.randomUUID(),
-    s"Node 3",
-    Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
-    false,
-    GeoUtils.buildPoint(51.5, 7.5),
-    GermanVoltageLevelUtils.MV_10KV,
-    1
-  )
-  val nodeInMv4 = new NodeInput(
-    UUID.randomUUID(),
-    s"Node 4",
-    Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
-    false,
-    GeoUtils.buildPoint(51.5, 8.5),
-    GermanVoltageLevelUtils.MV_10KV,
-    1
-  )
-  val nodeInMv5 = new NodeInput(
-    UUID.randomUUID(),
-    s"Node 5",
-    Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
-    false,
-    GeoUtils.buildPoint(51.0, 9.0),
-    GermanVoltageLevelUtils.MV_10KV,
-    1
-  )
-  val nodeInMv6 = new NodeInput(
-    UUID.randomUUID(),
-    s"Node 6",
-    Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
-    false,
-    GeoUtils.buildPoint(50.5, 8.5),
-    GermanVoltageLevelUtils.MV_10KV,
-    1
-  )
+
+  protected val (osmNode1, nodeInMv1) = buildPoint(1L, 50.5, 7.0)
+  protected val (osmNode2, nodeInMv2) = buildPoint(2L, 50.0, 8.0)
+  protected val (osmNode3, nodeInMv3) = buildPoint(3L, 51.5, 7.5)
+  protected val (osmNode4, nodeInMv4) = buildPoint(4L, 51.5, 8.5)
+  protected val (osmNode5, nodeInMv5) = buildPoint(5L, 51.0, 9.0)
+  protected val (osmNode6, nodeInMv6) = buildPoint(6L, 50.5, 8.5)
+
+  def buildPoint(i: Long, lat: Double, lon: Double): (Node, NodeInput) = {
+    val node = Node(i, lat, lon, Map.empty, None)
+    val nodeInput = new NodeInput(
+      UUID.randomUUID(),
+      s"Node $i",
+      Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
+      false,
+      GeoUtils.buildPoint(lat, lon),
+      GermanVoltageLevelUtils.MV_10KV,
+      1
+    )
+    (node, nodeInput)
+  }
 
   val nodeConversion: NodeConversion = {
     val conversion = Map(
