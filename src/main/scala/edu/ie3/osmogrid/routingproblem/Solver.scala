@@ -7,7 +7,6 @@
 package edu.ie3.osmogrid.routingproblem
 
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
-import edu.ie3.osmogrid.exception.SolverException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.routingproblem.Definitions.{
   Connections,
@@ -31,15 +30,21 @@ object Solver {
       connections: Connections
   ): OsmGraph = {
     // calculating the first step
-    var stepResult = firstStep(nodeToHv, connections)
+    var stepResult: StepResult = firstStep(nodeToHv, connections)
+    var finished = false
 
     // calculating next steps
-    while (!stepResult.finished() && stepResult.notConnectedNodes.nonEmpty) {
-      stepResult = step(
+    while (!finished && stepResult.notConnectedNodes.nonEmpty) {
+      step(
         nodeToHv,
         stepResult,
         connections
-      )
+      ) match {
+        case Some(value) => stepResult = value
+        case None =>
+          System.out.print(s"\nFinished with: ${stepResult.notConnectedNodes}")
+          finished = true
+      }
     }
 
     val graph = stepResult.graph
@@ -64,11 +69,23 @@ object Solver {
     }
   }
 
+  // connects a node to the graph
+  private def connectNode(
+      graph: OsmGraph,
+      node: Node,
+      connections: Connections
+  ): Unit = {
+    val neighbors = connections.getNearestNeighbors(node)
+    val edges = graph.edgesOf(neighbors(0)).asScala.toList
+
+    System.out.print(s"\nNot implemented! -> $node")
+  }
+
   private def step(
       nodeToHv: Node,
       stepResult: StepResult,
       connections: Connections
-  ): StepResult = {
+  ): Option[StepResult] = {
     val current = stepResult.nextNode
     val graph = stepResult.graph
     val notConnectedNodes = stepResult.notConnectedNodes
@@ -93,28 +110,29 @@ object Solver {
     // check the options and return the the result of this step
     evaluateStepResultOptions(
       stepResultOptions,
-      stepResult.endNode,
       notConnectedNodes
     )
   }
 
   private def evaluateStepResultOptions(
       options: List[StepResultOption],
-      endNode: Node,
       notConnectedNodes: List[Node]
-  ): StepResult = {
+  ): Option[StepResult] = {
     options
       .filter(option => !option.graph.containsEdgeIntersection())
       .sortBy(option => option.addedWeight.getValue.doubleValue())
       .headOption match {
       case Some(stepResultOption) =>
-        StepResult(
-          stepResultOption.graph,
-          stepResultOption.nextNode,
-          endNode,
-          notConnectedNodes.diff(Seq(stepResultOption.nextNode))
+        Some(
+          StepResult(
+            stepResultOption.graph,
+            stepResultOption.nextNode,
+            notConnectedNodes.diff(Seq(stepResultOption.nextNode))
+          )
         )
-      case None => throw SolverException("No step result options were found.")
+      case None =>
+        System.out.print("\nNo step result options were found.")
+        None
     }
   }
 
@@ -172,18 +190,6 @@ object Solver {
     }
   }
 
-  // connects a node to the graph
-  private def connectNode(
-      graph: OsmGraph,
-      node: Node,
-      connections: Connections
-  ): Unit = {
-    val neighbors = connections.getNearestNeighbors(node)
-    val edges = graph.edgesOf(neighbors(0)).asScala.toList
-
-    System.out.print("Not implemented!")
-  }
-
   /** Method to set up the graph for further calculations. The two closest nodes
     * are connected with one edge to the start point and one edge to each other.
     * A [[Node]] is returned, that can be used as a start point for next steps.
@@ -226,6 +232,6 @@ object Solver {
     // connecting nodeA and nodeB
     graph.addConnection(connections.getConnection(nodeA, nodeB))
 
-    StepResult(graph, nodeA, nodeB, nodes.diff(List(nodeToHv, nodeA, nodeB)))
+    StepResult(graph, nodeA, nodes.diff(List(nodeToHv, nodeA, nodeB)))
   }
 }

@@ -108,10 +108,8 @@ object OsmoGridUtils {
     val intersectionPoint = lineA.intersection(lineB)
 
     if (
-      intersectionPoint == lineA.p0 || intersectionPoint == lineA.p1 || intersectionPoint == lineB.p0 || intersectionPoint == lineB.p1
+      intersectionPoint == null || intersectionPoint == lineA.p0 || intersectionPoint == lineA.p1 || intersectionPoint == lineB.p0 || intersectionPoint == lineB.p1
     ) {
-      false
-    } else if (intersectionPoint == null) {
       false
     } else {
       true

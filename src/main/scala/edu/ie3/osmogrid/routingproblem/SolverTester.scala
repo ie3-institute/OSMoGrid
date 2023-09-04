@@ -19,12 +19,9 @@ object SolverTester {
   }
 
   def generateGraph(): OsmGraph = {
-    val (transitionPoint, connections) = generatePoints(5)
+    val (transitionPoint, connections) = generatePoints(10)
     val graph: OsmGraph = Solver.solve(transitionPoint, connections)
 
-    graph.vertexSet().forEach { v =>
-      System.out.print(s"\n${v.id}, ${v.longitude}, ${v.latitude}")
-    }
     graph.edgeSet().forEach { e =>
       System.out.print(
         s"\n${graph.getEdgeSource(e).id}, ${graph.getEdgeTarget(e).id}, ${e.getDistance.getValue.doubleValue()}"
@@ -35,7 +32,7 @@ object SolverTester {
   }
 
   // generates some random points
-  def generatePoints(n: Int): (Node, Connections) = {
+  private def generatePoints(n: Int): (Node, Connections) = {
     val transitionPoint = Node(
       id = 0L,
       latitude = 50.0,
@@ -43,18 +40,9 @@ object SolverTester {
       tags = Map.empty,
       metaInformation = None
     )
-
-    val random = new Random()
-    val lat = 50d
-    val lon = 7d
-
-    val list = Range.Int
+    val list: List[Node] = Range.Int
       .inclusive(1, n, 1)
-      .map { i =>
-        val one = random.nextInt(5)
-        val two = random.nextInt(5)
-        Node(i, lat + one, lon + two, Map.empty, None)
-      }
+      .map { i => randomNode(i) }
       .toList :+ transitionPoint
 
     val uniqueConnections = Connections
@@ -67,6 +55,20 @@ object SolverTester {
         Connection(nodeA, nodeB, distance, None)
       }
 
+    list.foreach { v =>
+      System.out.print(s"\n${v.id}, ${v.longitude}, ${v.latitude}")
+    }
+
     (transitionPoint, Connections(list, uniqueConnections))
+  }
+
+  private def randomNode(i: Int): Node = {
+    val rand = new Random()
+    val lat = 50d
+    val lon = 7d
+
+    val one: Double = rand.nextInt(100) / 10d
+    val two: Double = rand.nextInt(100) / 10d
+    Node(i, lat + one, lon + two, Map.empty, None)
   }
 }
