@@ -6,9 +6,17 @@
 
 package edu.ie3.osmogrid.utils
 
-import edu.ie3.datamodel.models.input.connector.{LineInput, SwitchInput, Transformer2WInput, Transformer3WInput}
+import edu.ie3.datamodel.models.input.connector.{
+  LineInput,
+  SwitchInput,
+  Transformer2WInput,
+  Transformer3WInput
+}
 import edu.ie3.datamodel.models.input.container._
-import edu.ie3.datamodel.models.input.graphics.{LineGraphicInput, NodeGraphicInput}
+import edu.ie3.datamodel.models.input.graphics.{
+  LineGraphicInput,
+  NodeGraphicInput
+}
 import edu.ie3.datamodel.models.input.system._
 import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
 

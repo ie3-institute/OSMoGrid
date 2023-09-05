@@ -36,7 +36,9 @@ class ResultListenerIT
 
   private val validConfig = OsmoGridConfigFactory.defaultTestConfig.output
   private val maliciousConfig = OsmoGridConfigFactory
-    .parseWithoutFallback(viableConfigurationString.replaceAll("(?m)^.*output.csv.*$", ""))
+    .parseWithoutFallback(
+      viableConfigurationString.replaceAll("(?m)^.*output.csv.*$", "")
+    )
     .getOrElse(fail("Unable to parse malicious config"))
     .output
 
