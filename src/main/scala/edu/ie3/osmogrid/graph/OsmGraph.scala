@@ -161,6 +161,15 @@ class OsmGraph(
     false
   }
 
+  def tooManyVertexConnections(): Boolean = {
+    vertexSet().asScala.foreach { v =>
+      if (edgesOf(v).size() > 2) {
+        return true
+      }
+    }
+    false
+  }
+
   def subGraph(polygon: Polygon): OsmGraph = {
     val vertexes: Set[Node] = vertexSet().asScala
       .filter(vertex =>

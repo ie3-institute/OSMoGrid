@@ -71,15 +71,23 @@ object Solver {
       }
 
       val graph = stepResult.graph
-      val notConnectedNodes = stepResult.notConnectedNodes
 
       if (draw) {
         GraphUtils.draw(graph, s"graph_after_step_$step.png", width, height)
       }
 
       // finishing the mv graph
-      finishMvGraph(graph, notConnectedNodes, connections)
+      reconnectNodes(graph, connections)
     }
+  }
+
+  private def reconnectNodes(
+      graph: OsmGraph,
+      connections: Connections
+  ): OsmGraph = {
+    System.out.print(s"\nNot implemented!")
+
+    graph
   }
 
   private def finishMvGraph(
@@ -114,6 +122,8 @@ object Solver {
       stepResult: StepResult,
       connections: Connections
   ): Option[StepResult] = {
+    val nodeSize = connections.nodes.size
+
     val current = stepResult.nextNode
     val graph = stepResult.graph
     val notConnectedNodes = stepResult.notConnectedNodes
@@ -125,6 +135,11 @@ object Solver {
     val stepResultOptions: List[StepResultOption] = nearestNeighbors
       .filter(node => notConnectedNodes.contains(node))
       .flatMap { neighbor =>
+        val nearest = connections
+          .getNearestNeighbors(neighbor)
+          .slice(0, nodeSize / 5)
+          .flatMap { v => graph.edgesOf(v).asScala }
+
         calcStepResultOptions(
           nodeToHv,
           current,
@@ -148,6 +163,7 @@ object Solver {
   ): Option[StepResult] = {
     val filtered = options
       .filter(option => !option.graph.containsEdgeIntersection())
+      .filter(options => !options.graph.tooManyVertexConnections())
       .sortBy(option => option.addedWeight.getValue.doubleValue())
 
     if (draw && step == draw_options) {

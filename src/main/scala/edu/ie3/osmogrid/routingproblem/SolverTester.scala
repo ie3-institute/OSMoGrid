@@ -80,6 +80,29 @@ object SolverTester {
     new Coordinate(9.95, 51.1)
   )
 
+  def problem_case3: List[Coordinate] = List(
+    new Coordinate(2.35, 54.1),
+    new Coordinate(11.3, 51.0),
+    new Coordinate(4.85, 54.9),
+    new Coordinate(9.65, 50.45),
+    new Coordinate(5.05, 50.5),
+    new Coordinate(11.25, 52.9),
+    new Coordinate(3.7, 52.7),
+    new Coordinate(11.85, 51.3),
+    new Coordinate(8.65, 50.6),
+    new Coordinate(9.7, 51.7),
+    new Coordinate(7.6, 50.6),
+    new Coordinate(8.55, 54.75),
+    new Coordinate(5.9, 53.25),
+    new Coordinate(6.2, 51.8),
+    new Coordinate(4.85, 50.15),
+    new Coordinate(5.1, 54.55),
+    new Coordinate(6.2, 54.95),
+    new Coordinate(11.3, 54.9),
+    new Coordinate(10.55, 54.25),
+    new Coordinate(3.7, 51.4)
+  )
+
   val case1: List[Coordinate] = List(
     new Coordinate(7.85, 51.4),
     new Coordinate(11.2, 54.1),
