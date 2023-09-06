@@ -9,9 +9,9 @@ package edu.ie3.osmogrid.utils
 import edu.ie3.test.common.UnitSpec
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.locationtech.jts.geom.LineSegment
-import utils.OsmoGridUtils
+import utils.GraphUtils
 
-class OsmoGridUtilsSpec extends UnitSpec {
+class GraphUtilsSpec extends UnitSpec {
   "The OsmoGridUtils" should {
 
     "create a line segment correctly" in {
@@ -30,7 +30,7 @@ class OsmoGridUtilsSpec extends UnitSpec {
       )
 
       forAll(cases) { (nodeA, nodeB, segment) =>
-        OsmoGridUtils.getLineSegmentBetweenNodes(nodeA, nodeB) shouldBe segment
+        GraphUtils.getLineSegmentBetweenNodes(nodeA, nodeB) shouldBe segment
       }
     }
 
@@ -47,11 +47,16 @@ class OsmoGridUtilsSpec extends UnitSpec {
           new LineSegment(0d, 1d, 1d, 1d),
           false
         ),
-        (new LineSegment(0d, 0d, 1d, 1d), new LineSegment(0d, 1d, 1d, 0d), true)
+        (
+          new LineSegment(0d, 0d, 1d, 1d),
+          new LineSegment(0d, 1d, 1d, 0d),
+          true
+        ),
+        (new LineSegment(0d, 0d, 1d, 0d), new LineSegment(0d, 0d, 2d, 0d), true)
       )
 
       forAll(cases) { (lineA, lineB, result) =>
-        OsmoGridUtils.hasIntersection(lineA, lineB) shouldBe result
+        GraphUtils.hasIntersection(lineA, lineB) shouldBe result
       }
     }
 

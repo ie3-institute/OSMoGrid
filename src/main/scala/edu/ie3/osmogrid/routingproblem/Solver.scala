@@ -14,6 +14,7 @@ import edu.ie3.osmogrid.routingproblem.Definitions.{
   StepResultOption
 }
 import edu.ie3.util.osm.model.OsmEntity.Node
+import utils.GraphUtils
 
 import javax.measure.Quantity
 import javax.measure.quantity.Length
@@ -23,35 +24,62 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
   * tabu lists and nearest neighbour search.
   */
 object Solver {
+  val draw = false
+  val draw_options = 0
+  var step: Int = 1
+  val width = 800
+  val height = 600
 
   // method to solve the routing problem
   def solve(
       nodeToHv: Node,
       connections: Connections
   ): OsmGraph = {
-    // calculating the first step
-    var stepResult: StepResult = firstStep(nodeToHv, connections)
-    var finished = false
+    if (connections.nodes.size < 3) {
+      val graph = new OsmGraph()
+      connections.nodes.foreach(n => graph.addVertex(n))
+      graph
+    } else {
+      // calculating the first step
+      var stepResult: StepResult = firstStep(nodeToHv, connections)
+      var finished = false
 
-    // calculating next steps
-    while (!finished && stepResult.notConnectedNodes.nonEmpty) {
-      step(
-        nodeToHv,
-        stepResult,
-        connections
-      ) match {
-        case Some(value) => stepResult = value
-        case None =>
-          System.out.print(s"\nFinished with: ${stepResult.notConnectedNodes}")
-          finished = true
+      // calculating next steps
+      while (!finished && stepResult.notConnectedNodes.nonEmpty) {
+        if (draw) {
+          GraphUtils.draw(
+            stepResult.graph,
+            s"graph_after_step_$step.png",
+            width,
+            height
+          )
+        }
+        step += 1
+
+        step(
+          nodeToHv,
+          stepResult,
+          connections
+        ) match {
+          case Some(value) => stepResult = value
+          case None =>
+            System.out.print(
+              s"\nFinished with: ${stepResult.notConnectedNodes}"
+            )
+            finished = true
+        }
       }
+
+      val graph = stepResult.graph
+      val notConnectedNodes = stepResult.notConnectedNodes
+
+      if (draw) {
+        GraphUtils.draw(graph, s"graph_after_step_$step.png", width, height)
+      }
+
+      // finishing the mv graph
+      finishMvGraph(graph, notConnectedNodes, connections)
     }
-
-    val graph = stepResult.graph
-    val notConnectedNodes = stepResult.notConnectedNodes
-
-    // finishing the mv graph
-    finishMvGraph(graph, notConnectedNodes, connections)
   }
 
   private def finishMvGraph(
@@ -91,7 +119,7 @@ object Solver {
     val notConnectedNodes = stepResult.notConnectedNodes
 
     val nearestNeighbors: List[Node] = connections.getNearestNeighbors(current)
-    val edges: List[DistanceWeightedEdge] = graph.getSortedEdges(current)
+    val edges: List[DistanceWeightedEdge] = graph.edgeSet().asScala.toList
 
     // calculate all possible result options for this step
     val stepResultOptions: List[StepResultOption] = nearestNeighbors
@@ -118,10 +146,22 @@ object Solver {
       options: List[StepResultOption],
       notConnectedNodes: List[Node]
   ): Option[StepResult] = {
-    options
+    val filtered = options
       .filter(option => !option.graph.containsEdgeIntersection())
       .sortBy(option => option.addedWeight.getValue.doubleValue())
-      .headOption match {
+
+    if (draw && step == draw_options) {
+      filtered.map(o => o.graph).zipWithIndex.foreach { case (graph, i) =>
+        GraphUtils.draw(
+          graph,
+          s"graph_after_step_${step}_option_$i.png",
+          width,
+          height
+        )
+      }
+    }
+
+    filtered.headOption match {
       case Some(stepResultOption) =>
         Some(
           StepResult(

@@ -248,7 +248,6 @@ class SolverSpec extends UnitSpec with DefinitionsTestData {
           StepResult(
             new OsmGraph(),
             osmNode1,
-            osmNode4,
             List(osmNode2, osmNode3, osmNode5, osmNode6)
           )
         ),
@@ -257,7 +256,6 @@ class SolverSpec extends UnitSpec with DefinitionsTestData {
           StepResult(
             new OsmGraph(),
             osmNode2,
-            osmNode4,
             List(osmNode1, osmNode3, osmNode5, osmNode6)
           )
         ),
@@ -266,7 +264,6 @@ class SolverSpec extends UnitSpec with DefinitionsTestData {
           StepResult(
             new OsmGraph(),
             osmNode1,
-            osmNode4,
             List(osmNode2, osmNode3, osmNode5, osmNode6)
           )
         ),
@@ -275,7 +272,6 @@ class SolverSpec extends UnitSpec with DefinitionsTestData {
           StepResult(
             new OsmGraph(),
             osmNode3,
-            osmNode4,
             List(osmNode1, osmNode2, osmNode5, osmNode6)
           )
         ),
@@ -284,7 +280,6 @@ class SolverSpec extends UnitSpec with DefinitionsTestData {
           StepResult(
             new OsmGraph(),
             osmNode3,
-            osmNode4,
             List(osmNode1, osmNode2, osmNode5, osmNode6)
           )
         )
@@ -300,7 +295,6 @@ class SolverSpec extends UnitSpec with DefinitionsTestData {
 
         stepResult.graph shouldBe result.graph
         stepResult.nextNode shouldBe result.nextNode
-        stepResult.endNode shouldBe result.endNode
         stepResult.notConnectedNodes shouldBe result.notConnectedNodes
       }
     }

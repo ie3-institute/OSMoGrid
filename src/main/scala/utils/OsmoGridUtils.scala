@@ -78,41 +78,4 @@ object OsmoGridUtils {
       .to(PowerSystemUnits.KILOWATT)
     power.round(4)
   }
-
-  /** Builds a [[LineSegment]] from two given [[Node]]'s.
-    * @param nodeA
-    *   start point of the line
-    * @param nodeB
-    *   end point of the line
-    * @return
-    *   a new [[LineSegment]]
-    */
-  def getLineSegmentBetweenNodes(nodeA: Node, nodeB: Node): LineSegment = {
-    new LineSegment(
-      nodeA.longitude,
-      nodeA.latitude,
-      nodeB.longitude,
-      nodeB.latitude
-    )
-  }
-
-  /** Checks if two [[LineSegment]] intersects each other.
-    * @param lineA
-    *   first line
-    * @param lineB
-    *   second line
-    * @return
-    *   true if both lines intersects
-    */
-  def hasIntersection(lineA: LineSegment, lineB: LineSegment): Boolean = {
-    val intersectionPoint = lineA.intersection(lineB)
-
-    if (
-      intersectionPoint == null || intersectionPoint == lineA.p0 || intersectionPoint == lineA.p1 || intersectionPoint == lineB.p0 || intersectionPoint == lineB.p1
-    ) {
-      false
-    } else {
-      true
-    }
-  }
 }

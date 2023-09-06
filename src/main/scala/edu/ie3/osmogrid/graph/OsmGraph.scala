@@ -21,7 +21,7 @@ import org.locationtech.jts.geom.Polygon
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
-import utils.OsmoGridUtils.{getLineSegmentBetweenNodes, hasIntersection}
+import utils.GraphUtils.{getLineSegmentBetweenNodes, hasIntersection}
 
 import java.util
 import javax.measure.Quantity
