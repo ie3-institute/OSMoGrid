@@ -18,6 +18,7 @@ import utils.GraphUtils
 
 import javax.measure.Quantity
 import javax.measure.quantity.Length
+import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 /** Solver for the routing problem. Uses a combination of savings algorithm,
@@ -26,6 +27,7 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 object Solver {
   val draw = false
   val draw_options = 0
+  val draw_all = false
   var step: Int = 1
   val width = 800
   val height = 600
@@ -77,7 +79,9 @@ object Solver {
       }
 
       // finishing the mv graph
-      reconnectNodes(graph, connections)
+      // reconnectNodes(graph, connections)
+
+      graph
     }
   }
 
@@ -137,7 +141,7 @@ object Solver {
       .flatMap { neighbor =>
         val nearest = connections
           .getNearestNeighbors(neighbor)
-          .slice(0, nodeSize / 5)
+          .slice(0, nodeSize / 15)
           .flatMap { v => graph.edgesOf(v).asScala }
 
         calcStepResultOptions(
@@ -145,7 +149,7 @@ object Solver {
           current,
           neighbor,
           graph,
-          edges,
+          nearest,
           connections
         )
       }
@@ -166,7 +170,7 @@ object Solver {
       .filter(options => !options.graph.tooManyVertexConnections())
       .sortBy(option => option.addedWeight.getValue.doubleValue())
 
-    if (draw && step == draw_options) {
+    if (draw && (draw_all || step == draw_options)) {
       filtered.map(o => o.graph).zipWithIndex.foreach { case (graph, i) =>
         GraphUtils.draw(
           graph,

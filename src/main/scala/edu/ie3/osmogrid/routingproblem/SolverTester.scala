@@ -21,10 +21,10 @@ object SolverTester {
 
   def main(args: Array[String]): Unit = {
     GraphUtils.FOLDER.toFile.listFiles().foreach { f => f.delete() }
-    val coordinates: List[Coordinate] = generateCoordinates(20)
+    val coordinates: List[Coordinate] = generateCoordinates(50)
 
     val start = Instant.now().toEpochMilli
-    val graph = generateGraph(coordinates)
+    val graph = generateGraph(case50n)
     System.out.print(s"\n\nTime needed: ${Instant.now().toEpochMilli - start}.")
 
     GraphUtils.draw(graph, "graph.png", 800, 600)
@@ -127,6 +127,59 @@ object SolverTester {
     new Coordinate(8.35, 50.95),
     new Coordinate(10.35, 53.2),
     new Coordinate(10.15, 53.55)
+  )
+
+  val case50n: List[Coordinate] = List(
+    new Coordinate(7.7, 52.05),
+    new Coordinate(5.9, 50.55),
+    new Coordinate(9.55, 50.7),
+    new Coordinate(10.5, 50.0),
+    new Coordinate(2.2, 53.25),
+    new Coordinate(4.7, 54.75),
+    new Coordinate(2.5, 52.45),
+    new Coordinate(8.75, 50.65),
+    new Coordinate(11.8, 52.0),
+    new Coordinate(6.3, 54.7),
+    new Coordinate(6.5, 53.8),
+    new Coordinate(6.35, 50.85),
+    new Coordinate(6.5, 51.1),
+    new Coordinate(4.55, 50.55),
+    new Coordinate(11.9, 52.45),
+    new Coordinate(2.45, 54.35),
+    new Coordinate(10.8, 53.45),
+    new Coordinate(3.3, 50.85),
+    new Coordinate(6.85, 54.55),
+    new Coordinate(5.3, 53.3),
+    new Coordinate(9.45, 51.3),
+    new Coordinate(3.1, 54.7),
+    new Coordinate(4.3, 52.85),
+    new Coordinate(5.05, 53.55),
+    new Coordinate(4.15, 54.3),
+    new Coordinate(6.6, 52.8),
+    new Coordinate(6.8, 54.85),
+    new Coordinate(7.35, 51.35),
+    new Coordinate(4.3, 50.25),
+    new Coordinate(5.05, 53.25),
+    new Coordinate(7.5, 54.65),
+    new Coordinate(3.25, 51.2),
+    new Coordinate(10.0, 54.9),
+    new Coordinate(4.7, 51.95),
+    new Coordinate(5.6, 52.55),
+    new Coordinate(9.45, 51.6),
+    new Coordinate(7.6, 52.8),
+    new Coordinate(6.95, 52.05),
+    new Coordinate(9.9, 52.6),
+    new Coordinate(6.3, 51.95),
+    new Coordinate(10.65, 52.2),
+    new Coordinate(3.9, 52.35),
+    new Coordinate(8.7, 54.75),
+    new Coordinate(9.4, 53.85),
+    new Coordinate(6.55, 53.95),
+    new Coordinate(10.5, 54.65),
+    new Coordinate(6.4, 52.45),
+    new Coordinate(7.75, 50.45),
+    new Coordinate(8.05, 54.5),
+    new Coordinate(6.2, 54.1)
   )
 
   private def generateGraph(coordinates: List[Coordinate]): OsmGraph = {
