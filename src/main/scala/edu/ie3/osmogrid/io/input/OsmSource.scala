@@ -11,7 +11,6 @@ import akka.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Osm
 import edu.ie3.osmogrid.exception.IllegalConfigException
-import edu.ie3.osmogrid.io.input.InputDataProvider.InputDataEvent
 import edu.ie3.osmogrid.io.input.pbf.PbfGuardian
 import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 

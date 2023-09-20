@@ -22,8 +22,8 @@ import edu.ie3.datamodel.models.input.connector.`type`.{
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.RequestFailedException
-import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
-import edu.ie3.osmogrid.io.input.{BoundaryAdminLevel, InputDataProvider}
+import edu.ie3.osmogrid.io.input
+import edu.ie3.osmogrid.io.input.{BoundaryAdminLevel, AssetInformation}
 import edu.ie3.osmogrid.lv.LvGridGenerator.{GenerateGrid, RepLvGrid}
 import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator.{
   GridToExpect,
@@ -59,7 +59,7 @@ class LvCoordinatorSpec
       fail("Test config does not contain config for lv grid generation.")
     )
     val inputDataProvider =
-      asynchronousTestKit.createTestProbe[InputDataProvider.InputDataEvent](
+      asynchronousTestKit.createTestProbe[input.InputDataEvent](
         "InputDataProvider"
       )
     val lvCoordinatorAdapter =
@@ -67,7 +67,7 @@ class LvCoordinatorSpec
         "RunGuardian"
       )
     val inputDataProviderAdapter =
-      asynchronousTestKit.createTestProbe[InputDataProvider.Response](
+      asynchronousTestKit.createTestProbe[input.Response](
         "InputDataProviderAdapter"
       )
     val regionCoordinatorAdapter =
@@ -96,7 +96,7 @@ class LvCoordinatorSpec
         )
 
         idleTestKit.expectEffectType[
-          MessageAdapter[InputDataProvider.Response, coordinator.Request]
+          MessageAdapter[input.Response, coordinator.Request]
         ]
         idleTestKit.expectEffectType[
           MessageAdapter[LvRegionCoordinator.Response, coordinator.Request]
@@ -134,9 +134,9 @@ class LvCoordinatorSpec
 
         /* Receive exactly two messages, that are requests for OSM and asset data */
         inputDataProvider.receiveMessages(2).forall {
-          case _: InputDataProvider.ReqOsm =>
+          case _: input.ReqOsm =>
             true
-          case _: InputDataProvider.ReqAssetTypes =>
+          case _: input.ReqAssetTypes =>
             true
           case _ => false
         } shouldBe true
@@ -197,7 +197,7 @@ class LvCoordinatorSpec
         val exc = new RuntimeException("Some random failure.")
         awaitingTestKit.run(
           WrappedInputDataResponse(
-            InputDataProvider.OsmReadFailed(
+            input.OsmReadFailed(
               exc
             )
           )
@@ -241,7 +241,7 @@ class LvCoordinatorSpec
         val exc = new RuntimeException("Some random failure.")
         awaitingTestKit.run(
           WrappedInputDataResponse(
-            InputDataProvider.AssetReadFailed(
+            input.AssetReadFailed(
               exc
             )
           )
@@ -282,7 +282,7 @@ class LvCoordinatorSpec
             )
           )(awaitingData)
         )
-        val osmData = InputDataProvider.RepOsm(
+        val osmData = input.RepOsm(
           LvOsmoGridModel(
             ParSeq.empty,
             ParSeq.empty,
@@ -298,7 +298,7 @@ class LvCoordinatorSpec
 
         awaitingTestKit.run(
           WrappedInputDataResponse(
-            InputDataProvider.RepAssetTypes(
+            input.RepAssetTypes(
               AssetInformation(
                 Seq.empty[LineTypeInput],
                 Seq.empty[Transformer2WTypeInput]

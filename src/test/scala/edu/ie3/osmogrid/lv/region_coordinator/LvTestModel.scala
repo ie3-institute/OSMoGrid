@@ -16,8 +16,9 @@ import edu.ie3.datamodel.models.input.connector.`type`.{
   Transformer2WTypeInput
 }
 import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
+import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
+import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.UnitSpec
@@ -79,15 +80,15 @@ object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
       InputDataProvider(cfg.input)
     )
 
-    val inputReply = TestProbe[InputDataProvider.Response]()
+    val inputReply = TestProbe[input.Response]()
 
-    inputActor ! InputDataProvider.ReqOsm(
+    inputActor ! input.ReqOsm(
       inputReply.ref,
       filter = LvFilter()
     )
 
     inputReply
-      .expectMessageType[InputDataProvider.RepOsm](30 seconds)
+      .expectMessageType[input.RepOsm](30 seconds)
       .osmModel match {
       case lvModel: LvOsmoGridModel => (cfg.generation.lv.value, lvModel)
     }

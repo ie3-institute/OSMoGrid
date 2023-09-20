@@ -6,48 +6,111 @@
 
 package edu.ie3.osmogrid.io.output
 
-import akka.actor.typed.{ActorRef, Behavior, PostStop}
-import akka.actor.typed.scaladsl.Behaviors
-import edu.ie3.datamodel.models.input.container.GridContainer
-import edu.ie3.osmogrid.ActorStopSupportStateless
+import akka.actor.typed.{Behavior, PostStop}
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer}
+import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Output
+import edu.ie3.osmogrid.exception.IllegalConfigException
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol.PersistenceListenerEvent._
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol._
 
 import java.util.UUID
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
-object ResultListener extends ActorStopSupportStateless {
-  sealed trait Request
+object ResultListener extends ActorStopSupport[ListenerStateData] {
 
-  /* internal API */
-  sealed trait ResultEvent
-
-  final case class GridResult(
-      grid: GridContainer,
-      replyTo: ActorRef[Response]
-  ) extends Request
-      with ResultEvent
-  object Terminate extends Request with ResultEvent
-
-  sealed trait Response
-  final case class ResultHandled(
+  def apply(
       runId: UUID,
-      replyTo: ActorRef[ResultListener.ResultEvent]
-  ) extends Response
+      cfg: OsmoGridConfig.Output
+  ): Behavior[ResultListenerProtocol] = {
+    Behaviors.withStash[ResultListenerProtocol](100) { buffer =>
+      Behaviors.setup[ResultListenerProtocol] { ctx =>
+        ctx.pipeToSelf(initSinks(runId, cfg)) {
+          case Success(sink) =>
+            InitComplete(ListenerStateData(runId, ctx, buffer, sink))
+          case Failure(cause) =>
+            InitFailed(cause)
+        }
+        init(ctx, buffer)
+      }
+    }
+  }
 
-  def apply(runId: UUID, cfg: OsmoGridConfig.Output): Behavior[ResultEvent] =
+  private def idle(
+      stateData: ListenerStateData
+  ): Behavior[ResultListenerProtocol] =
+    Behaviors.receiveMessagePartial { case gridResult: GridResult =>
+      stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
+        case Success(_) =>
+          ResultHandlingSucceeded
+        case Failure(exception) =>
+          ResultHandlingFailed(exception)
+      }
+      save(stateData)
+    }
+
+  private def save(
+      stateData: ListenerStateData
+  ): Behavior[ResultListenerProtocol] =
     Behaviors
-      .receive[ResultEvent] {
-        case (ctx, GridResult(grid, replyTo)) =>
-          ctx.log.info(s"Received grid result for run id '${runId.toString}'")
-          // TODO: Actual persistence and stuff, ...
-          replyTo ! ResultHandled(runId, ctx.self)
-          stopBehavior
-        case (ctx, Terminate) => stopBehavior
+      .receiveMessage[ResultListenerProtocol] {
+        case ResultHandlingFailed(cause) =>
+          stateData.ctx.log.error(
+            s"Error during persistence of grid result. Shutting down!",
+            cause
+          )
+          Behaviors.stopped
+        case ResultHandlingSucceeded =>
+          Behaviors.stopped
+        case other =>
+          stateData.buffer.stash(other)
+          Behaviors.same
       }
       .receiveSignal { case (ctx, PostStop) =>
-        postStopCleanUp(ctx.log)
+        if (!stateData.buffer.isEmpty)
+          ctx.log.warn(
+            s"Stash of ResultListener is not empty! This indicates an invalid system state!"
+          )
+        postStopCleanUp(ctx.log, stateData)
       }
 
-  override protected def cleanUp(): Unit = {
-    /* Nothing to do here. At least until now. */
+  private def init(
+      ctx: ActorContext[ResultListenerProtocol],
+      buffer: StashBuffer[ResultListenerProtocol]
+  ): Behavior[ResultListenerProtocol] =
+    Behaviors.receiveMessage {
+      case InitComplete(stateData) =>
+        stateData.buffer.unstashAll(idle(stateData))
+      case InitFailed(cause) =>
+        ctx.log.error(s"Cannot instantiate ResultListener!", cause)
+        Behaviors.stopped
+      case other =>
+        // stash all other messages for later processing
+        buffer.stash(other)
+        Behaviors.same
+    }
+
+  private def initSinks(
+      runId: UUID,
+      cfg: OsmoGridConfig.Output
+  ): Future[ResultSink] =
+    cfg match {
+      case Output(Some(csv), _) =>
+        Future(
+          ResultCsvSink(runId, csv.directory, csv.separator, csv.hierarchic)
+        )
+      case unsupported =>
+        Future.failed(
+          IllegalConfigException(
+            s"Cannot instantiate sink of type '$unsupported'"
+          )
+        )
+    }
+
+  override protected def cleanUp(stateData: ListenerStateData): Unit = {
+    stateData.sink.close()
   }
 }

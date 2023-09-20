@@ -9,7 +9,6 @@ package edu.ie3.osmogrid.io.input
 import akka.actor.typed.{ActorSystem, Behavior}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
-import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
 import edu.ie3.test.common.UnitSpec
 import org.scalatestplus.mockito.MockitoSugar.mock
 

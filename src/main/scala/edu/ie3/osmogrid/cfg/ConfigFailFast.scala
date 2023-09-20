@@ -13,14 +13,15 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Input, Output}
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
-import edu.ie3.osmogrid.io.output.ResultListener
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 
 import scala.util.Try
 
 object ConfigFailFast extends LazyLogging {
   def check(
       cfg: OsmoGridConfig,
-      additionalListener: Seq[ActorRef[ResultListener.ResultEvent]] = Seq.empty
+      additionalListener: Seq[ActorRef[ResultListenerProtocol.Request]] =
+        Seq.empty
   ): Try[OsmoGridConfig] = Try {
     cfg match {
       case OsmoGridConfig(generation, input, output) =>
@@ -110,7 +111,7 @@ object ConfigFailFast extends LazyLogging {
 
   private def checkOutputConfig(
       output: OsmoGridConfig.Output,
-      additionalListener: Seq[ActorRef[ResultListener.ResultEvent]]
+      additionalListener: Seq[ActorRef[ResultListenerProtocol.Request]]
   ): Unit =
     output match {
       case Output(Some(file), _) =>
