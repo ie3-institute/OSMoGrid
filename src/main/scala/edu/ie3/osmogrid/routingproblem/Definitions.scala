@@ -9,6 +9,7 @@ package edu.ie3.osmogrid.routingproblem
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.osmogrid.graph.OsmGraph
+import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.jgrapht.GraphPath
 import tech.units.indriya.ComparableQuantity
@@ -26,6 +27,10 @@ object Definitions {
       conversionToOsm: Map[NodeInput, Node],
       conversionToPSDM: Map[Node, NodeInput]
   ) {
+    def allNodeInputs: List[NodeInput] = conversionToPSDM.values.toList
+
+    def allNodes: List[Node] = conversionToOsm.values.toList
+
     def getOsmNode(node: NodeInput): Node = {
       conversionToOsm(node)
     }
@@ -69,6 +74,14 @@ object Definitions {
         .sortBy(_._2)
         .map { case (node, _) => node }
     }
+
+    def getNearestNeighbors(node: Node, n: Int): List[Node] = {
+      connections(node)
+        .map { nodeB => nodeB -> getDistance(node, nodeB) }
+        .sortBy(_._2)
+        .map { case (node, _) => node }
+        .slice(0, n)
+    }
   }
 
   object Connections {
@@ -105,6 +118,19 @@ object Definitions {
       }
 
       Connections(osmNodes, connectionMap.toMap, distanceMap ++ distanceMapAlt)
+    }
+
+    // uses haversine to calculate distances
+    def getAllUniqueConnections(nodes: List[Node]): List[Connection] = {
+      Connections
+        .getAllUniqueCombinations(nodes)
+        .map { case (nodeA, nodeB) =>
+          val distance = GeoUtils.calcHaversine(
+            nodeA.coordinate.getCoordinate,
+            nodeB.coordinate.getCoordinate
+          )
+          Connection(nodeA, nodeB, distance, None)
+        }
     }
 
     // used to get all possible unique connections (a -> b == b -> a)

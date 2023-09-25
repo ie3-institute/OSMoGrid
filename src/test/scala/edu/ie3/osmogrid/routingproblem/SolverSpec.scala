@@ -93,65 +93,98 @@ class SolverSpec extends UnitSpec with DefinitionsTestData {
       val (graph, node) = (stepResult.graph, stepResult.nextNode)
       val edges = graph.getSortedEdges(node)
 
-      val expectedRemovedEdge = graph.getEdge(osmNode1, osmNode2)
+      val expectedRemovedEdgeA = graph.getEdge(osmNode1, osmNode2)
+      val expectedRemovedEdgeB = graph.getEdge(transitionPoint, osmNode1)
 
       val cases = Table(
-        ("neighbor", "connectionA", "connectionB", "weight"),
+        (
+          "neighbor",
+          "connectionA",
+          "connectionB",
+          "connectionC",
+          "weightA",
+          "weightB"
+        ),
         (
           osmNode3,
           connections.getConnection(osmNode1, osmNode3),
           connections.getConnection(osmNode2, osmNode3),
-          196992.47141155004
+          connections.getConnection(transitionPoint, osmNode3),
+          196992.47141155004,
+          231691.124434181291374125
         ),
         (
           osmNode4,
           connections.getConnection(osmNode1, osmNode4),
           connections.getConnection(osmNode2, osmNode4),
-          233370.01575725118
+          connections.getConnection(transitionPoint, osmNode4),
+          233370.01575725118,
+          295002.37070387924864776
         ),
         (
           osmNode5,
           connections.getConnection(osmNode1, osmNode5),
           connections.getConnection(osmNode2, osmNode5),
-          193026.02665479417
+          connections.getConnection(transitionPoint, osmNode5),
+          193026.02665479417,
+          275916.254133759888548824
         ),
         (
           osmNode6,
           connections.getConnection(osmNode1, osmNode6),
           connections.getConnection(osmNode2, osmNode6),
-          81917.37382966773
+          connections.getConnection(transitionPoint, osmNode6),
+          81917.37382966773,
+          170956.771658949236933978
         )
       )
 
-      forAll(cases) { (neighbor, connectionA, connectionB, weight) =>
-        {
-          val list = Solver invokePrivate calcStepResultOptions(
-            transitionPoint,
-            node,
-            neighbor,
-            graph,
-            edges,
-            connections
-          )
+      forAll(cases) {
+        (neighbor, connectionA, connectionB, connectionC, weightA, weightB) =>
+          {
+            val list = Solver invokePrivate calcStepResultOptions(
+              transitionPoint,
+              node,
+              neighbor,
+              graph,
+              edges,
+              connections
+            )
 
-          list.size shouldBe 1
+            list.size shouldBe 2
 
-          list(0) match {
-            case StepResultOption(
-                  graph,
-                  nextNode,
-                  usedConnections,
-                  removedEdge,
-                  addedWeight
-                ) =>
-              graph.edgeSet().size() shouldBe 4
-              nextNode shouldBe neighbor
-              usedConnections shouldBe List(connectionA, connectionB)
-              removedEdge shouldBe expectedRemovedEdge
-              addedWeight.getValue.doubleValue() shouldBe weight
-            case _ => throw new Error("This should not happen!")
+            list(0) match {
+              case StepResultOption(
+                    graph,
+                    nextNode,
+                    usedConnections,
+                    removedEdge,
+                    addedWeight
+                  ) =>
+                graph.edgeSet().size() shouldBe 4
+                nextNode shouldBe neighbor
+                usedConnections shouldBe List(connectionA, connectionB)
+                removedEdge shouldBe expectedRemovedEdgeA
+                addedWeight.getValue.doubleValue() shouldBe weightA
+              case _ => throw new Error("This should not happen!")
+            }
+
+            list(1) match {
+              case StepResultOption(
+                    graph,
+                    nextNode,
+                    usedConnections,
+                    removedEdge,
+                    addedWeight
+                  ) =>
+                graph.edgeSet().size() shouldBe 4
+                nextNode shouldBe neighbor
+                usedConnections shouldBe List(connectionC, connectionA)
+                removedEdge shouldBe expectedRemovedEdgeB
+                addedWeight.getValue.doubleValue() shouldBe weightB
+              case _ => throw new Error("This should not happen!")
+            }
           }
-        }
       }
     }
 
@@ -214,8 +247,7 @@ class SolverSpec extends UnitSpec with DefinitionsTestData {
 
     "evaluate step result options correctly" in {
       val evaluateStepResultOptions =
-        PrivateMethod[StepResult](Symbol("evaluateStepResultOptions"))
-      val endNode = osmNode4
+        PrivateMethod[Option[StepResult]](Symbol("evaluateStepResultOptions"))
       val notConnectedNodes =
         List(osmNode1, osmNode2, osmNode3, osmNode5, osmNode6)
 
@@ -245,57 +277,65 @@ class SolverSpec extends UnitSpec with DefinitionsTestData {
         ("options", "result"),
         (
           List(res1),
-          StepResult(
-            new OsmGraph(),
-            osmNode1,
-            List(osmNode2, osmNode3, osmNode5, osmNode6)
+          Some(
+            StepResult(
+              new OsmGraph(),
+              osmNode1,
+              List(osmNode2, osmNode3, osmNode5, osmNode6)
+            )
           )
         ),
         (
           List(res2),
-          StepResult(
-            new OsmGraph(),
-            osmNode2,
-            List(osmNode1, osmNode3, osmNode5, osmNode6)
+          Some(
+            StepResult(
+              new OsmGraph(),
+              osmNode2,
+              List(osmNode1, osmNode3, osmNode5, osmNode6)
+            )
           )
         ),
         (
           List(res1, res2),
-          StepResult(
-            new OsmGraph(),
-            osmNode1,
-            List(osmNode2, osmNode3, osmNode5, osmNode6)
+          Some(
+            StepResult(
+              new OsmGraph(),
+              osmNode1,
+              List(osmNode2, osmNode3, osmNode5, osmNode6)
+            )
           )
         ),
         (
           List(res1, res3),
-          StepResult(
-            new OsmGraph(),
-            osmNode3,
-            List(osmNode1, osmNode2, osmNode5, osmNode6)
+          Some(
+            StepResult(
+              new OsmGraph(),
+              osmNode3,
+              List(osmNode1, osmNode2, osmNode5, osmNode6)
+            )
           )
         ),
         (
           List(res1, res2, res3),
-          StepResult(
-            new OsmGraph(),
-            osmNode3,
-            List(osmNode1, osmNode2, osmNode5, osmNode6)
+          Some(
+            StepResult(
+              new OsmGraph(),
+              osmNode3,
+              List(osmNode1, osmNode2, osmNode5, osmNode6)
+            )
           )
-        )
+        ),
+        (List(), None)
       )
 
       forAll(cases) { (options, result) =>
-        val stepResult: StepResult =
+        val option: Option[StepResult] =
           Solver invokePrivate evaluateStepResultOptions(
             options,
-            endNode,
             notConnectedNodes
           )
 
-        stepResult.graph shouldBe result.graph
-        stepResult.nextNode shouldBe result.nextNode
-        stepResult.notConnectedNodes shouldBe result.notConnectedNodes
+        option shouldBe result
       }
     }
 

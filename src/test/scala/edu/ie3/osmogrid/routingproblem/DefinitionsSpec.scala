@@ -16,6 +16,40 @@ import scala.util.Try
 
 class DefinitionsSpec extends UnitSpec with DefinitionsTestData {
   "The NodeConversion" should {
+    "return all psdm nodes correctly" in {
+      val allNodes = nodeConversion.allNodeInputs
+      allNodes.size shouldBe 7
+
+      allNodes.diff(
+        List(
+          nodeToHv,
+          nodeInMv1,
+          nodeInMv2,
+          nodeInMv3,
+          nodeInMv4,
+          nodeInMv5,
+          nodeInMv6
+        )
+      ) shouldBe List.empty
+    }
+
+    "return all osm nodes correctly" in {
+      val allNodes = nodeConversion.allNodes
+      allNodes.size shouldBe 7
+
+      allNodes.diff(
+        List(
+          transitionPoint,
+          osmNode1,
+          osmNode2,
+          osmNode3,
+          osmNode4,
+          osmNode5,
+          osmNode6
+        )
+      ) shouldBe List.empty
+    }
+
     "return the corresponding osm node for a given PSDM node" in {
       val cases = Table(
         ("psdmNode", "osmNode"),
@@ -239,6 +273,20 @@ class DefinitionsSpec extends UnitSpec with DefinitionsTestData {
 
       forAll(cases) { (node, nearestNeighbours) =>
         connections.getNearestNeighbors(node) shouldBe nearestNeighbours
+      }
+    }
+
+    "return the nearest n neighbors for a given node" in {
+      val cases = Table(
+        ("node", "n", "nearestNeighbours"),
+        (transitionPoint, 1, List(osmNode1)),
+        (osmNode1, 2, List(transitionPoint, osmNode3)),
+        (osmNode2, 1, List(transitionPoint)),
+        (osmNode3, 2, List(osmNode1, osmNode2))
+      )
+
+      forAll(cases) { (node, n, nearestNeighbours) =>
+        connections.getNearestNeighbors(node, n) shouldBe nearestNeighbours
       }
     }
 

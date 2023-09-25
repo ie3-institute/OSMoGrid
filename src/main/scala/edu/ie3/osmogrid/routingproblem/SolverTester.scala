@@ -21,13 +21,79 @@ object SolverTester {
 
   def main(args: Array[String]): Unit = {
     GraphUtils.FOLDER.toFile.listFiles().foreach { f => f.delete() }
-    val coordinates: List[Coordinate] = generateCoordinates(50)
+    val coordinates: List[Coordinate] = generateCoordinates(20)
 
     val start = Instant.now().toEpochMilli
-    val graph = generateGraph(case50n)
+    val graph = generateGraph(coordinates)
     System.out.print(s"\n\nTime needed: ${Instant.now().toEpochMilli - start}.")
 
+    System.out.print(s"\nTotal distance: ${graph.calcTotalWeight()}.")
     GraphUtils.draw(graph, "graph.png", 800, 600)
+  }
+
+  private def generateGraph(coordinates: List[Coordinate]): OsmGraph = {
+    val (transitionPoint, connections) = generatePoints(coordinates)
+    val graph: OsmGraph = Solver.solve(transitionPoint, connections)
+
+    /*
+    graph.edgeSet().forEach { e =>
+      System.out.print(
+        s"\n${graph.getEdgeSource(e).id}, ${graph.getEdgeTarget(e).id}, ${e.getDistance.getValue.doubleValue()}"
+      )
+    }
+     */
+
+    graph
+  }
+
+  // generates some random points
+  private def generatePoints(
+      coordinates: List[Coordinate]
+  ): (Node, Connections) = {
+    val transitionPoint = Node(
+      id = 0L,
+      latitude = DEFAULT_COORDINATE.y,
+      longitude = DEFAULT_COORDINATE.x,
+      tags = Map.empty,
+      metaInformation = None
+    )
+
+    val list: List[Node] = coordinates.zipWithIndex.map {
+      case (coordinate, i) =>
+        Node(i + 1, coordinate.y, coordinate.x, Map.empty, None)
+    } :+ transitionPoint
+
+    val uniqueConnections = Connections.getAllUniqueConnections(list)
+
+    list.foreach { v =>
+      System.out.print(s"\n${v.id}, ${v.longitude}, ${v.latitude}")
+    }
+
+    (transitionPoint, Connections(list, uniqueConnections))
+  }
+
+  private def generateCoordinates(n: Int): List[Coordinate] = {
+    Range.Int
+      .inclusive(1, n, 1)
+      .map { _ =>
+        val rand = new Random()
+        val bool = rand.nextBoolean()
+        val dLat: Double = rand.nextInt(100) / 20d
+        val dLon: Double = rand.nextInt(100) / 20d
+
+        if (bool) {
+          new Coordinate(
+            DEFAULT_COORDINATE.x - dLon,
+            DEFAULT_COORDINATE.y + dLat
+          )
+        } else {
+          new Coordinate(
+            DEFAULT_COORDINATE.x + dLon,
+            DEFAULT_COORDINATE.y + dLat
+          )
+        }
+      }
+      .toList
   }
 
   val default: List[Coordinate] = List(
@@ -129,6 +195,29 @@ object SolverTester {
     new Coordinate(10.15, 53.55)
   )
 
+  val case20n: List[Coordinate] = List(
+    new Coordinate(10.1, 52.5),
+    new Coordinate(2.2, 50.7),
+    new Coordinate(9.1, 53.6),
+    new Coordinate(7.55, 53.7),
+    new Coordinate(5.55, 50.15),
+    new Coordinate(6.35, 50.8),
+    new Coordinate(9.3, 54.75),
+    new Coordinate(5.3, 53.0),
+    new Coordinate(6.9, 51.8),
+    new Coordinate(6.3, 54.85),
+    new Coordinate(11.15, 54.05),
+    new Coordinate(7.45, 51.1),
+    new Coordinate(5.45, 54.1),
+    new Coordinate(2.5, 53.45),
+    new Coordinate(4.85, 54.15),
+    new Coordinate(11.3, 53.0),
+    new Coordinate(2.05, 53.2),
+    new Coordinate(2.8, 52.4),
+    new Coordinate(10.55, 54.3),
+    new Coordinate(2.25, 52.4)
+  )
+
   val case50n: List[Coordinate] = List(
     new Coordinate(7.7, 52.05),
     new Coordinate(5.9, 50.55),
@@ -181,75 +270,4 @@ object SolverTester {
     new Coordinate(8.05, 54.5),
     new Coordinate(6.2, 54.1)
   )
-
-  private def generateGraph(coordinates: List[Coordinate]): OsmGraph = {
-    val (transitionPoint, connections) = generatePoints(coordinates)
-    val graph: OsmGraph = Solver.solve(transitionPoint, connections)
-
-    graph.edgeSet().forEach { e =>
-      System.out.print(
-        s"\n${graph.getEdgeSource(e).id}, ${graph.getEdgeTarget(e).id}, ${e.getDistance.getValue.doubleValue()}"
-      )
-    }
-
-    graph
-  }
-
-  // generates some random points
-  private def generatePoints(
-      coordinates: List[Coordinate]
-  ): (Node, Connections) = {
-    val transitionPoint = Node(
-      id = 0L,
-      latitude = DEFAULT_COORDINATE.y,
-      longitude = DEFAULT_COORDINATE.x,
-      tags = Map.empty,
-      metaInformation = None
-    )
-
-    val list: List[Node] = coordinates.zipWithIndex.map {
-      case (coordinate, i) =>
-        Node(i + 1, coordinate.y, coordinate.x, Map.empty, None)
-    } :+ transitionPoint
-
-    val uniqueConnections = Connections
-      .getAllUniqueCombinations(list)
-      .map { case (nodeA, nodeB) =>
-        val distance = GeoUtils.calcHaversine(
-          nodeA.coordinate.getCoordinate,
-          nodeB.coordinate.getCoordinate
-        )
-        Connection(nodeA, nodeB, distance, None)
-      }
-
-    list.foreach { v =>
-      System.out.print(s"\n${v.id}, ${v.longitude}, ${v.latitude}")
-    }
-
-    (transitionPoint, Connections(list, uniqueConnections))
-  }
-
-  private def generateCoordinates(n: Int): List[Coordinate] = {
-    Range.Int
-      .inclusive(1, n, 1)
-      .map { _ =>
-        val rand = new Random()
-        val bool = rand.nextBoolean()
-        val dLat: Double = rand.nextInt(100) / 20d
-        val dLon: Double = rand.nextInt(100) / 20d
-
-        if (bool) {
-          new Coordinate(
-            DEFAULT_COORDINATE.x - dLon,
-            DEFAULT_COORDINATE.y + dLat
-          )
-        } else {
-          new Coordinate(
-            DEFAULT_COORDINATE.x + dLon,
-            DEFAULT_COORDINATE.y + dLat
-          )
-        }
-      }
-      .toList
-  }
 }

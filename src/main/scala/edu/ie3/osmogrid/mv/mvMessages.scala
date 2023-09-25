@@ -10,7 +10,8 @@ import akka.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.RequestFailedException
-import edu.ie3.osmogrid.io.input.InputDataProvider
+import edu.ie3.osmogrid.graph.OsmGraph
+import edu.ie3.osmogrid.io.input.{InputDataEvent, InputDataProvider, Response}
 import edu.ie3.osmogrid.model.OsmoGridModel.MvOsmoGridModel
 import edu.ie3.osmogrid.mv.MvGraphBuilder.MvGraph
 import org.slf4j.Logger
@@ -21,12 +22,18 @@ sealed trait MvRequest
 sealed trait MvResponse
 
 object ReqMvGrids extends MvRequest
-
 object MvTerminate extends MvRequest
+
+final case class StartGraphGeneration(
+    cfg: OsmoGridConfig.Generation.Mv
+) extends MvRequest
+final case class StartGraphConversion(
+    cfg: OsmoGridConfig.Generation.Mv
+) extends MvRequest
 
 final case class IdleData(
     cfg: OsmoGridConfig.Generation.Mv,
-    inputDataProvider: ActorRef[InputDataProvider.InputDataEvent],
+    inputDataProvider: ActorRef[InputDataEvent],
     runGuardian: ActorRef[MvResponse],
     msgAdapter: MvMessageAdapters
 )
@@ -35,10 +42,8 @@ final case class StartMvGeneration(
     cfg: OsmoGridConfig.Generation.Mv,
     lvGrids: List[SubGridContainer],
     hvGrids: List[SubGridContainer],
-    osmGridModel: MvOsmoGridModel
+    streetGraph: OsmGraph
 ) extends MvRequest
-
-object StartMvGraphGeneration extends MvRequest
 
 final case class StartMvGraphConversion(
     cfg: OsmoGridConfig.Generation.Mv,
@@ -50,12 +55,12 @@ final case class FinishedMvGraph(
 ) extends MvRequest
 
 final case class MvMessageAdapters(
-    inputDataProvider: ActorRef[InputDataProvider.Response]
+    inputDataProvider: ActorRef[Response]
 )
 
 object MvMessageAdapters {
   final case class WrappedInputDataResponse(
-      response: InputDataProvider.Response
+      response: Response
   ) extends MvRequest
 }
 
@@ -66,9 +71,10 @@ private final case class AwaitingMvInputData(
     guardian: ActorRef[MvResponse]
 ) {
   def registerResponse(
-      response: InputDataProvider.Response,
+      response: Response,
       log: Logger
-  ): Try[AwaitingMvInputData] = response match {
+  ): Try[AwaitingMvInputData] = ???
+  /*response match {
     case InputDataProvider.RepOsm(osmModel: MvOsmoGridModel) =>
       log.debug(s"Received MV osm model.")
       Success(copy(osmData = Some(osmModel)))
@@ -81,6 +87,7 @@ private final case class AwaitingMvInputData(
         )
       )
   }
+   */
 
   def isComplete: Boolean = osmData.isDefined
 }

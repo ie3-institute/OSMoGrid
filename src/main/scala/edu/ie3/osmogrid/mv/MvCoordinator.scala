@@ -12,8 +12,7 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.MissingInputDataException
-import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.input.InputDataProvider.ReqOsm
+import edu.ie3.osmogrid.io.input.{InputDataEvent, InputDataProvider}
 import edu.ie3.osmogrid.model.SourceFilter.MvFilter
 import utils.{SubGridContainerUtils, VoronoiUtils}
 
@@ -24,10 +23,12 @@ object MvCoordinator extends ActorStopSupportStateless {
 
   def apply(
       cfg: OsmoGridConfig.Generation.Mv,
-      inputDataProvider: ActorRef[InputDataProvider.InputDataEvent],
+      inputDataProvider: ActorRef[InputDataEvent],
       runGuardian: ActorRef[MvResponse]
   ): Behavior[MvRequest] = Behaviors.setup[MvRequest] { context =>
     /* Define message adapters */
+
+    /*
     val mvMessageAdapters = MvMessageAdapters(
       context.messageAdapter(msg =>
         MvMessageAdapters.WrappedInputDataResponse(msg)
@@ -35,6 +36,9 @@ object MvCoordinator extends ActorStopSupportStateless {
     )
 
     idle(IdleData(cfg, inputDataProvider, runGuardian, mvMessageAdapters))
+
+     */
+    ???
   }
 
   // should receive request to generate and return mv grids
@@ -58,10 +62,12 @@ object MvCoordinator extends ActorStopSupportStateless {
 
         val replyToSelf = stateData.msgAdapter.inputDataProvider
 
+        /*
         stateData.inputDataProvider ! ReqOsm(
           replyTo = replyToSelf,
           filter = filter
         )
+         */
 
         /* Change state and await incoming data */
         awaitInputData(
@@ -87,6 +93,7 @@ object MvCoordinator extends ActorStopSupportStateless {
     Behaviors
       .receive[MvRequest] {
         case (ctx, MvMessageAdapters.WrappedInputDataResponse(response)) =>
+          /*
           awaitingMvData.registerResponse(response, ctx.log) match {
             case Success(updatedStateData) =>
               handleUpdatedStateData(updatedStateData, ctx)
@@ -97,6 +104,8 @@ object MvCoordinator extends ActorStopSupportStateless {
               )
               stopBehavior
           }
+           */
+          ???
         case (ctx, MvTerminate) =>
           terminate(ctx.log)
         case (ctx, unsupported) =>
@@ -120,6 +129,8 @@ object MvCoordinator extends ActorStopSupportStateless {
       /* Process the data */
       ctx.log.debug("All awaited mv data is present. Start processing.")
 
+      // TODO: Fix this!
+      /*
       val osmGridModel = awaitingMvData.osmData.getOrElse(
         throw MissingInputDataException("MvOsmoGridModel is missing!")
       )
@@ -130,6 +141,7 @@ object MvCoordinator extends ActorStopSupportStateless {
         hvGrids = null,
         osmGridModel
       )
+       */
 
       processInputData(awaitingMvData.guardian, awaitingMvData.msgAdapters)
     } else awaitInputData(awaitingMvData) // Continue waiting for missing data
@@ -143,7 +155,7 @@ object MvCoordinator extends ActorStopSupportStateless {
       msgAdapters: MvMessageAdapters
   ): Behavior[MvRequest] = Behaviors
     .receive[MvRequest] {
-      case (ctx, StartMvGeneration(cfg, lvGrids, hvGrids, osmGridModel)) =>
+      case (ctx, StartMvGeneration(cfg, lvGrids, hvGrids, streetGraph)) =>
         /* calculates all voronoi polynomials */
         val (hvToMv, mvToLv) =
           SubGridContainerUtils.filter(lvGrids, hvGrids, cfg)
@@ -157,7 +169,7 @@ object MvCoordinator extends ActorStopSupportStateless {
         }
 
         polygons.foreach { polygon =>
-          VoronoiCoordinator(polygon, osmGridModel, ctx.self, ctx)
+          VoronoiCoordinator(polygon, streetGraph, ctx.self, ctx, cfg)
         }
 
         Behaviors.same

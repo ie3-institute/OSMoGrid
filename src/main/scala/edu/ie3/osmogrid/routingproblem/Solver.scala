@@ -14,32 +14,42 @@ import edu.ie3.osmogrid.routingproblem.Definitions.{
   StepResultOption
 }
 import edu.ie3.util.osm.model.OsmEntity.Node
-import utils.GraphUtils
 
 import javax.measure.Quantity
 import javax.measure.quantity.Length
-import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 /** Solver for the routing problem. Uses a combination of savings algorithm,
   * tabu lists and nearest neighbour search.
   */
 object Solver {
-  val draw = false
-  val draw_options = 0
-  val draw_all = false
-  var step: Int = 1
-  val width = 800
-  val height = 600
 
-  // method to solve the routing problem
+  /** Method to solve the routing problem.
+    * @param nodeToHv
+    *   transition point (start and end point of the graph)
+    * @param connections
+    *   all [[Connections]] that should be considered
+    * @param neighborCount
+    *   number of closest vertexes for which connected edges should be
+    *   considered (default: 5)
+    * @return
+    */
   def solve(
       nodeToHv: Node,
       connections: Connections
-  ): OsmGraph = {
-    if (connections.nodes.size < 3) {
-      val graph = new OsmGraph()
-      connections.nodes.foreach(n => graph.addVertex(n))
+  )(implicit neighborCount: Int = 5): OsmGraph = {
+    val graph = new OsmGraph()
+    connections.nodes.foreach(n => graph.addVertex(n))
+
+    if (connections.nodes.size == 1) {
+      graph
+    } else if (connections.nodes.size < 3) {
+      val node = connections.nodes.filter(n => n != nodeToHv)(0)
+      graph.addWeightedEdge(
+        nodeToHv,
+        node,
+        connections.connectionMap((nodeToHv, node)).distance
+      )
       graph
     } else {
       // calculating the first step
@@ -48,23 +58,15 @@ object Solver {
 
       // calculating next steps
       while (!finished && stepResult.notConnectedNodes.nonEmpty) {
-        if (draw) {
-          GraphUtils.draw(
-            stepResult.graph,
-            s"graph_after_step_$step.png",
-            width,
-            height
-          )
-        }
-        step += 1
-
         step(
           nodeToHv,
           stepResult,
-          connections
+          connections,
+          neighborCount
         ) match {
           case Some(value) => stepResult = value
-          case None =>
+          case None        =>
+            // when this happens the resulting graph still has unconnected nodes
             System.out.print(
               s"\nFinished with: ${stepResult.notConnectedNodes}"
             )
@@ -72,95 +74,75 @@ object Solver {
         }
       }
 
-      val graph = stepResult.graph
-
-      if (draw) {
-        GraphUtils.draw(graph, s"graph_after_step_$step.png", width, height)
-      }
-
-      // finishing the mv graph
-      // reconnectNodes(graph, connections)
-
-      graph
+      stepResult.graph
     }
   }
 
-  private def reconnectNodes(
-      graph: OsmGraph,
-      connections: Connections
-  ): OsmGraph = {
-    System.out.print(s"\nNot implemented!")
-
-    graph
-  }
-
-  private def finishMvGraph(
-      graph: OsmGraph,
-      notConnectedNodes: List[Node],
-      connections: Connections
-  ): OsmGraph = {
-    if (notConnectedNodes.isEmpty) {
-      graph
-    } else {
-      notConnectedNodes.foreach { node =>
-        connectNode(graph, node, connections)
-      }
-      graph
-    }
-  }
-
-  // connects a node to the graph
-  private def connectNode(
-      graph: OsmGraph,
-      node: Node,
-      connections: Connections
-  ): Unit = {
-    val neighbors = connections.getNearestNeighbors(node)
-    val edges = graph.edgesOf(neighbors(0)).asScala.toList
-
-    System.out.print(s"\nNot implemented! -> $node")
-  }
-
+  /** Method to calculate the next step of the solving algorithm.
+    * @param nodeToHv
+    *   transition point (start and end point of the graph)
+    * @param stepResult
+    *   the result of the previous step
+    * @param connections
+    *   all [[Connections]] that should be considered
+    * @param neighborCount
+    *   number of closest vertexes for which connected edges should be
+    *   considered
+    * @return
+    *   an option for a [[StepResult]]
+    */
   private def step(
       nodeToHv: Node,
       stepResult: StepResult,
-      connections: Connections
+      connections: Connections,
+      neighborCount: Int
   ): Option[StepResult] = {
-    val nodeSize = connections.nodes.size
-
+    // extracting some information from the previous step
     val current = stepResult.nextNode
     val graph = stepResult.graph
     val notConnectedNodes = stepResult.notConnectedNodes
-
     val nearestNeighbors: List[Node] = connections.getNearestNeighbors(current)
-    val edges: List[DistanceWeightedEdge] = graph.edgeSet().asScala.toList
 
     // calculate all possible result options for this step
     val stepResultOptions: List[StepResultOption] = nearestNeighbors
       .filter(node => notConnectedNodes.contains(node))
       .flatMap { neighbor =>
-        val nearest = connections
-          .getNearestNeighbors(neighbor)
-          .slice(0, nodeSize / 15)
+        // edges that can be removed
+        val edges = connections
+          .getNearestNeighbors(neighbor, neighborCount)
           .flatMap { v => graph.edgesOf(v).asScala }
+          .toSet
 
         calcStepResultOptions(
           nodeToHv,
           current,
           neighbor,
           graph,
-          nearest,
+          edges,
           connections
         )
       }
 
-    // check the options and return the the result of this step
+    // evaluating the options and returning an option for a StepResult
     evaluateStepResultOptions(
       stepResultOptions,
       notConnectedNodes
     )
   }
 
+  /** Method for evaluating [[StepResultOption]]s. This method will filter out
+    * results that contain a graph with intersecting edges and/or a graph where
+    * vertexes have more than two edges. After the filtering, the remaining
+    * results are sorted by the weight that is added by the result and the
+    * result that adds the least weight will be converted into an option of a
+    * [[StepResult]]. If all results are filtered out, a [[None]] is returned
+    * @param options
+    *   that should be evaluated
+    * @param notConnectedNodes
+    *   a list of [[Node]]s that are not yet connected to the graph
+    * @return
+    *   an option for a [[StepResult]]
+    */
   private def evaluateStepResultOptions(
       options: List[StepResultOption],
       notConnectedNodes: List[Node]
@@ -169,17 +151,6 @@ object Solver {
       .filter(option => !option.graph.containsEdgeIntersection())
       .filter(options => !options.graph.tooManyVertexConnections())
       .sortBy(option => option.addedWeight.getValue.doubleValue())
-
-    if (draw && (draw_all || step == draw_options)) {
-      filtered.map(o => o.graph).zipWithIndex.foreach { case (graph, i) =>
-        GraphUtils.draw(
-          graph,
-          s"graph_after_step_${step}_option_$i.png",
-          width,
-          height
-        )
-      }
-    }
 
     filtered.headOption match {
       case Some(stepResultOption) =>
@@ -196,31 +167,43 @@ object Solver {
     }
   }
 
-  // neighbor should not be connected to another node
-  // current should have two edges
-  // both can be removed in order to add the neighbor to the graph
-  // a connection to the nodeToHv is not removed
+  /** Calculation for a step. The result of the calculation is a list of
+    * [[StepResultOption]]s.
+    * @param nodeToHv
+    *   transition point (start and end point of the graph)
+    * @param current
+    *   the last connected [[Node]]
+    * @param neighbor
+    *   a [[Node]] that can be connected to the graph
+    * @param osmGraph
+    *   the graph before this step
+    * @param edges
+    *   a list of [[DistanceWeightedEdge]]s that could be removed in order to
+    *   connect the neighbor to the graph
+    * @param connections
+    *   all [[Connections]] that should be considered
+    * @return
+    *   a list of [[StepResultOption]]s that represent possible results of the
+    *   current step
+    */
   private def calcStepResultOptions(
       nodeToHv: Node,
       current: Node,
       neighbor: Node,
       osmGraph: OsmGraph,
-      edges: List[DistanceWeightedEdge],
+      edges: Set[DistanceWeightedEdge],
       connections: Connections
   ): List[StepResultOption] = {
     if (neighbor == nodeToHv || osmGraph.getEdge(current, neighbor) != null) {
       // if neighbor is transition point or the neighbor is already connected to the current node
       // an empty list is returned
       List.empty
-    } else {
-      edges.flatMap { edge =>
-        val source: Node = osmGraph.getEdgeSource(edge)
-        val target: Node = osmGraph.getEdgeTarget(edge)
+    } else
+      {
+        edges.flatMap { edge =>
+          val source: Node = osmGraph.getEdgeSource(edge)
+          val target: Node = osmGraph.getEdgeTarget(edge)
 
-        if (source == nodeToHv || target == nodeToHv) {
-          // return nothing if either the source of the target of the edge is the transition point
-          None
-        } else {
           // create a copy of the graph that can be modified
           val copy = osmGraph.copy()
           val removedEdge = copy.removeEdge(source, target)
@@ -246,8 +229,7 @@ object Solver {
             )
           )
         }
-      }
-    }
+      }.toList
   }
 
   /** Method to set up the graph for further calculations. The two closest nodes
@@ -256,7 +238,7 @@ object Solver {
     * Also a list of [[Node]]'s that are not yet connected is returned.
     *
     * @param nodeToHv
-    *   start and end point of the final graph
+    *   transition point (start and end point of the graph)
     * @param connections
     *   all [[Connections]] that should be considered
     * @return
