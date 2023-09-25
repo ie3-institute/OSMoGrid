@@ -12,9 +12,12 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.IllegalStateException
-import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
-import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.input.InputDataProvider.{ReqAssetTypes, ReqOsm}
+import edu.ie3.osmogrid.io.input.{
+  BoundaryAdminLevel,
+  InputDataEvent,
+  ReqAssetTypes,
+  ReqOsm
+}
 import edu.ie3.osmogrid.lv.LvGridGenerator
 import edu.ie3.osmogrid.lv.coordinator.MessageAdapters.{
   WrappedGridGeneratorResponse,
@@ -76,7 +79,7 @@ object LvCoordinator extends ActorStopSupportStateless {
     */
   def apply(
       cfg: OsmoGridConfig.Generation.Lv,
-      inputDataProvider: ActorRef[InputDataProvider.InputDataEvent],
+      inputDataProvider: ActorRef[InputDataEvent],
       runGuardian: ActorRef[Response]
   ): Behavior[Request] = Behaviors.setup[Request] { context =>
     /* Define message adapters */

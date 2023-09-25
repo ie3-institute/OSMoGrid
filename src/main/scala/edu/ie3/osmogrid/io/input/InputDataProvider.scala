@@ -6,68 +6,16 @@
 
 package edu.ie3.osmogrid.io.input
 
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer}
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
-import edu.ie3.datamodel.models.input.connector.`type`.{
-  LineTypeInput,
-  Transformer2WTypeInput
-}
 import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.io.input.InputDataProvider.InputDataEvent
-import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
+import edu.ie3.osmogrid.model.OsmoGridModel
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success}
 
-// actor data
-protected final case class ProviderData(
-    ctx: ActorContext[InputDataEvent],
-    buffer: StashBuffer[InputDataEvent],
-    osmSource: OsmSource,
-    assetSource: AssetSource
-)
-
 object InputDataProvider extends ActorStopSupport[ProviderData] {
-
-  // external requests
-  sealed trait Request
-
-  // internal api
-  sealed trait InputDataEvent
-
-  final case class ReqOsm(
-      replyTo: ActorRef[InputDataProvider.Response],
-      filter: SourceFilter
-  ) extends Request
-      with InputDataEvent
-
-  final case class ReqAssetTypes(
-      replyTo: ActorRef[InputDataProvider.Response]
-  ) extends Request
-      with InputDataEvent
-
-  case object Terminate extends Request with InputDataEvent
-
-  // external responses
-  sealed trait Response
-  final case class RepOsm(osmModel: OsmoGridModel)
-      extends Response
-      with InputDataEvent
-  final case class OsmReadFailed(reason: Throwable)
-      extends Response
-      with InputDataEvent
-  final case class RepAssetTypes(assetInformation: AssetInformation)
-      extends Response
-      with InputDataEvent
-  final case class AssetReadFailed(reason: Throwable)
-      extends Response
-      with InputDataEvent
-
-  final case class AssetInformation(
-      lineTypes: Seq[LineTypeInput],
-      transformerTypes: Seq[Transformer2WTypeInput]
-  )
 
   def apply(
       osmConfig: OsmoGridConfig.Input
@@ -108,9 +56,12 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
             ctx.pipeToSelf(
               providerData.assetSource.read()
             ) {
-              case Success(assetInformation) => RepAssetTypes(assetInformation)
+              case Success(assetInformation) =>
+                RepAssetTypes(assetInformation)
               case Failure(exception) =>
-                ctx.log.error(s"Error while reading asset data: $exception")
+                ctx.log.error(
+                  s"Error while reading asset data: $exception"
+                )
                 AssetReadFailed(exception)
             }
             readAssetData(providerData, replyTo)
@@ -129,7 +80,7 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
 
   private def readOsmData(
       providerData: ProviderData,
-      replyTo: ActorRef[InputDataProvider.Response]
+      replyTo: ActorRef[Response]
   ): Behaviors.Receive[InputDataEvent] =
     Behaviors.receiveMessage {
       case osmResponse: RepOsm =>
@@ -145,7 +96,7 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
 
   private def readAssetData(
       providerData: ProviderData,
-      replyTo: ActorRef[InputDataProvider.Response]
+      replyTo: ActorRef[Response]
   ): Behaviors.Receive[InputDataEvent] = {
     Behaviors.receiveMessage {
       case repAssetTypes: RepAssetTypes =>

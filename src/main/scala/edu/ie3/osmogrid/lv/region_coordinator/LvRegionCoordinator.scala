@@ -11,7 +11,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel.BoundaryAdminLevelValue
-import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
+import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.osmogrid.lv.LvGridGenerator
 import edu.ie3.osmogrid.lv.LvGridGenerator.GenerateGrid
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel

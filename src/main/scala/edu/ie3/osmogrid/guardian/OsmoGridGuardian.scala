@@ -6,12 +6,12 @@
 
 package edu.ie3.osmogrid.guardian
 
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.ActorRef
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.RunGuardian
-import edu.ie3.osmogrid.io.output.ResultListener
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol
+
 import java.util.UUID
 
 object OsmoGridGuardian {
@@ -29,7 +29,7 @@ object OsmoGridGuardian {
     */
   final case class Run(
       cfg: OsmoGridConfig,
-      additionalListener: Seq[ActorRef[ResultListener.ResultEvent]] = Seq.empty,
+      additionalListener: Seq[ActorRef[ResultListenerProtocol]] = Seq.empty,
       runId: UUID = UUID.randomUUID()
   ) extends Request
 

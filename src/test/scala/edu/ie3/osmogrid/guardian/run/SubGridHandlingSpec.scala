@@ -11,9 +11,8 @@ import edu.ie3.datamodel.models.UniqueEntity
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
-import edu.ie3.osmogrid.io.output.ResultListener
+import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.coordinator
-import edu.ie3.osmogrid.mv.MvResponse
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.{Logger, LoggerFactory}
@@ -78,24 +77,14 @@ class SubGridHandlingSpec
 
       val lvCoordinatorAdapter =
         testKit.createTestProbe[coordinator.Response]("LvCoordinatorAdapter")
-      val mvCoordinatorAdapter =
-        testKit.createTestProbe[MvResponse]("MvCoordinatorAdapter")
       val resultListener =
-        testKit.createTestProbe[ResultListener.ResultEvent]("ResultListener")
-      val resultListenerAdapter =
-        testKit.createTestProbe[ResultListener.Response](
-          "ResultListenerAdapter"
-        )
-      val additionalResultListener =
-        testKit.createTestProbe[ResultListener.ResultEvent](
-          "AdditionalResultListener"
+        testKit.createTestProbe[ResultListenerProtocol.Request](
+          "ResultListener"
         )
 
       val grids = Range.inclusive(11, 20).map(mockSubGrid)
       val messageAdapters = new MessageAdapters(
-        lvCoordinatorAdapter.ref,
-        mvCoordinatorAdapter.ref,
-        resultListenerAdapter.ref
+        lvCoordinatorAdapter.ref
       )
       val cfg = OsmoGridConfigFactory
         .parse {
@@ -108,38 +97,6 @@ class SubGridHandlingSpec
         .success
         .get
 
-      "having an active run" should {
-        "inform the right parties about correct information" in new SubGridHandling {
-          private val result = handleLvResults(
-            grids,
-            cfg.generation,
-            Seq(resultListener.ref, additionalResultListener.ref),
-            messageAdapters
-          )
-
-          result.isSuccess shouldBe true
-
-          resultListener.receiveMessage() match {
-            case ResultListener.GridResult(grid, _) =>
-              grid.getGridName shouldBe "DummyGrid"
-              grid.getRawGrid.getNodes
-                .size() shouldBe grids.size // each grid has one node
-            case unexpected =>
-              fail(s"Received unexpected message '$unexpected'.")
-          }
-          additionalResultListener.receiveMessage() match {
-            case ResultListener.GridResult(grid, _) =>
-              grid.getGridName shouldBe "DummyGrid"
-              grid.getRawGrid.getNodes
-                .size() shouldBe grids.size // each grid has one node
-            case unexpected =>
-              fail(s"Received unexpected message '$unexpected'.")
-          }
-
-          lvCoordinatorAdapter.expectNoMessage()
-          resultListenerAdapter.expectNoMessage()
-        }
-      }
     }
   }
 

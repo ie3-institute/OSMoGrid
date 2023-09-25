@@ -3,9 +3,9 @@ plugins {
   id 'java' //java support
   id 'scala'
   id 'pmd' // code check, working on source code
-  id 'com.diffplug.spotless' version '6.20.0'//code format
+  id 'com.diffplug.spotless' version '6.21.0'//code format
   id 'com.github.spotbugs' version '5.1.3' // code check, working on byte code
-  id 'de.undercouch.download' version '5.4.0'
+  id 'de.undercouch.download' version '5.5.0'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.32" // run scalatest without specific spec task
   id "org.sonarqube" version "4.3.0.3225" // sonarqube
@@ -21,7 +21,7 @@ ext {
   akkaVersion = '2.6.20'
 
   tscfgVersion = '0.9.995'
-  scapegoatVersion = '2.1.2'
+  scapegoatVersion = '2.1.3'
 
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
   docsDirName = 'docs'
@@ -104,7 +104,7 @@ dependencies {
   implementation 'org.locationtech.jts:jts-core:1.19.0'
 
   // testing
-  testImplementation "org.scalatest:scalatest_$scalaVersion:3.2.16"
+  testImplementation "org.scalatest:scalatest_$scalaVersion:3.2.17"
   testRuntimeOnly 'com.vladsch.flexmark:flexmark-all:0.64.8' //scalatest html output
   testImplementation 'org.pegdown:pegdown:1.6.0'
 

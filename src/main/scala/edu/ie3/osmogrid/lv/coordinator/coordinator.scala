@@ -10,8 +10,8 @@ import akka.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.RequestFailedException
-import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
+import edu.ie3.osmogrid.io.input
+import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.osmogrid.lv.LvGridGenerator
 import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
@@ -43,18 +43,18 @@ object Terminate extends Request
   *
   * @param inputDataProvider
   *   Message adapter for responses from [[InputDataProvider]]
-  * @param lvRegionCoordinator
+  * @param regionCoordinator
   *   Message adapter for responses from [[LvRegionCoordinator]]
   */
 private final case class MessageAdapters(
-    inputDataProvider: ActorRef[InputDataProvider.Response],
+    inputDataProvider: ActorRef[input.Response],
     lvRegionCoordinator: ActorRef[LvRegionCoordinator.Response],
     lvGridGenerator: ActorRef[LvGridGenerator.Response]
 )
 
 private object MessageAdapters {
   final case class WrappedInputDataResponse(
-      response: InputDataProvider.Response
+      response: input.Response
   ) extends Request
 
   final case class WrappedRegionResponse(
@@ -88,7 +88,7 @@ final case class RepLvGrids(grids: Seq[SubGridContainer]) extends Response
   */
 private final case class IdleData(
     cfg: OsmoGridConfig.Generation.Lv,
-    inputDataProvider: ActorRef[InputDataProvider.InputDataEvent],
+    inputDataProvider: ActorRef[input.InputDataEvent],
     runGuardian: ActorRef[Response],
     msgAdapters: MessageAdapters
 )
@@ -108,7 +108,7 @@ private final case class IdleData(
   */
 private final case class AwaitingData(
     osmData: Option[LvOsmoGridModel],
-    assetInformation: Option[InputDataProvider.AssetInformation],
+    assetInformation: Option[input.AssetInformation],
     cfg: OsmoGridConfig.Generation.Lv,
     msgAdapters: MessageAdapters,
     guardian: ActorRef[Response]
@@ -126,26 +126,26 @@ private final case class AwaitingData(
     *   a [[Try]] onto an adapted copy of the current instance
     */
   def registerResponse(
-      response: InputDataProvider.Response,
+      response: input.Response,
       log: Logger
   ): Try[AwaitingData] = response match {
-    case InputDataProvider.RepOsm(osmModel: LvOsmoGridModel) =>
+    case input.RepOsm(osmModel: LvOsmoGridModel) =>
       log.debug(s"Received LV data model.")
       Success(copy(osmData = Some(osmModel)))
-    case InputDataProvider.RepAssetTypes(assetInformation) =>
+    case input.RepAssetTypes(assetInformation) =>
       log.debug(s"Received asset information.")
       Success(
         copy(assetInformation = Some(assetInformation))
       )
     /* Those states correspond to failed operation */
-    case InputDataProvider.OsmReadFailed(reason) =>
+    case input.OsmReadFailed(reason) =>
       Failure(
         RequestFailedException(
           "The requested OSM data cannot be read. Stop generation. Exception:",
           reason
         )
       )
-    case InputDataProvider.AssetReadFailed(reason) =>
+    case input.AssetReadFailed(reason) =>
       Failure(
         RequestFailedException(
           "The requested asset data cannot be read. Stop generation. Exception:",
