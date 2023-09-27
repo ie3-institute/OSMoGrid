@@ -10,20 +10,21 @@ import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.routingproblem.Definitions.{
+import edu.ie3.osmogrid.routingproblem.Solver.StepResultOption
+import edu.ie3.util.geo.GeoUtils
+import edu.ie3.util.osm.model.OsmEntity.Node
+import org.locationtech.jts.geom.Coordinate
+import tech.units.indriya.quantity.Quantities
+import utils.MvUtils.{
   Connection,
   Connections,
   NodeConversion,
-  StepResultOption
+  getAllUniqueCombinations
 }
-import edu.ie3.util.geo.GeoUtils
-import edu.ie3.util.osm.model.OsmEntity.Node
-import tech.units.indriya.quantity.Quantities
-import tech.units.indriya.unit.Units
 
 import java.util.UUID
 
-trait DefinitionsTestData {
+trait MvTestData {
   // test grid
   // ---- |  7  7.5  8  8.5  9
   // 52.0 |
@@ -71,6 +72,9 @@ trait DefinitionsTestData {
     (node, nodeInput)
   }
 
+  def toCoordinate(node: Node): Coordinate =
+    GeoUtils.buildCoordinate(node.latitude, node.longitude)
+
   val nodeConversion: NodeConversion = {
     val conversion = Map(
       nodeToHv -> transitionPoint,
@@ -85,18 +89,17 @@ trait DefinitionsTestData {
     NodeConversion(conversion, conversion.map { case (k, v) => v -> k })
   }
   val connections: Connections = {
-    val uniqueConnections = Connections
-      .getAllUniqueCombinations(
-        List(
-          transitionPoint,
-          osmNode1,
-          osmNode2,
-          osmNode3,
-          osmNode4,
-          osmNode5,
-          osmNode6
-        )
+    val uniqueConnections = getAllUniqueCombinations(
+      List(
+        transitionPoint,
+        osmNode1,
+        osmNode2,
+        osmNode3,
+        osmNode4,
+        osmNode5,
+        osmNode6
       )
+    )
       .map { case (nodeA, nodeB) =>
         val distance = GeoUtils.calcHaversine(
           nodeA.coordinate.getCoordinate,

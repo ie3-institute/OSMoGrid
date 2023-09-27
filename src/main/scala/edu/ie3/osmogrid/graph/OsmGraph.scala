@@ -8,7 +8,6 @@ package edu.ie3.osmogrid.graph
 
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.osmogrid.exception.GraphCopyException
-import edu.ie3.osmogrid.routingproblem.Definitions.Connection
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import tech.units.indriya.unit.Units.METRE
@@ -22,6 +21,7 @@ import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 import utils.GraphUtils.{getLineSegmentBetweenNodes, hasIntersection}
+import utils.MvUtils.Connection
 
 import java.util
 import javax.measure.Quantity
@@ -108,6 +108,8 @@ class OsmGraph(
     doubleEdges.diff(List(edgeA, edgeB))
   }
 
+  /** Returns a new [[OsmGraph]] that is identical to this graph.
+    */
   def copy(): OsmGraph = {
     clone() match {
       case graph: OsmGraph => graph
@@ -171,39 +173,38 @@ class OsmGraph(
     false
   }
 
+  /** Uses the given [[Polygon]] to create a sub graph that only contains
+    * vertexes and edges that are fully inside the polygon.
+    * @param polygon
+    *   that is used
+    * @return
+    *   a new [[OsmGraph]]
+    */
   def subGraph(polygon: Polygon): OsmGraph = {
     val vertexes: Set[Node] = vertexSet().asScala
       .filter(vertex =>
-        polygon.contains(GeoUtils.buildPoint(vertex.latitude, vertex.longitude))
+        polygon.covers(GeoUtils.buildPoint(vertex.latitude, vertex.longitude))
       )
       .toSet
+
     val edges: Set[DistanceWeightedEdge] = edgeSet().asScala
       .filter(edge =>
-        vertexes.contains(getEdgeSource(edge)) || vertexes.contains(
+        vertexes.contains(getEdgeSource(edge)) && vertexes.contains(
           getEdgeTarget(edge)
         )
       )
       .toSet
 
-    // copy of edges
-    val vertexMap: Map[Node, Node] = vertexes.map { v => v -> v.copy() }.toMap
-
-    val graph = new OsmGraph()
-    vertexMap.values.foreach { v => graph.addVertex(v) }
-
-    // adds edges with
+    val subgraph: OsmGraph = new OsmGraph()
+    vertexes.foreach(v => subgraph.addVertex(v))
     edges.foreach { edge =>
-      val source = getEdgeSource(edge)
-      val target = getEdgeTarget(edge)
-
-      graph.addWeightedEdge(
-        vertexMap(source),
-        vertexMap(target),
+      subgraph.addWeightedEdge(
+        getEdgeSource(edge),
+        getEdgeTarget(edge),
         Quantities.getQuantity(edge.getDistance.getValue, Units.METRE)
       )
     }
-
-    graph
+    subgraph
   }
 
   def calcTotalWeight(): Double = {

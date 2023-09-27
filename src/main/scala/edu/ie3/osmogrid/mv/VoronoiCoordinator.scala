@@ -11,16 +11,14 @@ import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.model.OsmoGridModel.MvOsmoGridModel
-import edu.ie3.osmogrid.mv.MvGraphBuilder.MvGraph
-import edu.ie3.osmogrid.routingproblem.Definitions.{Connections, NodeConversion}
 import edu.ie3.osmogrid.routingproblem.Solver
+import edu.ie3.util.osm.model.OsmEntity.Node
 import utils.MvUtils
 import utils.VoronoiUtils.VoronoiPolygon
 
 object VoronoiCoordinator extends ActorStopSupportStateless {
 
-  // should receive a voronoi polynomial
+  // should receive a voronoi polynomial and a street graph
   def apply(
       voronoiPolygon: VoronoiPolygon,
       streetGraph: OsmGraph,
@@ -49,14 +47,17 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
         val (nodeConversion, connections) =
           MvUtils.createDefinitions(voronoiPolygon.allNodes, reducedStreetGraph)
 
+        val transitionNode: Node = nodeConversion.getOsmNode(
+          voronoiPolygon.transitionPointToHigherVoltLvl
+        )
+
         // using the solver to solve the routing problem
         val graph: OsmGraph = Solver.solve(
-          nodeConversion.getOsmNode(
-            voronoiPolygon.transitionPointToHigherVoltLvl
-          ),
+          transitionNode,
           connections
         )
 
+        // conversion from osm graph to PSDM grid model
         ctx.self ! StartGraphConversion(cfg)
         convertingGraphToPSDM(graph, coordinator)
       case (ctx, MvTerminate) =>

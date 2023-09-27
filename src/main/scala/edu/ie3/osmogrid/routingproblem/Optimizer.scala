@@ -7,8 +7,8 @@
 package edu.ie3.osmogrid.routingproblem
 
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.routingproblem.Definitions.Connections
 import edu.ie3.util.osm.model.OsmEntity.Node
+import utils.MvUtils.Connections
 
 import scala.jdk.CollectionConverters._
 

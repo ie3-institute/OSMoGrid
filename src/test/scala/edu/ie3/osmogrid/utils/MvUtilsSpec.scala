@@ -4,20 +4,20 @@
  * Research group Distribution grid planning and operation
  */
 
-package edu.ie3.osmogrid.routingproblem
+package edu.ie3.osmogrid.utils
 
-import edu.ie3.osmogrid.routingproblem.Definitions.{Connection, Connections}
-import edu.ie3.test.common.{DefinitionsTestData, UnitSpec}
+import edu.ie3.test.common.{MvTestData, UnitSpec}
 import edu.ie3.util.osm.model.OsmEntity.Node
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
+import utils.MvUtils.{Connection, Connections, getAllUniqueCombinations}
 
 import scala.util.Try
 
-class DefinitionsSpec extends UnitSpec with DefinitionsTestData {
+class MvUtilsSpec extends UnitSpec with MvTestData {
   "The NodeConversion" should {
     "return all psdm nodes correctly" in {
-      val allNodes = nodeConversion.allNodeInputs
+      val allNodes = nodeConversion.allPsdmNodes
       allNodes.size shouldBe 7
 
       allNodes.diff(
@@ -34,7 +34,7 @@ class DefinitionsSpec extends UnitSpec with DefinitionsTestData {
     }
 
     "return all osm nodes correctly" in {
-      val allNodes = nodeConversion.allNodes
+      val allNodes = nodeConversion.allOsmNodes
       allNodes.size shouldBe 7
 
       allNodes.diff(
@@ -234,11 +234,12 @@ class DefinitionsSpec extends UnitSpec with DefinitionsTestData {
     }
 
     "throws an exception for not known node combinations when retrieving connection" in {
-      Try(connections.getConnection(osmNode1, osmNode6)) match {
-        case util.Failure(exception) =>
-          exception.getMessage shouldBe "key not found: (Node(6,50.5,8.5,Map(),None),Node(1,50.5,7.0,Map(),None))"
-        case util.Success(_) => throw new Error("The test should not pass!")
-      }
+      val notFound = connections.getConnection(osmNode1, osmNode6)
+
+      notFound.nodeA shouldBe osmNode1
+      notFound.nodeB shouldBe osmNode6
+      notFound.distance.getValue.doubleValue() shouldBe Double.MaxValue
+      notFound.path shouldBe None
     }
 
     "return the correct distance between tow nodes" in {
@@ -340,7 +341,7 @@ class DefinitionsSpec extends UnitSpec with DefinitionsTestData {
       )
 
       forAll(cases) { (nodes, combinations) =>
-        Connections.getAllUniqueCombinations(nodes) shouldBe combinations
+        getAllUniqueCombinations(nodes) shouldBe combinations
       }
     }
   }

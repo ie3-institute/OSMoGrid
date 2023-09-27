@@ -8,12 +8,8 @@ package edu.ie3.osmogrid.routingproblem
 
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.routingproblem.Definitions.{
-  Connections,
-  StepResult,
-  StepResultOption
-}
 import edu.ie3.util.osm.model.OsmEntity.Node
+import utils.MvUtils.{Connection, Connections}
 
 import javax.measure.Quantity
 import javax.measure.quantity.Length
@@ -23,6 +19,19 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
   * tabu lists and nearest neighbour search.
   */
 object Solver {
+  final case class StepResult(
+      graph: OsmGraph,
+      nextNode: Node,
+      notConnectedNodes: List[Node]
+  )
+
+  final case class StepResultOption(
+      graph: OsmGraph,
+      nextNode: Node,
+      usedConnections: List[Connection],
+      removedEdge: DistanceWeightedEdge,
+      addedWeight: Quantity[Length]
+  )
 
   /** Method to solve the routing problem.
     * @param nodeToHv

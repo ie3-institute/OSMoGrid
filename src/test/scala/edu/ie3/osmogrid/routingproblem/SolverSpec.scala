@@ -7,17 +7,14 @@
 package edu.ie3.osmogrid.routingproblem
 
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.routingproblem.Definitions.{
-  StepResult,
-  StepResultOption
-}
-import edu.ie3.test.common.{DefinitionsTestData, UnitSpec}
+import edu.ie3.osmogrid.routingproblem.Solver.{StepResult, StepResultOption}
+import edu.ie3.test.common.{MvTestData, UnitSpec}
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 
 import scala.jdk.CollectionConverters._
 
-class SolverSpec extends UnitSpec with DefinitionsTestData {
+class SolverSpec extends UnitSpec with MvTestData {
   "The Solver" should {
     val firstStep = PrivateMethod[StepResult](
       Symbol("firstStep")

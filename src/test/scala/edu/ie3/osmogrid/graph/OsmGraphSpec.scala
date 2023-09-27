@@ -6,14 +6,16 @@
 
 package edu.ie3.osmogrid.graph
 
-import edu.ie3.osmogrid.routingproblem.Definitions.Connection
-import edu.ie3.test.common.{DefinitionsTestData, UnitSpec}
+import edu.ie3.test.common.{MvTestData, UnitSpec}
+import edu.ie3.util.geo.GeoUtils
+import org.locationtech.jts.geom.Polygon
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
+import utils.MvUtils.Connection
 
 import scala.jdk.CollectionConverters._
 
-class OsmGraphSpec extends UnitSpec with DefinitionsTestData {
+class OsmGraphSpec extends UnitSpec with MvTestData {
   "The OsmGraph" should {
     // returns a new graph
     def newGraph: OsmGraph = {
@@ -122,6 +124,45 @@ class OsmGraphSpec extends UnitSpec with DefinitionsTestData {
 
         copy.containsEdgeIntersection() shouldBe result
       }
+    }
+
+    "return a sub graph correctly" in {
+      val graph = new OsmGraph()
+      List(
+        transitionPoint,
+        osmNode1,
+        osmNode2,
+        osmNode3,
+        osmNode4,
+        osmNode5,
+        osmNode6
+      )
+        .foreach(n => graph.addVertex(n))
+      connections.connectionMap.values.foreach(c => graph.addConnection(c))
+
+      val coords = List(
+        toCoordinate(transitionPoint),
+        toCoordinate(osmNode1),
+        toCoordinate(osmNode2),
+        toCoordinate(osmNode3),
+        toCoordinate(transitionPoint)
+      )
+
+      val polygon: Polygon = GeoUtils.buildPolygon(coords.toArray)
+      val subgraph = graph.subGraph(polygon)
+
+      val vertexes = subgraph.vertexSet().asScala
+      vertexes shouldBe Set(transitionPoint, osmNode1, osmNode2, osmNode3)
+
+      val edges = subgraph.edgeSet().asScala
+      edges shouldBe Set(
+        subgraph.getEdge(transitionPoint, osmNode1),
+        subgraph.getEdge(transitionPoint, osmNode2),
+        subgraph.getEdge(transitionPoint, osmNode3),
+        subgraph.getEdge(osmNode1, osmNode2),
+        subgraph.getEdge(osmNode1, osmNode3),
+        subgraph.getEdge(osmNode2, osmNode3)
+      )
     }
   }
 }
