@@ -4,14 +4,14 @@
  * Research group Distribution grid planning and operation
  */
 
-package edu.ie3.osmogrid.grid
+package edu.ie3.osmogrid.utils
 
 import edu.ie3.datamodel.models.input.system.characteristic.OlmCharacteristicInput._
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.grid.GridConversion._
-import edu.ie3.osmogrid.routingproblem.Solver
 import edu.ie3.test.common.{MvTestData, UnitSpec}
 import edu.ie3.util.osm.model.OsmEntity.Node
+import utils.GridConversion._
+import utils.Solver
 
 import scala.util.Try
 

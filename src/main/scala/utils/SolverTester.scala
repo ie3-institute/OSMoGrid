@@ -4,13 +4,11 @@
  * Research group Distribution grid planning and operation
  */
 
-package edu.ie3.osmogrid.routingproblem
+package utils
 
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.locationtech.jts.geom.Coordinate
-import utils.GraphUtils
 import utils.MvUtils.Connections
 
 import java.time.Instant

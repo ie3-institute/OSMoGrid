@@ -4,7 +4,7 @@
  * Research group Distribution grid planning and operation
  */
 
-package edu.ie3.osmogrid.grid
+package utils
 
 import edu.ie3.datamodel.models.StandardUnits._
 import edu.ie3.datamodel.models.input.NodeInput

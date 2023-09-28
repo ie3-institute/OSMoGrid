@@ -9,7 +9,7 @@ package utils
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.grid.GridConversion.NodeConversion
+import GridConversion.NodeConversion
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.jgrapht.GraphPath

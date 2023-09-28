@@ -10,8 +10,8 @@ import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.grid.GridConversion.NodeConversion
-import edu.ie3.osmogrid.routingproblem.Solver.StepResultOption
+import utils.GridConversion.NodeConversion
+import utils.Solver.StepResultOption
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.locationtech.jts.geom.Coordinate

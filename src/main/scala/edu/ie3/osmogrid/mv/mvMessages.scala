@@ -13,7 +13,7 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.RequestFailedException
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.grid.GridConversion.NodeConversion
+import utils.GridConversion.NodeConversion
 import edu.ie3.osmogrid.io.input.{InputDataEvent, InputDataProvider, Response}
 import edu.ie3.osmogrid.model.OsmoGridModel.MvOsmoGridModel
 import edu.ie3.osmogrid.mv.MvGraphBuilder.MvGraph

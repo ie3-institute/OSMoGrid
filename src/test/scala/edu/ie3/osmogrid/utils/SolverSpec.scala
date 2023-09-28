@@ -4,13 +4,14 @@
  * Research group Distribution grid planning and operation
  */
 
-package edu.ie3.osmogrid.routingproblem
+package edu.ie3.osmogrid.utils
 
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.routingproblem.Solver.{StepResult, StepResultOption}
 import edu.ie3.test.common.{MvTestData, UnitSpec}
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
+import utils.Solver
+import utils.Solver.{StepResult, StepResultOption}
 
 import scala.jdk.CollectionConverters._
 
