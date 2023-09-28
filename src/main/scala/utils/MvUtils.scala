@@ -9,6 +9,7 @@ package utils
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.osmogrid.graph.OsmGraph
+import edu.ie3.osmogrid.grid.GridConversion.NodeConversion
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.jgrapht.GraphPath
@@ -22,9 +23,20 @@ import javax.measure.quantity.Length
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
+/** Utility object for mv generation.
+  */
 object MvUtils {
   val log: Logger = LoggerFactory.getLogger(MvUtils.getClass)
 
+  /** Utility method for creating [[NodeConversion]] and [[Connections]]
+    * utilities.
+    * @param nodes
+    *   all psdm nodes
+    * @param streetGraph
+    *   graph with osm nodes and connections
+    * @return
+    *   utility objects
+    */
   def createDefinitions(
       nodes: List[NodeInput],
       streetGraph: OsmGraph
@@ -32,7 +44,7 @@ object MvUtils {
     val allOsmNodes: List[Node] = streetGraph.vertexSet().asScala.toList
 
     // building node conversion
-    val nodeConversion: NodeConversion = buildNodeConversion(nodes, allOsmNodes)
+    val nodeConversion: NodeConversion = NodeConversion(nodes, allOsmNodes)
     val osmNodes: List[Node] = nodeConversion.conversionToOsm.values.toList
 
     // finding all unique connections and building connections
@@ -45,30 +57,15 @@ object MvUtils {
     (nodeConversion, connections)
   }
 
-  def buildNodeConversion(
-      nodes: List[NodeInput],
-      osmNodes: List[Node]
-  ): NodeConversion = {
-    val conversion: Map[NodeInput, Node] = nodes.map { node =>
-      val coordinate = node.getGeoPosition.getCoordinate
-
-      val sortedList = osmNodes
-        .map { node: Node =>
-          (
-            node,
-            GeoUtils.calcHaversine(coordinate, node.coordinate.getCoordinate)
-          )
-        }
-        .sortBy(_._2)
-
-      node -> sortedList(1)._1
-    }.toMap
-
-    NodeConversion(conversion, conversion.map { case (k, v) => v -> k })
-  }
-
-  // uses haversine for now
-  // TODO: Calculating distance via shortest path algorithm
+  /** Method for creating unique [[Connection]]s.
+    * @param uniqueCombinations
+    *   list of all unique combinations of [[Node]]s
+    * @param streetGraph
+    *   containing connections between [[Node]]s
+    * @return
+    *   a list of unique [[Connection]]s
+    */
+  // TODO: Calculating distance via shortest path algorithm, instead of haversine
   private def buildUniqueConnections(
       uniqueCombinations: List[(Node, Node)],
       streetGraph: OsmGraph
@@ -81,8 +78,6 @@ object MvUtils {
       Connection(nodeA, nodeB, distance, None)
     }
   }
-
-  // used to get all possible unique connections ()
 
   /** Method to find all unique connections. <p> Uniqueness: a -> b == b -> a
     *
@@ -116,69 +111,6 @@ object MvUtils {
 
     // returns all unique connections
     connections.asScala.toList
-  }
-
-  /** This utility object is used to easily convert [[NodeInput]]s and
-    * corresponding [[Node]]s into each other.
-    * @param conversionToOsm
-    *   conversion [[NodeInput]] -> [[Node]]
-    * @param conversionToPSDM
-    *   conversion [[Node]] -> [[NodeInput]]
-    */
-  final case class NodeConversion(
-      conversionToOsm: Map[NodeInput, Node],
-      conversionToPSDM: Map[Node, NodeInput]
-  ) {
-
-    /** Returns all [[NodeInput]]s.
-      */
-    def allPsdmNodes: List[NodeInput] = conversionToPSDM.values.toList
-
-    /** Returns all [[Node]]s.
-      */
-    def allOsmNodes: List[Node] = conversionToOsm.values.toList
-
-    /** Converts a given [[NodeInput]] into a [[Node]].
-      * @param node
-      *   given psdm node
-      * @return
-      *   a osm node
-      */
-    def getOsmNode(node: NodeInput): Node = {
-      conversionToOsm(node)
-    }
-
-    /** Converts multiple given [[NodeInput]]s into corresponding [[Node]]s.
-      * @param nodes
-      *   list of psdm nodes
-      * @return
-      *   list of osm nodes
-      */
-    def getOsmNodes(nodes: List[NodeInput]): List[Node] = {
-      nodes.map { node => conversionToOsm(node) }
-    }
-
-    /** Converts a given [[Node]] into a [[NodeInput]].
-      *
-      * @param node
-      *   given osm node
-      * @return
-      *   a psdm node
-      */
-    def getPSDMNode(node: Node): NodeInput = {
-      conversionToPSDM(node)
-    }
-
-    /** Converts multiple given [[Node]]s into corresponding [[NodeInput]]s.
-      *
-      * @param nodes
-      *   list of osm nodes
-      * @return
-      *   list of psdm nodes
-      */
-    def getPSDMNodes(nodes: List[Node]): List[NodeInput] = {
-      nodes.map { node => conversionToPSDM(node) }
-    }
   }
 
   /** This utility object contains all known [[Connection]]s.

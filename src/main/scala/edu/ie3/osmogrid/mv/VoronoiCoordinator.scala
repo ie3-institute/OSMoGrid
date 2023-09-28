@@ -11,6 +11,8 @@ import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.graph.OsmGraph
+import edu.ie3.osmogrid.grid.GridConversion
+import edu.ie3.osmogrid.grid.GridConversion.NodeConversion
 import edu.ie3.osmogrid.routingproblem.Solver
 import edu.ie3.util.osm.model.OsmEntity.Node
 import utils.MvUtils
@@ -18,68 +20,104 @@ import utils.VoronoiUtils.VoronoiPolygon
 
 object VoronoiCoordinator extends ActorStopSupportStateless {
 
-  // should receive a voronoi polynomial and a street graph
-  def apply(
+  /** Method for creating a [[VoronoiCoordinator]].
+    * @param coordinator
+    *   superior actor
+    * @return
+    *   a new [[Behavior]]
+    */
+  def apply(coordinator: ActorRef[MvRequest]): Behavior[MvRequest] = idle(
+    coordinator: ActorRef[MvRequest]
+  )
+
+  /** Idle behavior of the [[VoronoiCoordinator]].
+    * @param coordinator
+    *   superior actor
+    * @return
+    *   a new [[Behavior]]
+    */
+  private def idle(coordinator: ActorRef[MvRequest]): Behavior[MvRequest] =
+    Behaviors
+      .receive[MvRequest] {
+        case (
+              ctx,
+              StartGraphGeneration(nr, polygon, streetGraph, cfg)
+            ) =>
+          val (graph, nodeConversion) =
+            generateMvGraph(nr, polygon, streetGraph, coordinator, ctx)
+
+          // start conversion of nodes and lines
+          ctx.self ! StartGraphConversion(nr, graph, nodeConversion, cfg)
+          convertingGraphToPSDM(coordinator)
+        case (ctx, MvTerminate) =>
+          terminate(ctx.log)
+        case (ctx, unsupported) =>
+          ctx.log.warn(
+            s"Received unsupported message '$unsupported' in data awaiting state. Keep on going."
+          )
+          Behaviors.same
+      }
+      .receiveSignal { case (ctx, PostStop) =>
+        postStopCleanUp(ctx.log)
+      }
+
+  /** @param nr
+    *   subnet number
+    * @param voronoiPolygon
+    *   polygon with nodes
+    * @param streetGraph
+    *   complete osm street graph
+    * @param coordinator
+    *   superior actor
+    * @param ctx
+    *   context
+    * @return
+    *   a osm graph and the used node conversion object
+    */
+  private def generateMvGraph(
+      nr: Int,
       voronoiPolygon: VoronoiPolygon,
       streetGraph: OsmGraph,
       coordinator: ActorRef[MvRequest],
-      ctx: ActorContext[MvRequest],
-      cfg: OsmoGridConfig.Generation.Mv
-  ): Behavior[MvRequest] = {
-    ctx.self ! StartGraphGeneration(cfg)
-    generateMvGraph(voronoiPolygon, streetGraph, coordinator)
+      ctx: ActorContext[MvRequest]
+  ): (OsmGraph, NodeConversion) = {
+    ctx.log.debug(s"Start generation for grid $nr.")
+
+    // if this voronoi polygon contains a polygon, we can reduce the complete street graph in order to reduce the calculation time
+    val reducedStreetGraph: OsmGraph = voronoiPolygon.polygon
+      .map { polygon => streetGraph.subGraph(polygon) }
+      .getOrElse(streetGraph)
+
+    // creating necessary utility objects
+    val (nodeConversion, connections) =
+      MvUtils.createDefinitions(voronoiPolygon.allNodes, reducedStreetGraph)
+
+    val transitionNode: Node = nodeConversion.getOsmNode(
+      voronoiPolygon.transitionPointToHigherVoltLvl
+    )
+
+    // using the solver to solve the routing problem
+    val graph: OsmGraph = Solver.solve(
+      transitionNode,
+      connections
+    )
+
+    (graph, nodeConversion)
   }
-
-  // should generate the mv grid for the given voronoi polynomial
-  private def generateMvGraph(
-      voronoiPolygon: VoronoiPolygon,
-      streetGraph: OsmGraph,
-      coordinator: ActorRef[MvRequest]
-  ): Behavior[MvRequest] = Behaviors
-    .receive[MvRequest] {
-      case (ctx, StartGraphGeneration(cfg)) =>
-        // if this voronoi polygon contains a polygon, we can reduce the complete street graph in order to reduce the calculation time
-        val reducedStreetGraph: OsmGraph = voronoiPolygon.polygon
-          .map { polygon => streetGraph.subGraph(polygon) }
-          .getOrElse(streetGraph)
-
-        // creating necessary utility objects
-        val (nodeConversion, connections) =
-          MvUtils.createDefinitions(voronoiPolygon.allNodes, reducedStreetGraph)
-
-        val transitionNode: Node = nodeConversion.getOsmNode(
-          voronoiPolygon.transitionPointToHigherVoltLvl
-        )
-
-        // using the solver to solve the routing problem
-        val graph: OsmGraph = Solver.solve(
-          transitionNode,
-          connections
-        )
-
-        // conversion from osm graph to PSDM grid model
-        ctx.self ! StartGraphConversion(cfg)
-        convertingGraphToPSDM(graph, coordinator)
-      case (ctx, MvTerminate) =>
-        terminate(ctx.log)
-      case (ctx, unsupported) =>
-        ctx.log.warn(
-          s"Received unsupported message '$unsupported' in data awaiting state. Keep on going."
-        )
-        Behaviors.same
-    }
-    .receiveSignal { case (ctx, PostStop) =>
-      postStopCleanUp(ctx.log)
-    }
 
   // conversion of the generated graph
   private def convertingGraphToPSDM(
-      graph: OsmGraph,
       coordinator: ActorRef[MvRequest]
   ): Behavior[MvRequest] = Behaviors
     .receive[MvRequest] {
-      case (ctx, StartGraphConversion(cfg)) =>
-        ???
+      case (ctx, StartGraphConversion(nr, graph, nodeConversion, cfg)) =>
+        ctx.log.debug(s"Starting conversion for the graph of the grid $nr.")
+
+        val (nodes, lines) = GridConversion.convertMv(nr, graph, nodeConversion)
+
+        // sending the finished data back to the coordinator
+        coordinator ! FinishedMvGridData(nodes, lines)
+        Behaviors.stopped
       case (ctx, MvTerminate) =>
         terminate(ctx.log)
       case (ctx, unsupported) =>

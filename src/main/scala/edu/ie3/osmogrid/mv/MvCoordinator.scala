@@ -168,11 +168,22 @@ object MvCoordinator extends ActorStopSupportStateless {
           )
         }
 
-        polygons.foreach { polygon =>
-          VoronoiCoordinator(polygon, streetGraph, ctx.self, ctx, cfg)
+        // spawns a voronoi coordinator for each polygon
+        polygons.zipWithIndex.foreach { case (polygon, index) =>
+          val nr: Int = 100 + index * 20
+
+          val voronoiCoordinator: ActorRef[MvRequest] =
+            ctx.spawnAnonymous(VoronoiCoordinator(ctx.self))
+          voronoiCoordinator ! StartGraphGeneration(
+            nr,
+            polygon,
+            streetGraph,
+            cfg
+          )
         }
 
-        Behaviors.same
+        // awaiting the psdm grid data
+        awaitResults()
       case (ctx, MvTerminate) =>
         terminate(ctx.log)
       case (ctx, unsupported) =>
@@ -184,55 +195,12 @@ object MvCoordinator extends ActorStopSupportStateless {
     .receiveSignal { case (ctx, PostStop) =>
       postStopCleanUp(ctx.log)
     }
-
-  private def awaitMvGraphResults(
-      awaitingMvGraphData: AwaitingMvGraphData
-  ): Behavior[MvRequest] = Behaviors
-    .receive[MvRequest] {
-      case (ctx, FinishedMvGraph(mvGraph)) =>
-        ctx.log.debug(
-          s"Received mv graph #${awaitingMvGraphData.completed + 1} (${awaitingMvGraphData.uncompleted - 1} to go)."
-        )
-
-        val updatedData = awaitingMvGraphData
-          .copy(graphs = awaitingMvGraphData.graphs :+ mvGraph)
-
-        if (updatedData.isComplete) {
-          ctx.self ! StartMvGraphConversion(
-            awaitingMvGraphData.cfg,
-            awaitingMvGraphData.graphs
-          )
-          convertGraphToGrid(
-            awaitingMvGraphData.guardian,
-            awaitingMvGraphData.msgAdapters
-          )
-        } else awaitMvGraphResults(updatedData)
-      case (ctx, MvTerminate) =>
-        terminate(ctx.log)
-      case (ctx, unsupported) =>
-        ctx.log.warn(
-          s"Received unsupported message '$unsupported' in data awaiting state. Keep on going."
-        )
-        Behaviors.same
-    }
-    .receiveSignal { case (ctx, PostStop) =>
-      postStopCleanUp(ctx.log)
-    }
-
-  // should receive mv graph
-  // should call MvGridBuilder
-  // should wait for mv grid
-  // should send mv grid to awaitResult
-  private def convertGraphToGrid(
-      guardian: ActorRef[MvResponse],
-      msgAdapters: MvMessageAdapters
-  ): Behavior[MvRequest] = ???
 
   // should wait for all mv graphs
   // should call convertGraphToGrid for all mv graphs
   // should wait for all mv grids
   // should send all results to sendResultsToGuardian
-  private def awaitResults(): Behavior[MvResponse] = ???
+  private def awaitResults(): Behavior[MvRequest] = ???
 
   // should send all mv grids to guardian
   private def sendResultsToGuardian(): Behavior[MvRequest] = ???

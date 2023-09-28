@@ -9,6 +9,7 @@ package edu.ie3.osmogrid.mv
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.osmogrid.graph.OsmGraph
+import edu.ie3.osmogrid.grid.GridConversion.NodeConversion
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.MvOsmoGridModel
 import edu.ie3.osmogrid.routingproblem.Solver.solve
@@ -18,12 +19,7 @@ import org.jgrapht.alg.interfaces.ShortestPathAlgorithm.SingleSourcePaths
 import org.jgrapht.alg.shortestpath.BFSShortestPath
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
-import utils.MvUtils.{
-  Connection,
-  Connections,
-  NodeConversion,
-  getAllUniqueCombinations
-}
+import utils.MvUtils.{Connection, Connections, getAllUniqueCombinations}
 
 object MvGraphBuilder {
 

@@ -7,14 +7,18 @@
 package edu.ie3.osmogrid.mv
 
 import akka.actor.typed.ActorRef
+import edu.ie3.datamodel.models.input.NodeInput
+import edu.ie3.datamodel.models.input.connector.LineInput
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.RequestFailedException
 import edu.ie3.osmogrid.graph.OsmGraph
+import edu.ie3.osmogrid.grid.GridConversion.NodeConversion
 import edu.ie3.osmogrid.io.input.{InputDataEvent, InputDataProvider, Response}
 import edu.ie3.osmogrid.model.OsmoGridModel.MvOsmoGridModel
 import edu.ie3.osmogrid.mv.MvGraphBuilder.MvGraph
 import org.slf4j.Logger
+import utils.VoronoiUtils.VoronoiPolygon
 
 import scala.util.{Failure, Success, Try}
 
@@ -25,9 +29,15 @@ object ReqMvGrids extends MvRequest
 object MvTerminate extends MvRequest
 
 final case class StartGraphGeneration(
+    nr: Int,
+    polygon: VoronoiPolygon,
+    streetGraph: OsmGraph,
     cfg: OsmoGridConfig.Generation.Mv
 ) extends MvRequest
 final case class StartGraphConversion(
+    nr: Int,
+    graph: OsmGraph,
+    nodeConversion: NodeConversion,
     cfg: OsmoGridConfig.Generation.Mv
 ) extends MvRequest
 
@@ -50,8 +60,9 @@ final case class StartMvGraphConversion(
     graphs: List[MvGraph]
 ) extends MvRequest
 
-final case class FinishedMvGraph(
-    mvGraph: MvGraph
+final case class FinishedMvGridData(
+    nodes: Set[NodeInput],
+    lines: Set[LineInput]
 ) extends MvRequest
 
 final case class MvMessageAdapters(
