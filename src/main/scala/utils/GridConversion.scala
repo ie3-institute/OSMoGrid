@@ -175,7 +175,7 @@ object GridConversion {
           }
           .sortBy(_._2)
 
-        node -> sortedList(1)._1
+        node -> sortedList(0)._1
       }.toMap
 
       NodeConversion(conversion, conversion.map { case (k, v) => v -> k })

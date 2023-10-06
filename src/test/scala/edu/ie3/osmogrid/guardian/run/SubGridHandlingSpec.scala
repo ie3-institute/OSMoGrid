@@ -92,7 +92,10 @@ class SubGridHandlingSpec
           |input.osm.file.pbf=test.pbf
           |input.asset.file.directory=assets/
           |output.csv.directory=output/
-          |generation.lv.distinctHouseConnections=true""".stripMargin
+          |generation.lv.distinctHouseConnections=true
+          |generation.mv.spawnMissingHvNodes = false
+          |generation.mv.voltageLevel.id = mv
+          |generation.mv.voltageLevel.default = 10.0""".stripMargin
         }
         .success
         .get

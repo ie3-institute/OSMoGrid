@@ -71,6 +71,9 @@ object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
            |generation.lv.boundaryAdminLevel.starting = 2
            |generation.lv.boundaryAdminLevel.lowest = 8
            |generation.lv.minDistance = 10
+           |generation.mv.spawnMissingHvNodes = false
+           |generation.mv.voltageLevel.id = mv
+           |generation.mv.voltageLevel.default = 10.0
            |""".stripMargin
       )
       .success

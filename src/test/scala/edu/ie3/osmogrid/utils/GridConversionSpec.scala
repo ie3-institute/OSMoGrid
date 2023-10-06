@@ -45,6 +45,36 @@ class GridConversionSpec extends UnitSpec with MvTestData {
   }
 
   "The NodeConversion" should {
+    "can be applied correctly" in {
+      val nodes = List(nodeToHv, nodeInMv2, nodeInMv3, nodeInMv6)
+      val osmNodes = List(
+        transitionPoint,
+        osmNode1,
+        osmNode2,
+        osmNode3,
+        osmNode4,
+        osmNode5,
+        osmNode6
+      )
+
+      val nodeConversion = NodeConversion(nodes, osmNodes)
+
+      nodeConversion.allPsdmNodes shouldBe nodes
+      nodeConversion.allOsmNodes shouldBe List(
+        transitionPoint,
+        osmNode2,
+        osmNode3,
+        osmNode6
+      )
+
+      nodeConversion.conversionToOsm shouldBe Map(
+        nodeToHv -> transitionPoint,
+        nodeInMv2 -> osmNode2,
+        nodeInMv3 -> osmNode3,
+        nodeInMv6 -> osmNode6
+      )
+    }
+
     "return all psdm nodes correctly" in {
       val allNodes = nodeConversion.allPsdmNodes
       allNodes.size shouldBe 7

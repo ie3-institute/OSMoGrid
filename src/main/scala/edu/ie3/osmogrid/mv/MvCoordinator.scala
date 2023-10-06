@@ -50,16 +50,6 @@ object MvCoordinator extends ActorStopSupportStateless {
         ctx.log.debug("Request input data.")
 
         /* Ask for OSM data */
-        val filter = stateData.cfg.osm.filter
-          .map(cfg =>
-            MvFilter(
-              cfg.building.toSet,
-              cfg.highway.toSet,
-              cfg.landuse.toSet
-            )
-          )
-          .getOrElse(MvFilter())
-
         val replyToSelf = stateData.msgAdapter.inputDataProvider
 
         /*

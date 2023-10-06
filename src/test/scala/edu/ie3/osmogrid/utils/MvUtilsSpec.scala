@@ -124,12 +124,9 @@ class MvUtilsSpec extends UnitSpec with MvTestData {
       }
     }
 
-    "throws an exception for not known node combinations when retrieving distance" in {
-      Try(connections.getDistance(osmNode1, osmNode6)) match {
-        case util.Failure(exception) =>
-          exception.getMessage shouldBe "key not found: (Node(6,50.5,8.5,Map(),None),Node(1,50.5,7.0,Map(),None))"
-        case util.Success(_) => throw new Error("The test should not pass!")
-      }
+    "return a connection with Double.MaxValue for not known node combinations when retrieving distance" in {
+      connections.getDistance(osmNode1, osmNode6) shouldBe Quantities
+        .getQuantity(Double.MaxValue, Units.METRE)
     }
 
     "return the nearest neighbors for a given node" in {

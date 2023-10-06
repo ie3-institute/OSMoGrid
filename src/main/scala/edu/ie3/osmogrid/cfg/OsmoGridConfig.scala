@@ -140,57 +140,10 @@ object OsmoGridConfig {
     }
 
     final case class Mv(
-        osm: OsmoGridConfig.Generation.Mv.Osm,
         spawnMissingHvNodes: scala.Boolean,
         voltageLevel: OsmoGridConfig.Generation.Mv.VoltageLevel
     )
     object Mv {
-      final case class Osm(
-          filter: scala.Option[OsmoGridConfig.Generation.Mv.Osm.Filter]
-      )
-      object Osm {
-        final case class Filter(
-            building: scala.List[java.lang.String],
-            highway: scala.List[java.lang.String],
-            landuse: scala.List[java.lang.String]
-        )
-        object Filter {
-          def apply(
-              c: com.typesafe.config.Config,
-              parentPath: java.lang.String,
-              $tsCfgValidator: $TsCfgValidator
-          ): OsmoGridConfig.Generation.Mv.Osm.Filter = {
-            OsmoGridConfig.Generation.Mv.Osm.Filter(
-              building =
-                $_L$_str(c.getList("building"), parentPath, $tsCfgValidator),
-              highway =
-                $_L$_str(c.getList("highway"), parentPath, $tsCfgValidator),
-              landuse =
-                $_L$_str(c.getList("landuse"), parentPath, $tsCfgValidator)
-            )
-          }
-        }
-
-        def apply(
-            c: com.typesafe.config.Config,
-            parentPath: java.lang.String,
-            $tsCfgValidator: $TsCfgValidator
-        ): OsmoGridConfig.Generation.Mv.Osm = {
-          OsmoGridConfig.Generation.Mv.Osm(
-            filter =
-              if (c.hasPathOrNull("filter"))
-                scala.Some(
-                  OsmoGridConfig.Generation.Mv.Osm.Filter(
-                    c.getConfig("filter"),
-                    parentPath + "filter.",
-                    $tsCfgValidator
-                  )
-                )
-              else None
-          )
-        }
-      }
-
       final case class VoltageLevel(
           default: scala.Double,
           id: java.lang.String,
@@ -222,12 +175,6 @@ object OsmoGridConfig {
           $tsCfgValidator: $TsCfgValidator
       ): OsmoGridConfig.Generation.Mv = {
         OsmoGridConfig.Generation.Mv(
-          osm = OsmoGridConfig.Generation.Mv.Osm(
-            if (c.hasPathOrNull("osm")) c.getConfig("osm")
-            else com.typesafe.config.ConfigFactory.parseString("osm{}"),
-            parentPath + "osm.",
-            $tsCfgValidator
-          ),
           spawnMissingHvNodes =
             !c.hasPathOrNull("spawnMissingHvNodes") || c.getBoolean(
               "spawnMissingHvNodes"

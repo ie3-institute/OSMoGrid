@@ -17,6 +17,7 @@ import edu.ie3.util.osm.model.OsmEntity.Node
 import org.locationtech.jts.geom.Coordinate
 import tech.units.indriya.quantity.Quantities
 import utils.MvUtils.{Connection, Connections, getAllUniqueCombinations}
+import utils.VoronoiUtils.VoronoiPolygon
 
 import java.util.UUID
 
@@ -174,4 +175,22 @@ trait MvTestData {
     )
   }
 
+  val polygon: VoronoiPolygon =
+    VoronoiPolygon(nodeToHv, List(nodeInMv1, nodeInMv2), None)
+
+  val streetGraph: OsmGraph = {
+    val graph = new OsmGraph()
+
+    connections.nodes.foreach { n => graph.addVertex(n) }
+
+    List(
+      connections.getConnection(transitionPoint, osmNode1),
+      connections.getConnection(transitionPoint, osmNode2),
+      connections.getConnection(osmNode1, osmNode2),
+      connections.getConnection(osmNode2, osmNode3),
+      connections.getConnection(osmNode3, osmNode1)
+    ).foreach { c => graph.addConnection(c) }
+
+    graph
+  }
 }

@@ -48,6 +48,7 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
           ctx.self ! StartGraphConversion(nr, graph, nodeConversion, cfg)
           convertingGraphToPSDM(coordinator)
         case (ctx, MvTerminate) =>
+          ctx.log.info(s"Got request to terminate.")
           terminate(ctx.log)
         case (ctx, unsupported) =>
           ctx.log.warn(
@@ -103,7 +104,12 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
     (graph, nodeConversion)
   }
 
-  // conversion of the generated graph
+  /** Conversion behaviour of the [[VoronoiCoordinator]]
+    * @param coordinator
+    *   superior actor
+    * @return
+    *   a new [[Behavior]]
+    */
   private def convertingGraphToPSDM(
       coordinator: ActorRef[MvRequest]
   ): Behavior[MvRequest] = Behaviors
@@ -111,12 +117,14 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
       case (ctx, StartGraphConversion(nr, graph, nodeConversion, cfg)) =>
         ctx.log.debug(s"Starting conversion for the graph of the grid $nr.")
 
+        // converting the graph
         val (nodes, lines) = GridConversion.convertMv(nr, graph, nodeConversion)
 
         // sending the finished data back to the coordinator
         coordinator ! FinishedMvGridData(nodes, lines)
         Behaviors.stopped
       case (ctx, MvTerminate) =>
+        ctx.log.info(s"Got request to terminate.")
         terminate(ctx.log)
       case (ctx, unsupported) =>
         ctx.log.warn(
@@ -130,5 +138,7 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
 
   /** Function to perform cleanup tasks while shutting down
     */
-  override protected def cleanUp(): Unit = ???
+  override protected def cleanUp(): Unit = {
+    /* Nothing to do here. At least until now. */
+  }
 }

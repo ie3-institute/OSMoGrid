@@ -83,7 +83,7 @@ object ConfigFailFast extends LazyLogging {
   }
 
   private def checkMvConfig(mv: OsmoGridConfig.Generation.Mv): Unit = mv match {
-    case Mv(_, _, _) =>
+    case Mv(_, _) =>
   }
 
   private def checkInputConfig(input: OsmoGridConfig.Input): Unit =
