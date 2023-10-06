@@ -3,12 +3,12 @@ plugins {
   id 'java' //java support
   id 'scala'
   id 'pmd' // code check, working on source code
-  id 'com.diffplug.spotless' version '6.21.0'//code format
+  id 'com.diffplug.spotless' version '6.22.0'//code format
   id 'com.github.spotbugs' version '5.1.3' // code check, working on byte code
   id 'de.undercouch.download' version '5.5.0'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.32" // run scalatest without specific spec task
-  id "org.sonarqube" version "4.3.0.3225" // sonarqube
+  id "org.sonarqube" version "4.4.0.3356" // sonarqube
   id "org.scoverage" version "8.0.3" // scala code coverage scoverage
   id 'net.thauvin.erik.gradle.semver' version '1.0.4' // semantic versioning
 }
