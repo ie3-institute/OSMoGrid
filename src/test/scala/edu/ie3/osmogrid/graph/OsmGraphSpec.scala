@@ -29,6 +29,19 @@ class OsmGraphSpec extends UnitSpec with MvTestData {
       graph
     }
 
+    "add a connection correctly" in {
+      val graph = newGraph
+      graph.addVertex(osmNode3)
+      graph.addConnection(connections.getConnection(osmNode1, osmNode3))
+
+      graph.vertexSet().size() shouldBe 4
+      graph.edgeSet().asScala shouldBe Set(
+        graph.getEdge(transitionPoint, osmNode1),
+        graph.getEdge(transitionPoint, osmNode2),
+        graph.getEdge(osmNode1, osmNode3)
+      )
+    }
+
     "be copied correctly" in {
       val graph = newGraph
 

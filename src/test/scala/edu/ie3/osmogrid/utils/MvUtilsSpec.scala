@@ -6,14 +6,156 @@
 
 package edu.ie3.osmogrid.utils
 
+import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.test.common.{MvTestData, UnitSpec}
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
-import utils.MvUtils.{Connection, Connections, getAllUniqueCombinations}
+import utils.GridConversion.NodeConversion
+import utils.MvUtils
+import utils.MvUtils.{
+  Connection,
+  Connections,
+  generateMvGraph,
+  getAllUniqueCombinations
+}
+import utils.VoronoiUtils.VoronoiPolygon
 
+import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 class MvUtilsSpec extends UnitSpec with MvTestData {
+  "The MvUtils" should {
+    def streetGraph: OsmGraph = {
+      val streetGraph = new OsmGraph()
+      streetGraph.addVertex(transitionPoint)
+      streetGraph.addVertex(osmNode1)
+      streetGraph.addVertex(osmNode2)
+      streetGraph.addVertex(osmNode3)
+      streetGraph.addEdge(transitionPoint, osmNode1)
+      streetGraph.addEdge(transitionPoint, osmNode2)
+      streetGraph.addEdge(osmNode1, osmNode2)
+      streetGraph.addEdge(osmNode1, osmNode3)
+
+      streetGraph
+    }
+
+    "create definitions correctly" in {
+      val createDefinitions = PrivateMethod[(NodeConversion, Connections)](
+        Symbol("createDefinitions")
+      )
+      val nodes = List(nodeToHv, nodeInMv1, nodeInMv2)
+
+      val (conversion, conn) =
+        MvUtils invokePrivate createDefinitions(nodes, streetGraph)
+
+      conversion.conversionToPSDM shouldBe Map(
+        transitionPoint -> nodeToHv,
+        osmNode1 -> nodeInMv1,
+        osmNode2 -> nodeInMv2
+      )
+
+      conversion.conversionToOsm shouldBe Map(
+        nodeToHv -> transitionPoint,
+        nodeInMv1 -> osmNode1,
+        nodeInMv2 -> osmNode2
+      )
+
+      conn.nodes shouldBe List(transitionPoint, osmNode1, osmNode2)
+      conn.connections shouldBe Map(
+        transitionPoint -> List(osmNode1, osmNode2),
+        osmNode1 -> List(transitionPoint, osmNode2),
+        osmNode2 -> List(transitionPoint, osmNode1)
+      )
+
+      conn.connectionMap.contains((transitionPoint, osmNode1)) shouldBe true
+      conn.connectionMap.contains((transitionPoint, osmNode2)) shouldBe true
+      conn.connectionMap.contains((osmNode1, transitionPoint)) shouldBe true
+      conn.connectionMap.contains((osmNode1, osmNode2)) shouldBe true
+      conn.connectionMap.contains((osmNode2, transitionPoint)) shouldBe true
+      conn.connectionMap.contains((osmNode2, osmNode1)) shouldBe true
+    }
+
+    "generate mv graph correctly" in {
+      val voronoiPolygon =
+        VoronoiPolygon(nodeToHv, List(nodeInMv1, nodeInMv2), None)
+
+      val (mvGraph, conversion) =
+        generateMvGraph(1, voronoiPolygon, streetGraph)
+
+      mvGraph.vertexSet().asScala shouldBe Set(
+        transitionPoint,
+        osmNode1,
+        osmNode2
+      )
+      mvGraph.edgeSet().asScala shouldBe Set(
+        mvGraph.getEdge(transitionPoint, osmNode1),
+        mvGraph.getEdge(transitionPoint, osmNode2),
+        mvGraph.getEdge(osmNode1, osmNode2)
+      )
+
+      conversion.conversionToPSDM shouldBe Map(
+        transitionPoint -> nodeToHv,
+        osmNode1 -> nodeInMv1,
+        osmNode2 -> nodeInMv2
+      )
+
+      conversion.conversionToOsm shouldBe Map(
+        nodeToHv -> transitionPoint,
+        nodeInMv1 -> osmNode1,
+        nodeInMv2 -> osmNode2
+      )
+    }
+
+    "build unique connections correctly" in {
+      val buildUniqueConnections =
+        PrivateMethod[List[Connection]](Symbol("buildUniqueConnections"))
+      val streetGraph = new OsmGraph()
+
+      val uniqueCombinations =
+        List((osmNode1, osmNode2), (osmNode1, osmNode3), (osmNode2, osmNode3))
+      val connections = MvUtils invokePrivate buildUniqueConnections(
+        uniqueCombinations,
+        streetGraph
+      )
+
+      connections.size shouldBe 3
+
+      connections(0).nodeA shouldBe osmNode1
+      connections(0).nodeB shouldBe osmNode2
+      connections(0).distance.getValue
+        .doubleValue() shouldBe 90358.398419268055564653
+      connections(0).path shouldBe None
+
+      connections(1).nodeA shouldBe osmNode1
+      connections(1).nodeB shouldBe osmNode3
+      connections(1).distance.getValue
+        .doubleValue() shouldBe 116699.607344808514405019
+      connections(1).path shouldBe None
+
+      connections(2).nodeA shouldBe osmNode2
+      connections(2).nodeB shouldBe osmNode3
+      connections(2).distance.getValue
+        .doubleValue() shouldBe 170651.262486009566969106
+      connections(2).path shouldBe None
+    }
+
+    "return all unique combinations correctly" in {
+      val cases = Table(
+        ("nodes", "combinations"),
+        (List(osmNode1), List.empty),
+        (List(osmNode1, osmNode2), List((osmNode1, osmNode2))),
+        (
+          List(osmNode1, osmNode2, osmNode3),
+          List((osmNode1, osmNode2), (osmNode1, osmNode3), (osmNode2, osmNode3))
+        )
+      )
+
+      forAll(cases) { (nodes, combinations) =>
+        getAllUniqueCombinations(nodes) shouldBe combinations
+      }
+    }
+  }
+
   "The Connections" should {
     val nodes = List(transitionPoint, osmNode1, osmNode2, osmNode3)
     val connection1 = Connection(

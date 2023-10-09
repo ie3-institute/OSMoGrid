@@ -62,7 +62,11 @@ class OsmGraph(
     this.addEdge(nodeA, nodeB, edge)
   }
 
-  def addConnection(connection: Connection): DistanceWeightedEdge = {
+  /** Method for adding the information of a [[Connection]] to this graph.
+    * @param connection
+    *   to be added
+    */
+  def addConnection(connection: Connection): Unit = {
     addWeightedEdge(connection.nodeA, connection.nodeB, connection.distance)
     getEdge(connection.nodeA, connection.nodeB)
   }
@@ -164,6 +168,9 @@ class OsmGraph(
     false
   }
 
+  /** Returns true if at least one vertex of this graph is connected to more
+    * than two edges.
+    */
   def tooManyVertexConnections(): Boolean = {
     vertexSet().asScala.foreach { v =>
       if (edgesOf(v).size() > 2) {
@@ -181,12 +188,14 @@ class OsmGraph(
     *   a new [[OsmGraph]]
     */
   def subGraph(polygon: Polygon): OsmGraph = {
+    // filtering out all vertexes than are not inside the polygon
     val vertexes: Set[Node] = vertexSet().asScala
       .filter(vertex =>
         polygon.covers(GeoUtils.buildPoint(vertex.latitude, vertex.longitude))
       )
       .toSet
 
+    // filtering out all edges whose vertexes are not both inside the polygon
     val edges: Set[DistanceWeightedEdge] = edgeSet().asScala
       .filter(edge =>
         vertexes.contains(getEdgeSource(edge)) && vertexes.contains(
@@ -195,6 +204,7 @@ class OsmGraph(
       )
       .toSet
 
+    // creates a new graph that contain only the vertexes and edges inside the polygon
     val subgraph: OsmGraph = new OsmGraph()
     vertexes.foreach(v => subgraph.addVertex(v))
     edges.foreach { edge =>
@@ -207,6 +217,8 @@ class OsmGraph(
     subgraph
   }
 
+  /** Returns the sum of all edge weights in this graph.
+    */
   def calcTotalWeight(): Double = {
     val option: Option[Quantity[Length]] = edgeSet().asScala
       .map { edge => edge.getDistance }

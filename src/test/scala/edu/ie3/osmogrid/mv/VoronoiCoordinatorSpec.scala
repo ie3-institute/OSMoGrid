@@ -80,7 +80,7 @@ class VoronoiCoordinatorSpec
 
       idleTestKit.logEntries() should contain only CapturedLogEvent(
         Level.DEBUG,
-        "Start generation for grid 1."
+        "Start graph generation for grid 1."
       )
 
       idleTestKit.isAlive shouldBe true
@@ -128,7 +128,6 @@ class VoronoiCoordinatorSpec
         case other => fail(s"$other is not expected as a message!")
       }
     }
-
   }
 
   override protected def afterAll(): Unit = {
