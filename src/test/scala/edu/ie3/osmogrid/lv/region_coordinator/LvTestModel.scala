@@ -59,7 +59,8 @@ object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
     val cfg = OsmoGridConfigFactory
       .parseWithoutFallback(
         s"""input.osm.pbf.file = "${resourcePath.replace("\\", "\\\\")}"
-           |input.asset.file.directory = ${getResourcePath("/lv_assets")}
+           |input.asset.file.directory = "${getResourcePath("/lv_assets")
+            .replace("\\", "\\\\")}"
            |input.asset.file.separator = ","
            |input.asset.file.hierarchic = false
            |output.gridName = "test_grid"

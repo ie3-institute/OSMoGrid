@@ -9,12 +9,11 @@ package edu.ie3.osmogrid.mv
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import edu.ie3.osmogrid.ActorStopSupportStateless
-import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.graph.OsmGraph
-import utils.GridConversion.NodeConversion
 import edu.ie3.util.osm.model.OsmEntity.Node
-import utils.{GridConversion, MvUtils, Solver}
+import utils.GridConversion.NodeConversion
 import utils.VoronoiUtils.VoronoiPolygon
+import utils.{GridConversion, MvUtils, Solver}
 
 object VoronoiCoordinator extends ActorStopSupportStateless {
 
