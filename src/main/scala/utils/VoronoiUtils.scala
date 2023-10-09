@@ -35,6 +35,11 @@ object VoronoiUtils {
       polygon: Option[Polygon]
   ) {
 
+    /** Returns all nodes of this polygon.
+      */
+    def allNodes: List[NodeInput] =
+      transitionPointsToLowerVoltLvl :+ transitionPointToHigherVoltLvl
+
     /** Method to add nodes, that are connected to a lower voltage level, to
       * this voronoi polygon.
       * @param nodes
