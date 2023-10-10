@@ -16,9 +16,11 @@ import akka.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.ConfigFailFastSpec.viableConfigurationString
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.IllegalConfigException
+import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.mv.{MvRequest, MvResponse}
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.slf4j.event.Level
 
@@ -80,6 +82,8 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         /* One message adapter is registered */
         idleTestKit
           .expectEffectType[MessageAdapter[coordinator.Response, Request]]
+        idleTestKit
+          .expectEffectType[MessageAdapter[MvResponse, MvRequest]]
 
         /* Check if I/O actors and LvCoordinator are spawned and watched correctly */
         idleTestKit.expectEffectPF {
@@ -119,25 +123,27 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
       val running = PrivateMethod[Behavior[Request]](Symbol("running"))
 
       /* Test probes */
-      val lvCoordinatorAdapter =
-        testKit.createTestProbe[coordinator.Response]()
+      val lvCoordinatorAdapter = testKit.createTestProbe[coordinator.Response]()
+      val mvCoordinatorAdapter = testKit.createTestProbe[MvResponse]()
       val inputDataProvider =
         testKit.createTestProbe[input.InputDataEvent]()
       val resultListener = testKit.createTestProbe[ResultListenerProtocol]()
       val lvCoordinator = testKit.createTestProbe[coordinator.Request]()
+      val mvCoordinator = testKit.createTestProbe[MvRequest]
 
       /* State data */
       val runGuardianData = RunGuardianData(
         runId,
         validConfig,
         Seq.empty[ActorRef[ResultListenerProtocol]],
-        MessageAdapters(lvCoordinatorAdapter.ref)
+        MessageAdapters(lvCoordinatorAdapter.ref, mvCoordinatorAdapter.ref)
       )
       val childReferences = ChildReferences(
         inputDataProvider.ref,
         Some(resultListener.ref),
         Seq.empty,
-        Some(lvCoordinator.ref)
+        Some(lvCoordinator.ref),
+        Some(mvCoordinator.ref)
       )
 
       val runningTestKit = BehaviorTestKit(
@@ -156,7 +162,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
       "handles an incoming result" in new GridSupport {
         runningTestKit.run(
           MessageAdapters.WrappedLvCoordinatorResponse(
-            coordinator.RepLvGrids(Seq(mockSubGrid(1)))
+            coordinator.RepLvGrids(Seq(mockSubGrid(1)), new OsmGraph())
           )
         )
 

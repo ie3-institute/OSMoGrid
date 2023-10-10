@@ -44,6 +44,7 @@ trait SubGridHandling {
     */
   protected def handleLvResults(
       grids: Seq[SubGridContainer],
+      streetGraph: OsmGraph,
       cfg: OsmoGridConfig.Generation,
       resultListener: Seq[ActorRef[ResultListenerProtocol]],
       mvCoordinator: Option[ActorRef[MvRequest]],
@@ -59,7 +60,7 @@ trait SubGridHandling {
       mvCoordinator match {
         case Some(coordinator) =>
           coordinator ! WrappedMvResponse(
-            ProvideLvData(grids, streetGraph = new OsmGraph())
+            ProvideLvData(grids, streetGraph)
           )
         case None =>
       }

@@ -118,9 +118,6 @@ object MvGraphBuilder {
     Connections(osmNodes, connections)
   }
 
-  // builds a street graph
-  def buildStreetGraph(ways: Seq[Way], nodes: Map[Long, Node]): OsmGraph = ???
-
   // maybe necessary, when previous algorithm is not perfect
   private def graphOptimizer(mvGraph: MvGraph): MvGraph = ???
 

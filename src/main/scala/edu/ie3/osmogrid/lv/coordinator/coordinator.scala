@@ -10,6 +10,7 @@ import akka.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.RequestFailedException
+import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.osmogrid.lv.LvGridGenerator
@@ -73,7 +74,8 @@ sealed trait Response
   * @param grids
   *   Collection of low voltage grids
   */
-final case class RepLvGrids(grids: Seq[SubGridContainer]) extends Response
+final case class RepLvGrids(grids: Seq[SubGridContainer], streetGraph: OsmGraph)
+    extends Response
 
 /** State data for orientation of the actor
   *

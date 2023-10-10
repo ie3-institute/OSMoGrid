@@ -8,10 +8,11 @@ package utils
 
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.osmogrid.exception.OsmDataException
+import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.geo.RichGeometries.RichPolygon
 import edu.ie3.util.osm.OsmUtils.GeometryUtils.buildPolygon
-import edu.ie3.util.osm.model.OsmEntity.Node
+import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
 import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
 import edu.ie3.util.quantities.PowerSystemUnits
 import edu.ie3.util.quantities.QuantityUtils.RichQuantity
@@ -78,6 +79,43 @@ object OsmoGridUtils {
       .asType(classOf[Power])
       .to(PowerSystemUnits.KILOWATT)
     power.round(4)
+  }
+
+  /** builds a weighted street graph out ways and nodes.
+    *
+    * @param ways
+    *   the ways
+    * @param nodes
+    *   the nodes
+    * @return
+    *   the street graph
+    */
+  def buildStreetGraph(
+      ways: Seq[Way],
+      nodes: Map[Long, Node]
+  ): OsmGraph = {
+    val graph = new OsmGraph()
+    ways.foreach(way => {
+      val nodeIds = way.nodes
+      nodeIds.sliding(2).foreach { case Seq(nodeAId, nodeBId) =>
+        (nodes.get(nodeAId), nodes.get(nodeBId)) match {
+          case (Some(nodeA), Some(nodeB)) =>
+            graph.addVertex(nodeA)
+            graph.addVertex(nodeB)
+            graph.addWeightedEdge(nodeA, nodeB)
+
+          case (None, _) =>
+            throw new IllegalArgumentException(
+              s"Node $nodeAId of Way ${way.id} is not within our nodes mapping"
+            )
+          case (_, None) =>
+            throw new IllegalArgumentException(
+              s"Node $nodeBId of Way ${way.id} is not within our nodes mapping"
+            )
+        }
+      }
+    })
+    graph
   }
 
   // spawns a hv-mv node for a list of mv nodes

@@ -19,6 +19,7 @@ import org.jgrapht.alg.connectivity.ConnectivityInspector
 import org.locationtech.jts.geom.Coordinate
 import tech.units.indriya.ComparableQuantity
 import utils.OsmoGridUtils.{
+  buildStreetGraph,
   calcHouseholdPower,
   isInsideLanduse,
   safeBuildPolygon
@@ -137,43 +138,6 @@ object LvGraphGeneratorSupport {
       updatedGraph,
       updatedBgcs
     )
-  }
-
-  /** builds a weighted street graph out ways and nodes.
-    *
-    * @param ways
-    *   the ways
-    * @param nodes
-    *   the nodes
-    * @return
-    *   the street graph
-    */
-  private def buildStreetGraph(
-      ways: Seq[Way],
-      nodes: Map[Long, Node]
-  ): OsmGraph = {
-    val graph = new OsmGraph()
-    ways.foreach(way => {
-      val nodeIds = way.nodes
-      nodeIds.sliding(2).foreach { case Seq(nodeAId, nodeBId) =>
-        (nodes.get(nodeAId), nodes.get(nodeBId)) match {
-          case (Some(nodeA), Some(nodeB)) =>
-            graph.addVertex(nodeA)
-            graph.addVertex(nodeB)
-            graph.addWeightedEdge(nodeA, nodeB)
-
-          case (None, _) =>
-            throw new IllegalArgumentException(
-              s"Node $nodeAId of Way ${way.id} is not within our nodes mapping"
-            )
-          case (_, None) =>
-            throw new IllegalArgumentException(
-              s"Node $nodeBId of Way ${way.id} is not within our nodes mapping"
-            )
-        }
-      }
-    })
-    graph
   }
 
   /** Calculates building graph connections of buildings to the nearest highway

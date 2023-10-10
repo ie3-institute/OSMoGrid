@@ -100,12 +100,13 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
     case (
           ctx,
           WrappedLvCoordinatorResponse(
-            coordinator.RepLvGrids(subGridContainers)
+            coordinator.RepLvGrids(subGridContainers, streetGraph)
           )
         ) =>
       /* Handle the grid results and wait for the listener to report back */
       handleLvResults(
         subGridContainers,
+        streetGraph,
         runGuardianData.cfg.generation,
         childReferences.resultListeners,
         childReferences.mvCoordinator,
