@@ -12,9 +12,9 @@ import org.locationtech.jts.geom.LineSegment
 import utils.GraphUtils
 
 class GraphUtilsSpec extends UnitSpec {
-  "The OsmoGridUtils" should {
+  "The GraphUtils" should {
 
-    "create a line segment correctly" in {
+    "create a line segments correctly" in {
       val cases = Table(
         ("nodeA", "nodeB", "segment"),
         (

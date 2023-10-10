@@ -19,8 +19,18 @@ import javax.imageio.ImageIO
 import scala.jdk.CollectionConverters._
 
 object GraphUtils {
-  val FOLDER: Path = new File(".").toPath.resolve("OutputData")
+  private val FOLDER: Path = new File(".").toPath.resolve("OutputData")
 
+  /** Method for drawing an [[OsmGraph]].
+    * @param osmGraph
+    *   to be drawn
+    * @param name
+    *   of the image file
+    * @param width
+    *   of the image file
+    * @param height
+    *   of the image file
+    */
   def draw(osmGraph: OsmGraph, name: String, width: Int, height: Int): Unit = {
     // creating image
     val image: BufferedImage =
@@ -41,6 +51,7 @@ object GraphUtils {
     val xFac: Double = image.getWidth / (maxLon - minLon)
     val yFac: Double = image.getHeight / (maxLat - minLat)
 
+    // start drawing of edges
     graphics.setColor(Color.BLACK)
     edges.foreach { e =>
       val source = osmGraph.getEdgeSource(e)
@@ -55,6 +66,7 @@ object GraphUtils {
       graphics.draw(line)
     }
 
+    // start drawing of vertexes
     graphics.setColor(Color.BLUE)
     vertexes.foreach { v =>
       val x = (v.longitude - minLon) * xFac - 5
@@ -111,22 +123,28 @@ object GraphUtils {
     } else if (
       intersectionPoint == lineA.p0 || intersectionPoint == lineA.p1 || intersectionPoint == lineB.p0 || intersectionPoint == lineB.p1
     ) {
+      // if the found intersection point is one of the start or end points of the two line segments,
+      // we need to check if the two line segments only intersect at the found point
       val dist1: Double = lineA.distance(lineB.p0)
       val dist2: Double = lineA.distance(lineB.p1)
 
       val dist3: Double = lineB.distance(lineA.p0)
       val dist4: Double = lineB.distance(lineA.p1)
 
+      // comparing and filtering the distances
       val distances: List[Double] = List(dist1, dist2, dist3, dist4).filter {
         d => d.compare(0d) == 0
       }
 
+      // if more than two points have a distance of zero, the line segments are on top of each other
+      // therefore we will count them as intersected
       if (distances.size > 2) {
         true
       } else {
         false
       }
     } else {
+      // if another intersection point is found, we have two intersecting line segments
       true
     }
   }

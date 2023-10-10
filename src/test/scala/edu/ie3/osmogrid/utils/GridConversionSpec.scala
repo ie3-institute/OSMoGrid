@@ -6,10 +6,13 @@
 
 package edu.ie3.osmogrid.utils
 
+import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.input.system.characteristic.OlmCharacteristicInput._
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.test.common.{MvTestData, UnitSpec}
 import edu.ie3.util.osm.model.OsmEntity.Node
+import tech.units.indriya.quantity.Quantities
+import tech.units.indriya.unit.Units
 import utils.GridConversion._
 import utils.Solver
 
@@ -40,6 +43,35 @@ class GridConversionSpec extends UnitSpec with MvTestData {
         line.getGeoPosition.getStartPoint shouldBe line.getNodeA.getGeoPosition
         line.getGeoPosition.getEndPoint shouldBe line.getNodeB.getGeoPosition
         line.getOlmCharacteristic shouldBe CONSTANT_CHARACTERISTIC
+      }
+    }
+
+    "build a mv line input correctly" in {
+      val cases = Table(
+        ("id", "nodeA", "nodeB", "parallel", "lineType", "length"),
+        ("1", nodeInMv1, nodeInMv2, 1, defaultLineType_10kV, 500)
+      )
+
+      forAll(cases) { (id, nodeA, nodeB, parallel, lineType, length) =>
+        val line = buildLine(
+          id,
+          nodeA,
+          nodeB,
+          parallel,
+          lineType,
+          Quantities.getQuantity(length, Units.METRE)
+        )
+
+        line.getId shouldBe id
+        line.getNodeA shouldBe nodeA
+        line.getNodeB shouldBe nodeB
+        line.getParallelDevices shouldBe parallel
+        line.getType shouldBe lineType
+        line.getLength.getUnit shouldBe StandardUnits.LINE_LENGTH
+        line.getLength.getValue.doubleValue() shouldBe length / 1000.0
+        line.getGeoPosition.getStartPoint shouldBe nodeA.getGeoPosition
+        line.getGeoPosition.getEndPoint shouldBe nodeB.getGeoPosition
+
       }
     }
   }

@@ -107,7 +107,7 @@ class VoronoiCoordinatorSpec
       val message = mvCoordinator.receiveMessage
 
       message match {
-        case FinishedMvGridData(nodes, lines) =>
+        case WrappedMvResponse(FinishedMvGridData(nodes, lines)) =>
           nodes.size shouldBe 3
           nodes.contains(nodeToHv) shouldBe true
           nodes.contains(nodeInMv1) shouldBe true

@@ -285,26 +285,6 @@ object MvUtils {
 
       Connections(osmNodes, connectionMap.toMap, distanceMap ++ distanceMapAlt)
     }
-
-    // uses haversine to calculate distances
-
-    /** Converts a list of nodes into a list of unique [[Connection]]s. To
-      * calculate the distance of a connection, the haversine formula is used.
-      * @param nodes
-      *   given list of nodes
-      * @return
-      *   a list of unique connections
-      */
-    def getAllUniqueConnections(nodes: List[Node]): List[Connection] = {
-      getAllUniqueCombinations(nodes)
-        .map { case (nodeA, nodeB) =>
-          val distance = GeoUtils.calcHaversine(
-            nodeA.coordinate.getCoordinate,
-            nodeB.coordinate.getCoordinate
-          )
-          Connection(nodeA, nodeB, distance, None)
-        }
-    }
   }
 
   /** Utility object for connections.
