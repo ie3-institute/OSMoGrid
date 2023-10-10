@@ -7,22 +7,30 @@
 package utils
 
 import edu.ie3.datamodel.models.input.NodeInput
+import edu.ie3.datamodel.models.voltagelevels.{
+  CommonVoltageLevel,
+  GermanVoltageLevelUtils
+}
 import edu.ie3.osmogrid.exception.OsmDataException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.geo.RichGeometries.RichPolygon
 import edu.ie3.util.osm.OsmUtils.GeometryUtils.buildPolygon
-import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
 import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
+import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
 import edu.ie3.util.quantities.PowerSystemUnits
-import edu.ie3.util.quantities.QuantityUtils.RichQuantity
+import edu.ie3.util.quantities.QuantityUtils.{RichQuantity, RichQuantityDouble}
 import edu.ie3.util.quantities.interfaces.Irradiance
-import org.locationtech.jts.geom.{Coordinate, LineSegment, Polygon}
+import org.locationtech.jts.algorithm.Centroid
+import org.locationtech.jts.geom.{Coordinate, Polygon}
 import tech.units.indriya.ComparableQuantity
+import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 
-import javax.measure.quantity.{Area, Power}
+import java.util.UUID
+import javax.measure.quantity.{Area, Dimensionless, Power}
 import scala.collection.parallel.ParSeq
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success}
 
 object OsmoGridUtils {
@@ -81,7 +89,7 @@ object OsmoGridUtils {
     power.round(4)
   }
 
-  /** builds a weighted street graph out ways and nodes.
+  /** Builds a weighted street graph out ways and nodes.
     *
     * @param ways
     *   the ways
@@ -118,9 +126,50 @@ object OsmoGridUtils {
     graph
   }
 
-  // spawns a hv-mv node for a list of mv nodes
+  /** This method is used for medium voltage grid generation were we do not have
+    * actual hv grids. Therefore this method spawns a new hv node.
+    * @param mvNodes
+    *   list of all mv nodes
+    * @return
+    *   a new hv node
+    */
   def spawnDummyHvNode(mvNodes: List[NodeInput]): NodeInput = {
-    ???
-  }
+    val node = if (mvNodes.length < 3) {
+      mvNodes(0)
+    } else {
+      val hull = GeoUtils.buildConvexHull(
+        mvNodes.map { n => n.getGeoPosition.getCoordinate }.toSet.asJava
+      )
 
+      Option(new Centroid(hull).getCentroid) match {
+        case Some(coordinate) =>
+          val sortedList = mvNodes
+            .map { node: NodeInput =>
+              (
+                node,
+                GeoUtils.calcHaversine(
+                  coordinate,
+                  node.getGeoPosition.getCoordinate
+                )
+              )
+            }
+            .sortBy(_._2)
+
+          // returns the node that is closest to the center
+          sortedList(0)._1
+        case None =>
+          mvNodes(0)
+      }
+    }
+
+    new NodeInput(
+      UUID.randomUUID(),
+      s"Hv node of ${node.getId}",
+      1d.asPu,
+      true,
+      node.getGeoPosition,
+      GermanVoltageLevelUtils.HV,
+      node.getSubnet + 1000
+    )
+  }
 }
