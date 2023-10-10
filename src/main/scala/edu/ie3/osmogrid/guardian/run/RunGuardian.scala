@@ -9,7 +9,10 @@ package edu.ie3.osmogrid.guardian.run
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.guardian.run.MessageAdapters.WrappedLvCoordinatorResponse
+import edu.ie3.osmogrid.guardian.run.MessageAdapters.{
+  WrappedLvCoordinatorResponse,
+  WrappedMvCoordinatorResponse
+}
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.coordinator
 
@@ -40,7 +43,8 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
         cfg,
         additionalListener,
         MessageAdapters(
-          ctx.messageAdapter(msg => WrappedLvCoordinatorResponse(msg))
+          ctx.messageAdapter(msg => WrappedLvCoordinatorResponse(msg)),
+          ctx.messageAdapter(msg => WrappedMvCoordinatorResponse(msg))
         )
       )
     )
@@ -104,6 +108,7 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
         subGridContainers,
         runGuardianData.cfg.generation,
         childReferences.resultListeners,
+        childReferences.mvCoordinator,
         runGuardianData.msgAdapters
       )(ctx.log)
 

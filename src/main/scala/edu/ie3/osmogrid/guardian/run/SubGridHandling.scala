@@ -23,8 +23,10 @@ import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
 import edu.ie3.datamodel.utils.ContainerUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.GridException
+import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.guardian.run.SubGridHandling.assignSubnetNumbers
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
+import edu.ie3.osmogrid.mv.{MvRequest, ProvideLvData, WrappedMvResponse}
 import org.slf4j.Logger
 
 import java.util.UUID
@@ -44,6 +46,7 @@ trait SubGridHandling {
       grids: Seq[SubGridContainer],
       cfg: OsmoGridConfig.Generation,
       resultListener: Seq[ActorRef[ResultListenerProtocol]],
+      mvCoordinator: Option[ActorRef[MvRequest]],
       msgAdapters: MessageAdapters
   )(implicit log: Logger): Try[Unit] = {
     log.info("All lv grids successfully generated.")
@@ -51,6 +54,16 @@ trait SubGridHandling {
       log.debug(
         "No further generation steps intended. Hand over results to result handler."
       )
+
+      // send lv grid data to mv coordinator
+      mvCoordinator match {
+        case Some(coordinator) =>
+          coordinator ! WrappedMvResponse(
+            ProvideLvData(grids, streetGraph = new OsmGraph())
+          )
+        case None =>
+      }
+
       /* Bundle grid result and inform interested listeners */
       val jointGrid =
         ContainerUtils.combineToJointGrid(updatedSubGrids.asJava)

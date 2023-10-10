@@ -41,6 +41,28 @@ object SubGridContainerUtils {
     (getNodes(mvVoltLvl, hvGrids), getNodes(mvVoltLvl, lvGrids))
   }
 
+  // filter all mv-lv nodes in lv sub grid containers
+  def filterLv(
+      lvGrids: List[SubGridContainer],
+      cfg: OsmoGridConfig.Generation.Mv
+  ): List[NodeInput] = {
+    /* returns a list of all mv voltage levels */
+    val mvVoltLvl = VoltageLevelUtils.parseMv(cfg.voltageLevel)
+    /* gets all mv-lv nodes */
+    getNodes(mvVoltLvl, lvGrids)
+  }
+
+  // filter all hv-mv nodes in hv sub grid containers
+  def filterHv(
+      hvGrids: List[SubGridContainer],
+      cfg: OsmoGridConfig.Generation.Mv
+  ): List[NodeInput] = {
+    /* returns a list of all mv voltage levels */
+    val mvVoltLvl = VoltageLevelUtils.parseMv(cfg.voltageLevel)
+    /* gets all hv-mv nodes */
+    getNodes(mvVoltLvl, hvGrids)
+  }
+
   /** Method to return all [[NodeInput]]'s of all given [[SubGridContainer]]
     * that have one of the given [[VoltageLevel]]'s.
     *

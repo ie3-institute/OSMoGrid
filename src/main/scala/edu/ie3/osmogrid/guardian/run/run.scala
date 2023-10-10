@@ -11,6 +11,7 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.mv.{MvRequest, MvResponse}
 
 import java.util.UUID
 
@@ -25,9 +26,12 @@ object Run extends Request
   *
   * @param lvCoordinator
   *   Adapter for messages from [[LvCoordinator]]
+  * @param mvCoordinator
+  *   Adapter for messages from [[MvCoordinator]]
   */
 private final case class MessageAdapters(
-    lvCoordinator: ActorRef[coordinator.Response]
+    lvCoordinator: ActorRef[coordinator.Response],
+    mvCoordinator: ActorRef[MvResponse]
 )
 
 private object MessageAdapters {
@@ -35,6 +39,9 @@ private object MessageAdapters {
       response: coordinator.Response
   ) extends Request
 
+  final case class WrappedMvCoordinatorResponse(
+      response: MvResponse
+  ) extends Request
 }
 
 /* Death watch messages */
@@ -55,7 +62,8 @@ final case class ChildReferences(
     inputDataProvider: ActorRef[input.InputDataEvent],
     resultListener: Option[ActorRef[ResultListenerProtocol]],
     additionalResultListeners: Seq[ActorRef[ResultListenerProtocol]],
-    lvCoordinator: Option[ActorRef[coordinator.Request]]
+    lvCoordinator: Option[ActorRef[coordinator.Request]],
+    mvCoordinator: Option[ActorRef[MvRequest]]
 ) {
   def resultListeners: Seq[ActorRef[ResultListenerProtocol]] =
     resultListener

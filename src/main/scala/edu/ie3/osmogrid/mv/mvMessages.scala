@@ -22,18 +22,53 @@ import utils.VoronoiUtils.VoronoiPolygon
 
 import scala.util.{Failure, Success, Try}
 
+/** Trait for mv requests.
+  */
 sealed trait MvRequest
+
+/** Trait for mv responses
+  */
 sealed trait MvResponse
 
-object ReqMvGrids extends MvRequest
+/** Wraps a [[MvResponse]].
+  * @param response
+  *   to be wrapped
+  */
+final case class WrappedMvResponse(
+    response: MvResponse
+) extends MvRequest
+
+/** Mv termination request.
+  */
 object MvTerminate extends MvRequest
 
+/** Request for mv graph generation.
+  * @param nr
+  *   of the graph
+  * @param polygon
+  *   with components for the graph
+  * @param streetGraph
+  *   with all street nodes
+  * @param cfg
+  *   for mv generation
+  */
 final case class StartGraphGeneration(
     nr: Int,
     polygon: VoronoiPolygon,
     streetGraph: OsmGraph,
     cfg: OsmoGridConfig.Generation.Mv
 ) extends MvRequest
+
+/** Request for mv graph conversion.
+  * @param nr
+  *   of the graph
+  * @param graph
+  *   with grid structure
+  * @param nodeConversion
+  *   for converting osm nodes into corresponding PSDM nodes
+  * @param cfg
+  *   for ,v generation
+  */
 final case class StartGraphConversion(
     nr: Int,
     graph: OsmGraph,
@@ -41,102 +76,71 @@ final case class StartGraphConversion(
     cfg: OsmoGridConfig.Generation.Mv
 ) extends MvRequest
 
-final case class IdleData(
-    cfg: OsmoGridConfig.Generation.Mv,
-    inputDataProvider: ActorRef[InputDataEvent],
-    runGuardian: ActorRef[MvResponse],
-    msgAdapter: MvMessageAdapters
-)
-
-final case class StartMvGeneration(
-    cfg: OsmoGridConfig.Generation.Mv,
-    lvGrids: List[SubGridContainer],
-    hvGrids: List[SubGridContainer],
-    streetGraph: OsmGraph
-) extends MvRequest
-
-final case class StartMvGraphConversion(
-    cfg: OsmoGridConfig.Generation.Mv,
-    graphs: List[MvGraph]
-) extends MvRequest
-
+/** Response for a mv coordinator that contains the converted grid structure as
+  * nodes and lines.
+  * @param nodes
+  *   of the subgrid
+  * @param lines
+  *   of the subgrid
+  */
 final case class FinishedMvGridData(
     nodes: Set[NodeInput],
     lines: Set[LineInput]
+) extends MvResponse
+
+object ReqMvGrids extends MvRequest
+
+final case class StartGeneration(
+    lvGrids: List[SubGridContainer],
+    hvGrids: Option[List[SubGridContainer]],
+    streetGraph: OsmGraph
 ) extends MvRequest
 
-final case class MvMessageAdapters(
-    inputDataProvider: ActorRef[Response]
-)
+final case class ProvideLvData(
+    lvGrids: Seq[SubGridContainer],
+    streetGraph: OsmGraph
+) extends MvResponse
 
-object MvMessageAdapters {
-  final case class WrappedInputDataResponse(
-      response: Response
-  ) extends MvRequest
-}
+final case class ProvideHvData(
+    hvGrids: Seq[SubGridContainer]
+) extends MvResponse
 
-private final case class AwaitingMvInputData(
-    osmData: Option[MvOsmoGridModel],
+final case class AwaitingInputData(
     cfg: OsmoGridConfig.Generation.Mv,
-    msgAdapters: MvMessageAdapters,
-    guardian: ActorRef[MvResponse]
+    runGuardian: ActorRef[MvResponse],
+    lvGrids: Option[List[SubGridContainer]],
+    hvGrids: Option[List[SubGridContainer]],
+    streetGraph: Option[OsmGraph]
 ) {
   def registerResponse(
-      response: Response,
+      mvResponse: MvResponse,
       log: Logger
-  ): Try[AwaitingMvInputData] = ???
-  /*response match {
-    case InputDataProvider.RepOsm(osmModel: MvOsmoGridModel) =>
-      log.debug(s"Received MV osm model.")
-      Success(copy(osmData = Some(osmModel)))
-    /* Those states correspond to failed operation */
-    case InputDataProvider.OsmReadFailed(reason) =>
-      Failure(
-        RequestFailedException(
-          "The requested OSM data cannot be read. Stop generation",
-          reason
-        )
-      )
+  ): Try[AwaitingInputData] = mvResponse match {
+    case ProvideLvData(grids, graph) =>
+      log.debug(s"Received lv data.")
+      Success(copy(lvGrids = Some(grids.toList), streetGraph = Some(graph)))
+
+    case ProvideHvData(grids) =>
+      log.debug(s"Received hv data.")
+      Success(copy(hvGrids = Some(grids.toList)))
+
+    case other =>
+      Failure(RequestFailedException(s"$other is not supported!"))
   }
-   */
 
-  def isComplete: Boolean = osmData.isDefined
+  def isComprehensive: Boolean = {
+    if (cfg.spawnMissingHvNodes) {
+      lvGrids.isDefined && streetGraph.isDefined
+    } else {
+      lvGrids.isDefined && streetGraph.isDefined && hvGrids.isDefined
+    }
+  }
 }
 
-private object AwaitingMvInputData {
-  def empty(mvCoordinatorData: IdleData): AwaitingMvInputData =
-    AwaitingMvInputData(
-      None,
-      mvCoordinatorData.cfg,
-      mvCoordinatorData.msgAdapter,
-      mvCoordinatorData.runGuardian
-    )
-}
-
-private final case class AwaitingMvGraphData(
-    numberOfGraphs: Int,
-    graphs: List[MvGraph],
-    cfg: OsmoGridConfig.Generation.Mv,
-    msgAdapters: MvMessageAdapters,
-    guardian: ActorRef[MvResponse]
-) {
-  def completed(): Int = graphs.size
-
-  def uncompleted(): Int = numberOfGraphs - completed
-
-  def isComplete: Boolean = graphs.size == numberOfGraphs
-}
-
-private object AwaitingMvGraphData {
+object AwaitingInputData {
   def empty(
-      numberOfGraphs: Int,
-      awaitingMvInputData: AwaitingMvInputData
-  ): AwaitingMvGraphData =
-    AwaitingMvGraphData(
-      numberOfGraphs,
-      List.empty,
-      awaitingMvInputData.cfg,
-      awaitingMvInputData.msgAdapters,
-      awaitingMvInputData.guardian
-    )
+      cfg: OsmoGridConfig.Generation.Mv,
+      runGuardian: ActorRef[MvResponse]
+  ): AwaitingInputData =
+    AwaitingInputData(cfg, runGuardian, None, None, None)
 }

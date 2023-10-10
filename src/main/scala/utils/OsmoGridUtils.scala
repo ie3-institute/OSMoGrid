@@ -6,6 +6,7 @@
 
 package utils
 
+import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.osmogrid.exception.OsmDataException
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.geo.RichGeometries.RichPolygon
@@ -78,4 +79,10 @@ object OsmoGridUtils {
       .to(PowerSystemUnits.KILOWATT)
     power.round(4)
   }
+
+  // spawns a hv-mv node for a list of mv nodes
+  def spawnDummyHvNode(mvNodes: List[NodeInput]): NodeInput = {
+    ???
+  }
+
 }
