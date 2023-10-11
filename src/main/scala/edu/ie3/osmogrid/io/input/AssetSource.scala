@@ -15,7 +15,6 @@ import edu.ie3.datamodel.io.source.csv.CsvTypeSource
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
 import edu.ie3.osmogrid.exception.{IllegalConfigException, InputDataException}
-import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.jdk.CollectionConverters.IterableHasAsScala

@@ -9,12 +9,8 @@ package edu.ie3.osmogrid.guardian.run
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.guardian.run.MessageAdapters.{
-  WrappedListenerResponse,
-  WrappedLvCoordinatorResponse
-}
-
-import edu.ie3.osmogrid.io.output.ResultListener
+import edu.ie3.osmogrid.guardian.run.MessageAdapters.WrappedLvCoordinatorResponse
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.coordinator
 
 import java.util.UUID
@@ -35,7 +31,7 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
     */
   def apply(
       cfg: OsmoGridConfig,
-      additionalListener: Seq[ActorRef[ResultListener.ResultEvent]] = Seq.empty,
+      additionalListener: Seq[ActorRef[ResultListenerProtocol]] = Seq.empty,
       runId: UUID
   ): Behavior[Request] = Behaviors.setup { ctx =>
     idle(
@@ -44,8 +40,7 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
         cfg,
         additionalListener,
         MessageAdapters(
-          ctx.messageAdapter(msg => WrappedLvCoordinatorResponse(msg)),
-          ctx.messageAdapter(msg => WrappedListenerResponse(msg))
+          ctx.messageAdapter(msg => WrappedLvCoordinatorResponse(msg))
         )
       )
     )
@@ -111,28 +106,16 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
         childReferences.resultListeners,
         runGuardianData.msgAdapters
       )(ctx.log)
+
       Behaviors.same
-    case (
-          ctx,
-          WrappedListenerResponse(ResultListener.ResultHandled(_, sender))
-        ) =>
-      ctx.log.debug(
-        s"The listener $sender has successfully handled the result event of run ${runGuardianData.runId}."
+
+    case (ctx, ResultEventListenerDied) =>
+      // we wait for exact one listener as we only started one
+      /* Start coordinated shutdown */
+      ctx.log.info(
+        s"Run ${runGuardianData.runId} finished. Stop all run-related processes."
       )
-      if (
-        childReferences.resultListener.contains(
-          sender
-        ) || childReferences.resultListener.isEmpty
-      ) {
-        /* Start coordinated shutdown */
-        ctx.log.info(
-          s"Run ${runGuardianData.runId} successfully finished. Stop all run-related processes."
-        )
-        stopping(stopChildren(runGuardianData.runId, childReferences, ctx))
-      } else {
-        /* Somebody did something great, but nothing, that affects us */
-        Behaviors.same
-      }
+      stopping(stopChildren(runGuardianData.runId, childReferences, ctx))
     case (ctx, watch: Watch) =>
       /* Somebody died unexpectedly. Start coordinated shutdown */
       stopping(

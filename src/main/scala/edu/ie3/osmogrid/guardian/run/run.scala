@@ -8,8 +8,8 @@ package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.ActorRef
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.output.ResultListener
+import edu.ie3.osmogrid.io.input
+import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.coordinator
 
 import java.util.UUID
@@ -25,12 +25,9 @@ object Run extends Request
   *
   * @param lvCoordinator
   *   Adapter for messages from [[LvCoordinator]]
-  * @param resultListener
-  *   Adapter for messages from [[ResultEventListener]]
   */
 private final case class MessageAdapters(
-    lvCoordinator: ActorRef[coordinator.Response],
-    resultListener: ActorRef[ResultListener.Response]
+    lvCoordinator: ActorRef[coordinator.Response]
 )
 
 private object MessageAdapters {
@@ -38,9 +35,6 @@ private object MessageAdapters {
       response: coordinator.Response
   ) extends Request
 
-  final case class WrappedListenerResponse(
-      response: ResultListener.Response
-  ) extends Request
 }
 
 /* Death watch messages */
@@ -58,12 +52,12 @@ sealed trait Response
 final case class Done(runId: UUID) extends Response
 
 final case class ChildReferences(
-    inputDataProvider: ActorRef[InputDataProvider.InputDataEvent],
-    resultListener: Option[ActorRef[ResultListener.ResultEvent]],
-    additionalResultListeners: Seq[ActorRef[ResultListener.ResultEvent]],
+    inputDataProvider: ActorRef[input.InputDataEvent],
+    resultListener: Option[ActorRef[ResultListenerProtocol]],
+    additionalResultListeners: Seq[ActorRef[ResultListenerProtocol]],
     lvCoordinator: Option[ActorRef[coordinator.Request]]
 ) {
-  def resultListeners: Seq[ActorRef[ResultListener.ResultEvent]] =
+  def resultListeners: Seq[ActorRef[ResultListenerProtocol]] =
     resultListener
       .map(Seq(_))
       .getOrElse(Seq.empty) ++ additionalResultListeners
@@ -73,7 +67,7 @@ sealed trait StateData
 private final case class RunGuardianData(
     runId: UUID,
     cfg: OsmoGridConfig,
-    additionalListener: Seq[ActorRef[ResultListener.ResultEvent]],
+    additionalListener: Seq[ActorRef[ResultListenerProtocol]],
     msgAdapters: MessageAdapters
 ) extends StateData
 

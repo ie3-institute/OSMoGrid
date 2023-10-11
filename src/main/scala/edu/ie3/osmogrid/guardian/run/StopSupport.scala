@@ -7,8 +7,7 @@
 package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.scaladsl.ActorContext
-import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.output.ResultListener
+import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.lv.coordinator
 
 import java.util.UUID
@@ -31,8 +30,7 @@ trait StopSupport {
       ctx: ActorContext[Request]
   ): StoppingData = {
     childReferences.lvCoordinator.foreach(_ ! coordinator.Terminate)
-    childReferences.inputDataProvider ! InputDataProvider.Terminate
-    childReferences.resultListener.foreach(_ ! ResultListener.Terminate)
+    childReferences.inputDataProvider ! input.Terminate
 
     StoppingData(
       runId,
@@ -49,7 +47,7 @@ trait StopSupport {
     * @param stoppingData
     *   State data for the stopping run
     * @return
-    *   Next state with updated [[GuardianData]]
+    *   Next state with updated [[StoppingData]]
     */
   protected def registerCoordinatedShutDown(
       watchMsg: Watch,
@@ -77,7 +75,7 @@ trait StopSupport {
     * @param ctx
     *   Current Actor context
     * @return
-    *   Next state with updated [[GuardianData]]
+    *   Next state with updated [[StoppingData]]
     */
   protected def handleUnexpectedShutDown(
       runId: UUID,
@@ -100,7 +98,9 @@ trait StopSupport {
         ctx.log.warn(
           s"Lv coordinator for run $runId unexpectedly died. Start coordinated shut down phase for this run."
         )
-        stoppingData.copy(resultListenerTerminated = true)
+        stoppingData.copy(lvCoordinatorTerminated =
+          stoppingData.lvCoordinatorTerminated.map(_ => true)
+        )
     }
 
   }

@@ -16,9 +16,8 @@ import akka.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.ConfigFailFastSpec.viableConfigurationString
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.IllegalConfigException
-import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.output.ResultListener
-import edu.ie3.osmogrid.io.output.ResultListener.{GridResult, ResultEvent}
+import edu.ie3.osmogrid.io.input
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.coordinator
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.slf4j.event.Level
@@ -32,7 +31,11 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
 
     "being idle state" should {
       val idleTestKit = BehaviorTestKit(
-        RunGuardian(validConfig, Seq.empty[ActorRef[ResultEvent]], runId)
+        RunGuardian(
+          validConfig,
+          Seq.empty[ActorRef[ResultListenerProtocol]],
+          runId
+        )
       )
 
       "log an error if faced to not supported request" in {
@@ -51,7 +54,11 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           )
           .getOrElse(fail("Unable to parse malicious config"))
         val maliciousIdleTestKit = BehaviorTestKit(
-          RunGuardian(maliciousConfig, Seq.empty[ActorRef[ResultEvent]], runId)
+          RunGuardian(
+            maliciousConfig,
+            Seq.empty[ActorRef[ResultListenerProtocol]],
+            runId
+          )
         )
 
         maliciousIdleTestKit.run(Run)
@@ -70,10 +77,9 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
       "spawns children, if input is fine" in {
         idleTestKit.run(Run)
 
-        /* Two message adapters are registered */
+        /* One message adapter is registered */
         idleTestKit
           .expectEffectType[MessageAdapter[coordinator.Response, Request]]
-        idleTestKit.expectEffectType[MessageAdapter[ResultEvent, Request]]
 
         /* Check if I/O actors and LvCoordinator are spawned and watched correctly */
         idleTestKit.expectEffectPF {
@@ -85,13 +91,17 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
             name shouldBe s"InputDataProvider_$runId"
         }
         idleTestKit
-          .expectEffectType[
-            WatchedWith[InputDataProvider.InputDataEvent, Watch]
-          ]
-        idleTestKit.expectEffectPF { case Spawned(_: Behavior[_], name, _) =>
-          name shouldBe s"PersistenceResultListener_$runId"
+          .expectEffectType[WatchedWith[input.Request, Watch]]
+        idleTestKit.expectEffectPF {
+          case Spawned(
+                _: Behavior[_],
+                name,
+                _
+              ) =>
+            name shouldBe s"PersistenceResultListener_$runId"
         }
-        idleTestKit.expectEffectType[WatchedWith[ResultEvent, Watch]]
+        idleTestKit
+          .expectEffectType[WatchedWith[ResultListenerProtocol, Watch]]
         idleTestKit.expectEffectPF { case Spawned(_: Behavior[_], name, _) =>
           name shouldBe s"LvCoordinator_$runId"
         }
@@ -111,19 +121,17 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
       /* Test probes */
       val lvCoordinatorAdapter =
         testKit.createTestProbe[coordinator.Response]()
-      val resultListenerAdapter =
-        testKit.createTestProbe[ResultListener.Response]()
       val inputDataProvider =
-        testKit.createTestProbe[InputDataProvider.InputDataEvent]()
-      val resultListener = testKit.createTestProbe[ResultEvent]()
+        testKit.createTestProbe[input.InputDataEvent]()
+      val resultListener = testKit.createTestProbe[ResultListenerProtocol]()
       val lvCoordinator = testKit.createTestProbe[coordinator.Request]()
 
       /* State data */
       val runGuardianData = RunGuardianData(
         runId,
         validConfig,
-        Seq.empty[ActorRef[ResultEvent]],
-        MessageAdapters(lvCoordinatorAdapter.ref, resultListenerAdapter.ref)
+        Seq.empty[ActorRef[ResultListenerProtocol]],
+        MessageAdapters(lvCoordinatorAdapter.ref)
       )
       val childReferences = ChildReferences(
         inputDataProvider.ref,
@@ -162,7 +170,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         ))
 
         /* Result is forwarded to listener */
-        resultListener.expectMessageType[GridResult]
+        resultListener.expectMessageType[ResultListenerProtocol.GridResult]
       }
 
       "initiate coordinated shutdown, if somebody unexpectedly dies" in {
@@ -177,8 +185,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         )
         /* All children are sent a termination request */
         lvCoordinator.expectMessage(coordinator.Terminate)
-        inputDataProvider.expectMessage(InputDataProvider.Terminate)
-        resultListener.expectMessage(ResultListener.Terminate)
+        inputDataProvider.expectMessage(input.Terminate)
       }
     }
 

@@ -11,13 +11,10 @@ import com.typesafe.config.ConfigFactory
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.$TsCfgValidator
 import edu.ie3.osmogrid.exception.{InputDataException, PbfReadFailedException}
-import edu.ie3.osmogrid.io.input.InputDataProvider.AssetInformation
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.{InputDataCheck, UnitSpec}
 
-import java.io.File
-import java.nio.file.{Files, Paths}
 import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters._
 import scala.language.postfixOps
@@ -31,23 +28,23 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
         val config: OsmoGridConfig.Input =
           createConfig("/Witten_Stockum.pbf", "/lv_assets")
 
-        val requestProbe = testKit.createTestProbe[InputDataProvider.Response]()
+        val requestProbe = testKit.createTestProbe[Response]()
         val testActor = testKit.spawn(
           InputDataProvider(config)
         )
 
         val filter = LvFilter()
 
-        testActor ! InputDataProvider.ReqOsm(requestProbe.ref, filter = filter)
+        testActor ! ReqOsm(requestProbe.ref, filter = filter)
 
         requestProbe
-          .expectMessageType[InputDataProvider.Response](
+          .expectMessageType[Response](
             30 seconds
           ) match {
-          case InputDataProvider.RepOsm(lvModel: LvOsmoGridModel) =>
+          case RepOsm(lvModel: LvOsmoGridModel) =>
             checkInputDataResult(lvModel)
 
-          case InputDataProvider.OsmReadFailed(exception) =>
+          case OsmReadFailed(exception) =>
             fail(s"Failed with exception: $exception")
 
           case unexpected => fail(s"Unexpected message: $unexpected")
@@ -58,18 +55,18 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
         val config: OsmoGridConfig.Input =
           createConfig("/Witten_Stockum.pbf", "/lv_assets")
 
-        val requestProbe = testKit.createTestProbe[InputDataProvider.Response]()
+        val requestProbe = testKit.createTestProbe[Response]()
         val testActor = testKit.spawn(
           InputDataProvider(config)
         )
 
-        testActor ! InputDataProvider.ReqAssetTypes(requestProbe.ref)
+        testActor ! ReqAssetTypes(requestProbe.ref)
 
         requestProbe
-          .expectMessageType[InputDataProvider.RepAssetTypes](
+          .expectMessageType[RepAssetTypes](
             30 seconds
           ) match {
-          case InputDataProvider.RepAssetTypes(
+          case RepAssetTypes(
                 assetInformation: AssetInformation
               ) =>
             assetInformation.lineTypes.length shouldBe 1
@@ -83,25 +80,25 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
         val config: OsmoGridConfig.Input =
           createConfig("/Empty_Osm.pbf", "/lv_assets")
 
-        val requestProbe = testKit.createTestProbe[InputDataProvider.Response]()
+        val requestProbe = testKit.createTestProbe[Response]()
         val testActor = testKit.spawn(
           InputDataProvider(config)
         )
 
-        testActor ! InputDataProvider.ReqOsm(
+        testActor ! ReqOsm(
           requestProbe.ref,
           filter = LvFilter()
         )
 
         requestProbe
-          .expectMessageType[InputDataProvider.Response](
+          .expectMessageType[Response](
             3 seconds
           ) match {
-          case InputDataProvider.OsmReadFailed(exception) =>
+          case OsmReadFailed(exception) =>
             exception shouldBe PbfReadFailedException(
               "Input file is empty, stopping."
             )
-          case InputDataProvider.RepOsm(lvModel: LvOsmoGridModel) =>
+          case RepOsm(lvModel: LvOsmoGridModel) =>
             fail(s"Provided OsmoGridModel $lvModel although it shouldn't")
 
           case unexpected => fail(s"Unexpected message: $unexpected")
@@ -113,23 +110,23 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
           createConfig("/Witten_Stockum.pbf", resourceName)
         val assetDir = getResourcePath(resourceName)
 
-        val requestProbe = testKit.createTestProbe[InputDataProvider.Response]()
+        val requestProbe = testKit.createTestProbe[Response]()
         val testActor = testKit.spawn(
           InputDataProvider(config)
         )
 
-        testActor ! InputDataProvider.ReqAssetTypes(
+        testActor ! ReqAssetTypes(
           requestProbe.ref
         )
         requestProbe
-          .expectMessageType[InputDataProvider.Response](
+          .expectMessageType[Response](
             3 seconds
           ) match {
-          case InputDataProvider.AssetReadFailed(exception) =>
+          case AssetReadFailed(exception) =>
             exception shouldBe InputDataException(
               s"There are no or corrupt transformer types at: $assetDir"
             )
-          case InputDataProvider.RepAssetTypes(
+          case RepAssetTypes(
                 assetInformation: AssetInformation
               ) =>
             fail(
@@ -142,27 +139,27 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
     }
 
     "having corrupt input data" should {
-      "return with failure for courrupt osm data" in {
+      "return with failure for corrupt osm data" in {
         val config: OsmoGridConfig.Input =
           createConfig("/Corrupted_Osm.pbf", "/lv_assets")
 
-        val requestProbe = testKit.createTestProbe[InputDataProvider.Response]()
+        val requestProbe = testKit.createTestProbe[Response]()
         val testActor = testKit.spawn(
           InputDataProvider(config)
         )
 
-        testActor ! InputDataProvider.ReqOsm(
+        testActor ! ReqOsm(
           requestProbe.ref,
           filter = LvFilter()
         )
 
         requestProbe
-          .expectMessageType[InputDataProvider.Response](
+          .expectMessageType[Response](
             3 seconds
           ) match {
-          case InputDataProvider.OsmReadFailed(exception) =>
+          case OsmReadFailed(exception) =>
             exception.getMessage shouldBe "Reading input failed."
-          case InputDataProvider.RepOsm(lvModel: LvOsmoGridModel) =>
+          case RepOsm(lvModel: LvOsmoGridModel) =>
             fail(s"Provided OsmoGridModel $lvModel although it shouldn't")
 
           case unexpected => fail(s"Unexpected message: $unexpected")
@@ -174,23 +171,23 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
           createConfig("/Witten_Stockum.pbf", resourceName)
         val assetDir = getResourcePath(resourceName)
 
-        val requestProbe = testKit.createTestProbe[InputDataProvider.Response]()
+        val requestProbe = testKit.createTestProbe[Response]()
         val testActor = testKit.spawn(
           InputDataProvider(config)
         )
 
-        testActor ! InputDataProvider.ReqAssetTypes(
+        testActor ! ReqAssetTypes(
           requestProbe.ref
         )
         requestProbe
-          .expectMessageType[InputDataProvider.Response](
+          .expectMessageType[Response](
             3 seconds
           ) match {
-          case InputDataProvider.AssetReadFailed(exception) =>
+          case AssetReadFailed(exception) =>
             exception shouldBe InputDataException(
               s"There are no or corrupt transformer types at: $assetDir"
             )
-          case InputDataProvider.RepAssetTypes(
+          case RepAssetTypes(
                 assetInformation: AssetInformation
               ) =>
             fail(
