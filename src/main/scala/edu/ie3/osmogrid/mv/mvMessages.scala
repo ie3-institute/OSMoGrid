@@ -8,16 +8,13 @@ package edu.ie3.osmogrid.mv
 
 import akka.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.datamodel.models.input.connector.LineInput
+import edu.ie3.datamodel.models.input.connector.{LineInput, TransformerInput}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.RequestFailedException
 import edu.ie3.osmogrid.graph.OsmGraph
-import utils.GridConversion.NodeConversion
-import edu.ie3.osmogrid.io.input.{InputDataEvent, InputDataProvider, Response}
-import edu.ie3.osmogrid.model.OsmoGridModel.MvOsmoGridModel
-import edu.ie3.osmogrid.mv.MvGraphBuilder.MvGraph
 import org.slf4j.Logger
+import utils.GridConversion.NodeConversion
 import utils.VoronoiUtils.VoronoiPolygon
 
 import scala.util.{Failure, Success, Try}
@@ -95,6 +92,21 @@ final case class StartGeneration(
     hvGrids: Option[List[SubGridContainer]],
     streetGraph: OsmGraph
 ) extends MvRequest
+
+/** Replying the generated medium voltage grids
+  *
+  * @param grids
+  *   Collection of medium voltage grids
+  * @param nodeChanges
+  *   Map that contains information for changes of nodes
+  * @param transformerChanges
+  *   Map that contains information for changes of transformers
+  */
+final case class RepMvGrids(
+    grids: Seq[SubGridContainer],
+    nodeChanges: Map[NodeInput, NodeInput],
+    transformerChanges: Map[TransformerInput, TransformerInput]
+) extends MvResponse
 
 final case class ProvideLvData(
     lvGrids: Seq[SubGridContainer],

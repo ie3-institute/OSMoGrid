@@ -7,39 +7,18 @@
 package utils
 
 import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.datamodel.models.input.container.SubGridContainer
+import edu.ie3.datamodel.models.input.container.{
+  GraphicElements,
+  RawGridElements,
+  SubGridContainer,
+  SystemParticipants
+}
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 
 import scala.jdk.CollectionConverters._
 
 object SubGridContainerUtils {
-
-  /** Filter for [[SubGridContainer]]. This method finds all mv nodes inside the
-    * given containers. The found nodes are returned as two lists. The first
-    * list contains all mv nodes that are connected to hv grids via a
-    * transformer. The second list contains all mv nodes that are connected to
-    * the lv grids via a transformer.
-    *
-    * @param lvGrids
-    *   list of lv [[SubGridContainer]]
-    * @param hvGrids
-    *   list of hv [[SubGridContainer]]
-    * @param cfg
-    *   containing information about mv voltage levels
-    * @return
-    *   a tuple of two lists
-    */
-  def filter(
-      lvGrids: List[SubGridContainer],
-      hvGrids: List[SubGridContainer],
-      cfg: OsmoGridConfig.Generation.Mv
-  ): (List[NodeInput], List[NodeInput]) = {
-    /* returns a list of all mv voltage levels */
-    val mvVoltLvl = VoltageLevelUtils.parseMv(cfg.voltageLevel)
-    /* gets all hv-mv and mv-lv nodes */
-    (getNodes(mvVoltLvl, hvGrids), getNodes(mvVoltLvl, lvGrids))
-  }
 
   // filter all mv-lv nodes in lv sub grid containers
   def filterLv(

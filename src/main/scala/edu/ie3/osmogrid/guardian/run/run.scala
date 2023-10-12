@@ -7,6 +7,16 @@
 package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.ActorRef
+import edu.ie3.datamodel.models.input.NodeInput
+import edu.ie3.datamodel.models.input.connector.TransformerInput
+import edu.ie3.datamodel.models.input.container.{
+  GraphicElements,
+  JointGridContainer,
+  RawGridElements,
+  SubGridContainer,
+  SystemParticipants
+}
+import edu.ie3.datamodel.utils.ContainerUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
@@ -14,6 +24,7 @@ import edu.ie3.osmogrid.lv.coordinator
 import edu.ie3.osmogrid.mv.{MvRequest, MvResponse}
 
 import java.util.UUID
+import scala.jdk.CollectionConverters._
 
 /* This file only contains package-level definitions */
 
@@ -101,3 +112,30 @@ final case class StoppingData(
     inputDataProviderTerminated && resultListenerTerminated && lvCoordinatorTerminated
       .forall(terminated => terminated)
 }
+
+final case class FinishedGridData(
+    lvExpected: Boolean,
+    mvExpected: Boolean,
+    lvData: Option[Seq[SubGridContainer]],
+    mvData: Option[
+      (
+          Seq[SubGridContainer],
+          Map[NodeInput, NodeInput],
+          Map[TransformerInput, TransformerInput]
+      )
+    ]
+) extends StateData {
+  def receivedAllData: Boolean = {
+    val lv = lvExpected == lvData.isDefined
+    val mv = mvExpected == mvData.isDefined
+
+    lv && mv
+  }
+}
+
+object FinishedGridData {
+  def empty(lvExpected: Boolean, mvExpected: Boolean): FinishedGridData =
+    FinishedGridData(lvExpected, mvExpected, None, None)
+}
+
+object HandleGridResults extends Request

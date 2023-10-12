@@ -10,6 +10,7 @@ import akka.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.connector._
 import edu.ie3.datamodel.models.input.container.{
   GraphicElements,
+  JointGridContainer,
   RawGridElements,
   SubGridContainer,
   SystemParticipants
@@ -24,7 +25,7 @@ import edu.ie3.datamodel.utils.ContainerUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.GridException
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.guardian.run.SubGridHandling.assignSubnetNumbers
+import edu.ie3.osmogrid.guardian.run.SubGridHandling._
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.mv.{MvRequest, ProvideLvData, WrappedMvResponse}
 import org.slf4j.Logger
@@ -56,15 +57,6 @@ trait SubGridHandling {
         "No further generation steps intended. Hand over results to result handler."
       )
 
-      // send lv grid data to mv coordinator
-      mvCoordinator match {
-        case Some(coordinator) =>
-          coordinator ! WrappedMvResponse(
-            ProvideLvData(grids, streetGraph)
-          )
-        case None =>
-      }
-
       /* Bundle grid result and inform interested listeners */
       val jointGrid =
         ContainerUtils.combineToJointGrid(updatedSubGrids.asJava)
@@ -72,6 +64,55 @@ trait SubGridHandling {
         listener ! ResultListenerProtocol.GridResult(jointGrid)
       }
     }
+  }
+
+  protected def handleResults(
+      lvData: Option[Seq[SubGridContainer]],
+      mvData: Option[
+        (
+            Seq[SubGridContainer],
+            Map[NodeInput, NodeInput],
+            Map[TransformerInput, TransformerInput]
+        )
+      ],
+      cfg: OsmoGridConfig.Generation,
+      resultListener: Seq[ActorRef[ResultListenerProtocol]],
+      msgAdapters: MessageAdapters
+  )(implicit log: Logger): Unit = {
+    val jointGridContainer = lvData.map { grids =>
+      ContainerUtils.combineToJointGrid(grids.asJava)
+    }
+
+    val mv = mvData match {
+      case Some((grids, nC, tC)) =>
+        jointGridContainer match {
+          case Some(container) =>
+            val rawGridElements =
+              container.getRawGrid.allEntitiesAsList().asScala
+            val participants =
+              container.getSystemParticipants.allEntitiesAsList().asScala
+            val graphics = container.getGraphics.allEntitiesAsList().asScala
+
+            val updatedRawGridElements = new RawGridElements(
+              rawGridElements
+                .diff(nC.keySet.toList)
+                .appendedAll(nC.values)
+                .diff(tC.keySet.toList)
+                .appendedAll(tC.values)
+                .asJava
+            )
+
+            container
+              .copy()
+              .rawGrid(updatedRawGridElements)
+              .build()
+
+          case None => ContainerUtils.combineToJointGrid(grids.asJava)
+        }
+
+      case None => jointGridContainer
+    }
+
   }
 }
 

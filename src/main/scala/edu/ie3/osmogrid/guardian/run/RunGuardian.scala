@@ -8,6 +8,7 @@ package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
+import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.MessageAdapters.{
   WrappedLvCoordinatorResponse,
@@ -15,6 +16,8 @@ import edu.ie3.osmogrid.guardian.run.MessageAdapters.{
 }
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.lv.coordinator.RepLvGrids
+import edu.ie3.osmogrid.mv.{ProvideLvData, RepMvGrids, WrappedMvResponse}
 
 import java.util.UUID
 import scala.util.{Failure, Success}
@@ -68,7 +71,11 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
           case Success(childReferences) =>
             running(
               runGuardianData,
-              childReferences
+              childReferences,
+              FinishedGridData.empty(
+                childReferences.lvCoordinator.isDefined,
+                childReferences.mvCoordinator.isDefined
+              )
             )
           case Failure(exception) =>
             ctx.log.error(
@@ -90,30 +97,87 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
     *   Meta information describing the current actor's state
     * @param childReferences
     *   References to child actors
+    * @param finishedGridData
+    *   Container for finished grid data
     * @return
     *   The next state
     */
   private def running(
       runGuardianData: RunGuardianData,
-      childReferences: ChildReferences
+      childReferences: ChildReferences,
+      finishedGridData: FinishedGridData
   ): Behavior[Request] = Behaviors.receive {
     case (
           ctx,
           WrappedLvCoordinatorResponse(
-            coordinator.RepLvGrids(subGridContainers, streetGraph)
+            RepLvGrids(subGridContainers, streetGraph)
           )
         ) =>
-      /* Handle the grid results and wait for the listener to report back */
-      handleLvResults(
-        subGridContainers,
-        streetGraph,
+      // if a mv coordinator is present, send the lv results to the mv coordinator
+      childReferences.mvCoordinator.foreach { mv =>
+        mv ! WrappedMvResponse(
+          ProvideLvData(subGridContainers, streetGraph)
+        )
+      }
+
+      val updated = finishedGridData.copy(lvData = Some(subGridContainers))
+
+      // check if all possible data was received
+      if (updated.receivedAllData) {
+
+        // if all data was received,
+        ctx.self ! HandleGridResults
+        Behaviors.same
+      } else {
+
+        // if some expected data is still missing, keep waiting for missing data
+        running(runGuardianData, childReferences, updated)
+      }
+
+    case (
+          ctx,
+          WrappedMvCoordinatorResponse(
+            RepMvGrids(subGridContainer, nodeChanges, transformerChanges)
+          )
+        ) =>
+      val updated = finishedGridData.copy(mvData =
+        Some((subGridContainer, nodeChanges, transformerChanges))
+      )
+
+      // check if all possible data was received
+      if (updated.receivedAllData) {
+
+        // if all data was received,
+        ctx.self ! HandleGridResults
+        Behaviors.same
+      } else {
+
+        // if some expected data is still missing, keep waiting for missing data
+        running(runGuardianData, childReferences, updated)
+      }
+
+    case (ctx, HandleGridResults) =>
+      handleResults(
+        finishedGridData.lvData,
+        finishedGridData.mvData,
         runGuardianData.cfg.generation,
         childReferences.resultListeners,
-        childReferences.mvCoordinator,
         runGuardianData.msgAdapters
       )(ctx.log)
 
-      Behaviors.same
+      /*
+    /* Handle the grid results and wait for the listener to report back */
+    handleLvResults(
+      subGridContainers,
+      streetGraph,
+      runGuardianData.cfg.generation,
+      childReferences.resultListeners,
+      childReferences.mvCoordinator,
+      runGuardianData.msgAdapters
+    )(ctx.log)
+       */
+
+      Behaviors.stopped
 
     case (ctx, ResultEventListenerDied) =>
       // we wait for exact one listener as we only started one

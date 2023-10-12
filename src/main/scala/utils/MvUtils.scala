@@ -9,14 +9,16 @@ package utils
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.osmogrid.graph.OsmGraph
-import GridConversion.NodeConversion
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.jgrapht.GraphPath
+import org.jgrapht.alg.interfaces.ShortestPathAlgorithm.SingleSourcePaths
+import org.jgrapht.alg.shortestpath.DijkstraShortestPath
 import org.slf4j.{Logger, LoggerFactory}
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
+import utils.GridConversion.NodeConversion
 
 import java.util
 import javax.measure.quantity.Length
@@ -76,6 +78,30 @@ object MvUtils {
         nodeB.coordinate.getCoordinate
       )
       Connection(nodeA, nodeB, distance, None)
+    }
+  }
+
+  // TODO: Check if necessary
+  def buildUniqueConnections_sp(
+      nodes: Set[Node],
+      uniqueCombinations: List[(Node, Node)],
+      streetGraph: OsmGraph
+  ): List[Connection] = {
+    val shortestPath: DijkstraShortestPath[Node, DistanceWeightedEdge] =
+      new DijkstraShortestPath(streetGraph)
+
+    val paths: Map[Node, SingleSourcePaths[Node, DistanceWeightedEdge]] =
+      nodes.map { n => (n, shortestPath.getPaths(n)) }.toMap
+
+    uniqueCombinations.map { case (nodeA, nodeB) =>
+      val path = paths(nodeA).getPath(nodeB)
+
+      Connection(
+        nodeA,
+        nodeB,
+        Quantities.getQuantity(path.getWeight, Units.METRE),
+        Some(path)
+      )
     }
   }
 

@@ -73,6 +73,8 @@ sealed trait Response
   *
   * @param grids
   *   Collection of low voltage grids
+  * @param streetGraph
+  *   [[OsmGraph]] of the streets
   */
 final case class RepLvGrids(grids: Seq[SubGridContainer], streetGraph: OsmGraph)
     extends Response

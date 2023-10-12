@@ -50,6 +50,7 @@ trait RunSupport {
         )
 
         /* Check, which voltage level configs are given. Start with lv level, if this is desired for. */
+        // TODO: Re-do this part!
         validConfig.generation match {
           case Generation(Some(lvConfig), Some(mvConfig)) =>
             ctx.log.info("Starting low voltage grid coordinator ...")
