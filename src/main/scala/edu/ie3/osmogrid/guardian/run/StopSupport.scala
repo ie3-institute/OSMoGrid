@@ -36,6 +36,7 @@ trait StopSupport {
       runId,
       inputDataProviderTerminated = false,
       resultListenerTerminated = false,
+      childReferences.lvCoordinator.map(_ => false),
       childReferences.lvCoordinator.map(_ => false)
     )
   }
@@ -60,6 +61,10 @@ trait StopSupport {
     case LvCoordinatorDied =>
       stoppingData.copy(lvCoordinatorTerminated =
         stoppingData.lvCoordinatorTerminated.map(_ => true)
+      )
+    case MvCoordinatorDied =>
+      stoppingData.copy(mvCoordinatorTerminated =
+        stoppingData.mvCoordinatorTerminated.map(_ => true)
       )
   }
 
@@ -100,6 +105,13 @@ trait StopSupport {
         )
         stoppingData.copy(lvCoordinatorTerminated =
           stoppingData.lvCoordinatorTerminated.map(_ => true)
+        )
+      case (stoppingData, MvCoordinatorDied) =>
+        ctx.log.warn(
+          s"Mv coordinator for run $runId unexpectedly died. Start coordinated shut down phase for this run."
+        )
+        stoppingData.copy(mvCoordinatorTerminated =
+          stoppingData.mvCoordinatorTerminated.map(_ => true)
         )
     }
 

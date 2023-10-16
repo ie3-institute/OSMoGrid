@@ -28,6 +28,8 @@ class SubGridHandlingSpec
     with BeforeAndAfterAll {
   private val testKit: ActorTestKit = ActorTestKit()
 
+  ""
+
   "Supporting sub grid handling" when {
     "assigning sub grid numbers to a single sub grid container" should {
       val assignSubnetNumber =

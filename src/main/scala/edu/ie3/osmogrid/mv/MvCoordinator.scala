@@ -15,7 +15,7 @@ import edu.ie3.osmogrid.exception.MissingInputDataException
 import edu.ie3.osmogrid.io.input.{InputDataEvent, InputDataProvider}
 import edu.ie3.osmogrid.model.SourceFilter.MvFilter
 import utils.OsmoGridUtils.spawnDummyHvNode
-import utils.{OsmoGridUtils, SubGridContainerUtils, VoronoiUtils}
+import utils.{OsmoGridUtils, GridContainerUtils, VoronoiUtils}
 
 import scala.util.{Failure, Success}
 
@@ -135,12 +135,12 @@ object MvCoordinator extends ActorStopSupportStateless {
         /* calculates all voronoi polynomials */
 
         // collect all mv node from lv sub grid containers
-        val mvToLv = SubGridContainerUtils.filterLv(lvGrids, cfg)
+        val mvToLv = GridContainerUtils.filterLv(lvGrids, cfg)
 
         // collect all mv nodes from hv sub grid container or spawn a new mv node
         val hvToMv = hvGrids match {
           case Some(grids) =>
-            SubGridContainerUtils.filterHv(grids, cfg)
+            GridContainerUtils.filterHv(grids, cfg)
           case None => List(spawnDummyHvNode(mvToLv))
         }
 

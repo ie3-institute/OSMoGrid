@@ -20,11 +20,12 @@ import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.coordinator
-import edu.ie3.osmogrid.mv.{MvRequest, MvResponse}
+import edu.ie3.osmogrid.mv.{MvRequest, MvResponse, MvTerminate, RepMvGrids}
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.slf4j.event.Level
 
 import java.util.UUID
+import scala.List
 
 class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
   "Having a run guardian" when {
@@ -145,9 +146,15 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         Some(lvCoordinator.ref),
         Some(mvCoordinator.ref)
       )
+      val finishedGridData =
+        FinishedGridData.empty(lvExpected = true, mvExpected = true)
 
       val runningTestKit = BehaviorTestKit(
-        RunGuardian invokePrivate running(runGuardianData, childReferences)
+        RunGuardian invokePrivate running(
+          runGuardianData,
+          childReferences,
+          finishedGridData
+        )
       )
 
       "log an error if faced to not supported request" in {
@@ -159,7 +166,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         )
       }
 
-      "handles an incoming result" in new GridSupport {
+      "handles an incoming lv result" in new GridSupport {
         runningTestKit.run(
           MessageAdapters.WrappedLvCoordinatorResponse(
             coordinator.RepLvGrids(Seq(mockSubGrid(1)), new OsmGraph())
@@ -167,13 +174,32 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         )
 
         /* Event is logged */
-        runningTestKit.logEntries() should contain allOf (CapturedLogEvent(
-          Level.INFO,
-          "All lv grids successfully generated."
-        ), CapturedLogEvent(
-          Level.DEBUG,
-          "No further generation steps intended. Hand over results to result handler."
-        ))
+        runningTestKit.logEntries() should contain(
+          CapturedLogEvent(
+            Level.INFO,
+            s"Received lv grids."
+          )
+        )
+      }
+
+      "handles an incoming mv result" in new GridSupport {
+        runningTestKit.run(
+          MessageAdapters.WrappedMvCoordinatorResponse(
+            RepMvGrids(Seq(mockSubGrid(100)), Seq.empty, Seq.empty)
+          )
+        )
+
+        /* Event is logged */
+        runningTestKit.logEntries() should contain(
+          CapturedLogEvent(
+            Level.INFO,
+            s"Received mv grids."
+          )
+        )
+      }
+
+      "handle all received grid results" in {
+        runningTestKit.run(HandleGridResults)
 
         /* Result is forwarded to listener */
         resultListener.expectMessageType[ResultListenerProtocol.GridResult]
@@ -191,6 +217,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         )
         /* All children are sent a termination request */
         lvCoordinator.expectMessage(coordinator.Terminate)
+        mvCoordinator.expectMessage(MvTerminate)
         inputDataProvider.expectMessage(input.Terminate)
       }
     }
@@ -202,7 +229,8 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         runId,
         inputDataProviderTerminated = false,
         resultListenerTerminated = false,
-        lvCoordinatorTerminated = None
+        lvCoordinatorTerminated = None,
+        mvCoordinatorTerminated = None
       )
 
       val stoppingTestKit = BehaviorTestKit(
@@ -236,7 +264,8 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         runId,
         inputDataProviderTerminated = false,
         resultListenerTerminated = false,
-        lvCoordinatorTerminated = Some(false)
+        lvCoordinatorTerminated = Some(false),
+        mvCoordinatorTerminated = Some(false)
       )
 
       val stoppingTestKit = BehaviorTestKit(
@@ -253,6 +282,10 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         stoppingTestKit.isAlive shouldBe true
 
         stoppingTestKit.run(LvCoordinatorDied)
+
+        stoppingTestKit.isAlive shouldBe true
+
+        stoppingTestKit.run(MvCoordinatorDied)
 
         stoppingTestKit.isAlive shouldBe false
       }

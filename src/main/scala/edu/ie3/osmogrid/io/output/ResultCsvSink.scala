@@ -15,13 +15,14 @@ import edu.ie3.datamodel.io.naming.{
 import edu.ie3.datamodel.io.processor.ProcessorProvider
 import edu.ie3.datamodel.io.sink.CsvFileSink
 
+import java.nio.file.Path
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 final case class ResultCsvSink(
     runId: UUID,
-    saveFolderPath: String,
+    saveFolderPath: Path,
     csvSeparator: String,
     hierarchic: Boolean
 ) extends ResultSink {
@@ -36,7 +37,6 @@ final case class ResultCsvSink(
       else
         new FlatDirectoryHierarchy()
     ),
-    false,
     csvSeparator
   )
 

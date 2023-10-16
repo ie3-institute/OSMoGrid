@@ -113,6 +113,8 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
             RepLvGrids(subGridContainers, streetGraph)
           )
         ) =>
+      ctx.log.info(s"Received lv grids.")
+
       // if a mv coordinator is present, send the lv results to the mv coordinator
       childReferences.mvCoordinator.foreach { mv =>
         mv ! WrappedMvResponse(
@@ -140,8 +142,11 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
             RepMvGrids(subGridContainer, nodeChanges, transformerChanges)
           )
         ) =>
-      val updated = finishedGridData.copy(mvData =
-        Some((subGridContainer, nodeChanges, transformerChanges))
+      ctx.log.info(s"Received mv grids.")
+
+      val updated = finishedGridData.copy(
+        mvData = Some(subGridContainer),
+        toBeRemoved = Some(nodeChanges, transformerChanges)
       )
 
       // check if all possible data was received
@@ -157,28 +162,19 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
       }
 
     case (ctx, HandleGridResults) =>
+      ctx.log.info(s"Starting to handle grid results.")
+
       handleResults(
         finishedGridData.lvData,
         finishedGridData.mvData,
+        None,
+        finishedGridData.toBeRemoved,
         runGuardianData.cfg.generation,
         childReferences.resultListeners,
         runGuardianData.msgAdapters
       )(ctx.log)
 
-      /*
-    /* Handle the grid results and wait for the listener to report back */
-    handleLvResults(
-      subGridContainers,
-      streetGraph,
-      runGuardianData.cfg.generation,
-      childReferences.resultListeners,
-      childReferences.mvCoordinator,
-      runGuardianData.msgAdapters
-    )(ctx.log)
-       */
-
       Behaviors.stopped
-
     case (ctx, ResultEventListenerDied) =>
       // we wait for exact one listener as we only started one
       /* Start coordinated shutdown */

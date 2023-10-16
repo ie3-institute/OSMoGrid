@@ -7,6 +7,7 @@
 package edu.ie3.test.common
 
 import java.io.File
+import java.nio.file.{Path, Paths}
 
 /** Common I/O information that should be used for tests e.g. default
   * directories etc.
@@ -16,9 +17,12 @@ import java.io.File
   */
 trait IOTestCommons {
 
-  protected val testTmpDir: String = System.getProperty(
-    "user.dir"
-  ) + File.separator + "test" + File.separator + "tmp_" + this.getClass.getSimpleName
+  protected val testTmpDir: Path = Paths.get(
+    System.getProperty("user.dir"),
+    "test",
+    "tmp_",
+    this.getClass.getSimpleName
+  )
 
   def createDir(dir: String): Boolean = new File(dir).mkdirs()
 

@@ -22,7 +22,7 @@ class ResultCsvSinkIT
 
   "A ResultCsvSink" should {
     "handle a given valid GridResult correctly" in {
-      createDir(testTmpDir)
+      createDir(testTmpDir.toString)
       val runId = UUID.randomUUID()
       val csvSeparator = ";"
       val hierarchic = false
@@ -44,7 +44,8 @@ class ResultCsvSinkIT
       val gridData = CsvJointGridContainerSource.read(
         jointGrid.getGridName,
         csvSeparator,
-        testTmpDir
+        testTmpDir,
+        false
       )
 
       gridData shouldBe jointGrid

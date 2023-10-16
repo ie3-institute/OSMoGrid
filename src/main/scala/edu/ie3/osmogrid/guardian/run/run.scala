@@ -64,6 +64,8 @@ object ResultEventListenerDied extends Watch
 
 object LvCoordinatorDied extends Watch
 
+object MvCoordinatorDied extends Watch
+
 /* Sent out responses */
 sealed trait Response
 
@@ -106,24 +108,22 @@ final case class StoppingData(
     runId: UUID,
     inputDataProviderTerminated: Boolean,
     resultListenerTerminated: Boolean,
-    lvCoordinatorTerminated: Option[Boolean]
+    lvCoordinatorTerminated: Option[Boolean],
+    mvCoordinatorTerminated: Option[Boolean]
 ) extends StateData {
   def allChildrenTerminated: Boolean =
     inputDataProviderTerminated && resultListenerTerminated && lvCoordinatorTerminated
-      .forall(terminated => terminated)
+      .forall(terminated => terminated) && mvCoordinatorTerminated.forall(
+      terminated => terminated
+    )
 }
 
 final case class FinishedGridData(
     lvExpected: Boolean,
     mvExpected: Boolean,
     lvData: Option[Seq[SubGridContainer]],
-    mvData: Option[
-      (
-          Seq[SubGridContainer],
-          Map[NodeInput, NodeInput],
-          Map[TransformerInput, TransformerInput]
-      )
-    ]
+    mvData: Option[Seq[SubGridContainer]],
+    toBeRemoved: Option[(Seq[NodeInput], Seq[TransformerInput])]
 ) extends StateData {
   def receivedAllData: Boolean = {
     val lv = lvExpected == lvData.isDefined
@@ -135,7 +135,9 @@ final case class FinishedGridData(
 
 object FinishedGridData {
   def empty(lvExpected: Boolean, mvExpected: Boolean): FinishedGridData =
-    FinishedGridData(lvExpected, mvExpected, None, None)
+    FinishedGridData(lvExpected, mvExpected, None, None, None)
 }
 
+/** Message to tell the [[RunGuardian]] to start handling the received results.
+  */
 object HandleGridResults extends Request

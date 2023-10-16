@@ -15,6 +15,7 @@ import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol.PersistenceListenerEvent._
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol._
 
+import java.nio.file.Path
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -100,7 +101,12 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
     cfg match {
       case Output(Some(csv), _) =>
         Future(
-          ResultCsvSink(runId, csv.directory, csv.separator, csv.hierarchic)
+          ResultCsvSink(
+            runId,
+            Path.of(csv.directory),
+            csv.separator,
+            csv.hierarchic
+          )
         )
       case unsupported =>
         Future.failed(

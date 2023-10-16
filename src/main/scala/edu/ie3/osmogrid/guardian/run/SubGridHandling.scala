@@ -8,13 +8,7 @@ package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.connector._
-import edu.ie3.datamodel.models.input.container.{
-  GraphicElements,
-  JointGridContainer,
-  RawGridElements,
-  SubGridContainer,
-  SystemParticipants
-}
+import edu.ie3.datamodel.models.input.container._
 import edu.ie3.datamodel.models.input.graphics.{
   LineGraphicInput,
   NodeGraphicInput
@@ -27,8 +21,8 @@ import edu.ie3.osmogrid.exception.GridException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.guardian.run.SubGridHandling._
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
-import edu.ie3.osmogrid.mv.{MvRequest, ProvideLvData, WrappedMvResponse}
 import org.slf4j.Logger
+import utils.GridContainerUtils.{combine, removeElements}
 
 import java.util.UUID
 import scala.jdk.CollectionConverters._
@@ -48,7 +42,6 @@ trait SubGridHandling {
       streetGraph: OsmGraph,
       cfg: OsmoGridConfig.Generation,
       resultListener: Seq[ActorRef[ResultListenerProtocol]],
-      mvCoordinator: Option[ActorRef[MvRequest]],
       msgAdapters: MessageAdapters
   )(implicit log: Logger): Try[Unit] = {
     log.info("All lv grids successfully generated.")
@@ -66,53 +59,80 @@ trait SubGridHandling {
     }
   }
 
+  /** Handle incoming grid results.
+    * @param lvData
+    *   option for low voltage grids
+    * @param mvData
+    *   option for medium voltage grids
+    * @param hvData
+    *   option for high voltage grids
+    * @param toBeRemoved
+    *   option for [[RawGridElements]] that needs to be removed
+    * @param cfg
+    *   generation config
+    * @param resultListener
+    *   listeners for the resulting grid
+    * @param msgAdapters
+    *   some adapters for messages
+    * @param log
+    *   logger
+    */
   protected def handleResults(
       lvData: Option[Seq[SubGridContainer]],
-      mvData: Option[
-        (
-            Seq[SubGridContainer],
-            Map[NodeInput, NodeInput],
-            Map[TransformerInput, TransformerInput]
-        )
-      ],
+      mvData: Option[Seq[SubGridContainer]],
+      hvData: Option[Seq[SubGridContainer]],
+      toBeRemoved: Option[(Seq[NodeInput], Seq[TransformerInput])],
       cfg: OsmoGridConfig.Generation,
       resultListener: Seq[ActorRef[ResultListenerProtocol]],
       msgAdapters: MessageAdapters
   )(implicit log: Logger): Unit = {
-    val jointGridContainer = lvData.map { grids =>
+    log.info("All requested grids successfully generated.")
+
+    // combining lv grids
+    val lvGrids: Option[JointGridContainer] = lvData.map { grids =>
+      // assigning some subnet numbers
+      val updated = assignSubnetNumbers(grids).getOrElse(grids)
+      val container = ContainerUtils.combineToJointGrid(updated.asJava)
+
+      // removing some elements is defined
+      toBeRemoved
+        .map { r => removeElements(container, r._1, r._2) }
+        .getOrElse(container)
+    }
+
+    // combining lv grids
+    val hvGrids: Option[JointGridContainer] = hvData.map { grids =>
+      // assigning some subnet numbers
+      val updated = assignSubnetNumbers(grids).getOrElse(grids)
+      val container = ContainerUtils.combineToJointGrid(updated.asJava)
+
+      // removing some elements is defined
+      toBeRemoved
+        .map { r => removeElements(container, r._1, r._2) }
+        .getOrElse(container)
+    }
+
+    // combining mv grids
+    val mvGrids: Option[JointGridContainer] = mvData.map { grids =>
       ContainerUtils.combineToJointGrid(grids.asJava)
     }
 
-    val mv = mvData match {
-      case Some((grids, nC, tC)) =>
-        jointGridContainer match {
-          case Some(container) =>
-            val rawGridElements =
-              container.getRawGrid.allEntitiesAsList().asScala
-            val participants =
-              container.getSystemParticipants.allEntitiesAsList().asScala
-            val graphics = container.getGraphics.allEntitiesAsList().asScala
+    // combining the grids of all voltage levels into a single grid container
+    val jointGrid: JointGridContainer =
+      List(lvGrids, mvGrids, hvGrids).flatten.reduceOption { (gridsA, gridsB) =>
+        combine(gridsA, gridsB)
+      } match {
+        case Some(grids) => grids
+        case None =>
+          throw GridException(
+            s"Error during combining of received grids! No joint grid container"
+          )
+      }
 
-            val updatedRawGridElements = new RawGridElements(
-              rawGridElements
-                .diff(nC.keySet.toList)
-                .appendedAll(nC.values)
-                .diff(tC.keySet.toList)
-                .appendedAll(tC.values)
-                .asJava
-            )
-
-            container
-              .copy()
-              .rawGrid(updatedRawGridElements)
-              .build()
-
-          case None => ContainerUtils.combineToJointGrid(grids.asJava)
-        }
-
-      case None => jointGridContainer
+    // sending the finished grid to all interested listeners
+    resultListener.foreach { listener =>
+      listener ! ResultListenerProtocol.GridResult(jointGrid)
     }
-
   }
 }
 

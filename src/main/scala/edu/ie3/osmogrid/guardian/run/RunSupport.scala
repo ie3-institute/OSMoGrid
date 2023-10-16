@@ -223,7 +223,7 @@ trait RunSupport {
         MvCoordinator(mvConfig, mvCoordinatorAdapter),
         s"LvCoordinator_${runId.toString}"
       )
-    ctx.watchWith(mvCoordinator, LvCoordinatorDied)
+    ctx.watchWith(mvCoordinator, MvCoordinatorDied)
 
     ctx.log.info("Starting voltage level grid generation ...")
     mvCoordinator ! ReqMvGrids

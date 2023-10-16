@@ -24,6 +24,8 @@ import org.scalatestplus.mockito.MockitoSugar.mock
 import tech.units.indriya.ComparableQuantity
 import edu.ie3.util.geo.GeoUtils.orthogonalProjection
 import tech.units.indriya.unit.Units
+import utils.OsmoGridUtils.buildStreetGraph
+
 import collection.parallel.CollectionConverters.seqIsParallelizable
 import javax.measure.quantity.Length
 import scala.collection.parallel.ParSeq
@@ -66,12 +68,10 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
     "building a street graph" should {
       val waySeq = Seq(ways.highway1, ways.highway2)
       val wayNodes = ways.highway1.nodes ++ ways.highway2.nodes
-      val buildStreetGraph = PrivateMethod[OsmGraph](Symbol("buildStreetGraph"))
-      val actual: OsmGraph =
-        LvGraphGeneratorSupport invokePrivate buildStreetGraph(
-          waySeq,
-          nodes.nodesMap
-        )
+      val actual: OsmGraph = buildStreetGraph(
+        waySeq,
+        nodes.nodesMap
+      )
 
       "build a graph with all nodes and edges" in {
         actual.vertexSet().size() shouldBe 4

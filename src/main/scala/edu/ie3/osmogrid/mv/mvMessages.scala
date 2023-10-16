@@ -98,14 +98,14 @@ final case class StartGeneration(
   * @param grids
   *   Collection of medium voltage grids
   * @param nodeChanges
-  *   Map that contains information for changes of nodes
+  *   updated nodes
   * @param transformerChanges
-  *   Map that contains information for changes of transformers
+  *   updated transformers
   */
 final case class RepMvGrids(
     grids: Seq[SubGridContainer],
-    nodeChanges: Map[NodeInput, NodeInput],
-    transformerChanges: Map[TransformerInput, TransformerInput]
+    nodeChanges: Seq[NodeInput],
+    transformerChanges: Seq[TransformerInput]
 ) extends MvResponse
 
 final case class ProvideLvData(

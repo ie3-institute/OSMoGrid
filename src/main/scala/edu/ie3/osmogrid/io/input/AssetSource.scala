@@ -11,13 +11,15 @@ import edu.ie3.datamodel.io.naming.{
   EntityPersistenceNamingStrategy,
   FileNamingStrategy
 }
-import edu.ie3.datamodel.io.source.csv.CsvTypeSource
+import edu.ie3.datamodel.io.source.TypeSource
+import edu.ie3.datamodel.io.source.csv.CsvDataSource
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
 import edu.ie3.osmogrid.exception.{IllegalConfigException, InputDataException}
 
+import java.nio.file.Path
 import scala.concurrent.{ExecutionContextExecutor, Future}
-import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters._
 
 trait AssetSource {
 
@@ -32,11 +34,11 @@ object AssetSource {
         val namingStrategy = if (hierarchic) {
           new FileNamingStrategy(
             new EntityPersistenceNamingStrategy(),
-            new DefaultDirectoryHierarchy(directory, "osm")
+            new DefaultDirectoryHierarchy(Path.of(directory), "osm")
           )
         } else
           new FileNamingStrategy()
-        AssetFileSource(ec, separator, directory, namingStrategy)
+        AssetFileSource(ec, separator, Path.of(directory), namingStrategy)
       case Asset(None) =>
         throw IllegalConfigException(
           "You have to provide at least one input data type for asset type information!"
@@ -47,7 +49,7 @@ object AssetSource {
   final case class AssetFileSource(
       executionContextExecutor: ExecutionContextExecutor,
       csvSep: String,
-      directoryPath: String,
+      directoryPath: Path,
       namingStrategy: FileNamingStrategy
   ) extends AssetSource {
 
@@ -55,8 +57,10 @@ object AssetSource {
       implicit val implicitEc: ExecutionContextExecutor =
         executionContextExecutor
       Future {
-        val typeSource: CsvTypeSource =
-          new CsvTypeSource(csvSep, directoryPath, namingStrategy)
+        val dataSource: CsvDataSource =
+          new DataSourceWrapper(csvSep, directoryPath, namingStrategy)
+        val typeSource = new TypeSource(dataSource)
+
         val transformerTypes = typeSource.getTransformer2WTypes.asScala.toSeq
         val lineTypes = typeSource.getLineTypes.asScala.toSeq
         (transformerTypes, lineTypes) match {
@@ -74,4 +78,10 @@ object AssetSource {
       }
     }
   }
+
+  final class DataSourceWrapper(
+      csvSep: String,
+      directoryPath: Path,
+      namingStrategy: FileNamingStrategy
+  ) extends CsvDataSource(csvSep, directoryPath, namingStrategy)
 }

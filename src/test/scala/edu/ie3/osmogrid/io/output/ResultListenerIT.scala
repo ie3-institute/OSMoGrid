@@ -86,7 +86,7 @@ class ResultListenerIT
 
     "handling a grid result" should {
       "write the grid data correctly into csv files" in {
-        createDir(testTmpDir)
+        createDir(testTmpDir.toString)
         val parsedCfg = ConfigFactory.parseMap(
           Map("csv.directory" -> testTmpDir).asJava
         )
@@ -112,7 +112,8 @@ class ResultListenerIT
         val gridData = CsvJointGridContainerSource.read(
           jointGrid.getGridName,
           ";",
-          testTmpDir
+          testTmpDir,
+          false
         )
 
         gridData shouldBe jointGrid
