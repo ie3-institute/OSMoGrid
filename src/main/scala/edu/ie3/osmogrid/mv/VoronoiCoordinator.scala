@@ -6,19 +6,19 @@
 
 package edu.ie3.osmogrid.mv
 
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
-import edu.ie3.datamodel.models.input.container.{
-  RawGridElements,
-  SubGridContainer
-}
+import edu.ie3.datamodel.models.input.NodeInput
+import edu.ie3.datamodel.models.input.connector.LineInput
 import edu.ie3.osmogrid.ActorStopSupportStateless
-import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.util.osm.model.OsmEntity.Node
-import utils.GridConversion.NodeConversion
+import utils.GridConversion
+import utils.MvUtils.generateMvGraph
 import utils.VoronoiUtils.VoronoiPolygon
-import utils.{GridConversion, MvUtils, Solver}
 
+/** Coordinator for [[VoronoiPolygon]]s. This actor will generate a mv graph
+ * structure and convert the structure into a [[NodeInput]]s and
+ * [[LineInput]]s.
+ */
 object VoronoiCoordinator extends ActorStopSupportStateless {
 
   /** Method for creating a [[VoronoiCoordinator]].
@@ -45,7 +45,7 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
               StartGraphGeneration(nr, polygon, streetGraph, cfg)
             ) =>
           val (graph, nodeConversion) =
-            generateMvGraph(nr, polygon, streetGraph, coordinator, ctx)
+            generateMvGraph(nr, polygon, streetGraph)
 
           // start conversion of nodes and lines
           ctx.self ! StartGraphConversion(nr, graph, nodeConversion, cfg)
@@ -62,50 +62,6 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
       .receiveSignal { case (ctx, PostStop) =>
         postStopCleanUp(ctx.log)
       }
-
-  /** @param nr
-    *   subnet number
-    * @param voronoiPolygon
-    *   polygon with nodes
-    * @param streetGraph
-    *   complete osm street graph
-    * @param coordinator
-    *   superior actor
-    * @param ctx
-    *   context
-    * @return
-    *   a osm graph and the used node conversion object
-    */
-  private def generateMvGraph(
-      nr: Int,
-      voronoiPolygon: VoronoiPolygon,
-      streetGraph: OsmGraph,
-      coordinator: ActorRef[MvRequest],
-      ctx: ActorContext[MvRequest]
-  ): (OsmGraph, NodeConversion) = {
-    ctx.log.debug(s"Start generation for grid $nr.")
-
-    // if this voronoi polygon contains a polygon, we can reduce the complete street graph in order to reduce the calculation time
-    val reducedStreetGraph: OsmGraph = voronoiPolygon.polygon
-      .map { polygon => streetGraph.subGraph(polygon) }
-      .getOrElse(streetGraph)
-
-    // creating necessary utility objects
-    val (nodeConversion, connections) =
-      MvUtils.createDefinitions(voronoiPolygon.allNodes, reducedStreetGraph)
-
-    val transitionNode: Node = nodeConversion.getOsmNode(
-      voronoiPolygon.transitionPointToHigherVoltLvl
-    )
-
-    // using the solver to solve the routing problem
-    val graph: OsmGraph = Solver.solve(
-      transitionNode,
-      connections
-    )
-
-    (graph, nodeConversion)
-  }
 
   /** Conversion behaviour of the [[VoronoiCoordinator]]
     * @param coordinator

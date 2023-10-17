@@ -8,10 +8,10 @@ package utils
 
 import edu.ie3.datamodel.models.StandardUnits._
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
-import edu.ie3.datamodel.models.input.connector._
+import edu.ie3.datamodel.models.input.connector.{LineInput, TransformerInput}
 import edu.ie3.datamodel.models.input.container.{GraphicElements, RawGridElements, SubGridContainer, SystemParticipants}
 import edu.ie3.datamodel.models.input.system.characteristic.OlmCharacteristicInput
-import edu.ie3.datamodel.models.input.{AssetInput, MeasurementUnitInput, NodeInput}
+import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
@@ -19,6 +19,8 @@ import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 
 import java.util.UUID
+import javax.measure.Quantity
+import javax.measure.quantity.Length
 import scala.jdk.CollectionConverters._
 
 object GridConversion {
@@ -60,28 +62,22 @@ object GridConversion {
       .asScala
       .zipWithIndex
       .map { case (e, index) =>
-        val source = nodeConversion.getPSDMNode(graph.getEdgeSource(e))
-        val target = nodeConversion.getPSDMNode(graph.getEdgeTarget(e))
+        val nodeA = nodeConversion.getPSDMNode(graph.getEdgeSource(e))
+        val nodeB = nodeConversion.getPSDMNode(graph.getEdgeTarget(e))
 
-        new LineInput(
-          UUID.randomUUID(),
+        // creating a new PSDM line
+        buildLine(
           s"${n}_$index",
-          source,
-          target,
+          nodeA,
+          nodeB,
           1,
           defaultLineType_10kV,
-          Quantities.getQuantity(e.getDistance.getValue, Units.METRE),
-          GeoUtils.buildSafeLineStringBetweenCoords(
-            source.getGeoPosition.getCoordinate,
-            target.getGeoPosition.getCoordinate
-          ),
-          OlmCharacteristicInput.CONSTANT_CHARACTERISTIC
+          e.getDistance
         )
       }
       .toSet
 
     val elements: List[AssetInput] = List(nodes, lines).flatten
-
 
     // creating sub grid container
     val rawGridElements = new RawGridElements(elements.asJava)
@@ -99,6 +95,44 @@ object GridConversion {
 
     // returning the finished data
     (subGridContainer, Seq.empty, Seq.empty)
+  }
+
+  /** Method for creating a [[LineInput]].
+    * @param id
+    *   of the line
+    * @param nodeA
+    *   start point of the line
+    * @param nodeB
+    *   end point of the line
+    * @param lineType
+    *   type of the line
+    * @param length
+    *   of the line
+    * @return
+    *   a new [[LineInput]]
+    */
+  def buildLine(
+      id: String,
+      nodeA: NodeInput,
+      nodeB: NodeInput,
+      parallel: Int,
+      lineType: LineTypeInput,
+      length: Quantity[Length]
+  ): LineInput = {
+    new LineInput(
+      UUID.randomUUID(),
+      id,
+      nodeA,
+      nodeB,
+      parallel,
+      lineType,
+      Quantities.getQuantity(length.getValue, Units.METRE),
+      GeoUtils.buildSafeLineStringBetweenCoords(
+        nodeA.getGeoPosition.getCoordinate,
+        nodeB.getGeoPosition.getCoordinate
+      ),
+      OlmCharacteristicInput.CONSTANT_CHARACTERISTIC
+    )
   }
 
   /** This utility object is used to easily convert [[NodeInput]]s and
@@ -185,6 +219,7 @@ object GridConversion {
       val conversion: Map[NodeInput, Node] = nodes.map { node =>
         val coordinate = node.getGeoPosition.getCoordinate
 
+        // calculate the distance to each osm node
         val sortedList = osmNodes
           .map { node: Node =>
             (
@@ -194,9 +229,11 @@ object GridConversion {
           }
           .sortBy(_._2)
 
+        // map the osm node with the shortest distance
         node -> sortedList(0)._1
       }.toMap
 
+      // creating the NodeConversion object
       NodeConversion(conversion, conversion.map { case (k, v) => v -> k })
     }
   }

@@ -77,12 +77,6 @@ class VoronoiCoordinatorSpec
 
     "create a graph correctly" in {
       idleTestKit.run(StartGraphGeneration(1, polygon, streetGraph, cfg))
-
-      idleTestKit.logEntries() should contain only CapturedLogEvent(
-        Level.DEBUG,
-        "Start generation for grid 1."
-      )
-
       idleTestKit.isAlive shouldBe true
     }
 
@@ -136,7 +130,6 @@ class VoronoiCoordinatorSpec
         case other => fail(s"$other is not expected as a message!")
       }
     }
-
   }
 
   override protected def afterAll(): Unit = {

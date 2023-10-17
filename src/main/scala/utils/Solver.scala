@@ -50,9 +50,9 @@ object Solver {
     val graph = new OsmGraph()
     connections.nodes.foreach(n => graph.addVertex(n))
 
-    if (connections.nodes.size == 1) {
+    if (connections.nodes.length == 1) {
       graph
-    } else if (connections.nodes.size < 3) {
+    } else if (connections.nodes.length < 3) {
       val node = connections.nodes.filter(n => n != nodeToHv)(0)
       graph.addWeightedEdge(
         nodeToHv,

@@ -9,6 +9,10 @@ package utils
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.osmogrid.graph.OsmGraph
+import GridConversion.NodeConversion
+import edu.ie3.util.geo.GeoUtils
+import edu.ie3.util.osm.model.OsmEntity.Node
+import org.jgrapht.GraphPath
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.jgrapht.GraphPath
@@ -18,6 +22,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
+import utils.VoronoiUtils.VoronoiPolygon
 import utils.GridConversion.NodeConversion
 
 import java.util
@@ -31,7 +36,8 @@ object MvUtils {
   val log: Logger = LoggerFactory.getLogger(MvUtils.getClass)
 
   /** Utility method for creating [[NodeConversion]] and [[Connections]]
-    * utilities.
+    * utilities. <p> NOTICE: for correct operation -> number of vertexes >=
+    * number of [[NodeInput]]s
     * @param nodes
     *   all psdm nodes
     * @param streetGraph
@@ -39,7 +45,7 @@ object MvUtils {
     * @return
     *   utility objects
     */
-  def createDefinitions(
+  private def createDefinitions(
       nodes: List[NodeInput],
       streetGraph: OsmGraph
   ): (NodeConversion, Connections) = {
@@ -59,6 +65,46 @@ object MvUtils {
     (nodeConversion, connections)
   }
 
+  /** Method for generating a mv graph structure.
+    *
+    * @param nr
+    *   subnet number
+    * @param voronoiPolygon
+    *   polygon with nodes
+    * @param streetGraph
+    *   complete osm street graph
+    * @return
+    *   a osm graph and the used node conversion object
+    */
+  def generateMvGraph(
+      nr: Int,
+      voronoiPolygon: VoronoiPolygon,
+      streetGraph: OsmGraph
+  ): (OsmGraph, NodeConversion) = {
+    log.debug(s"Start graph generation for grid $nr.")
+
+    // if this voronoi polygon contains a polygon, we can reduce the complete street graph in order to reduce the calculation time
+    val reducedStreetGraph: OsmGraph = voronoiPolygon.polygon
+      .map { polygon => streetGraph.subGraph(polygon) }
+      .getOrElse(streetGraph)
+
+    // creating necessary utility objects
+    val (nodeConversion, connections) =
+      MvUtils.createDefinitions(voronoiPolygon.allNodes, reducedStreetGraph)
+
+    val transitionNode: Node = nodeConversion.getOsmNode(
+      voronoiPolygon.transitionPointToHigherVoltLvl
+    )
+
+    // using the solver to solve the routing problem
+    val graph: OsmGraph = Solver.solve(
+      transitionNode,
+      connections
+    )
+
+    (graph, nodeConversion)
+  }
+
   /** Method for creating unique [[Connection]]s.
     * @param uniqueCombinations
     *   list of all unique combinations of [[Node]]s
@@ -67,7 +113,7 @@ object MvUtils {
     * @return
     *   a list of unique [[Connection]]s
     */
-  // TODO: Calculating distance via shortest path algorithm, instead of haversine
+  // TODO: Calculating distances via shortest path algorithm, instead of haversine
   private def buildUniqueConnections(
       uniqueCombinations: List[(Node, Node)],
       streetGraph: OsmGraph
@@ -81,6 +127,9 @@ object MvUtils {
     }
   }
 
+  /** Method to find all unique connections. If less than two nodes are
+    * provided, an empty list is returned. <p> Uniqueness: a -> b == b -> a
+   */
   // TODO: Check if necessary
   def buildUniqueConnections_sp(
       nodes: Set[Node],
@@ -115,28 +164,34 @@ object MvUtils {
   def getAllUniqueCombinations(
       nodes: List[Node]
   ): List[(Node, Node)] = {
-    val connections: util.List[(Node, Node)] =
-      new util.ArrayList[(Node, Node)]
+    if (nodes.size < 2) {
+      List.empty
+    } else if (nodes.size == 2) {
+      List((nodes(0), nodes(1)))
+    } else {
+      val connections: util.List[(Node, Node)] =
+        new util.ArrayList[(Node, Node)]
 
-    // algorithm to find all unique combinations
-    nodes.foreach(nodeA => {
-      nodes.foreach(nodeB => {
-        // it makes no sense to connect a node to itself => nodeA and nodeB cannot be the same
-        if (nodeA != nodeB) {
-          // two combinations possible
-          val t1 = (nodeA, nodeB)
-          val t2 = (nodeB, nodeA)
+      // algorithm to find all unique combinations
+      nodes.foreach(nodeA => {
+        nodes.foreach(nodeB => {
+          // it makes no sense to connect a node to itself => nodeA and nodeB cannot be the same
+          if (nodeA != nodeB) {
+            // two combinations possible
+            val t1 = (nodeA, nodeB)
+            val t2 = (nodeB, nodeA)
 
-          // if none of the combinations is already added, the first combination is added
-          if (!connections.contains(t1) && !connections.contains(t2)) {
-            connections.add(t1)
+            // if none of the combinations is already added, the first combination is added
+            if (!connections.contains(t1) && !connections.contains(t2)) {
+              connections.add(t1)
+            }
           }
-        }
+        })
       })
-    })
 
-    // returns all unique connections
-    connections.asScala.toList
+      // returns all unique connections
+      connections.asScala.toList
+    }
   }
 
   /** This utility object contains all known [[Connection]]s.
