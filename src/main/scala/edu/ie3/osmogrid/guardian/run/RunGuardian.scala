@@ -17,7 +17,7 @@ import edu.ie3.osmogrid.guardian.run.MessageAdapters.{
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.coordinator
 import edu.ie3.osmogrid.lv.coordinator.RepLvGrids
-import edu.ie3.osmogrid.mv.{ProvideLvData, RepMvGrids, WrappedMvResponse}
+import edu.ie3.osmogrid.mv.{ProvidedLvData, RepMvGrids, WrappedMvResponse}
 
 import java.util.UUID
 import scala.util.{Failure, Success}
@@ -118,7 +118,7 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
       // if a mv coordinator is present, send the lv results to the mv coordinator
       childReferences.mvCoordinator.foreach { mv =>
         mv ! WrappedMvResponse(
-          ProvideLvData(subGridContainers, streetGraph)
+          ProvidedLvData(subGridContainers, streetGraph)
         )
       }
 
@@ -174,7 +174,7 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
         runGuardianData.msgAdapters
       )(ctx.log)
 
-      Behaviors.stopped
+      Behaviors.same
     case (ctx, ResultEventListenerDied) =>
       // we wait for exact one listener as we only started one
       /* Start coordinated shutdown */

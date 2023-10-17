@@ -7,11 +7,11 @@
 package utils
 
 import edu.ie3.datamodel.models.StandardUnits._
-import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.datamodel.models.input.connector.LineInput
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
+import edu.ie3.datamodel.models.input.connector._
+import edu.ie3.datamodel.models.input.container.{GraphicElements, RawGridElements, SubGridContainer, SystemParticipants}
 import edu.ie3.datamodel.models.input.system.characteristic.OlmCharacteristicInput
-import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.datamodel.models.input.{AssetInput, MeasurementUnitInput, NodeInput}
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
@@ -43,13 +43,13 @@ object GridConversion {
     * @param nodeConversion
     *   conversion between [[Node]]s and [[NodeInput]]s
     * @return
-    *   a set of nodes and a set of lines
+    *   a [[SubGridContainer]] and node and transformer changes
     */
   def convertMv(
       n: Int,
       graph: OsmGraph,
       nodeConversion: NodeConversion
-  ): (Set[NodeInput], Set[LineInput]) = {
+  ): (SubGridContainer, Seq[NodeInput], Seq[TransformerInput]) = {
     // converting the osm nodes to psdm nodes
     val nodes: Set[NodeInput] =
       graph.vertexSet().asScala.map { n => nodeConversion.getPSDMNode(n) }.toSet
@@ -80,7 +80,25 @@ object GridConversion {
       }
       .toSet
 
-    (nodes, lines)
+    val elements: List[AssetInput] = List(nodes, lines).flatten
+
+
+    // creating sub grid container
+    val rawGridElements = new RawGridElements(elements.asJava)
+    val participants = new SystemParticipants(
+      Set.empty[SystemParticipants].asJava
+    )
+    val graphics = new GraphicElements(Set.empty[GraphicElements].asJava)
+    val subGridContainer = new SubGridContainer(
+      s"Subnet_$n",
+      n,
+      rawGridElements,
+      participants,
+      graphics
+    )
+
+    // returning the finished data
+    (subGridContainer, Seq.empty, Seq.empty)
   }
 
   /** This utility object is used to easily convert [[NodeInput]]s and

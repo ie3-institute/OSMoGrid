@@ -13,6 +13,7 @@ import edu.ie3.util.osm.model.OsmEntity.Node
 import utils.GridConversion._
 import utils.Solver
 
+import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 class GridConversionSpec extends UnitSpec with MvTestData {
@@ -21,7 +22,14 @@ class GridConversionSpec extends UnitSpec with MvTestData {
 
     "convert mv grids correctly" in {
       val graph = baseGraph.copy()
-      val (nodes, lines) = convertMv(2, graph, nodeConversion)
+      val (subgrid, nodeChanges, transformerChanges) = convertMv(2, graph, nodeConversion)
+
+      nodeChanges shouldBe Seq.empty
+      transformerChanges shouldBe Seq.empty
+
+      subgrid.getSubnet shouldBe 2
+      val nodes = subgrid.getRawGrid.getNodes.asScala
+      val lines = subgrid.getRawGrid.getLines.asScala
 
       nodes shouldBe Set(
         nodeToHv,

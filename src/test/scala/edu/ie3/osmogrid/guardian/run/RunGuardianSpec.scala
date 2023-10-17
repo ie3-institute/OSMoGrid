@@ -13,6 +13,7 @@ import akka.actor.testkit.typed.scaladsl.{
   ScalaTestWithActorTestKit
 }
 import akka.actor.typed.{ActorRef, Behavior}
+import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.ConfigFailFastSpec.viableConfigurationString
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.IllegalConfigException
@@ -20,7 +21,14 @@ import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.coordinator
-import edu.ie3.osmogrid.mv.{MvRequest, MvResponse, MvTerminate, RepMvGrids}
+import edu.ie3.osmogrid.mv.{
+  MvRequest,
+  MvResponse,
+  MvTerminate,
+  ProvidedLvData,
+  RepMvGrids,
+  WrappedMvResponse
+}
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.slf4j.event.Level
 
@@ -167,9 +175,12 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
       }
 
       "handles an incoming lv result" in new GridSupport {
+        val lvGrids: Seq[SubGridContainer] = Seq(mockSubGrid(1))
+        val streetGraph: OsmGraph = new OsmGraph()
+
         runningTestKit.run(
           MessageAdapters.WrappedLvCoordinatorResponse(
-            coordinator.RepLvGrids(Seq(mockSubGrid(1)), new OsmGraph())
+            coordinator.RepLvGrids(lvGrids, streetGraph)
           )
         )
 
@@ -179,6 +190,10 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
             Level.INFO,
             s"Received lv grids."
           )
+        )
+
+        mvCoordinator.expectMessage(
+          WrappedMvResponse(ProvidedLvData(lvGrids, streetGraph))
         )
       }
 

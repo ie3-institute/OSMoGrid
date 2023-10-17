@@ -9,6 +9,7 @@ package edu.ie3.osmogrid.guardian.run
 import akka.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.mv.MvTerminate
 
 import java.util.UUID
 
@@ -30,6 +31,7 @@ trait StopSupport {
       ctx: ActorContext[Request]
   ): StoppingData = {
     childReferences.lvCoordinator.foreach(_ ! coordinator.Terminate)
+    childReferences.mvCoordinator.foreach(_ ! MvTerminate)
     childReferences.inputDataProvider ! input.Terminate
 
     StoppingData(
@@ -37,7 +39,7 @@ trait StopSupport {
       inputDataProviderTerminated = false,
       resultListenerTerminated = false,
       childReferences.lvCoordinator.map(_ => false),
-      childReferences.lvCoordinator.map(_ => false)
+      childReferences.mvCoordinator.map(_ => false)
     )
   }
 

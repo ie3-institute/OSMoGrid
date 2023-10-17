@@ -8,6 +8,10 @@ package edu.ie3.osmogrid.mv
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
+import edu.ie3.datamodel.models.input.container.{
+  RawGridElements,
+  SubGridContainer
+}
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.util.osm.model.OsmEntity.Node
@@ -117,10 +121,13 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
         ctx.log.debug(s"Starting conversion for the graph of the grid $nr.")
 
         // converting the graph
-        val (nodes, lines) = GridConversion.convertMv(nr, graph, nodeConversion)
+        val (subgrid, nodes, transformer) =
+          GridConversion.convertMv(nr, graph, nodeConversion)
 
         // sending the finished data back to the coordinator
-        coordinator ! WrappedMvResponse(FinishedMvGridData(nodes, lines))
+        coordinator ! WrappedMvResponse(
+          FinishedMvGridData(subgrid, nodes, transformer)
+        )
         Behaviors.stopped
       case (ctx, MvTerminate) =>
         ctx.log.info(s"Got request to terminate.")

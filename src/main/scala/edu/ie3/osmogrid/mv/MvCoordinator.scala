@@ -185,7 +185,31 @@ object MvCoordinator extends ActorStopSupportStateless {
   // should send all results to sendResultsToGuardian
   private def awaitResults(
       runGuardian: ActorRef[MvResponse]
-  ): Behavior[MvRequest] = ???
+  ): Behavior[MvRequest] = Behaviors
+    .receive[MvRequest] {
+      case (
+            ctx,
+            WrappedMvResponse(
+              FinishedMvGridData(
+                subGridContainer,
+                nodeChanges,
+                transformerChanges
+              )
+            )
+          ) =>
+        ???
+
+      case (ctx, MvTerminate) =>
+        terminate(ctx.log)
+      case (ctx, unsupported) =>
+        ctx.log.warn(
+          s"Received unsupported message '$unsupported' in data awaiting state. Keep on going."
+        )
+        Behaviors.same
+    }
+    .receiveSignal { case (ctx, PostStop) =>
+      postStopCleanUp(ctx.log)
+    }
 
   // should send all mv grids to guardian
   private def sendResultsToGuardian(): Behavior[MvRequest] = ???
