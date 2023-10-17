@@ -7,7 +7,8 @@
 package edu.ie3.osmogrid.mv
 
 import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.datamodel.models.input.connector.LineInput
+import edu.ie3.datamodel.models.input.connector.TransformerInput
+import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.graph.OsmGraph
 import utils.GridConversion.NodeConversion
@@ -69,12 +70,15 @@ final case class StartGraphConversion(
 
 /** Response for a mv coordinator that contains the converted grid structure as
   * nodes and lines.
-  * @param nodes
-  *   of the subgrid
-  * @param lines
-  *   of the subgrid
+  * @param subGridContainer
+  *   container with the generated grid
+  * @param nodeChanges
+  *   nodes that were changed during mv generation
+  * @param transformerChanges
+  *   nodes that were changed during mv generation
   */
 final case class FinishedMvGridData(
-    nodes: Set[NodeInput],
-    lines: Set[LineInput]
+    subGridContainer: SubGridContainer,
+    nodeChanges: Seq[NodeInput],
+    transformerChanges: Seq[TransformerInput]
 ) extends MvResponse

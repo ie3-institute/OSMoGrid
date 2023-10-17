@@ -77,10 +77,13 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
         ctx.log.debug(s"Starting conversion for the graph of the grid $nr.")
 
         // converting the graph
-        val (nodes, lines) = GridConversion.convertMv(nr, graph, nodeConversion)
+        val (subgrid, nodes, transformer) =
+          GridConversion.convertMv(nr, graph, nodeConversion)
 
         // sending the finished data back to the coordinator
-        coordinator ! WrappedMvResponse(FinishedMvGridData(nodes, lines))
+        coordinator ! WrappedMvResponse(
+          FinishedMvGridData(subgrid, nodes, transformer)
+        )
         Behaviors.stopped
       case (ctx, MvTerminate) =>
         ctx.log.info(s"Got request to terminate.")

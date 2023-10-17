@@ -107,7 +107,13 @@ class VoronoiCoordinatorSpec
       val message = mvCoordinator.receiveMessage
 
       message match {
-        case WrappedMvResponse(FinishedMvGridData(nodes, lines)) =>
+        case WrappedMvResponse(
+              FinishedMvGridData(subgrid, nodeChanges, transformerChanges)
+            ) =>
+          subgrid.getSubnet shouldBe 1
+          val nodes = subgrid.getRawGrid.getNodes.asScala
+          val lines = subgrid.getRawGrid.getLines.asScala
+
           nodes.size shouldBe 3
           nodes.contains(nodeToHv) shouldBe true
           nodes.contains(nodeInMv1) shouldBe true
@@ -119,6 +125,8 @@ class VoronoiCoordinatorSpec
           lineNodes.contains(Seq(nodeToHv, nodeInMv2)) shouldBe true
           lineNodes.contains(Seq(nodeInMv1, nodeInMv2)) shouldBe true
 
+          nodeChanges shouldBe Seq.empty
+          transformerChanges shouldBe Seq.empty
         case other => fail(s"$other is not expected as a message!")
       }
     }
