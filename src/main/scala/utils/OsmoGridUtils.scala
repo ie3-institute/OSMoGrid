@@ -133,7 +133,7 @@ object OsmoGridUtils {
     * @return
     *   a new hv node
     */
-  def spawnDummyHvNode(mvNodes: List[NodeInput]): NodeInput = {
+  def spawnDummyHvNode(mvNodes: Seq[NodeInput]): NodeInput = {
     val node = if (mvNodes.length < 3) {
       mvNodes(0)
     } else {

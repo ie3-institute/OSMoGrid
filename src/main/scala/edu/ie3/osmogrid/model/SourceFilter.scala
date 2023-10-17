@@ -74,30 +74,4 @@ object SourceFilter {
         substationFilter
       )
   }
-
-  final case class MvFilter(
-      buildingFilter: Filter,
-      highwayFilter: Filter,
-      landuseFilter: Filter
-  ) extends SourceFilter
-
-  object MvFilter {
-    def apply(
-        buildings: Set[String],
-        highways: Set[String],
-        landuses: Set[String]
-    ): MvFilter =
-      MvFilter(
-        Filter("building", buildings),
-        Filter("highway", highways),
-        Filter("landuse", landuses)
-      )
-
-    def apply(): MvFilter =
-      MvFilter(
-        Filter("building", Set.empty),
-        Filter("highway", Set.empty),
-        Filter("landuse", Set.empty)
-      )
-  }
 }

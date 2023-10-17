@@ -6,16 +6,13 @@
 
 package edu.ie3.osmogrid.mv
 
-import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import edu.ie3.datamodel.models.input.container.SubGridContainer
+import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.exception.MissingInputDataException
-import edu.ie3.osmogrid.io.input.{InputDataEvent, InputDataProvider}
-import edu.ie3.osmogrid.model.SourceFilter.MvFilter
+import edu.ie3.osmogrid.guardian.run.RunGuardian
 import utils.OsmoGridUtils.spawnDummyHvNode
-import utils.{OsmoGridUtils, GridContainerUtils, VoronoiUtils}
+import utils.{GridContainerUtils, VoronoiUtils}
 
 import scala.util.{Failure, Success}
 
@@ -37,8 +34,14 @@ object MvCoordinator extends ActorStopSupportStateless {
       runGuardian: ActorRef[MvResponse]
   ): Behavior[MvRequest] = idle(cfg, runGuardian)
 
-  // should receive request to generate and return mv grids
-  // should call awaitInputData
+  /** Idle behaviour of the [[MvCoordinator]].
+    * @param cfg
+    *   medium voltage generation config
+    * @param runGuardian
+    *   superior actor
+    * @return
+    *   a new behaviour
+    */
   private def idle(
       cfg: OsmoGridConfig.Generation.Mv,
       runGuardian: ActorRef[MvResponse]
@@ -64,8 +67,12 @@ object MvCoordinator extends ActorStopSupportStateless {
       postStopCleanUp(ctx.log)
     }
 
-  // should wait for input data (Lv SubGridContainer, Hv SubGridContainer, ...)
-  // should call handleUpdatedStateData
+  /** State for awaiting the necessary input data.
+    * @param awaitingMvData
+    *   object containing the currently received input data
+    * @return
+    *   a new behaviour
+    */
   private def awaitInputData(
       awaitingMvData: AwaitingInputData
   ): Behavior[MvRequest] =
@@ -96,6 +103,15 @@ object MvCoordinator extends ActorStopSupportStateless {
 
   // should handle received data
   // if all required data is present call processInputData
+
+  /** Method for handling the state data update.
+    * @param awaitingInputData
+    *   object containing the currently received input data
+    * @param ctx
+    *   actor context
+    * @return
+    *   a new behaviour
+    */
   private def handleUpdatedStateData(
       awaitingInputData: AwaitingInputData,
       ctx: ActorContext[MvRequest]
@@ -123,29 +139,37 @@ object MvCoordinator extends ActorStopSupportStateless {
       awaitInputData(awaitingInputData) // Continue waiting for missing data
   }
 
-  // should start voronoi algorithm
-  // should start VoronoiCoordinators (one for each voronoi polynomial)
-  // should call awaitMvGraphResults
+  /** State for generating the medium voltage graph.
+    *
+    * @param cfg
+    *   medium voltage generation config
+    * @param runGuardian
+    *   superior actor
+    * @return
+    *   the [[awaitResults]] state
+    */
   private def startGraphGeneration(
       cfg: OsmoGridConfig.Generation.Mv,
       runGuardian: ActorRef[MvResponse]
   ): Behavior[MvRequest] = Behaviors
     .receive[MvRequest] {
       case (ctx, StartGeneration(lvGrids, hvGrids, streetGraph)) =>
-        /* calculates all voronoi polynomials */
+        ctx.log.debug(s"Starting medium voltage graph generation.")
 
         // collect all mv node from lv sub grid containers
-        val mvToLv = GridContainerUtils.filterLv(lvGrids, cfg)
+        val mvToLv = GridContainerUtils.filterLv(lvGrids)
 
         // collect all mv nodes from hv sub grid container or spawn a new mv node
         val hvToMv = hvGrids match {
           case Some(grids) =>
-            GridContainerUtils.filterHv(grids, cfg)
+            GridContainerUtils.filterHv(grids)
           case None => List(spawnDummyHvNode(mvToLv))
         }
 
         val (polygons, notAssignedNodes) =
-          VoronoiUtils.createVoronoiPolygons(hvToMv, mvToLv, ctx)
+          VoronoiUtils.createVoronoiPolygons(hvToMv.toList, mvToLv.toList, ctx)
+
+        ctx.log.debug(s"Given area was split into ${polygons.size} polygon(s).")
 
         if (notAssignedNodes.nonEmpty) {
           ctx.log.warn(
@@ -154,21 +178,24 @@ object MvCoordinator extends ActorStopSupportStateless {
         }
 
         // spawns a voronoi coordinator for each polygon
-        polygons.zipWithIndex.foreach { case (polygon, index) =>
-          val nr: Int = 100 + index * 20
+        val subnets: Set[Int] = polygons.zipWithIndex.map {
+          case (polygon, index) =>
+            val nr: Int = 100 + index * 20
 
-          val voronoiCoordinator: ActorRef[MvRequest] =
-            ctx.spawnAnonymous(VoronoiCoordinator(ctx.self))
-          voronoiCoordinator ! StartGraphGeneration(
-            nr,
-            polygon,
-            streetGraph,
-            cfg
-          )
-        }
+            val voronoiCoordinator: ActorRef[MvRequest] =
+              ctx.spawnAnonymous(VoronoiCoordinator(ctx.self))
+            voronoiCoordinator ! StartGraphGeneration(
+              nr,
+              polygon,
+              streetGraph,
+              cfg
+            )
+
+            nr
+        }.toSet
 
         // awaiting the psdm grid data
-        awaitResults(runGuardian)
+        awaitResults(runGuardian, MvResultData.empty(subnets))
       case (ctx, MvTerminate) =>
         terminate(ctx.log)
       case (ctx, unsupported) =>
@@ -182,9 +209,17 @@ object MvCoordinator extends ActorStopSupportStateless {
     }
 
   // should wait for all mv grids
-  // should send all results to sendResultsToGuardian
+  // should send all results to run guardian
+  /** State for awaiting the medium voltage grids. This method will send the
+    * data to the [[RunGuardian]] after receiving all data.
+    * @param runGuardian
+    *   superior actor
+    * @param resultData
+    *   until now received data
+    */
   private def awaitResults(
-      runGuardian: ActorRef[MvResponse]
+      runGuardian: ActorRef[MvResponse],
+      resultData: MvResultData
   ): Behavior[MvRequest] = Behaviors
     .receive[MvRequest] {
       case (
@@ -197,8 +232,25 @@ object MvCoordinator extends ActorStopSupportStateless {
               )
             )
           ) =>
-        ???
+        // updating the result data
+        val updated =
+          resultData.update(subGridContainer, nodeChanges, transformerChanges)
 
+        // if all sub grids are received, send a message to the run guardian
+        if (updated.subnets.isEmpty) {
+          ctx.log.info(
+            s"Received all expected grids! Will report back SubGridContainers"
+          )
+
+          runGuardian ! RepMvGrids(
+            updated.subGridContainer,
+            updated.nodes,
+            updated.transformers
+          )
+          Behaviors.stopped
+        } else {
+          awaitResults(runGuardian, updated)
+        }
       case (ctx, MvTerminate) =>
         terminate(ctx.log)
       case (ctx, unsupported) =>
@@ -210,9 +262,6 @@ object MvCoordinator extends ActorStopSupportStateless {
     .receiveSignal { case (ctx, PostStop) =>
       postStopCleanUp(ctx.log)
     }
-
-  // should send all mv grids to guardian
-  private def sendResultsToGuardian(): Behavior[MvRequest] = ???
 
   override protected def cleanUp(): Unit = {
     /* Nothing to do here. At least until now. */

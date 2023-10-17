@@ -6,15 +6,15 @@
 
 package utils
 
+import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
-import tech.units.indriya.unit.Units
 
 import javax.measure.quantity.ElectricPotential
 
-object VoltageLevelUtils {
+object VoltageUtils {
 
   /** Method to parse a [[OsmoGridConfig.Generation.Mv.VoltageLevel]] easily.
     *
@@ -25,8 +25,8 @@ object VoltageLevelUtils {
     */
   def parseMv(
       cfg: OsmoGridConfig.Generation.Mv.VoltageLevel
-  ): List[VoltageLevel] = {
-    toVoltLvl(cfg.id, cfg.vNom, cfg.default)
+  ): List[ComparableQuantity[ElectricPotential]] = {
+    toQuantities(cfg.vNom, cfg.default)
   }
 
   /** Utility to create a list of [[VoltageLevel]].
@@ -43,22 +43,27 @@ object VoltageLevelUtils {
       vNom: Option[List[Double]],
       default: Double
   ): List[VoltageLevel] = {
-    vNom match {
-      case Some(voltages) => voltages.map(voltage => toVoltLvl(id, voltage))
-      case None           => List(toVoltLvl(id, default))
+    toQuantities(vNom, default).map { quantity =>
+      new VoltageLevel(id, quantity)
     }
   }
 
-  /** Utility for creating a [[VoltageLevel]].
-    * @param id
-    *   of the voltage level
-    * @param lvl
-    *   value given in kV
+  /** Utility to create a list of [[Quantities]].
+    *
+    * @param vNom
+    *   option for multiple voltages in kV
+    * @param default
+    *   a default voltage that should be used, if vNom is an empty option
     * @return
-    *   a new [[VoltageLevel]]
     */
-  def toVoltLvl(id: String, lvl: Double): VoltageLevel = {
-    new VoltageLevel(id, toQuantity(lvl))
+  def toQuantities(
+      vNom: Option[List[Double]],
+      default: Double
+  ): List[ComparableQuantity[ElectricPotential]] = {
+    vNom match {
+      case Some(voltages) => voltages.map(voltage => toQuantity(voltage))
+      case None           => List(toQuantity(default))
+    }
   }
 
   /** Converts a [[Double]] value in a [[ComparableQuantity]] with the unit
@@ -68,6 +73,6 @@ object VoltageLevelUtils {
     * @return
     *   a new [[ComparableQuantity]]
     */
-  private def toQuantity(volt: Double): ComparableQuantity[ElectricPotential] =
-    Quantities.getQuantity(volt * 1000, Units.VOLT)
+  def toQuantity(volt: Double): ComparableQuantity[ElectricPotential] =
+    Quantities.getQuantity(volt, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
 }

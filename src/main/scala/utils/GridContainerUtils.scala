@@ -6,40 +6,44 @@
 
 package utils
 
+import com.typesafe.config.ConfigException
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.connector.TransformerInput
-import edu.ie3.datamodel.models.input.container.{
-  GraphicElements,
-  JointGridContainer,
-  RawGridElements,
-  SubGridContainer,
-  SystemParticipants
-}
+import edu.ie3.datamodel.models.input.container._
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.exception.IllegalConfigException
+import edu.ie3.osmogrid.guardian.OsmoGridGuardian
+import tech.units.indriya.ComparableQuantity
 
+import javax.measure.quantity.ElectricPotential
 import scala.jdk.CollectionConverters._
 
 object GridContainerUtils {
+  private val cfg: OsmoGridConfig = OsmoGridGuardian.CONFIG
 
   // filter all mv-lv nodes in lv sub grid containers
   def filterLv(
-      lvGrids: List[SubGridContainer],
-      cfg: OsmoGridConfig.Generation.Mv
-  ): List[NodeInput] = {
-    /* returns a list of all mv voltage levels */
-    val mvVoltLvl = VoltageLevelUtils.parseMv(cfg.voltageLevel)
+      lvGrids: Seq[SubGridContainer]
+  ): Seq[NodeInput] = {
+    val mvVoltLvl = cfg.generation.mv match {
+      case Some(value) => VoltageUtils.parseMv(value.voltageLevel)
+      case None        => throw IllegalConfigException("Config not found!")
+    }
+
     /* gets all mv-lv nodes */
     getNodes(mvVoltLvl, lvGrids)
   }
 
   // filter all hv-mv nodes in hv sub grid containers
   def filterHv(
-      hvGrids: List[SubGridContainer],
-      cfg: OsmoGridConfig.Generation.Mv
-  ): List[NodeInput] = {
-    /* returns a list of all mv voltage levels */
-    val mvVoltLvl = VoltageLevelUtils.parseMv(cfg.voltageLevel)
+      hvGrids: Seq[SubGridContainer]
+  ): Seq[NodeInput] = {
+    val mvVoltLvl = cfg.generation.mv match {
+      case Some(value) => VoltageUtils.parseMv(value.voltageLevel)
+      case None        => throw IllegalConfigException("Config not found!")
+    }
+
     /* gets all hv-mv nodes */
     getNodes(mvVoltLvl, hvGrids)
   }
@@ -55,18 +59,24 @@ object GridContainerUtils {
     *   a list of [[NodeInput]]'s
     */
   private def getNodes(
-      voltageLevels: List[VoltageLevel],
-      subGrids: List[SubGridContainer]
-  ): List[NodeInput] = {
+      voltageLevels: List[ComparableQuantity[ElectricPotential]],
+      subGrids: Seq[SubGridContainer]
+  ): Seq[NodeInput] = {
     subGrids.flatMap(subgrid => {
       /* finds all transformer in the given subgrid */
-      subgrid.getRawGrid.getTransformer2Ws.asScala
+      val rawGridElements = subgrid.getRawGrid
+      val transformers =
+        rawGridElements.getTransformer2Ws.asScala ++ rawGridElements.getTransformer3Ws.asScala
+
+      transformers
         .flatMap(transformer =>
           /* gets all nodes connected to a given transformer and returns all nodes that have a mv voltage level */
           transformer
             .allNodes()
             .asScala
-            .filter(node => voltageLevels.contains(node.getVoltLvl))
+            .filter(node =>
+              voltageLevels.contains(node.getVoltLvl.getNominalVoltage)
+            )
             .toSeq
         )
         .toList

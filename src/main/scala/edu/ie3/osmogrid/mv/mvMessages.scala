@@ -96,8 +96,8 @@ final case class FinishedMvGridData(
 ) extends MvResponse
 
 final case class StartGeneration(
-    lvGrids: List[SubGridContainer],
-    hvGrids: Option[List[SubGridContainer]],
+    lvGrids: Seq[SubGridContainer],
+    hvGrids: Option[Seq[SubGridContainer]],
     streetGraph: OsmGraph
 ) extends MvRequest
 
@@ -128,8 +128,8 @@ final case class ProvidedHvData(
 final case class AwaitingInputData(
     cfg: OsmoGridConfig.Generation.Mv,
     runGuardian: ActorRef[MvResponse],
-    lvGrids: Option[List[SubGridContainer]],
-    hvGrids: Option[List[SubGridContainer]],
+    lvGrids: Option[Seq[SubGridContainer]],
+    hvGrids: Option[Seq[SubGridContainer]],
     streetGraph: Option[OsmGraph]
 ) {
   def registerResponse(
@@ -138,18 +138,18 @@ final case class AwaitingInputData(
   ): Try[AwaitingInputData] = mvResponse match {
     case ProvidedLvData(grids, graph) =>
       log.debug(s"Received lv data.")
-      Success(copy(lvGrids = Some(grids.toList), streetGraph = Some(graph)))
+      Success(copy(lvGrids = Some(grids), streetGraph = Some(graph)))
 
     case ProvidedHvData(grids) =>
       log.debug(s"Received hv data.")
-      Success(copy(hvGrids = Some(grids.toList)))
+      Success(copy(hvGrids = Some(grids)))
 
     case other =>
       Failure(RequestFailedException(s"$other is not supported!"))
   }
 
   def isComprehensive: Boolean = {
-    if (cfg.spawnMissingHvNodes) {
+    if (!cfg.spawnMissingHvNodes) {
       lvGrids.isDefined && streetGraph.isDefined
     } else {
       lvGrids.isDefined && streetGraph.isDefined && hvGrids.isDefined
@@ -167,7 +167,9 @@ object AwaitingInputData {
 
 /** Class for medium voltage result data.
   * @param subnets
-  *   a set of subnets that are not generated yet
+  *   a set of sub grids that are not generated yet
+  * @param subGridContainer
+  *   all finished sub grids
   * @param nodes
   *   that were changed during the mv generation
   * @param transformers
@@ -175,13 +177,14 @@ object AwaitingInputData {
   */
 final case class MvResultData(
     subnets: Set[Int],
+    subGridContainer: Seq[SubGridContainer],
     nodes: Seq[NodeInput],
     transformers: Seq[TransformerInput]
 ) extends MvRequest {
 
   /** Method for updating the [[MvResultData]].
-    * @param subnet
-    *   that finished generation
+    * @param subgrid
+    *   that was generated
     * @param nodeChanges
     *   [[NodeInput]]s that were changed
     * @param transformerChanges
@@ -190,19 +193,20 @@ final case class MvResultData(
     *   an updated [[MvResultData]]
     */
   def update(
-      subnet: Int,
+      subgrid: SubGridContainer,
       nodeChanges: Seq[NodeInput],
       transformerChanges: Seq[TransformerInput]
   ): MvResultData = {
-    if (subnets.contains(subnet)) {
+    if (subnets.contains(subgrid.getSubnet)) {
       MvResultData(
-        subnets - subnet,
+        subnets - subgrid.getSubnet,
+        subGridContainer :+ subgrid,
         nodes ++ nodeChanges,
         transformers ++ transformerChanges
       )
     } else {
       throw IllegalStateException(
-        s"Trying to update with subgrid container that was not expected. Subnet: $subnet"
+        s"Trying to update with subgrid container that was not expected. Subnet: ${subgrid.getSubnet}"
       )
     }
   }
@@ -210,6 +214,6 @@ final case class MvResultData(
 
 object MvResultData {
   def empty(subnets: Set[Int]): MvResultData = {
-    MvResultData(subnets, Seq.empty, Seq.empty)
+    MvResultData(subnets, Seq.empty, Seq.empty, Seq.empty)
   }
 }

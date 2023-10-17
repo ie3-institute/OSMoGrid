@@ -37,6 +37,7 @@ trait SubGridHandling {
     * @param cfg
     *   Grid generation config
     */
+  @deprecated
   protected def handleLvResults(
       grids: Seq[SubGridContainer],
       streetGraph: OsmGraph,
