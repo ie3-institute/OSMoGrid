@@ -11,7 +11,10 @@ import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.connector.TransformerInput
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.exception.{IllegalStateException, RequestFailedException}
+import edu.ie3.osmogrid.exception.{
+  IllegalStateException,
+  RequestFailedException
+}
 import edu.ie3.osmogrid.graph.OsmGraph
 import org.slf4j.Logger
 import utils.GridConversion.NodeConversion

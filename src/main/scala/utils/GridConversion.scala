@@ -9,7 +9,12 @@ package utils
 import edu.ie3.datamodel.models.StandardUnits._
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
 import edu.ie3.datamodel.models.input.connector.{LineInput, TransformerInput}
-import edu.ie3.datamodel.models.input.container.{GraphicElements, RawGridElements, SubGridContainer, SystemParticipants}
+import edu.ie3.datamodel.models.input.container.{
+  GraphicElements,
+  RawGridElements,
+  SubGridContainer,
+  SystemParticipants
+}
 import edu.ie3.datamodel.models.input.system.characteristic.OlmCharacteristicInput
 import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
 import edu.ie3.osmogrid.graph.OsmGraph

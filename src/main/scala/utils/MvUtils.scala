@@ -129,7 +129,7 @@ object MvUtils {
 
   /** Method to find all unique connections. If less than two nodes are
     * provided, an empty list is returned. <p> Uniqueness: a -> b == b -> a
-   */
+    */
   // TODO: Check if necessary
   def buildUniqueConnections_sp(
       nodes: Set[Node],

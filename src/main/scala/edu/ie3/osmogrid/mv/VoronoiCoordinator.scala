@@ -16,9 +16,9 @@ import utils.MvUtils.generateMvGraph
 import utils.VoronoiUtils.VoronoiPolygon
 
 /** Coordinator for [[VoronoiPolygon]]s. This actor will generate a mv graph
- * structure and convert the structure into a [[NodeInput]]s and
- * [[LineInput]]s.
- */
+  * structure and convert the structure into a [[NodeInput]]s and
+  * [[LineInput]]s.
+  */
 object VoronoiCoordinator extends ActorStopSupportStateless {
 
   /** Method for creating a [[VoronoiCoordinator]].
