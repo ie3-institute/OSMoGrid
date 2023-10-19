@@ -8,21 +8,29 @@ package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.connector._
+import edu.ie3.datamodel.models.input.connector.`type`.{
+  Transformer2WTypeInput,
+  Transformer3WTypeInput
+}
 import edu.ie3.datamodel.models.input.container._
 import edu.ie3.datamodel.models.input.graphics.{
   LineGraphicInput,
   NodeGraphicInput
 }
 import edu.ie3.datamodel.models.input.system._
-import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
+import edu.ie3.datamodel.models.input.{
+  AssetInput,
+  AssetTypeInput,
+  MeasurementUnitInput,
+  NodeInput
+}
 import edu.ie3.datamodel.utils.ContainerUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.GridException
-import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.guardian.run.SubGridHandling._
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import org.slf4j.Logger
-import utils.GridContainerUtils.{combine, removeElements}
+import utils.GridContainerUtils.combine
 
 import java.util.UUID
 import scala.jdk.CollectionConverters._
@@ -40,7 +48,6 @@ trait SubGridHandling {
   @deprecated
   protected def handleLvResults(
       grids: Seq[SubGridContainer],
-      streetGraph: OsmGraph,
       cfg: OsmoGridConfig.Generation,
       resultListener: Seq[ActorRef[ResultListenerProtocol]],
       msgAdapters: MessageAdapters
@@ -67,7 +74,7 @@ trait SubGridHandling {
     *   option for medium voltage grids
     * @param hvData
     *   option for high voltage grids
-    * @param toBeRemoved
+    * @param toBeUpdated
     *   option for [[RawGridElements]] that needs to be removed
     * @param cfg
     *   generation config
@@ -82,7 +89,7 @@ trait SubGridHandling {
       lvData: Option[Seq[SubGridContainer]],
       mvData: Option[Seq[SubGridContainer]],
       hvData: Option[Seq[SubGridContainer]],
-      toBeRemoved: Option[(Seq[NodeInput], Seq[TransformerInput])],
+      toBeUpdated: Option[Seq[NodeInput]],
       cfg: OsmoGridConfig.Generation,
       resultListener: Seq[ActorRef[ResultListenerProtocol]],
       msgAdapters: MessageAdapters
@@ -96,20 +103,20 @@ trait SubGridHandling {
       val container = ContainerUtils.combineToJointGrid(updated.asJava)
 
       // removing some elements is defined
-      toBeRemoved
-        .map { r => removeElements(container, r._1, r._2) }
+      toBeUpdated
+        .map { r => updateContainer(container, r) }
         .getOrElse(container)
     }
 
-    // combining lv grids
+    // combining hv grids
     val hvGrids: Option[JointGridContainer] = hvData.map { grids =>
       // assigning some subnet numbers
       val updated = assignSubnetNumbers(grids).getOrElse(grids)
       val container = ContainerUtils.combineToJointGrid(updated.asJava)
 
       // removing some elements is defined
-      toBeRemoved
-        .map { r => removeElements(container, r._1, r._2) }
+      toBeUpdated
+        .map { r => updateContainer(container, r) }
         .getOrElse(container)
     }
 
@@ -138,6 +145,60 @@ trait SubGridHandling {
 }
 
 object SubGridHandling {
+
+  private def updateContainer(
+      jointGridContainer: JointGridContainer,
+      nodes: Seq[NodeInput]
+  ): JointGridContainer = {
+    val nodeMapping: Map[UUID, NodeInput] = nodes.map { n =>
+      n.getUuid -> n
+    }.toMap
+
+    val rawGridElements = jointGridContainer.getRawGrid
+
+    // updating transformer2Ws
+    val t2W = updateTransformer2Ws(
+      rawGridElements.getTransformer2Ws.asScala.toSeq,
+      nodeMapping
+    ).fold(
+      exception =>
+        throw GridException(
+          "Unable to update system participants.",
+          exception
+        ),
+      identity
+    )
+
+    // updating transformer3Ws
+    val t3W = updateTransformer3Ws(
+      rawGridElements.getTransformer3Ws.asScala.toSeq,
+      nodeMapping
+    ).fold(
+      exception =>
+        throw GridException(
+          "Unable to update system participants.",
+          exception
+        ),
+      identity
+    )
+
+    val rawGrid: RawGridElements = new RawGridElements(
+      rawGridElements.getNodes,
+      rawGridElements.getLines,
+      t2W.toSet.asJava,
+      t3W.toSet.asJava,
+      rawGridElements.getSwitches,
+      rawGridElements.getMeasurementUnits
+    )
+
+    new JointGridContainer(
+      jointGridContainer.getGridName,
+      rawGrid,
+      jointGridContainer.getSystemParticipants,
+      jointGridContainer.getGraphics
+    )
+  }
+
   private def assignSubnetNumbers(
       subnets: Seq[SubGridContainer]
   ): Try[Seq[SubGridContainer]] = Try {
@@ -379,6 +440,55 @@ object SubGridHandling {
             s"Unable to determine new nodes for three winding transformer '$originalTransformer'."
           )
       }
+    }
+  }
+
+  private def updateTransformer2Ws(
+      transformer2Ws: Seq[Transformer2WInput],
+      nodeMapping: Map[UUID, NodeInput]
+  ): Try[Seq[Transformer2WInput]] = Try {
+    transformer2Ws.map { originalTransformer =>
+      val originalA = originalTransformer.getNodeA.getUuid
+      val originalB = originalTransformer.getNodeB.getUuid
+      val copy = originalTransformer.copy()
+
+      // update nodes
+      val updated =
+        (nodeMapping.get(originalA), nodeMapping.get(originalB)) match {
+          case (Some(nodeA), Some(nodeB)) => copy.nodeA(nodeA).nodeB(nodeB)
+          case (Some(nodeA), None)        => copy.nodeA(nodeA)
+          case (None, Some(nodeB))        => copy.nodeB(nodeB)
+        }
+
+      updated.build()
+    }
+  }
+
+  private def updateTransformer3Ws(
+      transformer3Ws: Seq[Transformer3WInput],
+      nodeMapping: Map[UUID, NodeInput]
+  ): Try[Seq[Transformer3WInput]] = Try {
+    transformer3Ws.map { originalTransformer =>
+      val originalA = originalTransformer.getNodeA.getUuid
+      val originalB = originalTransformer.getNodeB.getUuid
+      val originalC = originalTransformer.getNodeC.getUuid
+      val copy = originalTransformer.copy()
+
+      // update nodes
+      var updated = nodeMapping
+        .get(originalA)
+        .map { nodeA => copy.nodeA(nodeA) }
+        .getOrElse(copy)
+      updated = nodeMapping
+        .get(originalB)
+        .map { nodeB => copy.nodeB(nodeB) }
+        .getOrElse(copy)
+      updated = nodeMapping
+        .get(originalC)
+        .map { nodeC => copy.nodeC(nodeC) }
+        .getOrElse(copy)
+
+      updated.build()
     }
   }
 
@@ -647,5 +757,23 @@ object SubGridHandling {
     }
 
     new GraphicElements(nodes.toSet.asJava, lines.toSet.asJava)
+  }
+
+  private def updateAssetTypeInput(
+      asset: AssetInput,
+      typeInput: AssetTypeInput
+  ): AssetInput = {
+    (asset, typeInput) match {
+      case (
+            transformer2W: Transformer2WInput,
+            transformer2WType: Transformer2WTypeInput
+          ) =>
+        transformer2W.copy().`type`(transformer2WType).build()
+      case (
+            transformer3W: Transformer3WInput,
+            transformer3WType: Transformer3WTypeInput
+          ) =>
+        transformer3W.copy().`type`(transformer3WType).build()
+    }
   }
 }

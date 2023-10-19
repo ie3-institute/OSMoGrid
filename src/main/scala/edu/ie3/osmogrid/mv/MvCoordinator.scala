@@ -11,6 +11,9 @@ import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.RunGuardian
+import edu.ie3.osmogrid.io.input
+import edu.ie3.osmogrid.io.input.{InputDataEvent, ReqAssetTypes}
+import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
 import utils.OsmoGridUtils.spawnDummyHvNode
 import utils.{GridContainerUtils, VoronoiUtils}
 
@@ -24,6 +27,8 @@ object MvCoordinator extends ActorStopSupportStateless {
   /** Build a [[MvCoordinator]] with given information.
     * @param cfg
     *   config for the generation process
+    * @param inputDataProvider
+    *   reference to the [[InputDataProvider]]
     * @param runGuardian
     *   reference to the [[RunGuardian]] to report to
     * @return
@@ -31,8 +36,15 @@ object MvCoordinator extends ActorStopSupportStateless {
     */
   def apply(
       cfg: OsmoGridConfig.Generation.Mv,
+      inputDataProvider: ActorRef[InputDataEvent],
       runGuardian: ActorRef[MvResponse]
-  ): Behavior[MvRequest] = idle(cfg, runGuardian)
+  ): Behavior[MvRequest] = Behaviors.setup[MvRequest] { context =>
+    val messageAdapters = MvMessageAdapters(
+      context.messageAdapter(msg => WrappedInputResponse(msg))
+    )
+
+    idle(cfg, inputDataProvider, messageAdapters, runGuardian)
+  }
 
   /** Idle behaviour of the [[MvCoordinator]].
     * @param cfg
@@ -44,12 +56,18 @@ object MvCoordinator extends ActorStopSupportStateless {
     */
   private def idle(
       cfg: OsmoGridConfig.Generation.Mv,
+      inputDataProvider: ActorRef[InputDataEvent],
+      messageAdapters: MvMessageAdapters,
       runGuardian: ActorRef[MvResponse]
   ): Behavior[MvRequest] = Behaviors
     .receive[MvRequest] {
       case (ctx, ReqMvGrids) =>
         ctx.log.info("Starting generation of medium voltage grids!")
         ctx.log.debug("Waiting for input data.")
+
+        inputDataProvider ! ReqAssetTypes(
+          replyTo = messageAdapters.inputDataProvider
+        )
 
         /* Change state and await incoming data */
         awaitInputData(
@@ -78,7 +96,18 @@ object MvCoordinator extends ActorStopSupportStateless {
   ): Behavior[MvRequest] =
     Behaviors
       .receive[MvRequest] {
-        case (ctx, WrappedMvResponse(response)) =>
+        case (ctx, response: WrappedInputResponse) =>
+          awaitingMvData.registerResponse(response, ctx.log) match {
+            case Success(updatedStateData) =>
+              handleUpdatedStateData(updatedStateData, ctx)
+            case Failure(exception) =>
+              ctx.log.error(
+                "Request of needed input data failed. Stop medium voltage grid generation.",
+                exception
+              )
+              stopBehavior
+          }
+        case (ctx, response: WrappedMvResponse) =>
           awaitingMvData.registerResponse(response, ctx.log) match {
             case Success(updatedStateData) =>
               handleUpdatedStateData(updatedStateData, ctx)
@@ -121,18 +150,25 @@ object MvCoordinator extends ActorStopSupportStateless {
       /* Process the data */
       ctx.log.debug("All awaited mv data is present. Start processing.")
 
-      val (lvGrids, hvGrids, streetGraph) = awaitingInputData match {
-        case AwaitingInputData(
-              _,
-              _,
-              Some(lvGrids),
-              hvGrids,
-              Some(streetGraph)
-            ) =>
-          (lvGrids, hvGrids, streetGraph)
-      }
+      val (lvGrids, hvGrids, streetGraph, assetInformation) =
+        awaitingInputData match {
+          case AwaitingInputData(
+                _,
+                _,
+                Some(lvGrids),
+                hvGrids,
+                Some(streetGraph),
+                Some(assetInformation)
+              ) =>
+            (lvGrids, hvGrids, streetGraph, assetInformation)
+        }
 
-      ctx.self ! StartGeneration(lvGrids, hvGrids, streetGraph)
+      ctx.self ! StartGeneration(
+        lvGrids,
+        hvGrids,
+        streetGraph,
+        assetInformation
+      )
 
       startGraphGeneration(awaitingInputData.cfg, awaitingInputData.runGuardian)
     } else
@@ -153,7 +189,10 @@ object MvCoordinator extends ActorStopSupportStateless {
       runGuardian: ActorRef[MvResponse]
   ): Behavior[MvRequest] = Behaviors
     .receive[MvRequest] {
-      case (ctx, StartGeneration(lvGrids, hvGrids, streetGraph)) =>
+      case (
+            ctx,
+            StartGeneration(lvGrids, hvGrids, streetGraph, assetInformation)
+          ) =>
         ctx.log.debug(s"Starting medium voltage graph generation.")
 
         // collect all mv node from lv sub grid containers
@@ -188,6 +227,7 @@ object MvCoordinator extends ActorStopSupportStateless {
               nr,
               polygon,
               streetGraph,
+              assetInformation,
               cfg
             )
 
@@ -227,14 +267,13 @@ object MvCoordinator extends ActorStopSupportStateless {
             WrappedMvResponse(
               FinishedMvGridData(
                 subGridContainer,
-                nodeChanges,
-                transformerChanges
+                nodeChanges
               )
             )
           ) =>
         // updating the result data
         val updated =
-          resultData.update(subGridContainer, nodeChanges, transformerChanges)
+          resultData.update(subGridContainer, nodeChanges)
 
         // if all sub grids are received, send a message to the run guardian
         if (updated.subnets.isEmpty) {
@@ -244,8 +283,7 @@ object MvCoordinator extends ActorStopSupportStateless {
 
           runGuardian ! RepMvGrids(
             updated.subGridContainer,
-            updated.nodes,
-            updated.transformers
+            updated.nodes
           )
           Behaviors.stopped
         } else {

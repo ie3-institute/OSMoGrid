@@ -6,31 +6,25 @@
 
 package utils
 
-import com.typesafe.config.ConfigException
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.connector.TransformerInput
 import edu.ie3.datamodel.models.input.container._
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
-import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.exception.IllegalConfigException
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage
+import edu.ie3.osmogrid.cfg.VoltageConfigWrapper
 import tech.units.indriya.ComparableQuantity
 
 import javax.measure.quantity.ElectricPotential
 import scala.jdk.CollectionConverters._
 
 object GridContainerUtils {
-  private val cfg: OsmoGridConfig = OsmoGridGuardian.CONFIG
+  private val cfg: Voltage = VoltageConfigWrapper.cfg
 
   // filter all mv-lv nodes in lv sub grid containers
   def filterLv(
       lvGrids: Seq[SubGridContainer]
   ): Seq[NodeInput] = {
-    val mvVoltLvl = cfg.generation.mv match {
-      case Some(value) => VoltageUtils.parseMv(value.voltageLevel)
-      case None        => throw IllegalConfigException("Config not found!")
-    }
-
+    val mvVoltLvl = VoltageUtils.parse(cfg.mv)
     /* gets all mv-lv nodes */
     getNodes(mvVoltLvl, lvGrids)
   }
@@ -39,11 +33,7 @@ object GridContainerUtils {
   def filterHv(
       hvGrids: Seq[SubGridContainer]
   ): Seq[NodeInput] = {
-    val mvVoltLvl = cfg.generation.mv match {
-      case Some(value) => VoltageUtils.parseMv(value.voltageLevel)
-      case None        => throw IllegalConfigException("Config not found!")
-    }
-
+    val mvVoltLvl = VoltageUtils.parse(cfg.mv)
     /* gets all hv-mv nodes */
     getNodes(mvVoltLvl, hvGrids)
   }

@@ -9,7 +9,7 @@ package edu.ie3.osmogrid.guardian.run
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.cfg.{OsmoGridConfig, VoltageConfigWrapper}
 import edu.ie3.osmogrid.guardian.run.MessageAdapters.{
   WrappedLvCoordinatorResponse,
   WrappedMvCoordinatorResponse
@@ -25,6 +25,7 @@ import scala.util.{Failure, Success}
 /** Actor to take care of a specific simulation run
   */
 object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
+  val VOLTAGE_CONFIG: VoltageConfigWrapper.type = VoltageConfigWrapper
 
   /** Instantiate the actor
     *
@@ -40,6 +41,9 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
       additionalListener: Seq[ActorRef[ResultListenerProtocol]] = Seq.empty,
       runId: UUID
   ): Behavior[Request] = Behaviors.setup { ctx =>
+    // overwriting the default voltage config
+    VOLTAGE_CONFIG.cfg = cfg.voltage
+
     idle(
       RunGuardianData(
         runId,
@@ -139,14 +143,14 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
     case (
           ctx,
           WrappedMvCoordinatorResponse(
-            RepMvGrids(subGridContainer, nodeChanges, transformerChanges)
+            RepMvGrids(subGridContainer, nodeChanges)
           )
         ) =>
       ctx.log.info(s"Received mv grids.")
 
       val updated = finishedGridData.copy(
         mvData = Some(subGridContainer),
-        toBeRemoved = Some(nodeChanges, transformerChanges)
+        toBeUpdated = Some(nodeChanges)
       )
 
       // check if all possible data was received
@@ -168,7 +172,7 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
         finishedGridData.lvData,
         finishedGridData.mvData,
         None,
-        finishedGridData.toBeRemoved,
+        finishedGridData.toBeUpdated,
         runGuardianData.cfg.generation,
         childReferences.resultListeners,
         runGuardianData.msgAdapters

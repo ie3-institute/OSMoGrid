@@ -15,8 +15,6 @@ import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import java.util.UUID
 
 object OsmoGridGuardian {
-  var CONFIG: OsmoGridConfig = _
-
   sealed trait Request
 
   /** Message to initiate a grid generation run
@@ -64,9 +62,6 @@ object OsmoGridGuardian {
   private[guardian] def idle(guardianData: GuardianData): Behavior[Request] =
     Behaviors.receive {
       case (ctx, Run(cfg, additionalListener, runId)) =>
-        // setting up a copy of the config for global access
-        CONFIG = cfg.copy()
-
         val runGuardian = ctx.spawn(
           RunGuardian(cfg, additionalListener, runId),
           s"RunGuardian_$runId"

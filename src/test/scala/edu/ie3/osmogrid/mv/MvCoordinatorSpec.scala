@@ -15,6 +15,9 @@ import akka.actor.testkit.typed.scaladsl.{
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.graph.OsmGraph
+import edu.ie3.osmogrid.io.input
+import edu.ie3.osmogrid.io.input.RepAssetTypes
+import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
 import edu.ie3.test.common.{GridSupport, MvTestData, UnitSpec}
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.event.Level
@@ -26,6 +29,10 @@ class MvCoordinatorSpec
     with MvTestData
     with GridSupport {
   private val asynchronousTestKit = ActorTestKit()
+  private val inputDataProvider =
+    asynchronousTestKit.createTestProbe[input.InputDataEvent](
+      "InputDataProvider"
+    )
   private val runGuardian =
     asynchronousTestKit.createTestProbe[MvResponse]("RunGuardian")
   private val cfg =
@@ -38,6 +45,7 @@ class MvCoordinatorSpec
       val coordinator = BehaviorTestKit(
         MvCoordinator(
           cfg,
+          inputDataProvider.ref,
           runGuardian.ref
         )
       )
@@ -49,6 +57,7 @@ class MvCoordinatorSpec
       val idleTestKit = BehaviorTestKit(
         MvCoordinator(
           cfg,
+          inputDataProvider.ref,
           runGuardian.ref
         )
       )
@@ -64,7 +73,9 @@ class MvCoordinatorSpec
 
   "A mv coordinator working correctly" should {
     val idleTestKit: BehaviorTestKit[MvRequest] =
-      BehaviorTestKit(MvCoordinator(cfg, runGuardian.ref))
+      BehaviorTestKit(
+        MvCoordinator(cfg, inputDataProvider.ref, runGuardian.ref)
+      )
 
     val lvGrids: Seq[SubGridContainer] = Seq(simpleSubGrid(1))
     val streetGraph = new OsmGraph()
@@ -81,6 +92,14 @@ class MvCoordinatorSpec
       )
     }
 
+    "receive asset type data" in {
+      idleTestKit.run(WrappedInputResponse(RepAssetTypes(assetInformation)))
+
+      idleTestKit.logEntries() should contain(
+        CapturedLogEvent(Level.DEBUG, s"Received asset type data.")
+      )
+    }
+
     "receive lv data" in {
       idleTestKit.run(WrappedMvResponse(ProvidedLvData(lvGrids, streetGraph)))
 
@@ -94,7 +113,9 @@ class MvCoordinatorSpec
     }
 
     "start graph generation" in {
-      idleTestKit.run(StartGeneration(lvGrids, None, streetGraph))
+      idleTestKit.run(
+        StartGeneration(lvGrids, None, streetGraph, assetInformation)
+      )
 
       idleTestKit.logEntries() should contain allOf (
         CapturedLogEvent(
@@ -112,7 +133,7 @@ class MvCoordinatorSpec
       val mvGrid: SubGridContainer = mockSubGrid(100)
 
       idleTestKit.run(
-        WrappedMvResponse(FinishedMvGridData(mvGrid, Seq.empty, Seq.empty))
+        WrappedMvResponse(FinishedMvGridData(mvGrid, Seq.empty))
       )
 
       idleTestKit.logEntries() should contain(

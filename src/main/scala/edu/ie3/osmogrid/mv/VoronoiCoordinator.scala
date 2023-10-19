@@ -42,13 +42,25 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
       .receive[MvRequest] {
         case (
               ctx,
-              StartGraphGeneration(nr, polygon, streetGraph, cfg)
+              StartGraphGeneration(
+                nr,
+                polygon,
+                streetGraph,
+                assetInformation,
+                cfg
+              )
             ) =>
           val (graph, nodeConversion) =
             generateMvGraph(nr, polygon, streetGraph)
 
           // start conversion of nodes and lines
-          ctx.self ! StartGraphConversion(nr, graph, nodeConversion, cfg)
+          ctx.self ! StartGraphConversion(
+            nr,
+            graph,
+            nodeConversion,
+            assetInformation,
+            cfg
+          )
           convertingGraphToPSDM(coordinator)
         case (ctx, MvTerminate) =>
           ctx.log.info(s"Got request to terminate.")
@@ -73,16 +85,25 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
       coordinator: ActorRef[MvRequest]
   ): Behavior[MvRequest] = Behaviors
     .receive[MvRequest] {
-      case (ctx, StartGraphConversion(nr, graph, nodeConversion, cfg)) =>
+      case (
+            ctx,
+            StartGraphConversion(
+              nr,
+              graph,
+              nodeConversion,
+              assetInformation,
+              cfg
+            )
+          ) =>
         ctx.log.debug(s"Starting conversion for the graph of the grid $nr.")
 
         // converting the graph
-        val (subgrid, nodes, transformer) =
-          GridConversion.convertMv(nr, graph, nodeConversion)
+        val (subgrid, nodes) =
+          GridConversion.convertMv(nr, graph, nodeConversion, assetInformation)
 
         // sending the finished data back to the coordinator
         coordinator ! WrappedMvResponse(
-          FinishedMvGridData(subgrid, nodes, transformer)
+          FinishedMvGridData(subgrid, nodes)
         )
         Behaviors.stopped
       case (ctx, MvTerminate) =>

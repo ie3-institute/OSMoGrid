@@ -12,24 +12,54 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 
+import javax.measure.Quantity
 import javax.measure.quantity.ElectricPotential
 
 object VoltageUtils {
 
-  /** Method to parse a [[OsmoGridConfig.Generation.Mv.VoltageLevel]] easily.
+  /** Method to parse a [[edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage.Lv]]
+    * easily.
     *
     * @param cfg
     *   given config
     * @return
-    *   a list of [[VoltageLevel]]
+    *   a list of [[Quantity]]
     */
-  def parseMv(
-      cfg: OsmoGridConfig.Generation.Mv.VoltageLevel
+  def parse(
+      cfg: OsmoGridConfig.Voltage.Lv
   ): List[ComparableQuantity[ElectricPotential]] = {
     toQuantities(cfg.vNom, cfg.default)
   }
 
-  /** Utility to create a list of [[VoltageLevel]].
+  /** Method to parse a [[edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage.Mv]]
+    * easily.
+    *
+    * @param cfg
+    *   given config
+    * @return
+    *   a list of [[Quantities]]
+    */
+  def parse(
+      cfg: OsmoGridConfig.Voltage.Mv
+  ): List[ComparableQuantity[ElectricPotential]] = {
+    toQuantities(cfg.vNom, cfg.default)
+  }
+
+  /** Method to parse a [[edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage.Hv]]
+    * easily.
+    *
+    * @param cfg
+    *   given config
+    * @return
+    *   a list of [[Quantities]]
+    */
+  def parse(
+      cfg: OsmoGridConfig.Voltage.Hv
+  ): List[ComparableQuantity[ElectricPotential]] = {
+    toQuantities(cfg.vNom, cfg.default)
+  }
+
+  /** Utility to create a list of [[Quantity]].
     * @param id
     *   of the voltage level
     * @param vNom
@@ -48,7 +78,7 @@ object VoltageUtils {
     }
   }
 
-  /** Utility to create a list of [[Quantities]].
+  /** Utility to create a list of [[Quantity]].
     *
     * @param vNom
     *   option for multiple voltages in kV

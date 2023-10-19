@@ -25,17 +25,17 @@ class GridConversionSpec extends UnitSpec with MvTestData {
 
     "convert mv grids correctly" in {
       val graph = baseGraph.copy()
-      val (subgrid, nodeChanges, transformerChanges) =
-        convertMv(2, graph, nodeConversion)
+      val (subgrid, nodeChanges) =
+        convertMv(2, graph, nodeConversion, assetInformation)
 
-      nodeChanges shouldBe Seq.empty
-      transformerChanges shouldBe Seq.empty
+      nodeChanges.size shouldBe 7
+      nodeChanges.foreach(n => n.getSubnet shouldBe 2)
 
       subgrid.getSubnet shouldBe 2
       val nodes = subgrid.getRawGrid.getNodes.asScala
       val lines = subgrid.getRawGrid.getLines.asScala
 
-      nodes shouldBe Set(
+      nodes shouldBe Seq(
         nodeToHv,
         nodeInMv1,
         nodeInMv2,
@@ -43,12 +43,12 @@ class GridConversionSpec extends UnitSpec with MvTestData {
         nodeInMv4,
         nodeInMv5,
         nodeInMv6
-      )
+      ).map { n => n.copy().subnet(2).build() }.toSet
       lines.size shouldBe 7
 
       lines.foreach { line =>
         line.getParallelDevices shouldBe 1
-        line.getType shouldBe defaultLineType_10kV
+        line.getType shouldBe defaultLineTypeMv
         line.getGeoPosition.getStartPoint shouldBe line.getNodeA.getGeoPosition
         line.getGeoPosition.getEndPoint shouldBe line.getNodeB.getGeoPosition
         line.getOlmCharacteristic shouldBe CONSTANT_CHARACTERISTIC
@@ -58,7 +58,7 @@ class GridConversionSpec extends UnitSpec with MvTestData {
     "build a mv line input correctly" in {
       val cases = Table(
         ("id", "nodeA", "nodeB", "parallel", "lineType", "length"),
-        ("1", nodeInMv1, nodeInMv2, 1, defaultLineType_10kV, 500)
+        ("1", nodeInMv1, nodeInMv2, 1, defaultLineTypeMv, 500)
       )
 
       forAll(cases) { (id, nodeA, nodeB, parallel, lineType, length) =>

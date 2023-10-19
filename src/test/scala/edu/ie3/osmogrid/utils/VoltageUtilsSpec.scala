@@ -8,10 +8,11 @@ package edu.ie3.osmogrid.utils
 
 import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage.{Hv, Lv, Mv}
 import edu.ie3.test.common.UnitSpec
 import tech.units.indriya.quantity.Quantities
-import tech.units.indriya.unit.Units.VOLT
 import utils.VoltageUtils
+import utils.VoltageUtils.parse
 
 class VoltageUtilsSpec extends UnitSpec {
 
@@ -27,7 +28,79 @@ class VoltageUtilsSpec extends UnitSpec {
     val lv230 = new VoltageLevel("lv", q230)
     val lv1000 = new VoltageLevel("lv", q1000)
 
-    "should convert multiple given input to the correct voltage level" in {
+    "parse a lv config correctly" in {
+      val cases = Table(
+        ("cfg", "expected"),
+        (
+          Lv(0.4, "lv", None),
+          List(
+            Quantities.getQuantity(0.4, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
+          )
+        ),
+        (
+          Lv(0.4, "lv", Some(List(1d, 0.32, 0.7))),
+          List(
+            Quantities.getQuantity(1d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
+            Quantities.getQuantity(0.32, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
+            Quantities.getQuantity(0.7, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
+          )
+        )
+      )
+
+      forAll(cases) { (cfg, expected) =>
+        parse(cfg) shouldBe expected
+      }
+    }
+
+    "parse a mv config correctly" in {
+      val cases = Table(
+        ("cfg", "expected"),
+        (
+          Mv(10.0, "mv", None),
+          List(
+            Quantities.getQuantity(10d, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
+          )
+        ),
+        (
+          Mv(10.0, "mv", Some(List(10d, 20d, 30d))),
+          List(
+            Quantities.getQuantity(10d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
+            Quantities.getQuantity(20d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
+            Quantities.getQuantity(30d, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
+          )
+        )
+      )
+
+      forAll(cases) { (cfg, expected) =>
+        parse(cfg) shouldBe expected
+      }
+    }
+
+    "parse a hv config correctly" in {
+      val cases = Table(
+        ("cfg", "expected"),
+        (
+          Hv(110.0, "hvh", None),
+          List(
+            Quantities.getQuantity(110d, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
+          )
+        ),
+        (
+          Hv(110.0, "hv", Some(List(100d, 120d, 60d))),
+          List(
+            Quantities.getQuantity(100d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
+            Quantities.getQuantity(120d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
+            Quantities.getQuantity(60d, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
+          )
+        )
+      )
+
+      forAll(cases) { (cfg, expected) =>
+        parse(cfg) shouldBe expected
+      }
+    }
+
+    "convert multiple given input to the correct voltage level" in {
       val cases = Table(
         ("id", "voltages", "default", "expectedVoltLvl"),
         ("lv", Some(List(0.23, 1.0)), 0.4, List(lv230, lv1000)),
@@ -43,7 +116,7 @@ class VoltageUtilsSpec extends UnitSpec {
       }
     }
 
-    "should convert multiple given values into correct quantities" in {
+    "convert multiple given values into correct quantities" in {
       val cases = Table(
         ("voltages", "default", "expectedVoltLvl"),
         (Some(List(0.23, 1.0)), 0.4, List(q230, q1000)),
@@ -58,7 +131,7 @@ class VoltageUtilsSpec extends UnitSpec {
       }
     }
 
-    "should convert a given input to the correct voltage level" in {
+    "convert a given input to the correct voltage level" in {
       val cases = Table(
         ("voltage", "expectedVoltLvl"),
         (0.4, q400),

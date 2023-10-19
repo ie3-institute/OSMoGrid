@@ -7,7 +7,7 @@
 package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.ActorRef
-import edu.ie3.datamodel.models.input.NodeInput
+import edu.ie3.datamodel.models.input.{AssetTypeInput, NodeInput}
 import edu.ie3.datamodel.models.input.connector.TransformerInput
 import edu.ie3.datamodel.models.input.container.{
   GraphicElements,
@@ -123,7 +123,7 @@ final case class FinishedGridData(
     mvExpected: Boolean,
     lvData: Option[Seq[SubGridContainer]],
     mvData: Option[Seq[SubGridContainer]],
-    toBeRemoved: Option[(Seq[NodeInput], Seq[TransformerInput])]
+    toBeUpdated: Option[Seq[NodeInput]]
 ) extends StateData {
   def receivedAllData: Boolean = {
     val lv = lvExpected == lvData.isDefined

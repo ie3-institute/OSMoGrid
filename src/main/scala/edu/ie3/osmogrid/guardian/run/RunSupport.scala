@@ -78,6 +78,7 @@ trait RunSupport {
 
             val mvCoordinator = startMvGridGeneration(
               runGuardianData.runId,
+              inputProvider,
               mvConfig,
               runGuardianData.msgAdapters.mvCoordinator,
               ctx
@@ -214,13 +215,14 @@ trait RunSupport {
     */
   private def startMvGridGeneration(
       runId: UUID,
+      inputDataProvider: ActorRef[InputDataEvent],
       mvConfig: OsmoGridConfig.Generation.Mv,
       mvCoordinatorAdapter: ActorRef[MvResponse],
       ctx: ActorContext[Request]
   ): ActorRef[MvRequest] = {
     val mvCoordinator =
       ctx.spawn(
-        MvCoordinator(mvConfig, mvCoordinatorAdapter),
+        MvCoordinator(mvConfig, inputDataProvider, mvCoordinatorAdapter),
         s"LvCoordinator_${runId.toString}"
       )
     ctx.watchWith(mvCoordinator, MvCoordinatorDied)
