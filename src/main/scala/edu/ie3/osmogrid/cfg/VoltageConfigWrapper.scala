@@ -9,6 +9,8 @@ package edu.ie3.osmogrid.cfg
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage.{Hv, Lv, Mv}
 
+/** Simple wrapper object that holds a [[Voltage]] config for global access.
+  */
 case object VoltageConfigWrapper {
   var cfg: Voltage = Voltage(
     Hv(110.0, "hv", None),

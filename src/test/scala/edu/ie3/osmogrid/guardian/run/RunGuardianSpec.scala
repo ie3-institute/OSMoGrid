@@ -88,7 +88,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
       "spawns children, if input is fine" in {
         idleTestKit.run(Run)
 
-        /* One message adapter is registered */
+        /* Two message adapters are registered */
         idleTestKit
           .expectEffectType[MessageAdapter[coordinator.Response, Request]]
         idleTestKit

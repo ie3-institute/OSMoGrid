@@ -152,5 +152,5 @@ object ConfigFailFast extends LazyLogging {
     )
 
   // TODO: Check if necessary
-  private def checkVoltageConfig(voltage: Voltage): Unit = ???
+  private def checkVoltageConfig(voltage: Voltage): Unit = {}
 }
