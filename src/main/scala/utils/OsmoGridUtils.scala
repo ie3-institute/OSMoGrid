@@ -7,10 +7,7 @@
 package utils
 
 import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.datamodel.models.voltagelevels.{
-  CommonVoltageLevel,
-  GermanVoltageLevelUtils
-}
+import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
 import edu.ie3.osmogrid.exception.OsmDataException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.util.geo.GeoUtils
@@ -24,11 +21,10 @@ import edu.ie3.util.quantities.interfaces.Irradiance
 import org.locationtech.jts.algorithm.Centroid
 import org.locationtech.jts.geom.{Coordinate, Polygon}
 import tech.units.indriya.ComparableQuantity
-import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 
 import java.util.UUID
-import javax.measure.quantity.{Area, Dimensionless, Power}
+import javax.measure.quantity.{Area, Power}
 import scala.collection.parallel.ParSeq
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success}
@@ -134,6 +130,12 @@ object OsmoGridUtils {
     *   a new hv node
     */
   def spawnDummyHvNode(mvNodes: Seq[NodeInput]): NodeInput = {
+    if (mvNodes.isEmpty) {
+      throw new IllegalArgumentException(
+        "No mv nodes were provided! Therefore no hv node can be spawned."
+      )
+    }
+
     val node = if (mvNodes.length < 3) {
       mvNodes(0)
     } else {

@@ -14,6 +14,7 @@ import akka.actor.testkit.typed.scaladsl.{
 }
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.graph.OsmGraph
+import edu.ie3.osmogrid.messages._
 import edu.ie3.test.common.{MvTestData, UnitSpec}
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.event.Level

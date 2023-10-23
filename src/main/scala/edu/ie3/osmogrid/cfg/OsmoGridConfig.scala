@@ -23,8 +23,7 @@ object OsmoGridConfig {
         boundaryAdminLevel: OsmoGridConfig.Generation.Lv.BoundaryAdminLevel,
         considerHouseConnectionPoints: scala.Boolean,
         minDistance: scala.Double,
-        osm: OsmoGridConfig.Generation.Lv.Osm,
-        ratedVoltage: scala.Double
+        osm: OsmoGridConfig.Generation.Lv.Osm
     )
     object Lv {
       final case class BoundaryAdminLevel(
@@ -117,9 +116,7 @@ object OsmoGridConfig {
             else com.typesafe.config.ConfigFactory.parseString("osm{}"),
             parentPath + "osm.",
             $tsCfgValidator
-          ),
-          ratedVoltage =
-            $_reqDbl(parentPath, c, "ratedVoltage", $tsCfgValidator)
+          )
         )
       }
       private def $_reqDbl(

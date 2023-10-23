@@ -21,19 +21,11 @@ import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.coordinator
-import edu.ie3.osmogrid.mv.{
-  MvRequest,
-  MvResponse,
-  MvTerminate,
-  ProvidedLvData,
-  RepMvGrids,
-  WrappedMvResponse
-}
+import edu.ie3.osmogrid.messages._
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.slf4j.event.Level
 
 import java.util.UUID
-import scala.List
 
 class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
   "Having a run guardian" when {

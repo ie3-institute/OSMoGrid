@@ -8,24 +8,25 @@ package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.osmogrid.cfg.{OsmoGridConfig, VoltageConfigWrapper}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.MessageAdapters.{
   WrappedLvCoordinatorResponse,
   WrappedMvCoordinatorResponse
 }
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
-import edu.ie3.osmogrid.lv.coordinator
 import edu.ie3.osmogrid.lv.coordinator.RepLvGrids
-import edu.ie3.osmogrid.mv.{ProvidedLvData, RepMvGrids, WrappedMvResponse}
+import edu.ie3.osmogrid.messages.{ProvidedLvData, RepMvGrids, WrappedMvResponse}
 
 import java.util.UUID
 import scala.util.{Failure, Success}
 
 /** Actor to take care of a specific simulation run
   */
-object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
-  val VOLTAGE_CONFIG: VoltageConfigWrapper.type = VoltageConfigWrapper
+object RunGuardian
+    extends RunSupport
+    with StopSupport
+    with SubGridHandling
+    with VoltageSupport {
 
   /** Instantiate the actor
     *
@@ -41,8 +42,11 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
       additionalListener: Seq[ActorRef[ResultListenerProtocol]] = Seq.empty,
       runId: UUID
   ): Behavior[Request] = Behaviors.setup { ctx =>
+    System.out.println(RunGuardian.get)
     // overwriting the default voltage config
-    VOLTAGE_CONFIG.cfg = cfg.voltage
+    set(cfg.voltage)
+
+    System.out.println(RunGuardian.get)
 
     idle(
       RunGuardianData(

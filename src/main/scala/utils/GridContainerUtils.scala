@@ -11,14 +11,14 @@ import edu.ie3.datamodel.models.input.connector.TransformerInput
 import edu.ie3.datamodel.models.input.container._
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage
-import edu.ie3.osmogrid.cfg.VoltageConfigWrapper
+import edu.ie3.osmogrid.guardian.run.RunGuardian
 import tech.units.indriya.ComparableQuantity
 
 import javax.measure.quantity.ElectricPotential
 import scala.jdk.CollectionConverters._
 
 object GridContainerUtils {
-  private val cfg: Voltage = VoltageConfigWrapper.cfg
+  private val cfg: Voltage = RunGuardian.get
 
   // filter all mv-lv nodes in lv sub grid containers
   def filterLv(

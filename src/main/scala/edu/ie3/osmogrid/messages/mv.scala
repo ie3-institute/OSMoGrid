@@ -4,11 +4,10 @@
  * Research group Distribution grid planning and operation
  */
 
-package edu.ie3.osmogrid.mv
+package edu.ie3.osmogrid.messages
 
 import akka.actor.typed.ActorRef
-import edu.ie3.datamodel.models.input.{AssetTypeInput, NodeInput}
-import edu.ie3.datamodel.models.input.connector.TransformerInput
+import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.{
@@ -18,12 +17,11 @@ import edu.ie3.osmogrid.exception.{
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.input.{AssetInformation, RepAssetTypes}
-import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
+import edu.ie3.osmogrid.messages.MvMessageAdapters.WrappedInputResponse
 import org.slf4j.Logger
 import utils.GridConversion.NodeConversion
 import utils.VoronoiUtils.VoronoiPolygon
 
-import java.util.UUID
 import scala.util.{Failure, Success, Try}
 
 /** Trait for mv requests.

@@ -17,7 +17,8 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.input.RepAssetTypes
-import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
+import edu.ie3.osmogrid.messages.MvMessageAdapters.WrappedInputResponse
+import edu.ie3.osmogrid.messages._
 import edu.ie3.test.common.{GridSupport, MvTestData, UnitSpec}
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.event.Level

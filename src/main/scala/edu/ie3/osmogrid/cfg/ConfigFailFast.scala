@@ -61,7 +61,6 @@ object ConfigFailFast extends LazyLogging {
           ),
           _,
           _,
-          _,
           _
         ) =>
       (BoundaryAdminLevel.get(lowest), BoundaryAdminLevel.get(starting)) match {

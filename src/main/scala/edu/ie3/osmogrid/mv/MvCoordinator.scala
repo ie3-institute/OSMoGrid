@@ -11,9 +11,9 @@ import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.RunGuardian
-import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.input.{InputDataEvent, ReqAssetTypes}
-import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
+import edu.ie3.osmogrid.messages.MvMessageAdapters.WrappedInputResponse
+import edu.ie3.osmogrid.messages._
 import utils.OsmoGridUtils.spawnDummyHvNode
 import utils.{GridContainerUtils, VoronoiUtils}
 

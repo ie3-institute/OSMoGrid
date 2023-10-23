@@ -11,9 +11,9 @@ import edu.ie3.datamodel.models.UniqueEntity
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
-import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.coordinator
-import edu.ie3.osmogrid.mv.MvResponse
+import edu.ie3.osmogrid.messages.MvResponse
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.{Logger, LoggerFactory}

@@ -11,7 +11,9 @@ import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage
 import edu.ie3.osmogrid.exception.IllegalStateException
+import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.buildConnectedGridGraphs
 import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.buildGrid
@@ -25,6 +27,8 @@ import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizab
 
 object LvGridGenerator extends LazyLogging {
   sealed trait Request
+
+  val voltages: Voltage = RunGuardian.get
 
   final case class GenerateGrid(
       replyTo: ActorRef[LvGridGenerator.Response],
@@ -78,7 +82,7 @@ object LvGridGenerator extends LazyLogging {
           buildGrid(
             graph,
             buildingGraphConnections.par,
-            config.ratedVoltage.asKiloVolt,
+            voltages.lv.default.asKiloVolt,
             config.considerHouseConnectionPoints,
             lineType,
             gridUuid.toString

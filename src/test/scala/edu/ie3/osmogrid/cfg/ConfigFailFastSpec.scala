@@ -189,7 +189,6 @@ object ConfigFailFastSpec {
       |voltage.hv.default = 110.0
       |generation.lv.gridName = "testLvGrid"
       |generation.lv.averagePowerDensity = 12.5
-      |generation.lv.ratedVoltage = 0.4
       |generation.lv.considerHouseConnectionPoints = false
       |generation.lv.boundaryAdminLevel.starting = 4
       |generation.lv.boundaryAdminLevel.lowest = 8

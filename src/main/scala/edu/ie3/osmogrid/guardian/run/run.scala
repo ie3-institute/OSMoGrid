@@ -7,24 +7,15 @@
 package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.ActorRef
-import edu.ie3.datamodel.models.input.{AssetTypeInput, NodeInput}
-import edu.ie3.datamodel.models.input.connector.TransformerInput
-import edu.ie3.datamodel.models.input.container.{
-  GraphicElements,
-  JointGridContainer,
-  RawGridElements,
-  SubGridContainer,
-  SystemParticipants
-}
-import edu.ie3.datamodel.utils.ContainerUtils
+import edu.ie3.datamodel.models.input.NodeInput
+import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.coordinator
-import edu.ie3.osmogrid.mv.{MvRequest, MvResponse}
+import edu.ie3.osmogrid.messages.{MvRequest, MvResponse}
 
 import java.util.UUID
-import scala.jdk.CollectionConverters._
 
 /* This file only contains package-level definitions */
 
