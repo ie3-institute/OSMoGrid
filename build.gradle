@@ -75,7 +75,7 @@ dependencies {
   implementation 'ch.qos.logback:logback-classic:1.2.12'
 
   // config
-  implementation 'com.typesafe:config:1.4.2'
+  implementation 'com.typesafe:config:1.4.3'
   implementation "com.github.scopt:scopt_$scalaVersion:4.1.0" // cmd args parser
 
   // osm4scala
