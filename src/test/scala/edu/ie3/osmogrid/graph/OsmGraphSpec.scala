@@ -139,7 +139,7 @@ class OsmGraphSpec extends UnitSpec with MvTestData {
       }
     }
 
-    "return a sub graph correctly" in {
+    "return a subgraph correctly" in {
       val graph = new OsmGraph()
       List(
         transitionPoint,
@@ -162,7 +162,7 @@ class OsmGraphSpec extends UnitSpec with MvTestData {
       )
 
       val polygon: Polygon = GeoUtils.buildPolygon(coords.toArray)
-      val subgraph = graph.subGraph(polygon)
+      val subgraph = graph.subgraph(polygon)
 
       val vertexes = subgraph.vertexSet().asScala
       vertexes shouldBe Set(transitionPoint, osmNode1, osmNode2, osmNode3)

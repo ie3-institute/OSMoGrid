@@ -9,6 +9,7 @@ package utils
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.util.osm.model.OsmEntity.Node
+import org.slf4j.LoggerFactory
 import utils.MvUtils.{Connection, Connections}
 
 import javax.measure.Quantity
@@ -19,6 +20,8 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
   * tabu lists and nearest neighbour search.
   */
 object Solver {
+  private val log = LoggerFactory.getLogger(Solver.getClass)
+
   final case class StepResult(
       graph: OsmGraph,
       nextNode: Node,
@@ -76,7 +79,7 @@ object Solver {
           case Some(value) => stepResult = value
           case None        =>
             // when this happens the resulting graph still has unconnected nodes
-            System.out.print(
+            log.warn(
               s"\nFinished with: ${stepResult.notConnectedNodes}"
             )
             finished = true

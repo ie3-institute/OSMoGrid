@@ -38,11 +38,11 @@ object ConfigFailFast extends LazyLogging {
         /* Check, that at least one config is set */
         if (Vector(lv).count(_.isDefined) < 1)
           throw IllegalConfigException(
-            "At least one voltage level generation config has to be defined."
+            "At least one lv voltage level generation config has to be defined."
           )
         if (Vector(mv).count(_.isDefined) < 1)
           throw IllegalConfigException(
-            "At least one voltage level generation config has to be defined."
+            "At least one mv voltage level generation config has to be defined."
           )
 
         /* Check single configs */
@@ -82,6 +82,7 @@ object ConfigFailFast extends LazyLogging {
       }
   }
 
+  // TODO: Add some checks if necessary in the future
   private def checkMvConfig(mv: OsmoGridConfig.Generation.Mv): Unit = mv match {
     case Mv(_, _) =>
   }

@@ -6,9 +6,7 @@
 
 package utils
 
-import edu.ie3.datamodel.models.StandardUnits._
-import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
-import edu.ie3.datamodel.models.input.connector.{LineInput, TransformerInput}
+import edu.ie3.datamodel.models.input.connector.LineInput
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
 import edu.ie3.datamodel.models.input.container.{
   GraphicElements,
@@ -17,32 +15,25 @@ import edu.ie3.datamodel.models.input.container.{
   SystemParticipants
 }
 import edu.ie3.datamodel.models.input.system.characteristic.OlmCharacteristicInput
+import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
+import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.graph.OsmGraph
+import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
+import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 
 import java.util.UUID
 import javax.measure.Quantity
-import javax.measure.quantity.Length
+import javax.measure.quantity.{ElectricPotential, Length}
 import scala.jdk.CollectionConverters._
 
 object GridConversion {
-  val defaultLineType_10kV = new LineTypeInput(
-    UUID.fromString("6b223bc3-69e2-4eb8-a2c0-76be1cd2c998"),
-    "NA2XS2Y 1x400 RM/25 6/10 kV",
-    Quantities.getQuantity(169.646, SUSCEPTANCE_PER_LENGTH),
-    Quantities.getQuantity(0.0, CONDUCTANCE_PER_LENGTH),
-    Quantities.getQuantity(0.078, RESISTANCE_PER_LENGTH),
-    Quantities.getQuantity(0.0942, REACTANCE_PER_LENGTH),
-    Quantities.getQuantity(535.0, ELECTRIC_CURRENT_MAGNITUDE),
-    Quantities.getQuantity(10.0, RATED_VOLTAGE_MAGNITUDE)
-  )
 
   /** Method to convert an [[OsmGraph]] into a set of [[NodeInput]]s and a set
-    * of [[LineInput]]s. This method uses the [[defaultLineType_10kV]] for all
-    * lines.
+    * of [[LineInput]]s.
     * @param n
     *   subnet number
     * @param graph
@@ -50,16 +41,27 @@ object GridConversion {
     * @param nodeConversion
     *   conversion between [[Node]]s and [[NodeInput]]s
     * @return
-    *   a [[SubGridContainer]] and node and transformer changes
+    *   a [[SubGridContainer]] and node changes
     */
   def convertMv(
       n: Int,
       graph: OsmGraph,
-      nodeConversion: NodeConversion
-  ): (SubGridContainer, Seq[NodeInput], Seq[TransformerInput]) = {
+      nodeConversion: NodeConversion,
+      assetInformation: AssetInformation
+  ): (SubGridContainer, Seq[NodeInput]) = {
     // converting the osm nodes to psdm nodes
-    val nodes: Set[NodeInput] =
-      graph.vertexSet().asScala.map { n => nodeConversion.getPSDMNode(n) }.toSet
+    val nodes: Seq[NodeInput] =
+      graph
+        .vertexSet()
+        .asScala
+        .map { node =>
+          nodeConversion.getPSDMNode(node).copy().subnet(n).build()
+        }
+        .toSeq
+
+    val lineTypes
+        : Map[ComparableQuantity[ElectricPotential], Seq[LineTypeInput]] =
+      assetInformation.lineTypes.groupBy { lt => lt.getvRated() }
 
     // converting the edges into psdm lines
     val lines: Set[LineInput] = graph
@@ -70,13 +72,20 @@ object GridConversion {
         val nodeA = nodeConversion.getPSDMNode(graph.getEdgeSource(e))
         val nodeB = nodeConversion.getPSDMNode(graph.getEdgeTarget(e))
 
+        val lineType =
+          lineTypes(nodeA.getVoltLvl.getNominalVoltage).headOption.getOrElse(
+            throw IllegalStateException(
+              "There are no line types within received asset types. Can not build the grid!"
+            )
+          )
+
         // creating a new PSDM line
         buildLine(
           s"${n}_$index",
           nodeA,
           nodeB,
           1,
-          defaultLineType_10kV,
+          lineType,
           e.getDistance
         )
       }
@@ -99,7 +108,7 @@ object GridConversion {
     )
 
     // returning the finished data
-    (subGridContainer, Seq.empty, Seq.empty)
+    (subGridContainer, nodes)
   }
 
   /** Method for creating a [[LineInput]].

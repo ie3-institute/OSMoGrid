@@ -149,7 +149,7 @@ class ConfigFailFastSpec extends UnitSpec {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
               case Failure(exception) =>
-                exception.getMessage shouldBe "At least one voltage level generation config has to be defined."
+                exception.getMessage shouldBe "At least one lv voltage level generation config has to be defined."
               case Success(_) =>
                 fail("Config check succeeded, but was meant to fail.")
             }
