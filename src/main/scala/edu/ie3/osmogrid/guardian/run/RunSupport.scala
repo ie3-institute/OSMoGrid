@@ -18,7 +18,7 @@ import edu.ie3.osmogrid.lv.coordinator.{
   LvCoordinator,
   Request => LvCoordinatorRequest
 }
-import edu.ie3.osmogrid.messages.{MvRequest, MvResponse, ReqMvGrids}
+import edu.ie3.osmogrid.messages.Mv.{MvRequest, MvResponse, ReqMvGrids}
 import edu.ie3.osmogrid.mv.MvCoordinator
 
 import java.util.UUID

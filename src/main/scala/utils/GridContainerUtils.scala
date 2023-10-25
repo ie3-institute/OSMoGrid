@@ -20,7 +20,13 @@ import scala.jdk.CollectionConverters._
 object GridContainerUtils {
   private val cfg: Voltage = RunGuardian.get
 
-  // filter all mv-lv nodes in lv sub grid containers
+  /** Method for retrieving all mv nodes from a sequence of lv
+    * [[SubGridContainer]].
+    * @param lvGrids
+    *   given sub grids
+    * @return
+    *   all found nodes
+    */
   def filterLv(
       lvGrids: Seq[SubGridContainer]
   ): Seq[NodeInput] = {
@@ -29,7 +35,13 @@ object GridContainerUtils {
     getNodes(mvVoltLvl, lvGrids)
   }
 
-  // filter all hv-mv nodes in hv sub grid containers
+  /** Method for retrieving all mv nodes from a sequence of hv
+    * [[SubGridContainer]].
+    * @param hvGrids
+    *   given sub grids
+    * @return
+    *   all found nodes
+    */
   def filterHv(
       hvGrids: Seq[SubGridContainer]
   ): Seq[NodeInput] = {

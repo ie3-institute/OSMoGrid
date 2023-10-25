@@ -12,8 +12,8 @@ import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.{InputDataEvent, ReqAssetTypes}
-import edu.ie3.osmogrid.messages.MvMessageAdapters.WrappedInputResponse
-import edu.ie3.osmogrid.messages._
+import edu.ie3.osmogrid.messages.Mv.MvMessageAdapters.WrappedInputResponse
+import edu.ie3.osmogrid.messages.Mv._
 import utils.OsmoGridUtils.spawnDummyHvNode
 import utils.{GridContainerUtils, VoronoiUtils}
 

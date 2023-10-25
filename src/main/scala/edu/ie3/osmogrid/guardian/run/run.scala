@@ -13,7 +13,7 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.coordinator
-import edu.ie3.osmogrid.messages.{MvRequest, MvResponse}
+import edu.ie3.osmogrid.messages.Mv.{MvRequest, MvResponse}
 
 import java.util.UUID
 
