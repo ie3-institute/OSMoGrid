@@ -181,15 +181,18 @@ object ConfigFailFastSpec {
       |input.asset.file.hierarchic = false
       |output.csv.directory = "output_file_path"
       |output.gridName = "test_grid"
+      |voltage.lv.id = "lv"
+      |voltage.lv.default = 0.4
+      |voltage.mv.id = "mv"
+      |voltage.mv.default = 10.0
+      |voltage.hv.id = "hv"
+      |voltage.hv.default = 110.0
       |generation.lv.gridName = "testLvGrid"
       |generation.lv.averagePowerDensity = 12.5
-      |generation.lv.ratedVoltage = 0.4
       |generation.lv.considerHouseConnectionPoints = false
       |generation.lv.boundaryAdminLevel.starting = 4
       |generation.lv.boundaryAdminLevel.lowest = 8
       |generation.lv.minDistance = 10
       |generation.mv.spawnMissingHvNodes = false
-      |generation.mv.voltageLevel.id = mv
-      |generation.mv.voltageLevel.default = 10.0
       |""".stripMargin
 }

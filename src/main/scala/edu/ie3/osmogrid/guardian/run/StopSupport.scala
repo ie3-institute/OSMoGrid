@@ -9,6 +9,7 @@ package edu.ie3.osmogrid.guardian.run
 import akka.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.messages.Mv.MvTerminate
 
 import java.util.UUID
 
@@ -30,13 +31,15 @@ trait StopSupport {
       ctx: ActorContext[Request]
   ): StoppingData = {
     childReferences.lvCoordinator.foreach(_ ! coordinator.Terminate)
+    childReferences.mvCoordinator.foreach(_ ! MvTerminate)
     childReferences.inputDataProvider ! input.Terminate
 
     StoppingData(
       runId,
       inputDataProviderTerminated = false,
       resultListenerTerminated = false,
-      childReferences.lvCoordinator.map(_ => false)
+      childReferences.lvCoordinator.map(_ => false),
+      childReferences.mvCoordinator.map(_ => false)
     )
   }
 
@@ -60,6 +63,10 @@ trait StopSupport {
     case LvCoordinatorDied =>
       stoppingData.copy(lvCoordinatorTerminated =
         stoppingData.lvCoordinatorTerminated.map(_ => true)
+      )
+    case MvCoordinatorDied =>
+      stoppingData.copy(mvCoordinatorTerminated =
+        stoppingData.mvCoordinatorTerminated.map(_ => true)
       )
   }
 
@@ -100,6 +107,13 @@ trait StopSupport {
         )
         stoppingData.copy(lvCoordinatorTerminated =
           stoppingData.lvCoordinatorTerminated.map(_ => true)
+        )
+      case (stoppingData, MvCoordinatorDied) =>
+        ctx.log.warn(
+          s"Mv coordinator for run $runId unexpectedly died. Start coordinated shut down phase for this run."
+        )
+        stoppingData.copy(mvCoordinatorTerminated =
+          stoppingData.mvCoordinatorTerminated.map(_ => true)
         )
     }
 

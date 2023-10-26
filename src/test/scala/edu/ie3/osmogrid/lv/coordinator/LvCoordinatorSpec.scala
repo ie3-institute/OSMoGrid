@@ -13,8 +13,8 @@ import akka.actor.testkit.typed.scaladsl.{
   BehaviorTestKit,
   ScalaTestWithActorTestKit
 }
-import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.Behaviors
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
   Transformer2WTypeInput
@@ -23,21 +23,18 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.RequestFailedException
 import edu.ie3.osmogrid.io.input
-import edu.ie3.osmogrid.io.input.{BoundaryAdminLevel, AssetInformation}
-import edu.ie3.osmogrid.lv.LvGridGenerator.{GenerateGrid, RepLvGrid}
-import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator.{
-  GridToExpect,
-  Partition
-}
+import edu.ie3.osmogrid.io.input.{AssetInformation, BoundaryAdminLevel}
+import edu.ie3.osmogrid.lv.LvGridGenerator.RepLvGrid
+import edu.ie3.osmogrid.lv.coordinator.LvCoordinator.ResultData
 import edu.ie3.osmogrid.lv.coordinator.MessageAdapters.{
   WrappedGridGeneratorResponse,
   WrappedInputDataResponse,
   WrappedRegionResponse
 }
-import edu.ie3.osmogrid.lv.{LvGridGenerator, coordinator}
-import edu.ie3.osmogrid.lv.coordinator.LvCoordinator.ResultData
 import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
+import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator.Partition
 import edu.ie3.osmogrid.lv.region_coordinator.LvTestModel.assetInformation
+import edu.ie3.osmogrid.lv.{LvGridGenerator, coordinator}
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.UnitSpec
@@ -423,8 +420,10 @@ class LvCoordinatorSpec
 
         /* The result is forwarded once we received all the grids we expect*/
         lvCoordinatorAdapter.expectMessageType[RepLvGrids] match {
-          case RepLvGrids(grids) =>
+          case RepLvGrids(grids, streetGraph) =>
             grids should contain theSameElementsAs Seq(mockedSubgrid)
+            streetGraph.vertexSet().size() shouldBe 0
+            streetGraph.edgeSet().size() shouldBe 0
         }
 
         awaitingTestKit.isAlive shouldBe false

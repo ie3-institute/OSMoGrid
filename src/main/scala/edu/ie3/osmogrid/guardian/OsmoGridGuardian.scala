@@ -15,7 +15,6 @@ import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import java.util.UUID
 
 object OsmoGridGuardian {
-
   sealed trait Request
 
   /** Message to initiate a grid generation run

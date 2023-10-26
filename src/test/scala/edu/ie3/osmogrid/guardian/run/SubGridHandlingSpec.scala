@@ -9,13 +9,21 @@ package edu.ie3.osmogrid.guardian.run
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import edu.ie3.datamodel.models.UniqueEntity
 import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.datamodel.models.input.container.SubGridContainer
+import edu.ie3.datamodel.models.input.container.{
+  JointGridContainer,
+  SubGridContainer
+}
+import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils._
+import edu.ie3.datamodel.utils.ContainerUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
-import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
+import edu.ie3.osmogrid.io.input.AssetInformation
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.messages.Mv.MvResponse
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.{Logger, LoggerFactory}
+import utils.GridContainerUtils
 
 import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
@@ -28,6 +36,44 @@ class SubGridHandlingSpec
   private val testKit: ActorTestKit = ActorTestKit()
 
   "Supporting sub grid handling" when {
+    "update container correctly" in {
+      val updateContainer =
+        PrivateMethod[JointGridContainer](Symbol("updateContainer"))
+
+      val lv1 = mockSubGrid(1, MV_10KV, LV)
+
+      val jointGridContainer = new JointGridContainer(
+        lv1.getGridName,
+        lv1.getRawGrid,
+        lv1.getSystemParticipants,
+        lv1.getGraphics
+      )
+
+      // change the voltage level of the first found mv node to 20 kV
+      val node = GridContainerUtils
+        .filterLv(Seq(lv1))(0)
+        .copy()
+        .subnet(10)
+        .voltLvl(MV_20KV)
+        .build()
+
+      val updated = SubGridHandling invokePrivate updateContainer(
+        jointGridContainer,
+        Seq(node),
+        assetInformation
+      )
+
+      val updatesNodes = updated.getRawGrid.getNodes.asScala.toSeq
+      updatesNodes.size shouldBe 2
+      updatesNodes should contain(node)
+
+      val updatedTransformer =
+        updated.getRawGrid.getTransformer2Ws.asScala.toSeq
+      updatedTransformer.size shouldBe 1
+
+      updatedTransformer(0).getType shouldBe trafo_20kV_to_lv
+    }
+
     "assigning sub grid numbers to a single sub grid container" should {
       val assignSubnetNumber =
         PrivateMethod[Try[SubGridContainer]](Symbol("assignSubnetNumber"))
@@ -77,6 +123,8 @@ class SubGridHandlingSpec
 
       val lvCoordinatorAdapter =
         testKit.createTestProbe[coordinator.Response]("LvCoordinatorAdapter")
+      val mvCoordinatorAdapter =
+        testKit.createTestProbe[MvResponse]("MvCoordinatorAdapter")
       val resultListener =
         testKit.createTestProbe[ResultListenerProtocol.Request](
           "ResultListener"
@@ -84,7 +132,8 @@ class SubGridHandlingSpec
 
       val grids = Range.inclusive(11, 20).map(mockSubGrid)
       val messageAdapters = new MessageAdapters(
-        lvCoordinatorAdapter.ref
+        lvCoordinatorAdapter.ref,
+        mvCoordinatorAdapter.ref
       )
       val cfg = OsmoGridConfigFactory
         .parse {
@@ -92,7 +141,10 @@ class SubGridHandlingSpec
           |input.osm.file.pbf=test.pbf
           |input.asset.file.directory=assets/
           |output.csv.directory=output/
-          |generation.lv.distinctHouseConnections=true""".stripMargin
+          |generation.lv.distinctHouseConnections=true
+          |generation.mv.spawnMissingHvNodes = false
+          |generation.mv.voltageLevel.id = mv
+          |generation.mv.voltageLevel.default = 10.0""".stripMargin
         }
         .success
         .get

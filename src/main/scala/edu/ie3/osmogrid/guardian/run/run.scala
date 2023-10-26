@@ -7,10 +7,14 @@
 package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.ActorRef
+import edu.ie3.datamodel.models.input.NodeInput
+import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input
+import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.messages.Mv.{MvRequest, MvResponse}
 
 import java.util.UUID
 
@@ -25,9 +29,12 @@ object Run extends Request
   *
   * @param lvCoordinator
   *   Adapter for messages from [[LvCoordinator]]
+  * @param mvCoordinator
+  *   Adapter for messages from [[MvCoordinator]]
   */
 private final case class MessageAdapters(
-    lvCoordinator: ActorRef[coordinator.Response]
+    lvCoordinator: ActorRef[coordinator.Response],
+    mvCoordinator: ActorRef[MvResponse]
 )
 
 private object MessageAdapters {
@@ -35,6 +42,9 @@ private object MessageAdapters {
       response: coordinator.Response
   ) extends Request
 
+  final case class WrappedMvCoordinatorResponse(
+      response: MvResponse
+  ) extends Request
 }
 
 /* Death watch messages */
@@ -46,6 +56,8 @@ object ResultEventListenerDied extends Watch
 
 object LvCoordinatorDied extends Watch
 
+object MvCoordinatorDied extends Watch
+
 /* Sent out responses */
 sealed trait Response
 
@@ -55,7 +67,8 @@ final case class ChildReferences(
     inputDataProvider: ActorRef[input.InputDataEvent],
     resultListener: Option[ActorRef[ResultListenerProtocol]],
     additionalResultListeners: Seq[ActorRef[ResultListenerProtocol]],
-    lvCoordinator: Option[ActorRef[coordinator.Request]]
+    lvCoordinator: Option[ActorRef[coordinator.Request]],
+    mvCoordinator: Option[ActorRef[MvRequest]]
 ) {
   def resultListeners: Seq[ActorRef[ResultListenerProtocol]] =
     resultListener
@@ -87,9 +100,36 @@ final case class StoppingData(
     runId: UUID,
     inputDataProviderTerminated: Boolean,
     resultListenerTerminated: Boolean,
-    lvCoordinatorTerminated: Option[Boolean]
+    lvCoordinatorTerminated: Option[Boolean],
+    mvCoordinatorTerminated: Option[Boolean]
 ) extends StateData {
   def allChildrenTerminated: Boolean =
     inputDataProviderTerminated && resultListenerTerminated && lvCoordinatorTerminated
-      .forall(terminated => terminated)
+      .forall(terminated => terminated) && mvCoordinatorTerminated.forall(
+      terminated => terminated
+    )
 }
+
+final case class FinishedGridData(
+    lvExpected: Boolean,
+    mvExpected: Boolean,
+    lvData: Option[Seq[SubGridContainer]],
+    mvData: Option[Seq[SubGridContainer]],
+    toBeUpdated: Option[(Seq[NodeInput], AssetInformation)]
+) extends StateData {
+  def receivedAllData: Boolean = {
+    val lv = lvExpected == lvData.isDefined
+    val mv = mvExpected == mvData.isDefined
+
+    lv && mv
+  }
+}
+
+object FinishedGridData {
+  def empty(lvExpected: Boolean, mvExpected: Boolean): FinishedGridData =
+    FinishedGridData(lvExpected, mvExpected, None, None, None)
+}
+
+/** Message to tell the [[RunGuardian]] to start handling the received results.
+  */
+object HandleGridResults extends Request

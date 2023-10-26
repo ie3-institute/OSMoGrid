@@ -40,17 +40,52 @@ import edu.ie3.datamodel.models.voltagelevels.{
   GermanVoltageLevelUtils
 }
 import edu.ie3.datamodel.utils.GridAndGeoUtils
+import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.quantities.PowerSystemUnits._
+import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
 import org.locationtech.jts.geom.Point
 import org.scalatestplus.mockito.MockitoSugar.mock
+import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units.PERCENT
 
 import java.util.UUID
+import javax.measure.quantity.{ElectricPotential, ElectricResistance, Power}
 import scala.jdk.CollectionConverters._
 
 trait GridSupport {
+  val defaultLineTypeMv = new LineTypeInput(
+    UUID.fromString("6b223bc3-69e2-4eb8-a2c0-76be1cd2c998"),
+    "NA2XS2Y 1x400 RM/25 6/10 kV",
+    169.646.asSiemensPerKilometre,
+    0.0.asSiemensPerKilometre,
+    0.078.asOhmPerKilometre,
+    0.0942.asOhmPerKilometre,
+    535.0.asAmpere,
+    10.0.asKiloVolt
+  )
+
+  val trafo_20kV_to_lv = new Transformer2WTypeInput(
+    UUID.fromString("0843b836-cee4-4a8c-81a4-098400fe91cf"),
+    "0.4 MVA 20/0.4 kV Dyn5 ASEA",
+    11.999999999999998.asOhm,
+    58.787753826796276.asOhm,
+    400.asKiloVoltAmpere,
+    20.0.asKiloVolt,
+    0.4.asKiloVolt,
+    2999.9999999999995.asNanoSiemens,
+    24.495101551166183.asNanoSiemens,
+    2.5.asPercent,
+    0.0.asDegreeGeom,
+    false,
+    0,
+    -2,
+    2
+  )
+
+  val assetInformation: AssetInformation =
+    AssetInformation(Seq(defaultLineTypeMv), Seq(trafo_20kV_to_lv))
 
   /** Return a mocked test grid with given sub grid number
     * @param subgridNo
@@ -123,7 +158,7 @@ trait GridSupport {
       voltLvlB: CommonVoltageLevel
   ): SubGridContainer = {
     // include at least a single node for voltage level determination
-    val dummyNodeB = new NodeInput(
+    val dummyNodeA = new NodeInput(
       UUID.randomUUID(),
       s"Dummy node in $subgridNo",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
@@ -133,7 +168,7 @@ trait GridSupport {
       subgridNo
     )
 
-    val dummyNodeA = new NodeInput(
+    val dummyNodeB = new NodeInput(
       UUID.randomUUID(),
       s"Dummy node in $subgridNo",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),

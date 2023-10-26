@@ -12,6 +12,7 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.IllegalStateException
+import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input.{
   BoundaryAdminLevel,
   InputDataEvent,
@@ -24,7 +25,9 @@ import edu.ie3.osmogrid.lv.coordinator.MessageAdapters.{
   WrappedRegionResponse
 }
 import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
+import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
+import utils.OsmoGridUtils.buildStreetGraph
 
 import java.util.UUID
 import scala.util.{Failure, Success}
@@ -32,6 +35,7 @@ import scala.util.{Failure, Success}
 /** Actor to take care of the overall generation process for low voltage grids
   */
 object LvCoordinator extends ActorStopSupportStateless {
+  private var streetGraph = new OsmGraph()
 
   final case class ResultData(
       expectedGrids: Set[UUID],
@@ -264,6 +268,11 @@ object LvCoordinator extends ActorStopSupportStateless {
                 assetInformation
               )
             ) =>
+          // building a complete street graph
+          val (highways, highwayNodes) =
+            OsmoGridModel.filterForWays(osmoGridModel.highways)
+          streetGraph = buildStreetGraph(highways.seq.toSeq, highwayNodes)
+
           BoundaryAdminLevel.get(cfg.boundaryAdminLevel.starting) match {
             case Some(startingLevel) =>
               /* Forward the generation request */
@@ -310,7 +319,10 @@ object LvCoordinator extends ActorStopSupportStateless {
                 )
 
                 /* Report back the collected grids */
-                guardian ! RepLvGrids(updatedResultData.subGridContainers)
+                guardian ! RepLvGrids(
+                  updatedResultData.subGridContainers,
+                  streetGraph
+                )
 
                 stopBehavior
               } else {

@@ -32,8 +32,9 @@ import scala.jdk.CollectionConverters._
 
 object GridConversion {
 
-  /** Method to convert an [[OsmGraph]] into a set of [[NodeInput]]s and a set
-    * of [[LineInput]]s.
+  /** Method to convert an [[OsmGraph]] into a [[SubGridContainer]] and a
+    * sequence of changed [[NodeInput]]s.
+    *
     * @param n
     *   subnet number
     * @param graph
