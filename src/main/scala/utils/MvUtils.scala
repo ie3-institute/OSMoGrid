@@ -85,7 +85,7 @@ object MvUtils {
 
     // if this voronoi polygon contains a polygon, we can reduce the complete street graph in order to reduce the calculation time
     val reducedStreetGraph: OsmGraph = voronoiPolygon.polygon
-      .map { polygon => streetGraph.subGraph(polygon) }
+      .map { polygon => streetGraph.subgraph(polygon) }
       .getOrElse(streetGraph)
 
     // creating necessary utility objects

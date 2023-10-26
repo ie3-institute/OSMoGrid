@@ -10,10 +10,7 @@ import akka.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.exception.{
-  IllegalStateException,
-  RequestFailedException
-}
+import edu.ie3.osmogrid.exception.{IllegalStateException, RequestFailedException}
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.input.{AssetInformation, RepAssetTypes}
@@ -59,15 +56,12 @@ object Mv {
     *   with components for the graph
     * @param streetGraph
     *   with all street nodes
-    * @param cfg
-    *   for mv generation
     */
   final case class StartGraphGeneration(
       nr: Int,
       polygon: VoronoiPolygon,
       streetGraph: OsmGraph,
-      assetInformation: AssetInformation,
-      cfg: OsmoGridConfig.Generation.Mv
+      assetInformation: AssetInformation
   ) extends MvRequest
 
   /** Request for mv graph conversion.
@@ -78,15 +72,12 @@ object Mv {
     *   with grid structure
     * @param nodeConversion
     *   for converting osm nodes into corresponding PSDM nodes
-    * @param cfg
-    *   for ,v generation
     */
   final case class StartGraphConversion(
       nr: Int,
       graph: OsmGraph,
       nodeConversion: NodeConversion,
-      assetInformation: AssetInformation,
-      cfg: OsmoGridConfig.Generation.Mv
+      assetInformation: AssetInformation
   ) extends MvRequest
 
   /** Response for a mv coordinator that contains the converted grid structure

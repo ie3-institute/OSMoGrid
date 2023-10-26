@@ -65,10 +65,8 @@ class OsmGraph(
     * @param connection
     *   to be added
     */
-  def addConnection(connection: Connection): Unit = {
+  def addConnection(connection: Connection): Unit =
     addWeightedEdge(connection.nodeA, connection.nodeB, connection.distance)
-    getEdge(connection.nodeA, connection.nodeB)
-  }
 
   def setEdgeWeight(
       edge: DistanceWeightedEdge,
@@ -179,14 +177,14 @@ class OsmGraph(
     false
   }
 
-  /** Uses the given [[Polygon]] to create a sub graph that only contains
+  /** Uses the given [[Polygon]] to create a subgraph that only contains
     * vertexes and edges that are fully inside the polygon.
     * @param polygon
     *   that is used
     * @return
     *   a new [[OsmGraph]]
     */
-  def subGraph(polygon: Polygon): OsmGraph = {
+  def subgraph(polygon: Polygon): OsmGraph = {
     // filtering out all vertexes than are not inside the polygon
     val vertexes: Set[Node] = vertexSet().asScala
       .filter(vertex =>

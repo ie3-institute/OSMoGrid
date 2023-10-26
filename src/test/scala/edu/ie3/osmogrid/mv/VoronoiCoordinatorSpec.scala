@@ -58,14 +58,13 @@ class VoronoiCoordinatorSpec
           1,
           new OsmGraph(),
           new NodeConversion(Map.empty, Map.empty),
-          assetInformation,
-          cfg
+          assetInformation
         )
       )
 
       idleTestKit.logEntries() should contain only CapturedLogEvent(
         Level.WARN,
-        "Received unsupported message 'StartGraphConversion(1,([], []),NodeConversion(Map(),Map()),AssetInformation(List(LineTypeInput{uuid=6b223bc3-69e2-4eb8-a2c0-76be1cd2c998, id=NA2XS2Y 1x400 RM/25 6/10 kV, b=1.6964599999999997E8 µS/km, g=0.0 µS/km, r=0.078 Ω/km, x=0.0942 Ω/km, iMax=535 A, vRated=10 kV}),List()),Mv(false))' in data awaiting state. Keep on going."
+        "Received unsupported message 'StartGraphConversion(1,([], []),NodeConversion(Map(),Map()),AssetInformation(List(LineTypeInput{uuid=6b223bc3-69e2-4eb8-a2c0-76be1cd2c998, id=NA2XS2Y 1x400 RM/25 6/10 kV, b=1.6964599999999997E8 µS/km, g=0.0 µS/km, r=0.078 Ω/km, x=0.0942 Ω/km, iMax=535 A, vRated=10 kV}),List()))' in data awaiting state. Keep on going."
       )
     }
   }
@@ -79,7 +78,7 @@ class VoronoiCoordinatorSpec
 
     "create a graph correctly" in {
       idleTestKit.run(
-        StartGraphGeneration(1, polygon, streetGraph, assetInformation, cfg)
+        StartGraphGeneration(1, polygon, streetGraph, assetInformation)
       )
       idleTestKit.isAlive shouldBe true
     }
@@ -94,7 +93,7 @@ class VoronoiCoordinatorSpec
       graph.addEdge(osmNode1, osmNode2)
 
       idleTestKit.run(
-        StartGraphConversion(1, graph, nodeConversion, assetInformation, cfg)
+        StartGraphConversion(1, graph, nodeConversion, assetInformation)
       )
 
       idleTestKit

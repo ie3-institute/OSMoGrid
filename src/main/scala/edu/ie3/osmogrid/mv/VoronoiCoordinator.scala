@@ -47,8 +47,7 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
                 nr,
                 polygon,
                 streetGraph,
-                assetInformation,
-                cfg
+                assetInformation
               )
             ) =>
           val (graph, nodeConversion) =
@@ -59,8 +58,7 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
             nr,
             graph,
             nodeConversion,
-            assetInformation,
-            cfg
+            assetInformation
           )
           convertingGraphToPSDM(coordinator)
         case (ctx, MvTerminate) =>
@@ -92,8 +90,7 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
               nr,
               graph,
               nodeConversion,
-              assetInformation,
-              cfg
+              assetInformation
             )
           ) =>
         ctx.log.debug(s"Starting conversion for the graph of the grid $nr.")
