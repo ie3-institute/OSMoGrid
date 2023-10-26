@@ -10,7 +10,8 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.{ActorContext, StashBuffer}
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
-  Transformer2WTypeInput
+  Transformer2WTypeInput,
+  Transformer3WTypeInput
 }
 import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 

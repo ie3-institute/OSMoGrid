@@ -17,8 +17,7 @@ import edu.ie3.datamodel.models.input.connector.`type`.{
 }
 import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
 import edu.ie3.osmogrid.io.input
-import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.input.AssetInformation
+import edu.ie3.osmogrid.io.input.{AssetInformation, InputDataProvider}
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.UnitSpec

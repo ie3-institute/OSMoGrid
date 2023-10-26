@@ -11,6 +11,7 @@ import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input
+import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.coordinator
 import edu.ie3.osmogrid.messages.Mv.{MvRequest, MvResponse}
@@ -114,7 +115,7 @@ final case class FinishedGridData(
     mvExpected: Boolean,
     lvData: Option[Seq[SubGridContainer]],
     mvData: Option[Seq[SubGridContainer]],
-    toBeUpdated: Option[Seq[NodeInput]]
+    toBeUpdated: Option[(Seq[NodeInput], AssetInformation)]
 ) extends StateData {
   def receivedAllData: Boolean = {
     val lv = lvExpected == lvData.isDefined

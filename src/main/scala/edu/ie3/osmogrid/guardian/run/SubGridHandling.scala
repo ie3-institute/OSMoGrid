@@ -28,6 +28,7 @@ import edu.ie3.datamodel.utils.ContainerUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.GridException
 import edu.ie3.osmogrid.guardian.run.SubGridHandling._
+import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import org.slf4j.Logger
 import utils.GridContainerUtils.combine
@@ -89,7 +90,7 @@ trait SubGridHandling {
       lvData: Option[Seq[SubGridContainer]],
       mvData: Option[Seq[SubGridContainer]],
       hvData: Option[Seq[SubGridContainer]],
-      toBeUpdated: Option[Seq[NodeInput]],
+      toBeUpdated: Option[(Seq[NodeInput], AssetInformation)],
       cfg: OsmoGridConfig.Generation,
       resultListener: Seq[ActorRef[ResultListenerProtocol]],
       msgAdapters: MessageAdapters
@@ -104,7 +105,7 @@ trait SubGridHandling {
 
       // removing some elements is defined
       toBeUpdated
-        .map { r => updateContainer(container, r) }
+        .map { r => updateContainer(container, r._1, r._2) }
         .getOrElse(container)
     }
 
@@ -116,7 +117,7 @@ trait SubGridHandling {
 
       // removing some elements is defined
       toBeUpdated
-        .map { r => updateContainer(container, r) }
+        .map { r => updateContainer(container, r._1, r._2) }
         .getOrElse(container)
     }
 
@@ -148,7 +149,8 @@ object SubGridHandling {
 
   private def updateContainer(
       jointGridContainer: JointGridContainer,
-      nodes: Seq[NodeInput]
+      nodes: Seq[NodeInput],
+      assetInformation: AssetInformation
   ): JointGridContainer = {
     val nodeMapping: Map[UUID, NodeInput] = nodes.map { n =>
       n.getUuid -> n
@@ -159,7 +161,8 @@ object SubGridHandling {
     // updating transformer2Ws
     val t2W = updateTransformer2Ws(
       rawGridElements.getTransformer2Ws.asScala.toSeq,
-      nodeMapping
+      nodeMapping,
+      assetInformation.transformerTypes
     ).fold(
       exception =>
         throw GridException(
@@ -170,9 +173,11 @@ object SubGridHandling {
     )
 
     // updating transformer3Ws
+    // TODO: Add transformer3WType update
     val t3W = updateTransformer3Ws(
       rawGridElements.getTransformer3Ws.asScala.toSeq,
-      nodeMapping
+      nodeMapping,
+      Seq.empty
     ).fold(
       exception =>
         throw GridException(
@@ -445,20 +450,41 @@ object SubGridHandling {
 
   private def updateTransformer2Ws(
       transformer2Ws: Seq[Transformer2WInput],
-      nodeMapping: Map[UUID, NodeInput]
+      nodeMapping: Map[UUID, NodeInput],
+      typeInputs: Seq[Transformer2WTypeInput]
   ): Try[Seq[Transformer2WInput]] = Try {
     transformer2Ws.map { originalTransformer =>
       val originalA = originalTransformer.getNodeA.getUuid
       val originalB = originalTransformer.getNodeB.getUuid
+      val originalType = originalTransformer.getType
       val copy = originalTransformer.copy()
 
       // update nodes
-      val updated =
+      var updated =
         (nodeMapping.get(originalA), nodeMapping.get(originalB)) match {
           case (Some(nodeA), Some(nodeB)) => copy.nodeA(nodeA).nodeB(nodeB)
           case (Some(nodeA), None)        => copy.nodeA(nodeA)
           case (None, Some(nodeB))        => copy.nodeB(nodeB)
         }
+
+      // check if voltage ratings have changed
+      val voltLvlA = nodeMapping(originalA).getVoltLvl.getNominalVoltage
+      val voltLvlB = nodeMapping(originalB).getVoltLvl.getNominalVoltage
+
+      if (
+        originalType.getvRatedA() != voltLvlA || originalType
+          .getvRatedB() != voltLvlB
+      ) {
+        typeInputs.find { t =>
+          t.getvRatedA() == voltLvlA && t.getvRatedB() == voltLvlB
+        } match {
+          case Some(value) => updated = updated.`type`(value)
+          case None =>
+            throw GridException(
+              s"No transformer2WType for voltage levels $voltLvlA and $voltLvlB found!"
+            )
+        }
+      }
 
       updated.build()
     }
@@ -466,12 +492,14 @@ object SubGridHandling {
 
   private def updateTransformer3Ws(
       transformer3Ws: Seq[Transformer3WInput],
-      nodeMapping: Map[UUID, NodeInput]
+      nodeMapping: Map[UUID, NodeInput],
+      typeInputs: Seq[Transformer3WTypeInput]
   ): Try[Seq[Transformer3WInput]] = Try {
     transformer3Ws.map { originalTransformer =>
       val originalA = originalTransformer.getNodeA.getUuid
       val originalB = originalTransformer.getNodeB.getUuid
       val originalC = originalTransformer.getNodeC.getUuid
+      val originalType = originalTransformer.getType
       val copy = originalTransformer.copy()
 
       // update nodes
@@ -487,6 +515,27 @@ object SubGridHandling {
         .get(originalC)
         .map { nodeC => copy.nodeC(nodeC) }
         .getOrElse(copy)
+
+      // check if voltage ratings have changed
+      val voltLvlA = nodeMapping(originalA).getVoltLvl.getNominalVoltage
+      val voltLvlB = nodeMapping(originalB).getVoltLvl.getNominalVoltage
+      val voltLvlC = nodeMapping(originalC).getVoltLvl.getNominalVoltage
+
+      if (
+        originalType.getvRatedA() != voltLvlA || originalType
+          .getvRatedB() != voltLvlB || originalType.getvRatedC() != voltLvlC
+      ) {
+        typeInputs.find { t =>
+          t.getvRatedA() == voltLvlA && t.getvRatedB() == voltLvlB && t
+            .getvRatedC() == voltLvlC
+        } match {
+          case Some(value) => updated = updated.`type`(value)
+          case None =>
+            throw GridException(
+              s"No transformer3WType for voltage levels $voltLvlA and $voltLvlB found!"
+            )
+        }
+      }
 
       updated.build()
     }

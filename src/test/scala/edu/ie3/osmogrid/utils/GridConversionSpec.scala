@@ -9,7 +9,7 @@ package edu.ie3.osmogrid.utils
 import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.input.system.characteristic.OlmCharacteristicInput._
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.test.common.{MvTestData, UnitSpec}
+import edu.ie3.test.common.{GridSupport, MvTestData, UnitSpec}
 import edu.ie3.util.osm.model.OsmEntity.Node
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
@@ -19,7 +19,7 @@ import utils.Solver
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
-class GridConversionSpec extends UnitSpec with MvTestData {
+class GridConversionSpec extends UnitSpec with MvTestData with GridSupport {
   "The GridConversion" should {
     val baseGraph: OsmGraph = Solver.solve(transitionPoint, connections)
 

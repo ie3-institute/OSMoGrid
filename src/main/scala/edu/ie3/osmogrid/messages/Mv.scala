@@ -10,7 +10,10 @@ import akka.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.exception.{IllegalStateException, RequestFailedException}
+import edu.ie3.osmogrid.exception.{
+  IllegalStateException,
+  RequestFailedException
+}
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.input.{AssetInformation, RepAssetTypes}
@@ -21,6 +24,9 @@ import utils.VoronoiUtils.VoronoiPolygon
 
 import scala.util.{Failure, Success, Try}
 
+/** Object that defines messages and state data for medium voltage grid
+  * generation.
+  */
 object Mv {
 
   /** Trait for mv requests.
@@ -93,6 +99,17 @@ object Mv {
       nodeChanges: Seq[NodeInput]
   ) extends MvResponse
 
+  /** Request for a mv coordinator to start the generation of medium voltage
+    * grids.
+    * @param lvGrids
+    *   low voltage grids
+    * @param hvGrids
+    *   option for high voltage grids
+    * @param streetGraph
+    *   a graph of the streets
+    * @param assetInformation
+    *   information for assets
+    */
   final case class StartGeneration(
       lvGrids: Seq[SubGridContainer],
       hvGrids: Option[Seq[SubGridContainer]],
@@ -106,21 +123,38 @@ object Mv {
     *   Collection of medium voltage grids
     * @param nodeChanges
     *   updated nodes
+    * @param assetInformation
+    *   contains information for assets
     */
   final case class RepMvGrids(
       grids: Seq[SubGridContainer],
-      nodeChanges: Seq[NodeInput]
+      nodeChanges: Seq[NodeInput],
+      assetInformation: AssetInformation
   ) extends MvResponse
 
+  /** Message for providing some low voltage data to the mv coordinator.
+    * @param lvGrids
+    *   low voltage grids
+    * @param streetGraph
+    *   a graph of the streets
+    */
   final case class ProvidedLvData(
       lvGrids: Seq[SubGridContainer],
       streetGraph: OsmGraph
   ) extends MvResponse
 
+  /** Message for providing some high voltage data to the mv coordinator.
+    * @param hvGrids
+    *   high voltage grids
+    */
   final case class ProvidedHvData(
       hvGrids: Seq[SubGridContainer]
   ) extends MvResponse
 
+  /** Utility class that contains some message adapters.
+    * @param inputDataProvider
+    *   adapter for input data provider
+    */
   final case class MvMessageAdapters(
       inputDataProvider: ActorRef[input.Response]
   )
@@ -131,6 +165,20 @@ object Mv {
     ) extends MvRequest
   }
 
+  /** State data for awaiting data state.
+    * @param cfg
+    *   config for mv generation
+    * @param runGuardian
+    *   superior actor
+    * @param lvGrids
+    *   option for lv grids
+    * @param hvGrids
+    *   option for hv grids
+    * @param streetGraph
+    *   a graph of the streets
+    * @param assetInformation
+    *   information for assets
+    */
   final case class AwaitingInputData(
       cfg: OsmoGridConfig.Generation.Mv,
       runGuardian: ActorRef[MvResponse],
@@ -139,6 +187,15 @@ object Mv {
       streetGraph: Option[OsmGraph],
       assetInformation: Option[AssetInformation]
   ) {
+
+    /** Method for registering responses.
+      * @param response
+      *   with data
+      * @param log
+      *   to log information
+      * @return
+      *   a try
+      */
     def registerResponse(
         response: MvRequest,
         log: Logger
@@ -158,7 +215,9 @@ object Mv {
         Failure(RequestFailedException(s"$other is not supported!"))
     }
 
-    def isComprehensive: Boolean = {
+    /** Returns true if all awaited data were received.
+      */
+    def isComplete: Boolean = {
       val needed =
         lvGrids.isDefined && streetGraph.isDefined && assetInformation.isDefined
 
@@ -171,6 +230,15 @@ object Mv {
   }
 
   object AwaitingInputData {
+
+    /** Method for creating an empty [[AwaitingInputData]].
+      * @param cfg
+      *   config for mv generation
+      * @param runGuardian
+      *   superior actor
+      * @return
+      *   an empty [[AwaitingInputData]]
+      */
     def empty(
         cfg: OsmoGridConfig.Generation.Mv,
         runGuardian: ActorRef[MvResponse]
@@ -186,11 +254,14 @@ object Mv {
     *   all finished sub grids
     * @param nodes
     *   that were changed during the mv generation
+    * @param assetInformation
+    *   information for assets
     */
   final case class MvResultData(
       subnets: Set[Int],
       subGridContainer: Seq[SubGridContainer],
-      nodes: Seq[NodeInput]
+      nodes: Seq[NodeInput],
+      assetInformation: AssetInformation
   ) extends MvRequest {
 
     /** Method for updating the [[MvResultData]].
@@ -210,7 +281,8 @@ object Mv {
         MvResultData(
           subnets - subgrid.getSubnet,
           subGridContainer :+ subgrid,
-          nodes ++ nodeChanges
+          nodes ++ nodeChanges,
+          assetInformation
         )
       } else {
         throw IllegalStateException(
@@ -221,8 +293,20 @@ object Mv {
   }
 
   object MvResultData {
-    def empty(subnets: Set[Int]): MvResultData = {
-      MvResultData(subnets, Seq.empty, Seq.empty)
+
+    /** Method for creating an empty [[MvResultData]].
+      * @param subnets
+      *   sequence of sub grid numbers
+      * @param assetInformation
+      *   information for assets
+      * @return
+      *   an empty [[MvResultData]]
+      */
+    def empty(
+        subnets: Set[Int],
+        assetInformation: AssetInformation
+    ): MvResultData = {
+      MvResultData(subnets, Seq.empty, Seq.empty, assetInformation)
     }
   }
 }

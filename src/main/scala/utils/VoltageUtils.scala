@@ -67,6 +67,7 @@ object VoltageUtils {
     * @param default
     *   a default voltage that should be used, if vNom is an empty option
     * @return
+    *   a list of [[VoltageLevel]]s
     */
   def toVoltLvl(
       id: String,
@@ -85,14 +86,20 @@ object VoltageUtils {
     * @param default
     *   a default voltage that should be used, if vNom is an empty option
     * @return
+    *   a list of [[ComparableQuantity]] with the unit [[ElectricPotential]]
     */
   def toQuantities(
       vNom: Option[List[Double]],
       default: Double
   ): List[ComparableQuantity[ElectricPotential]] = {
     vNom match {
-      case Some(voltages) => voltages.map(voltage => toQuantity(voltage))
-      case None           => List(toQuantity(default))
+      case Some(voltages) =>
+        if (voltages.isEmpty) {
+          List(toQuantity(default))
+        } else {
+          voltages.map(voltage => toQuantity(voltage))
+        }
+      case None => List(toQuantity(default))
     }
   }
 

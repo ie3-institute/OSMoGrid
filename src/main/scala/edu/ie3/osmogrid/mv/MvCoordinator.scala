@@ -130,9 +130,6 @@ object MvCoordinator extends ActorStopSupportStateless {
         postStopCleanUp(ctx.log)
       }
 
-  // should handle received data
-  // if all required data is present call processInputData
-
   /** Method for handling the state data update.
     * @param awaitingInputData
     *   object containing the currently received input data
@@ -146,7 +143,7 @@ object MvCoordinator extends ActorStopSupportStateless {
       ctx: ActorContext[MvRequest]
   ): Behavior[MvRequest] = {
     /* Check, if needed data was received */
-    if (awaitingInputData.isComprehensive) {
+    if (awaitingInputData.isComplete) {
       /* Process the data */
       ctx.log.debug("All awaited mv data is present. Start processing.")
 
@@ -202,7 +199,13 @@ object MvCoordinator extends ActorStopSupportStateless {
         val hvToMv = hvGrids match {
           case Some(grids) =>
             GridContainerUtils.filterHv(grids)
-          case None => List(spawnDummyHvNode(mvToLv))
+          case None =>
+            if (cfg.spawnMissingHvNodes) {
+              List(spawnDummyHvNode(mvToLv))
+            } else {
+              // if no hv node is given, the first mv node is used as a slack node
+              List(mvToLv(0).copy().slack(true).build())
+            }
         }
 
         val (polygons, notAssignedNodes) =
@@ -227,15 +230,14 @@ object MvCoordinator extends ActorStopSupportStateless {
               nr,
               polygon,
               streetGraph,
-              assetInformation,
-              cfg
+              assetInformation
             )
 
             nr
         }.toSet
 
         // awaiting the psdm grid data
-        awaitResults(runGuardian, MvResultData.empty(subnets))
+        awaitResults(runGuardian, MvResultData.empty(subnets, assetInformation))
       case (ctx, MvTerminate) =>
         terminate(ctx.log)
       case (ctx, unsupported) =>
@@ -248,8 +250,6 @@ object MvCoordinator extends ActorStopSupportStateless {
       postStopCleanUp(ctx.log)
     }
 
-  // should wait for all mv grids
-  // should send all results to run guardian
   /** State for awaiting the medium voltage grids. This method will send the
     * data to the [[RunGuardian]] after receiving all data.
     * @param runGuardian
@@ -283,7 +283,8 @@ object MvCoordinator extends ActorStopSupportStateless {
 
           runGuardian ! RepMvGrids(
             updated.subGridContainer,
-            updated.nodes
+            updated.nodes,
+            resultData.assetInformation
           )
           Behaviors.stopped
         } else {

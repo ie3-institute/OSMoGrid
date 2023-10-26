@@ -148,14 +148,14 @@ object RunGuardian
     case (
           ctx,
           WrappedMvCoordinatorResponse(
-            RepMvGrids(subGridContainer, nodeChanges)
+            RepMvGrids(subGridContainer, nodeChanges, assetInformation)
           )
         ) =>
       ctx.log.info(s"Received mv grids.")
 
       val updated = finishedGridData.copy(
         mvData = Some(subGridContainer),
-        toBeUpdated = Some(nodeChanges)
+        toBeUpdated = Some((nodeChanges, assetInformation))
       )
 
       // check if all possible data was received

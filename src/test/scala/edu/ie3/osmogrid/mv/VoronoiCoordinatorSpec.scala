@@ -15,7 +15,7 @@ import akka.actor.testkit.typed.scaladsl.{
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.messages.Mv._
-import edu.ie3.test.common.{MvTestData, UnitSpec}
+import edu.ie3.test.common.{GridSupport, MvTestData, UnitSpec}
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.event.Level
 import utils.GridConversion.NodeConversion
@@ -26,6 +26,7 @@ class VoronoiCoordinatorSpec
     extends ScalaTestWithActorTestKit
     with UnitSpec
     with BeforeAndAfterAll
+    with GridSupport
     with MvTestData {
   private val asynchronousTestKit = ActorTestKit()
   private val mvCoordinator =

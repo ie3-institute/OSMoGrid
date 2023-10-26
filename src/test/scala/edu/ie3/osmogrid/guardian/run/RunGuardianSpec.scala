@@ -192,7 +192,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
       "handles an incoming mv result" in new GridSupport {
         runningTestKit.run(
           MessageAdapters.WrappedMvCoordinatorResponse(
-            RepMvGrids(Seq(mockSubGrid(100)), Seq.empty)
+            RepMvGrids(Seq(mockSubGrid(100)), Seq.empty, assetInformation)
           )
         )
 
