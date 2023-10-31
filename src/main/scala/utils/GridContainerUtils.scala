@@ -98,19 +98,26 @@ object GridContainerUtils {
       containerA: JointGridContainer,
       containerB: JointGridContainer
   ): JointGridContainer = {
-    val rawGridElements = containerA.getRawGrid.allEntitiesAsList()
-    val participants = containerA.getSystemParticipants.allEntitiesAsList()
-    val graphicElements = containerA.getGraphics.allEntitiesAsList()
+    // combining raw grid elements
+    val rawGridElements = containerA.getRawGrid
+      .allEntitiesAsList()
+      .asScala :++ containerB.getRawGrid.allEntitiesAsList().asScala
 
-    rawGridElements.addAll(containerB.getRawGrid.allEntitiesAsList())
-    participants.addAll(containerB.getSystemParticipants.allEntitiesAsList())
-    graphicElements.addAll(containerB.getGraphics.allEntitiesAsList())
+    // combining system participants
+    val participants = containerA.getSystemParticipants
+      .allEntitiesAsList()
+      .asScala :++ containerB.getSystemParticipants.allEntitiesAsList().asScala
+
+    // combining graphic elements
+    val graphicElements = containerA.getGraphics
+      .allEntitiesAsList()
+      .asScala :++ containerB.getGraphics.allEntitiesAsList().asScala
 
     new JointGridContainer(
       containerA.getGridName,
-      new RawGridElements(rawGridElements),
-      new SystemParticipants(participants),
-      new GraphicElements(graphicElements)
+      new RawGridElements(rawGridElements.asJava),
+      new SystemParticipants(participants.asJava),
+      new GraphicElements(graphicElements.asJava)
     )
   }
 

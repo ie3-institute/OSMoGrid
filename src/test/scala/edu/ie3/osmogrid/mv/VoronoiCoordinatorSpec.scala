@@ -14,7 +14,6 @@ import akka.actor.testkit.typed.scaladsl.{
 }
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.messages.Mv._
 import edu.ie3.test.common.{GridSupport, MvTestData, UnitSpec}
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.event.Level
@@ -55,7 +54,7 @@ class VoronoiCoordinatorSpec
         VoronoiCoordinator(mvCoordinator.ref)
       )
       idleTestKit.run(
-        StartGraphConversion(
+        StartMvGraphConversion(
           1,
           new OsmGraph(),
           new NodeConversion(Map.empty, Map.empty),
@@ -65,7 +64,7 @@ class VoronoiCoordinatorSpec
 
       idleTestKit.logEntries() should contain only CapturedLogEvent(
         Level.WARN,
-        "Received unsupported message 'StartGraphConversion(1,([], []),NodeConversion(Map(),Map()),AssetInformation(List(LineTypeInput{uuid=6b223bc3-69e2-4eb8-a2c0-76be1cd2c998, id=NA2XS2Y 1x400 RM/25 6/10 kV, b=1.6964599999999997E8 µS/km, g=0.0 µS/km, r=0.078 Ω/km, x=0.0942 Ω/km, iMax=535 A, vRated=10 kV}),List()))' in data awaiting state. Keep on going."
+        "Received unsupported message 'StartMvGraphConversion(1,([], []),NodeConversion(Map(),Map()),AssetInformation(List(LineTypeInput{uuid=6b223bc3-69e2-4eb8-a2c0-76be1cd2c998, id=NA2XS2Y 1x400 RM/25 6/10 kV, b=1.6964599999999997E8 µS/km, g=0.0 µS/km, r=0.078 Ω/km, x=0.0942 Ω/km, iMax=535 A, vRated=10 kV}),List(Transformer2WTypeInput{uuid=0843b836-cee4-4a8c-81a4-098400fe91cf, id=0.4 MVA 20/0.4 kV Dyn5 ASEA, rSc=11.999999999999998 Ω, xSc=58.787753826796276 Ω, sRated=400 kVA, vRatedA=20 kV, vRatedB=0.4 kV, gM=2999.9999999999995 nS, bM=24.495101551166183 nS, dV=2.5 %, dPhi=0.0 °, tapSide=false, tapNeutr=0, tapMin=-2, tapMax=2})))' in data awaiting state. Keep on going."
       )
     }
   }
@@ -79,7 +78,7 @@ class VoronoiCoordinatorSpec
 
     "create a graph correctly" in {
       idleTestKit.run(
-        StartGraphGeneration(1, polygon, streetGraph, assetInformation)
+        StartMvGraphGeneration(1, polygon, streetGraph, assetInformation)
       )
       idleTestKit.isAlive shouldBe true
     }
@@ -94,7 +93,7 @@ class VoronoiCoordinatorSpec
       graph.addEdge(osmNode1, osmNode2)
 
       idleTestKit.run(
-        StartGraphConversion(1, graph, nodeConversion, assetInformation)
+        StartMvGraphConversion(1, graph, nodeConversion, assetInformation)
       )
 
       idleTestKit

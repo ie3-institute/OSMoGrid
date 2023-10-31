@@ -11,7 +11,6 @@ import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.ActorStopSupportStateless
-import edu.ie3.osmogrid.messages.Mv._
 import utils.GridConversion
 import utils.MvUtils.generateMvGraph
 import utils.VoronoiUtils.VoronoiPolygon
@@ -43,7 +42,7 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
       .receive[MvRequest] {
         case (
               ctx,
-              StartGraphGeneration(
+              StartMvGraphGeneration(
                 nr,
                 polygon,
                 streetGraph,
@@ -54,7 +53,7 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
             generateMvGraph(nr, polygon, streetGraph)
 
           // start conversion of nodes and lines
-          ctx.self ! StartGraphConversion(
+          ctx.self ! StartMvGraphConversion(
             nr,
             graph,
             nodeConversion,
@@ -86,7 +85,7 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
     .receive[MvRequest] {
       case (
             ctx,
-            StartGraphConversion(
+            StartMvGraphConversion(
               nr,
               graph,
               nodeConversion,

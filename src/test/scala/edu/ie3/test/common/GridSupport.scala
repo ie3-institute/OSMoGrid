@@ -46,10 +46,19 @@ import edu.ie3.util.quantities.PowerSystemUnits._
 import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
 import org.locationtech.jts.geom.Point
 import org.scalatestplus.mockito.MockitoSugar.mock
+import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units.PERCENT
 
 import java.util.UUID
+import javax.measure.quantity.{
+  Angle,
+  Dimensionless,
+  ElectricConductance,
+  ElectricPotential,
+  ElectricResistance,
+  Power
+}
 import scala.jdk.CollectionConverters._
 
 trait GridSupport {
@@ -64,8 +73,51 @@ trait GridSupport {
     10.0.asKiloVolt
   )
 
+  val trafo_20kV_to_lv = new Transformer2WTypeInput(
+    UUID.fromString("0843b836-cee4-4a8c-81a4-098400fe91cf"),
+    "0.4 MVA 20/0.4 kV Dyn5 ASEA",
+    11.999999999999998.asOhm,
+    58.787753826796276.asOhm,
+    400.asKiloVoltAmpere,
+    20.0.asKiloVolt,
+    0.4.asKiloVolt,
+    2999.9999999999995.asNanoSiemens,
+    24.495101551166183.asNanoSiemens,
+    2.5.asPercent,
+    0.0.asDegreeGeom,
+    false,
+    0,
+    -2,
+    2
+  )
+
+  val dummyTransformer3WType: Transformer3WTypeInput =
+    new Transformer3WTypeInput(
+      UUID.randomUUID(),
+      "dummy transformer3W type",
+      mock[ComparableQuantity[Power]],
+      mock[ComparableQuantity[Power]],
+      mock[ComparableQuantity[Power]],
+      20.asKiloVolt,
+      20.asKiloVolt,
+      0.4.asKiloVolt,
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricConductance]],
+      mock[ComparableQuantity[ElectricConductance]],
+      mock[ComparableQuantity[Dimensionless]],
+      mock[ComparableQuantity[Angle]],
+      0,
+      -2,
+      2
+    )
+
   val assetInformation: AssetInformation =
-    AssetInformation(Seq(defaultLineTypeMv), Seq.empty)
+    AssetInformation(Seq(defaultLineTypeMv), Seq(trafo_20kV_to_lv))
 
   /** Return a mocked test grid with given sub grid number
     * @param subgridNo
@@ -138,7 +190,7 @@ trait GridSupport {
       voltLvlB: CommonVoltageLevel
   ): SubGridContainer = {
     // include at least a single node for voltage level determination
-    val dummyNodeB = new NodeInput(
+    val dummyNodeA = new NodeInput(
       UUID.randomUUID(),
       s"Dummy node in $subgridNo",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
@@ -148,7 +200,7 @@ trait GridSupport {
       subgridNo
     )
 
-    val dummyNodeA = new NodeInput(
+    val dummyNodeB = new NodeInput(
       UUID.randomUUID(),
       s"Dummy node in $subgridNo",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),

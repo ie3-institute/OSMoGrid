@@ -9,12 +9,46 @@ package edu.ie3.osmogrid.utils
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
 import edu.ie3.test.common.{MvTestData, OsmTestData, UnitSpec}
 import edu.ie3.util.geo.GeoUtils.buildCoordinate
-import utils.OsmoGridUtils.{buildStreetGraph, spawnDummyHvNode}
+import edu.ie3.util.quantities.PowerSystemUnits
+import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
+import tech.units.indriya.quantity.Quantities
+import tech.units.indriya.unit.Units
+import utils.OsmoGridUtils.{
+  buildStreetGraph,
+  calcHouseholdPower,
+  spawnDummyHvNode
+}
 
 import scala.jdk.CollectionConverters._
 
 class OsmoGridUtilsSpec extends UnitSpec with MvTestData with OsmTestData {
   "The OsmoGridUtils" should {
+    "calculate the household power correctly" in {
+
+      val cases = Table(
+        ("area", "powerDensity", "expectedPower"),
+        (
+          Quantities.getQuantity(10, Units.SQUARE_METRE),
+          Quantities.getQuantity(5, PowerSystemUnits.WATT_PER_SQUAREMETRE),
+          0.05.asKiloWatt
+        ),
+        (
+          Quantities.getQuantity(10, Units.SQUARE_METRE),
+          Quantities.getQuantity(10, PowerSystemUnits.WATT_PER_SQUAREMETRE),
+          0.1.asKiloWatt
+        ),
+        (
+          Quantities.getQuantity(20, Units.SQUARE_METRE),
+          Quantities.getQuantity(10, PowerSystemUnits.WATT_PER_SQUAREMETRE),
+          0.2.asKiloWatt
+        )
+      )
+
+      forAll(cases) { (area, powerDensity, expectedPower) =>
+        calcHouseholdPower(area, powerDensity) shouldBe expectedPower
+      }
+    }
+
     "build a street graph correctly" in {
       val (ways, nodes) = data
       val streetGraph = buildStreetGraph(ways, nodes)

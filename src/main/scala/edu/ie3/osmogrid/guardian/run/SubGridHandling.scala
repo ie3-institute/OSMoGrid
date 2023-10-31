@@ -39,35 +39,6 @@ import scala.util.{Failure, Success, Try}
 
 trait SubGridHandling {
 
-  /** Handle incoming low voltage grid results
-    *
-    * @param grids
-    *   Received grids
-    * @param cfg
-    *   Grid generation config
-    */
-  @deprecated
-  protected def handleLvResults(
-      grids: Seq[SubGridContainer],
-      cfg: OsmoGridConfig.Generation,
-      resultListener: Seq[ActorRef[ResultListenerProtocol]],
-      msgAdapters: MessageAdapters
-  )(implicit log: Logger): Try[Unit] = {
-    log.info("All lv grids successfully generated.")
-    assignSubnetNumbers(grids).map { updatedSubGrids =>
-      log.debug(
-        "No further generation steps intended. Hand over results to result handler."
-      )
-
-      /* Bundle grid result and inform interested listeners */
-      val jointGrid =
-        ContainerUtils.combineToJointGrid(updatedSubGrids.asJava)
-      resultListener.foreach { listener =>
-        listener ! ResultListenerProtocol.GridResult(jointGrid)
-      }
-    }
-  }
-
   /** Handle incoming grid results.
     * @param lvData
     *   option for low voltage grids
@@ -77,8 +48,6 @@ trait SubGridHandling {
     *   option for high voltage grids
     * @param toBeUpdated
     *   option for [[RawGridElements]] that needs to be removed
-    * @param cfg
-    *   generation config
     * @param resultListener
     *   listeners for the resulting grid
     * @param msgAdapters
@@ -91,7 +60,6 @@ trait SubGridHandling {
       mvData: Option[Seq[SubGridContainer]],
       hvData: Option[Seq[SubGridContainer]],
       toBeUpdated: Option[(Seq[NodeInput], AssetInformation)],
-      cfg: OsmoGridConfig.Generation,
       resultListener: Seq[ActorRef[ResultListenerProtocol]],
       msgAdapters: MessageAdapters
   )(implicit log: Logger): Unit = {
@@ -147,14 +115,30 @@ trait SubGridHandling {
 
 object SubGridHandling {
 
+  /** Method for updating [[JointGridContainer]].
+    * @param jointGridContainer
+    *   to update
+    * @param nodes
+    *   that have changed
+    * @param assetInformation
+    *   information for assets
+    * @return
+    *   an updated [[JointGridContainer]]
+    */
   private def updateContainer(
       jointGridContainer: JointGridContainer,
       nodes: Seq[NodeInput],
       assetInformation: AssetInformation
   ): JointGridContainer = {
-    val nodeMapping: Map[UUID, NodeInput] = nodes.map { n =>
+    val updatedNodes: Map[UUID, NodeInput] = nodes.map { n =>
       n.getUuid -> n
     }.toMap
+
+    val nodeMapping: Map[UUID, NodeInput] =
+      jointGridContainer.getRawGrid.getNodes.asScala.map { n =>
+        val id = n.getUuid
+        id -> updatedNodes.getOrElse(id, n)
+      }.toMap
 
     val rawGridElements = jointGridContainer.getRawGrid
 
@@ -166,7 +150,7 @@ object SubGridHandling {
     ).fold(
       exception =>
         throw GridException(
-          "Unable to update system participants.",
+          "Unable to update transformers.",
           exception
         ),
       identity
@@ -181,14 +165,14 @@ object SubGridHandling {
     ).fold(
       exception =>
         throw GridException(
-          "Unable to update system participants.",
+          "Unable to update transformers.",
           exception
         ),
       identity
     )
 
     val rawGrid: RawGridElements = new RawGridElements(
-      rawGridElements.getNodes,
+      nodeMapping.values.toSet.asJava,
       rawGridElements.getLines,
       t2W.toSet.asJava,
       t3W.toSet.asJava,
