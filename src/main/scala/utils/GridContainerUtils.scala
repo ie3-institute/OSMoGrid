@@ -6,11 +6,8 @@
 
 package utils
 
-import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
-import edu.ie3.datamodel.models.input.connector.TransformerInput
+import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container._
-import edu.ie3.datamodel.models.input.graphics.GraphicInput
-import edu.ie3.datamodel.models.input.system.SystemParticipantInput
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage
 import edu.ie3.osmogrid.guardian.run.RunGuardian
@@ -120,47 +117,6 @@ object GridContainerUtils {
       new RawGridElements(rawGridElements.asJava),
       new SystemParticipants(participants.asJava),
       new GraphicElements(graphicElements.asJava)
-    )
-  }
-
-  // removes nodes and transformers associated with a given uuid
-
-  /** Method for removing some elements from a [[JointGridContainer]].
-    *
-    * @param jointGridContainer
-    *   given container
-    * @param nodes
-    *   to be removed
-    * @param transformers
-    *   to be removed
-    * @return
-    *   a new [[JointGridContainer]]
-    */
-  def removeElements(
-      jointGridContainer: JointGridContainer,
-      nodes: Seq[NodeInput],
-      transformers: Seq[TransformerInput]
-  ): JointGridContainer = {
-    val nodeIds = nodes.map { n => n.getUuid }
-    val transformerIds = transformers.map { t => t.getUuid }
-
-    // removing nodes and transformers
-    val rawGridElements = new RawGridElements(
-      jointGridContainer.getRawGrid
-        .allEntitiesAsList()
-        .asScala
-        .filter { e =>
-          val id = e.getUuid
-          !nodeIds.contains(id) && !transformerIds.contains(id)
-        }
-        .asJava
-    )
-
-    new JointGridContainer(
-      jointGridContainer.getGridName,
-      rawGridElements,
-      jointGridContainer.getSystemParticipants,
-      jointGridContainer.getGraphics
     )
   }
 }

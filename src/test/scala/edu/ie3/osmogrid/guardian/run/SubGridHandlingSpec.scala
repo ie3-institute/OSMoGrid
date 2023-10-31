@@ -7,67 +7,124 @@
 package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import edu.ie3.datamodel.models.{StandardUnits, UniqueEntity}
 import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.datamodel.models.input.connector.`type`.{
-  Transformer2WTypeInput,
-  Transformer3WTypeInput
-}
+import edu.ie3.datamodel.models.input.connector.`type`.Transformer3WTypeInput
 import edu.ie3.datamodel.models.input.connector.{
   Transformer2WInput,
   Transformer3WInput
 }
-import edu.ie3.datamodel.models.input.container.{
-  JointGridContainer,
-  SubGridContainer
-}
+import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils._
+import edu.ie3.datamodel.models.{StandardUnits, UniqueEntity}
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
+import edu.ie3.osmogrid.exception.GridException
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.coordinator
 import edu.ie3.osmogrid.mv.MvResponse
 import edu.ie3.test.common.{GridSupport, UnitSpec}
-import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
 import org.locationtech.jts.geom.Point
 import org.scalatest.BeforeAndAfterAll
 import org.scalatestplus.mockito.MockitoSugar.mock
 import org.slf4j.{Logger, LoggerFactory}
-import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import utils.GridContainerUtils
 
 import java.util.UUID
-import javax.measure.quantity.{
-  Angle,
-  Dimensionless,
-  ElectricConductance,
-  ElectricPotential,
-  ElectricResistance,
-  Power
-}
+import scala.collection.immutable.Seq
 import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 class SubGridHandlingSpec
     extends UnitSpec
     with GridSupport
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with SubGridHandling {
   private val testKit: ActorTestKit = ActorTestKit()
+
+  "The SubGridHandling" should {
+    val resultListener = testKit.createTestProbe[ResultListenerProtocol]()
+    val lvCoordinator = testKit.createTestProbe[coordinator.Response]()
+    val mvCoordinator = testKit.createTestProbe[MvResponse]
+
+    val listener = Seq(resultListener.ref)
+    val msgAdapters: MessageAdapters = MessageAdapters(
+      lvCoordinator.ref,
+      mvCoordinator.ref
+    )
+    val log = testKit.system.log
+
+    "handle empty results correctly" in {
+      val empty = Try {
+        handleResults(
+          None,
+          None,
+          None,
+          None,
+          listener,
+          msgAdapters
+        )(log)
+      }
+
+      empty match {
+        case Failure(exception: GridException) =>
+          exception.msg shouldBe "Error during creating of joint grid container, because no grids were found."
+        case Success(value) =>
+          throw new Error(
+            s"This test should not pass! But received values: $value"
+          )
+      }
+    }
+
+    "process lv results correctly" in {
+      val lv = mockSubGrid(1, MV_10KV, LV)
+
+      val processed = processResults(
+        Some(Seq(lv)),
+        None,
+        None,
+        None
+      )
+
+      processed.size shouldBe 1
+      processed(0) shouldBe lv
+    }
+
+    "process and update lv results correctly" in {
+      val lv = mockSubGrid(1, MV_10KV, LV)
+      val node =
+        GridContainerUtils.filterLv(Seq(lv))(0).copy().subnet(10).build()
+
+      val processed = processResults(
+        Some(Seq(lv)),
+        None,
+        None,
+        Some(Seq(node), assetInformation)
+      )(0)
+
+      processed.getRawGrid.getNodes.size() shouldBe 2
+      processed.getRawGrid.getNodes should contain(node)
+
+      processed.getRawGrid.getTransformer2Ws.size() shouldBe 1
+      processed.getRawGrid.getTransformer2Ws.asScala
+        .toSeq(0)
+        .getType shouldBe trafo_10kV_to_lv
+
+      processed.getRawGrid.getLines shouldBe lv.getRawGrid.getLines
+      processed.getRawGrid.getTransformer3Ws shouldBe lv.getRawGrid.getTransformer3Ws
+      processed.getRawGrid.getSwitches shouldBe lv.getRawGrid.getSwitches
+      processed.getSubnet shouldBe 1
+      processed.getSystemParticipants shouldBe lv.getSystemParticipants
+      processed.getGraphics shouldBe lv.getGraphics
+    }
+  }
 
   "Supporting sub grid handling" when {
     "update container correctly" in {
       val updateContainer =
-        PrivateMethod[JointGridContainer](Symbol("updateContainer"))
+        PrivateMethod[Seq[SubGridContainer]](Symbol("updateContainer"))
 
       val lv1 = mockSubGrid(1, MV_10KV, LV)
-
-      val jointGridContainer = new JointGridContainer(
-        lv1.getGridName,
-        lv1.getRawGrid,
-        lv1.getSystemParticipants,
-        lv1.getGraphics
-      )
 
       // change the voltage level of the first found mv node to 20 kV
       val node = GridContainerUtils
@@ -78,17 +135,20 @@ class SubGridHandlingSpec
         .build()
 
       val updated = SubGridHandling invokePrivate updateContainer(
-        jointGridContainer,
+        Seq(lv1),
         Seq(node),
         assetInformation
       )
 
-      val updatesNodes = updated.getRawGrid.getNodes.asScala.toSeq
+      updated.size shouldBe 1
+
+      val updatesNodes = updated(0).getRawGrid.getNodes.asScala.toSeq
       updatesNodes.size shouldBe 2
       updatesNodes should contain(node)
 
       val updatedTransformer =
-        updated.getRawGrid.getTransformer2Ws.asScala.toSeq
+        updated(0).getRawGrid.getTransformer2Ws.asScala.toSeq
+
       updatedTransformer.size shouldBe 1
 
       updatedTransformer(0).getType shouldBe trafo_20kV_to_lv
@@ -100,7 +160,7 @@ class SubGridHandlingSpec
       )
 
       val lv1 = mockSubGrid(1, MV_10KV, LV)
-      val transformerType = assetInformation.transformerTypes.toSeq(0)
+      val transformerType = assetInformation.transformerTypes.toSeq(1)
 
       // change the voltage level of the first found mv node to 20 kV
       val node = GridContainerUtils
@@ -125,7 +185,7 @@ class SubGridHandlingSpec
         SubGridHandling invokePrivate updateTransformer2Ws(
           lv1.getRawGrid.getTransformer2Ws.asScala.toSeq,
           nodeMapping,
-          Seq(transformerType)
+          assetInformation.transformerTypes
         )
 
       updated.fold(

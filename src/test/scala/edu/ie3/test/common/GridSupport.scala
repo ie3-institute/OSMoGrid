@@ -41,7 +41,7 @@ import edu.ie3.datamodel.models.voltagelevels.{
 }
 import edu.ie3.datamodel.utils.GridAndGeoUtils
 import edu.ie3.osmogrid.io.input.AssetInformation
-import edu.ie3.util.geo.GeoUtils
+import edu.ie3.util.geo.GeoUtils._
 import edu.ie3.util.quantities.PowerSystemUnits._
 import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
 import org.locationtech.jts.geom.Point
@@ -51,14 +51,7 @@ import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units.PERCENT
 
 import java.util.UUID
-import javax.measure.quantity.{
-  Angle,
-  Dimensionless,
-  ElectricConductance,
-  ElectricPotential,
-  ElectricResistance,
-  Power
-}
+import javax.measure.quantity._
 import scala.jdk.CollectionConverters._
 
 trait GridSupport {
@@ -71,6 +64,24 @@ trait GridSupport {
     0.0942.asOhmPerKilometre,
     535.0.asAmpere,
     10.0.asKiloVolt
+  )
+
+  val trafo_10kV_to_lv = new Transformer2WTypeInput(
+    UUID.fromString("a0cbd90a-4e9f-47db-8dca-041d3a288f77"),
+    "0.63 MVA 10/0.4 kV Dyn5 ASEA",
+    1.7384731670445954.asOhm,
+    9.36379511166658.asOhm,
+    630.asKiloVoltAmpere,
+    10.0.asKiloVolt,
+    0.4.asKiloVolt,
+    16500.0.asNanoSiemens,
+    145.8952227629774.asNanoSiemens,
+    2.5.asPercent,
+    0.0.asDegreeGeom,
+    false,
+    0,
+    -2,
+    2
   )
 
   val trafo_20kV_to_lv = new Transformer2WTypeInput(
@@ -117,7 +128,10 @@ trait GridSupport {
     )
 
   val assetInformation: AssetInformation =
-    AssetInformation(Seq(defaultLineTypeMv), Seq(trafo_20kV_to_lv))
+    AssetInformation(
+      Seq(defaultLineTypeMv),
+      Seq(trafo_10kV_to_lv, trafo_20kV_to_lv)
+    )
 
   /** Return a mocked test grid with given sub grid number
     * @param subgridNo
@@ -207,7 +221,7 @@ trait GridSupport {
       false,
       mock[Point],
       voltLvlB,
-      subgridNo + 10
+      subgridNo
     )
 
     val dummyTrafo = new Transformer2WInput(
@@ -273,7 +287,7 @@ trait GridSupport {
       s"Node A in $subgridNo",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       false,
-      GeoUtils.buildPoint(51.49249, 7.41105),
+      buildPoint(51.49249, 7.41105),
       GermanVoltageLevelUtils.LV,
       subgridNo
     )
@@ -282,7 +296,7 @@ trait GridSupport {
       s"Node B in $subgridNo",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       false,
-      GeoUtils.buildPoint(51.49276, 7.41657),
+      buildPoint(51.49276, 7.41657),
       GermanVoltageLevelUtils.LV,
       subgridNo
     )
@@ -291,7 +305,7 @@ trait GridSupport {
       s"Node C in $subgridNo",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       false,
-      GeoUtils.buildPoint(51.49350, 7.41605),
+      buildPoint(51.49350, 7.41605),
       GermanVoltageLevelUtils.LV,
       subgridNo
     )
