@@ -9,7 +9,7 @@ package edu.ie3.osmogrid.guardian.run
 import akka.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.lv.coordinator
-import edu.ie3.osmogrid.messages.Mv.MvTerminate
+import edu.ie3.osmogrid.mv.MvTerminate
 
 import java.util.UUID
 

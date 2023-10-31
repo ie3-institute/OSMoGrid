@@ -12,8 +12,7 @@ import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.{InputDataEvent, ReqAssetTypes}
-import edu.ie3.osmogrid.messages.Mv.MvMessageAdapters.WrappedInputResponse
-import edu.ie3.osmogrid.messages.Mv._
+import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
 import utils.OsmoGridUtils.spawnDummyHvNode
 import utils.{GridContainerUtils, VoronoiUtils}
 
@@ -160,7 +159,7 @@ object MvCoordinator extends ActorStopSupportStateless {
             (lvGrids, hvGrids, streetGraph, assetInformation)
         }
 
-      ctx.self ! StartGeneration(
+      ctx.self ! StartMvGeneration(
         lvGrids,
         hvGrids,
         streetGraph,
@@ -188,7 +187,7 @@ object MvCoordinator extends ActorStopSupportStateless {
     .receive[MvRequest] {
       case (
             ctx,
-            StartGeneration(lvGrids, hvGrids, streetGraph, assetInformation)
+            StartMvGeneration(lvGrids, hvGrids, streetGraph, assetInformation)
           ) =>
         ctx.log.debug(s"Starting medium voltage graph generation.")
 
@@ -226,7 +225,7 @@ object MvCoordinator extends ActorStopSupportStateless {
 
             val voronoiCoordinator: ActorRef[MvRequest] =
               ctx.spawnAnonymous(VoronoiCoordinator(ctx.self))
-            voronoiCoordinator ! StartGraphGeneration(
+            voronoiCoordinator ! StartMvGraphGeneration(
               nr,
               polygon,
               streetGraph,

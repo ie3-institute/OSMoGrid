@@ -51,7 +51,14 @@ import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units.PERCENT
 
 import java.util.UUID
-import javax.measure.quantity.{ElectricPotential, ElectricResistance, Power}
+import javax.measure.quantity.{
+  Angle,
+  Dimensionless,
+  ElectricConductance,
+  ElectricPotential,
+  ElectricResistance,
+  Power
+}
 import scala.jdk.CollectionConverters._
 
 trait GridSupport {
@@ -83,6 +90,31 @@ trait GridSupport {
     -2,
     2
   )
+
+  val dummyTransformer3WType: Transformer3WTypeInput =
+    new Transformer3WTypeInput(
+      UUID.randomUUID(),
+      "dummy transformer3W type",
+      mock[ComparableQuantity[Power]],
+      mock[ComparableQuantity[Power]],
+      mock[ComparableQuantity[Power]],
+      20.asKiloVolt,
+      20.asKiloVolt,
+      0.4.asKiloVolt,
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricConductance]],
+      mock[ComparableQuantity[ElectricConductance]],
+      mock[ComparableQuantity[Dimensionless]],
+      mock[ComparableQuantity[Angle]],
+      0,
+      -2,
+      2
+    )
 
   val assetInformation: AssetInformation =
     AssetInformation(Seq(defaultLineTypeMv), Seq(trafo_20kV_to_lv))

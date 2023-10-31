@@ -17,8 +17,7 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.input.RepAssetTypes
-import edu.ie3.osmogrid.messages.Mv.MvMessageAdapters.WrappedInputResponse
-import edu.ie3.osmogrid.messages.Mv._
+import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
 import edu.ie3.test.common.{GridSupport, MvTestData, UnitSpec}
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.event.Level
@@ -115,7 +114,7 @@ class MvCoordinatorSpec
 
     "start graph generation" in {
       idleTestKit.run(
-        StartGeneration(lvGrids, None, streetGraph, assetInformation)
+        StartMvGeneration(lvGrids, None, streetGraph, assetInformation)
       )
 
       idleTestKit.logEntries() should contain allOf (

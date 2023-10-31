@@ -39,35 +39,6 @@ import scala.util.{Failure, Success, Try}
 
 trait SubGridHandling {
 
-  /** Handle incoming low voltage grid results
-    *
-    * @param grids
-    *   Received grids
-    * @param cfg
-    *   Grid generation config
-    */
-  @deprecated
-  protected def handleLvResults(
-      grids: Seq[SubGridContainer],
-      cfg: OsmoGridConfig.Generation,
-      resultListener: Seq[ActorRef[ResultListenerProtocol]],
-      msgAdapters: MessageAdapters
-  )(implicit log: Logger): Try[Unit] = {
-    log.info("All lv grids successfully generated.")
-    assignSubnetNumbers(grids).map { updatedSubGrids =>
-      log.debug(
-        "No further generation steps intended. Hand over results to result handler."
-      )
-
-      /* Bundle grid result and inform interested listeners */
-      val jointGrid =
-        ContainerUtils.combineToJointGrid(updatedSubGrids.asJava)
-      resultListener.foreach { listener =>
-        listener ! ResultListenerProtocol.GridResult(jointGrid)
-      }
-    }
-  }
-
   /** Handle incoming grid results.
     * @param lvData
     *   option for low voltage grids

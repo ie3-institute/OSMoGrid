@@ -18,8 +18,7 @@ import edu.ie3.osmogrid.lv.coordinator.{
   LvCoordinator,
   Request => LvCoordinatorRequest
 }
-import edu.ie3.osmogrid.messages.Mv.{MvRequest, MvResponse, ReqMvGrids}
-import edu.ie3.osmogrid.mv.MvCoordinator
+import edu.ie3.osmogrid.mv.{MvCoordinator, MvRequest, MvResponse, ReqMvGrids}
 
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
