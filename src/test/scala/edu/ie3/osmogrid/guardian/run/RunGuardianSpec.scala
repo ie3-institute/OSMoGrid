@@ -17,8 +17,9 @@ import edu.ie3.osmogrid.cfg.ConfigFailFastSpec.viableConfigurationString
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input
-import edu.ie3.osmogrid.io.output.ResultListenerProtocol
-import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.io.input.{InputRequest, InputTerminate}
+import edu.ie3.osmogrid.io.output.{GridResult, ResultListenerProtocol}
+import edu.ie3.osmogrid.lv._
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.slf4j.event.Level
 
@@ -79,7 +80,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
 
         /* One message adapter is registered */
         idleTestKit
-          .expectEffectType[MessageAdapter[coordinator.Response, Request]]
+          .expectEffectType[MessageAdapter[LvResponse, LvRequest]]
 
         /* Check if I/O actors and LvCoordinator are spawned and watched correctly */
         idleTestKit.expectEffectPF {
@@ -91,7 +92,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
             name shouldBe s"InputDataProvider_$runId"
         }
         idleTestKit
-          .expectEffectType[WatchedWith[input.Request, Watch]]
+          .expectEffectType[WatchedWith[InputRequest, RunWatch]]
         idleTestKit.expectEffectPF {
           case Spawned(
                 _: Behavior[_],
@@ -101,30 +102,30 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
             name shouldBe s"PersistenceResultListener_$runId"
         }
         idleTestKit
-          .expectEffectType[WatchedWith[ResultListenerProtocol, Watch]]
+          .expectEffectType[WatchedWith[ResultListenerProtocol, RunWatch]]
         idleTestKit.expectEffectPF { case Spawned(_: Behavior[_], name, _) =>
           name shouldBe s"LvCoordinator_$runId"
         }
-        idleTestKit.expectEffectType[WatchedWith[coordinator.Request, Watch]]
+        idleTestKit.expectEffectType[WatchedWith[LvRequest, RunWatch]]
 
         /* Check for child messages */
         idleTestKit
-          .childInbox[coordinator.Request](s"LvCoordinator_$runId")
+          .childInbox[LvRequest](s"LvCoordinator_$runId")
           .receiveAll()
-          .contains(coordinator.ReqLvGrids) shouldBe true
+          .contains(ReqLvGrids) shouldBe true
       }
     }
 
     "being in running state" should {
-      val running = PrivateMethod[Behavior[Request]](Symbol("running"))
+      val running = PrivateMethod[Behavior[RunRequest]](Symbol("running"))
 
       /* Test probes */
       val lvCoordinatorAdapter =
-        testKit.createTestProbe[coordinator.Response]()
+        testKit.createTestProbe[LvResponse]()
       val inputDataProvider =
         testKit.createTestProbe[input.InputDataEvent]()
       val resultListener = testKit.createTestProbe[ResultListenerProtocol]()
-      val lvCoordinator = testKit.createTestProbe[coordinator.Request]()
+      val lvCoordinator = testKit.createTestProbe[LvRequest]()
 
       /* State data */
       val runGuardianData = RunGuardianData(
@@ -156,7 +157,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
       "handles an incoming result" in new GridSupport {
         runningTestKit.run(
           MessageAdapters.WrappedLvCoordinatorResponse(
-            coordinator.RepLvGrids(Seq(mockSubGrid(1)))
+            RepLvGrids(Seq(mockSubGrid(1)))
           )
         )
 
@@ -170,7 +171,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         ))
 
         /* Result is forwarded to listener */
-        resultListener.expectMessageType[ResultListenerProtocol.GridResult]
+        resultListener.expectMessageType[GridResult]
       }
 
       "initiate coordinated shutdown, if somebody unexpectedly dies" in {
@@ -184,13 +185,13 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           )
         )
         /* All children are sent a termination request */
-        lvCoordinator.expectMessage(coordinator.Terminate)
-        inputDataProvider.expectMessage(input.Terminate)
+        lvCoordinator.expectMessage(LvTerminate)
+        inputDataProvider.expectMessage(InputTerminate)
       }
     }
 
     "being in stopping state without a LvCoordinator" should {
-      val stopping = PrivateMethod[Behavior[Request]](Symbol("stopping"))
+      val stopping = PrivateMethod[Behavior[RunRequest]](Symbol("stopping"))
 
       val stoppingData = StoppingData(
         runId,
@@ -224,7 +225,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
     }
 
     "being in stopping state with a LvCoordinator" should {
-      val stopping = PrivateMethod[Behavior[Request]](Symbol("stopping"))
+      val stopping = PrivateMethod[Behavior[RunRequest]](Symbol("stopping"))
 
       val stoppingData = StoppingData(
         runId,

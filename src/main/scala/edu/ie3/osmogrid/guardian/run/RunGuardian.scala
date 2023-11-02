@@ -11,7 +11,7 @@ import akka.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.MessageAdapters.WrappedLvCoordinatorResponse
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
-import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.lv.RepLvGrids
 
 import java.util.UUID
 import scala.util.{Failure, Success}
@@ -33,7 +33,7 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
       cfg: OsmoGridConfig,
       additionalListener: Seq[ActorRef[ResultListenerProtocol]] = Seq.empty,
       runId: UUID
-  ): Behavior[Request] = Behaviors.setup { ctx =>
+  ): Behavior[RunRequest] = Behaviors.setup { ctx =>
     idle(
       RunGuardianData(
         runId,
@@ -53,7 +53,7 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
     * @return
     *   the next state
     */
-  private def idle(runGuardianData: RunGuardianData): Behavior[Request] =
+  private def idle(runGuardianData: RunGuardianData): Behavior[RunRequest] =
     Behaviors.receive {
       case (ctx, Run) =>
         /* Start a run */
@@ -92,11 +92,11 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
   private def running(
       runGuardianData: RunGuardianData,
       childReferences: ChildReferences
-  ): Behavior[Request] = Behaviors.receive {
+  ): Behavior[RunRequest] = Behaviors.receive {
     case (
           ctx,
           WrappedLvCoordinatorResponse(
-            coordinator.RepLvGrids(subGridContainers)
+            RepLvGrids(subGridContainers)
           )
         ) =>
       /* Handle the grid results and wait for the listener to report back */
@@ -116,7 +116,7 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
         s"Run ${runGuardianData.runId} finished. Stop all run-related processes."
       )
       stopping(stopChildren(runGuardianData.runId, childReferences, ctx))
-    case (ctx, watch: Watch) =>
+    case (ctx, watch: RunWatch) =>
       /* Somebody died unexpectedly. Start coordinated shutdown */
       stopping(
         handleUnexpectedShutDown(
@@ -143,8 +143,8 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
     */
   private def stopping(
       stoppingData: StoppingData
-  ): Behavior[Request] = Behaviors.receive {
-    case (ctx, watch: Watch) =>
+  ): Behavior[RunRequest] = Behaviors.receive {
+    case (ctx, watch: RunWatch) =>
       val updatedStoppingData = registerCoordinatedShutDown(watch, stoppingData)
       if (updatedStoppingData.allChildrenTerminated) {
         ctx.log.info(

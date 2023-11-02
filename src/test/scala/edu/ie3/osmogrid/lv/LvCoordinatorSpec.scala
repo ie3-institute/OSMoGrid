@@ -4,7 +4,7 @@
  * Research group Distribution grid planning and operation
  */
 
-package edu.ie3.osmogrid.lv.coordinator
+package edu.ie3.osmogrid.lv
 
 import akka.actor.testkit.typed.CapturedLogEvent
 import akka.actor.testkit.typed.Effect.{MessageAdapter, SpawnedAnonymous}
@@ -13,8 +13,8 @@ import akka.actor.testkit.typed.scaladsl.{
   BehaviorTestKit,
   ScalaTestWithActorTestKit
 }
-import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.Behaviors
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
   Transformer2WTypeInput
@@ -23,21 +23,24 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.RequestFailedException
 import edu.ie3.osmogrid.io.input
-import edu.ie3.osmogrid.io.input.{BoundaryAdminLevel, AssetInformation}
-import edu.ie3.osmogrid.lv.LvGridGenerator.{GenerateGrid, RepLvGrid}
-import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator.{
-  GridToExpect,
-  Partition
+import edu.ie3.osmogrid.io.input.{
+  AssetInformation,
+  BoundaryAdminLevel,
+  InputResponse
 }
-import edu.ie3.osmogrid.lv.coordinator.MessageAdapters.{
+import edu.ie3.osmogrid.lv
+import edu.ie3.osmogrid.lv.LvMessageAdapters.{
   WrappedGridGeneratorResponse,
   WrappedInputDataResponse,
   WrappedRegionResponse
 }
-import edu.ie3.osmogrid.lv.{LvGridGenerator, coordinator}
-import edu.ie3.osmogrid.lv.coordinator.LvCoordinator.ResultData
-import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
 import edu.ie3.osmogrid.lv.region_coordinator.LvTestModel.assetInformation
+import edu.ie3.osmogrid.lv.region_coordinator.{
+  GridToExpect,
+  LvRegionRequest,
+  LvRegionResponse,
+  Partition
+}
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.UnitSpec
@@ -63,22 +66,22 @@ class LvCoordinatorSpec
         "InputDataProvider"
       )
     val lvCoordinatorAdapter =
-      asynchronousTestKit.createTestProbe[coordinator.Response](
+      asynchronousTestKit.createTestProbe[LvResponse](
         "RunGuardian"
       )
     val inputDataProviderAdapter =
-      asynchronousTestKit.createTestProbe[input.Response](
+      asynchronousTestKit.createTestProbe[InputResponse](
         "InputDataProviderAdapter"
       )
     val regionCoordinatorAdapter =
-      asynchronousTestKit.createTestProbe[LvRegionCoordinator.Response](
+      asynchronousTestKit.createTestProbe[LvRegionResponse](
         "InputDataProviderAdapter"
       )
     val gridGeneratorAdapter =
-      asynchronousTestKit.createTestProbe[LvGridGenerator.Response](
+      asynchronousTestKit.createTestProbe[LvGridResponse](
         "GridGeneratorAdapter"
       )
-    val msgAdapters = MessageAdapters(
+    val msgAdapters = LvMessageAdapters(
       inputDataProviderAdapter.ref,
       regionCoordinatorAdapter.ref,
       gridGeneratorAdapter.ref
@@ -88,7 +91,7 @@ class LvCoordinatorSpec
 
       "register the correct amount of message adapters" in {
         val idleTestKit = BehaviorTestKit(
-          coordinator.LvCoordinator(
+          LvCoordinator(
             cfg,
             inputDataProvider.ref,
             lvCoordinatorAdapter.ref
@@ -96,10 +99,10 @@ class LvCoordinatorSpec
         )
 
         idleTestKit.expectEffectType[
-          MessageAdapter[input.Response, coordinator.Request]
+          MessageAdapter[InputResponse, LvRequest]
         ]
         idleTestKit.expectEffectType[
-          MessageAdapter[LvRegionCoordinator.Response, coordinator.Request]
+          MessageAdapter[LvRegionResponse, LvRequest]
         ]
       }
     }
@@ -107,13 +110,13 @@ class LvCoordinatorSpec
     "being idle" should {
       "terminate if asked to do so" in {
         val idleTestKit = BehaviorTestKit(
-          coordinator.LvCoordinator(
+          lv.LvCoordinator(
             cfg,
             inputDataProvider.ref,
             lvCoordinatorAdapter.ref
           )
         )
-        idleTestKit.run(coordinator.Terminate)
+        idleTestKit.run(LvTerminate)
 
         idleTestKit.logEntries() should contain only CapturedLogEvent(
           Level.INFO,
@@ -124,13 +127,13 @@ class LvCoordinatorSpec
 
       "ask for osm and asset information upon request" in {
         val idleTestKit = BehaviorTestKit(
-          coordinator.LvCoordinator(
+          lv.LvCoordinator(
             cfg,
             inputDataProvider.ref,
             lvCoordinatorAdapter.ref
           )
         )
-        idleTestKit.run(coordinator.ReqLvGrids)
+        idleTestKit.run(ReqLvGrids)
 
         /* Receive exactly two messages, that are requests for OSM and asset data */
         inputDataProvider.receiveMessages(2).forall {
@@ -146,9 +149,7 @@ class LvCoordinatorSpec
     "awaiting input data" should {
       "terminate if asked to do so" in {
         val awaitingTestKit = BehaviorTestKit(
-          LvCoordinator invokePrivate PrivateMethod[Behavior[
-            coordinator.Request
-          ]](
+          LvCoordinator invokePrivate PrivateMethod[Behavior[LvRequest]](
             Symbol(
               "awaitInputData"
             )
@@ -164,7 +165,7 @@ class LvCoordinatorSpec
           )
         )
 
-        awaitingTestKit.run(coordinator.Terminate)
+        awaitingTestKit.run(LvTerminate)
 
         awaitingTestKit.logEntries() should contain only CapturedLogEvent(
           Level.INFO,
@@ -175,9 +176,7 @@ class LvCoordinatorSpec
 
       "terminate, if a request has been answered with a failure" in {
         val awaitingTestKit = BehaviorTestKit(
-          LvCoordinator invokePrivate PrivateMethod[Behavior[
-            coordinator.Request
-          ]](
+          LvCoordinator invokePrivate PrivateMethod[Behavior[LvRequest]](
             Symbol(
               "awaitInputData"
             )
@@ -219,9 +218,7 @@ class LvCoordinatorSpec
 
       "terminate, if an asset request has been answered with a failure" in {
         val awaitingTestKit = BehaviorTestKit(
-          LvCoordinator invokePrivate PrivateMethod[Behavior[
-            coordinator.Request
-          ]](
+          LvCoordinator invokePrivate PrivateMethod[Behavior[LvRequest]](
             Symbol(
               "awaitInputData"
             )
@@ -273,10 +270,8 @@ class LvCoordinatorSpec
         )
 
         val runId = UUID.randomUUID()
-        val awaitingTestKit = BehaviorTestKit[Request](
-          LvCoordinator invokePrivate PrivateMethod[Behavior[
-            coordinator.Request
-          ]](
+        val awaitingTestKit = BehaviorTestKit[LvRequest](
+          LvCoordinator invokePrivate PrivateMethod[Behavior[LvRequest]](
             Symbol(
               "awaitInputData"
             )
@@ -314,7 +309,7 @@ class LvCoordinatorSpec
         }
 
         awaitingTestKit.selfInbox().receiveMessage() match {
-          case StartGeneration(lvConfig, _, _, _) => lvConfig shouldBe cfg
+          case StartLvGeneration(lvConfig, _, _, _) => lvConfig shouldBe cfg
           case unexpected => fail(s"Received unexpected message '$unexpected'.")
         }
       }
@@ -323,16 +318,16 @@ class LvCoordinatorSpec
     "awaiting results" should {
       "terminate if asked to do so" in {
         val awaitingTestKit = BehaviorTestKit(
-          LvCoordinator invokePrivate PrivateMethod[Behavior[
-            coordinator.Request
-          ]](Symbol("awaitResults"))(
+          LvCoordinator invokePrivate PrivateMethod[Behavior[LvRequest]](
+            Symbol("awaitResults")
+          )(
             lvCoordinatorAdapter.ref,
             msgAdapters,
             ResultData.empty
           )
         )
 
-        awaitingTestKit.run(coordinator.Terminate)
+        awaitingTestKit.run(LvTerminate)
 
         awaitingTestKit.logEntries() should contain only CapturedLogEvent(
           Level.INFO,
@@ -342,10 +337,10 @@ class LvCoordinatorSpec
       }
 
       "properly perform generation" in {
-        val awaitingTestKit = BehaviorTestKit[Request](
-          LvCoordinator invokePrivate PrivateMethod[Behavior[
-            coordinator.Request
-          ]](Symbol("awaitResults"))(
+        val awaitingTestKit = BehaviorTestKit[LvRequest](
+          LvCoordinator invokePrivate PrivateMethod[Behavior[LvRequest]](
+            Symbol("awaitResults")
+          )(
             lvCoordinatorAdapter.ref,
             msgAdapters,
             ResultData.empty
@@ -355,9 +350,9 @@ class LvCoordinatorSpec
         val gridUuid = UUID.randomUUID()
         val mockedSubgrid = mock[SubGridContainer]
         val gridToExpect =
-          LvRegionCoordinator.GridToExpect(gridUuid)
-        val mockedBehavior: Behavior[LvRegionCoordinator.Request] =
-          Behaviors.receive[LvRegionCoordinator.Request] { case (ctx, msg) =>
+          GridToExpect(gridUuid)
+        val mockedBehavior: Behavior[LvRegionRequest] =
+          Behaviors.receive[LvRegionRequest] { case (ctx, msg) =>
             msg match {
               case Partition(_, _, _, _, replyTo, _) =>
                 ctx.log.info(
@@ -369,7 +364,7 @@ class LvCoordinatorSpec
           }
 
         val regionCoordinatorProbe =
-          asynchronousTestKit.createTestProbe[LvRegionCoordinator.Request]()
+          asynchronousTestKit.createTestProbe[LvRegionRequest]()
         val mockedLvRegionCoordinator = asynchronousTestKit.spawn(
           Behaviors.monitor(regionCoordinatorProbe.ref, mockedBehavior)
         )
@@ -385,7 +380,7 @@ class LvCoordinatorSpec
 
         /* Ask the coordinator to start the process */
         awaitingTestKit.run(
-          StartGeneration(
+          StartLvGeneration(
             cfg,
             mockedLvRegionCoordinator,
             lvOsmoGridModel,
@@ -393,7 +388,7 @@ class LvCoordinatorSpec
           )
         )
         regionCoordinatorProbe
-          .expectMessageType[LvRegionCoordinator.Partition] match {
+          .expectMessageType[Partition] match {
           case Partition(
                 osmoGridModel,
                 _,
@@ -409,7 +404,7 @@ class LvCoordinatorSpec
 
         /* The mocked behavior directly sends a reply -> Check that out */
         val regionResponse = regionCoordinatorAdapter
-          .expectMessageType[LvRegionCoordinator.GridToExpect]
+          .expectMessageType[GridToExpect]
         regionResponse shouldBe gridToExpect
         awaitingTestKit.run(
           WrappedRegionResponse(regionResponse)

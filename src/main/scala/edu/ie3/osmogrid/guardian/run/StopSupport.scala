@@ -7,8 +7,8 @@
 package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.scaladsl.ActorContext
-import edu.ie3.osmogrid.io.input
-import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.io.input.InputTerminate
+import edu.ie3.osmogrid.lv.LvTerminate
 
 import java.util.UUID
 
@@ -27,10 +27,10 @@ trait StopSupport {
   protected def stopChildren(
       runId: UUID,
       childReferences: ChildReferences,
-      ctx: ActorContext[Request]
+      ctx: ActorContext[RunRequest]
   ): StoppingData = {
-    childReferences.lvCoordinator.foreach(_ ! coordinator.Terminate)
-    childReferences.inputDataProvider ! input.Terminate
+    childReferences.lvCoordinator.foreach(_ ! LvTerminate)
+    childReferences.inputDataProvider ! InputTerminate
 
     StoppingData(
       runId,
@@ -40,17 +40,18 @@ trait StopSupport {
     )
   }
 
-  /** Register [[Watch]] messages within the coordinated shutdown phase of a run
+  /** Register [[RunWatch]] messages within the coordinated shutdown phase of a
+    * run
     *
     * @param watchMsg
-    *   Received [[Watch]] message
+    *   Received [[RunWatch]] message
     * @param stoppingData
     *   State data for the stopping run
     * @return
     *   Next state with updated [[StoppingData]]
     */
   protected def registerCoordinatedShutDown(
-      watchMsg: Watch,
+      watchMsg: RunWatch,
       stoppingData: StoppingData
   ): StoppingData = watchMsg match {
     case InputDataProviderDied =>
@@ -71,7 +72,7 @@ trait StopSupport {
     * @param childReferences
     *   References to child actors
     * @param watchMsg
-    *   Received [[Watch]] message
+    *   Received [[RunWatch]] message
     * @param ctx
     *   Current Actor context
     * @return
@@ -80,8 +81,8 @@ trait StopSupport {
   protected def handleUnexpectedShutDown(
       runId: UUID,
       childReferences: ChildReferences,
-      watchMsg: Watch,
-      ctx: ActorContext[Request]
+      watchMsg: RunWatch,
+      ctx: ActorContext[RunRequest]
   ): StoppingData = {
     (stopChildren(runId, childReferences, ctx), watchMsg) match {
       case (stoppingData, InputDataProviderDied) =>
