@@ -8,7 +8,7 @@ package edu.ie3.osmogrid.cfg
 
 import akka.actor.typed.ActorRef
 import com.typesafe.scalalogging.LazyLogging
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.{Lv, Mv}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Input, Output}
 import edu.ie3.osmogrid.exception.IllegalConfigException
@@ -34,15 +34,20 @@ object ConfigFailFast extends LazyLogging {
 
   private def checkGenerationConfig(generation: Generation): Unit =
     generation match {
-      case Generation(lv) =>
+      case Generation(lv, mv) =>
         /* Check, that at least one config is set */
         if (Vector(lv).count(_.isDefined) < 1)
           throw IllegalConfigException(
-            "At least one voltage level generation config has to be defined."
+            "At least one lv voltage level generation config has to be defined."
+          )
+        if (Vector(mv).count(_.isDefined) < 1)
+          throw IllegalConfigException(
+            "At least one mv voltage level generation config has to be defined."
           )
 
         /* Check single configs */
         lv.foreach(checkLvConfig)
+        mv.foreach(checkMvConfig)
     }
 
   // TODO Check Filter for osm
@@ -75,6 +80,11 @@ object ConfigFailFast extends LazyLogging {
         case _ =>
         // all good, do nothing
       }
+  }
+
+  // TODO: Add some checks if necessary in the future
+  private def checkMvConfig(mv: OsmoGridConfig.Generation.Mv): Unit = mv match {
+    case Mv(_, _) =>
   }
 
   private def checkInputConfig(input: OsmoGridConfig.Input): Unit =
