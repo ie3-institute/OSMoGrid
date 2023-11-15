@@ -6,7 +6,11 @@
 
 package edu.ie3.osmogrid.io.input
 
-import edu.ie3.datamodel.io.naming.{DefaultDirectoryHierarchy, EntityPersistenceNamingStrategy, FileNamingStrategy}
+import edu.ie3.datamodel.io.naming.{
+  DefaultDirectoryHierarchy,
+  EntityPersistenceNamingStrategy,
+  FileNamingStrategy
+}
 import edu.ie3.datamodel.io.source.TypeSource
 import edu.ie3.datamodel.io.source.csv.CsvDataSource
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset
@@ -57,7 +61,7 @@ object AssetSource {
           new CsvDataSource(csvSep, Paths.get(directoryPath), namingStrategy)
         val typeSource: TypeSource =
           new TypeSource(dataSource)
-        //val typeSource: CsvTypeSource =
+        // val typeSource: CsvTypeSource =
         //  new CsvTypeSource(csvSep, directoryPath, namingStrategy)
         val transformerTypes = typeSource.getTransformer2WTypes.asScala.toSeq
         val lineTypes = typeSource.getLineTypes.asScala.toSeq
