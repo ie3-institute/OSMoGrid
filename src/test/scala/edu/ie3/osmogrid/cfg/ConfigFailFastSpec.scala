@@ -149,7 +149,7 @@ class ConfigFailFastSpec extends UnitSpec {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
               case Failure(exception) =>
-                exception.getMessage shouldBe "At least one voltage level generation config has to be defined."
+                exception.getMessage shouldBe "At least one lv voltage level generation config has to be defined."
               case Success(_) =>
                 fail("Config check succeeded, but was meant to fail.")
             }
@@ -188,5 +188,8 @@ object ConfigFailFastSpec {
       |generation.lv.boundaryAdminLevel.starting = 4
       |generation.lv.boundaryAdminLevel.lowest = 8
       |generation.lv.minDistance = 10
+      |generation.mv.spawnMissingHvNodes = false
+      |generation.mv.voltageLevel.id = mv
+      |generation.mv.voltageLevel.default = 10.0
       |""".stripMargin
 }

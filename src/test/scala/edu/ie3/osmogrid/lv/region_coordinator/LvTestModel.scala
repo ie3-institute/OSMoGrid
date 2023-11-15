@@ -59,7 +59,8 @@ object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
     val cfg = OsmoGridConfigFactory
       .parseWithoutFallback(
         s"""input.osm.pbf.file = "${resourcePath.replace("\\", "\\\\")}"
-           |input.asset.file.directory = ${getResourcePath("/lv_assets")}
+           |input.asset.file.directory = "${getResourcePath("/lv_assets")
+            .replace("\\", "\\\\")}"
            |input.asset.file.separator = ","
            |input.asset.file.hierarchic = false
            |output.gridName = "test_grid"
@@ -71,6 +72,9 @@ object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
            |generation.lv.boundaryAdminLevel.starting = 2
            |generation.lv.boundaryAdminLevel.lowest = 8
            |generation.lv.minDistance = 10
+           |generation.mv.spawnMissingHvNodes = false
+           |generation.mv.voltageLevel.id = mv
+           |generation.mv.voltageLevel.default = 10.0
            |""".stripMargin
       )
       .success
