@@ -28,7 +28,7 @@ import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizab
 object LvGridGenerator extends LazyLogging {
   sealed trait Request
 
-  val voltages: Voltage = RunGuardian.get
+  val voltages: Voltage = RunGuardian.getVoltageConfig
 
   final case class GenerateGrid(
       replyTo: ActorRef[LvGridGenerator.Response],

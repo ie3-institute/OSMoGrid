@@ -222,7 +222,7 @@ private[mv] final case class AwaitingInputData(
     val needed =
       lvGrids.isDefined && streetGraph.isDefined && assetInformation.isDefined
 
-    if (!cfg.spawnMissingHvNodes) {
+    if (cfg.spawnMissingHvNodes) {
       needed
     } else {
       needed && hvGrids.isDefined

@@ -79,7 +79,7 @@ class OsmoGridUtilsSpec extends UnitSpec with MvTestData with OsmTestData {
       hvNode1.isSlack shouldBe true
       hvNode1.getGeoPosition.getCoordinate shouldBe buildCoordinate(50.5, 8.5)
       hvNode1.getVoltLvl shouldBe GermanVoltageLevelUtils.HV
-      hvNode1.getSubnet shouldBe 1001
+      hvNode1.getSubnet shouldBe 1
 
       val hvNode2 = spawnDummyHvNode(List(nodeInMv1))
 
@@ -88,7 +88,7 @@ class OsmoGridUtilsSpec extends UnitSpec with MvTestData with OsmTestData {
       hvNode2.isSlack shouldBe true
       hvNode2.getGeoPosition.getCoordinate shouldBe buildCoordinate(50.5, 7)
       hvNode2.getVoltLvl shouldBe GermanVoltageLevelUtils.HV
-      hvNode2.getSubnet shouldBe 1001
+      hvNode2.getSubnet shouldBe 1
 
     }
   }

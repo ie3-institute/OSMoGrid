@@ -10,7 +10,7 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage.{Hv, Lv, Mv}
 
 /** Simple wrapper object that holds a [[Voltage]] config for global access. The
-  * current config can be retrieved via the [[get]] method.
+  * current config can be retrieved via the [[getVoltageConfig]] method.
   */
 trait VoltageSupport {
 
@@ -28,11 +28,11 @@ trait VoltageSupport {
     * @param config
     *   that should replace the old one
     */
-  private[run] def set(config: Voltage): Unit = {
+  private[run] def setVoltageConfig(config: Voltage): Unit = {
     cfg = Some(config)
   }
 
   /** Returns the [[Voltage]] config or a default value.
     */
-  def get: Voltage = cfg.getOrElse(DEFAULT)
+  def getVoltageConfig: Voltage = cfg.getOrElse(DEFAULT)
 }

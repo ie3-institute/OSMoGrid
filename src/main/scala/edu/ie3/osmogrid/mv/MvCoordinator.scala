@@ -146,18 +146,37 @@ object MvCoordinator extends ActorStopSupportStateless {
       /* Process the data */
       ctx.log.debug("All awaited mv data is present. Start processing.")
 
-      val (lvGrids, hvGrids, streetGraph, assetInformation) =
-        awaitingInputData match {
-          case AwaitingInputData(
-                _,
-                _,
-                Some(lvGrids),
-                hvGrids,
-                Some(streetGraph),
-                Some(assetInformation)
-              ) =>
-            (lvGrids, hvGrids, streetGraph, assetInformation)
-        }
+      val lvGrids = awaitingInputData.lvGrids.getOrElse(
+        throw new RuntimeException("Lv grids are missing!")
+      )
+
+      // checking hv nodes
+      val hvGrids = (
+        awaitingInputData.hvGrids,
+        awaitingInputData.cfg.spawnMissingHvNodes
+      ) match {
+        case (Some(hv), true) =>
+          ctx.log.info(
+            "Spawn missing hv nodes is set to true, while hv grids were provided. Config setting is ignored!"
+          )
+          Some(hv)
+        case (Some(hv), false) => Some(hv)
+        case (None, false) =>
+          throw new RuntimeException("Hv grids are needed and missing!")
+        case (None, true) =>
+          ctx.log.debug(
+            "No hv grids are provided! A new hv node will be spawned."
+          )
+          None
+      }
+
+      val streetGraph = awaitingInputData.streetGraph.getOrElse(
+        throw new RuntimeException("Street graph is missing!")
+      )
+
+      val assetInformation = awaitingInputData.assetInformation.getOrElse(
+        throw new RuntimeException("Asset information are missing!")
+      )
 
       ctx.self ! StartMvGeneration(
         lvGrids,
@@ -241,7 +260,7 @@ object MvCoordinator extends ActorStopSupportStateless {
         terminate(ctx.log)
       case (ctx, unsupported) =>
         ctx.log.warn(
-          s"Received unsupported message '$unsupported' in data awaiting state. Keep on going."
+          s"Received unsupported message '$unsupported' in start graph generation state. Keep on going."
         )
         Behaviors.same
     }

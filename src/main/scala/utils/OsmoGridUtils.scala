@@ -171,7 +171,7 @@ object OsmoGridUtils {
       true,
       node.getGeoPosition,
       GermanVoltageLevelUtils.HV,
-      node.getSubnet + 1000
+      node.getSubnet
     )
   }
 }

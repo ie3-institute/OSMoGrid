@@ -43,7 +43,7 @@ object RunGuardian
       runId: UUID
   ): Behavior[Request] = Behaviors.setup { ctx =>
     // overwriting the default voltage config
-    set(cfg.voltage)
+    setVoltageConfig(cfg.voltage)
 
     idle(
       RunGuardianData(

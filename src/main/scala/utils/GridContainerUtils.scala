@@ -17,7 +17,7 @@ import javax.measure.quantity.ElectricPotential
 import scala.jdk.CollectionConverters._
 
 object GridContainerUtils {
-  private val cfg: Voltage = RunGuardian.get
+  private val cfg: Voltage = RunGuardian.getVoltageConfig
 
   /** Method for retrieving all mv nodes from a sequence of lv
     * [[SubGridContainer]].
@@ -113,7 +113,7 @@ object GridContainerUtils {
       .asScala :++ containerB.getGraphics.allEntitiesAsList().asScala
 
     new JointGridContainer(
-      containerA.getGridName,
+      s"Joint container of the two grids ${containerA.getGridName} and ${containerB.getGridName}",
       new RawGridElements(rawGridElements.asJava),
       new SystemParticipants(participants.asJava),
       new GraphicElements(graphicElements.asJava)

@@ -86,7 +86,7 @@ class GridContainerUtilsSpec extends UnitSpec with GridSupport with MvTestData {
 
       val jointGridContainer = combine(containerA, containerB)
 
-      jointGridContainer.getGridName shouldBe "containerA"
+      jointGridContainer.getGridName shouldBe "Joint container of the two grids containerA and containerB"
       jointGridContainer.getRawGrid
         .allEntitiesAsList()
         .asScala should contain allOf (nodeInMv1, nodeInMv2, nodeInMv3, nodeInMv4, nodeInMv5)
