@@ -61,8 +61,6 @@ object AssetSource {
           new CsvDataSource(csvSep, Paths.get(directoryPath), namingStrategy)
         val typeSource: TypeSource =
           new TypeSource(dataSource)
-        // val typeSource: CsvTypeSource =
-        //  new CsvTypeSource(csvSep, directoryPath, namingStrategy)
         val transformerTypes = typeSource.getTransformer2WTypes.asScala.toSeq
         val lineTypes = typeSource.getLineTypes.asScala.toSeq
         (transformerTypes, lineTypes) match {
