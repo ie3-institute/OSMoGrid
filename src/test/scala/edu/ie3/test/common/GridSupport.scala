@@ -263,8 +263,8 @@ trait GridSupport {
     val transformer2W = new Transformer2WInput(
       UUID.randomUUID(),
       s"Transformer (2W) in $subgridNo",
-      nodeC,
       topNode2,
+      nodeC,
       1,
       mock[Transformer2WTypeInput],
       0,
