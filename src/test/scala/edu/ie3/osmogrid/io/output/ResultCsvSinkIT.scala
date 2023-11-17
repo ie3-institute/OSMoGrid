@@ -11,6 +11,7 @@ import edu.ie3.osmogrid.io.output.ResultListenerProtocol.GridResult
 import edu.ie3.util.io.FileIOUtils
 import edu.ie3.test.common.{IOTestCommons, ThreeWindingTestData, UnitSpec}
 
+import java.nio.file.Paths
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.Await
@@ -44,7 +45,8 @@ class ResultCsvSinkIT
       val gridData = CsvJointGridContainerSource.read(
         jointGrid.getGridName,
         csvSeparator,
-        testTmpDir
+        Paths.get(testTmpDir),
+        hierarchic
       )
 
       gridData shouldBe jointGrid
