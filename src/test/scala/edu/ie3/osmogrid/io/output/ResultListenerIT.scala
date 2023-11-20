@@ -24,6 +24,7 @@ import edu.ie3.util.io.FileIOUtils
 
 import java.util.UUID
 import scala.concurrent.{Await, Future}
+import java.nio.file.Paths
 import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters._
 
@@ -114,7 +115,8 @@ class ResultListenerIT
         val gridData = CsvJointGridContainerSource.read(
           jointGrid.getGridName,
           ";",
-          testTmpDir
+          Paths.get(testTmpDir),
+          false
         )
 
         gridData shouldBe jointGrid

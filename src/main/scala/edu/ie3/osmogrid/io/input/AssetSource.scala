@@ -11,11 +11,13 @@ import edu.ie3.datamodel.io.naming.{
   EntityPersistenceNamingStrategy,
   FileNamingStrategy
 }
-import edu.ie3.datamodel.io.source.csv.CsvTypeSource
+import edu.ie3.datamodel.io.source.TypeSource
+import edu.ie3.datamodel.io.source.csv.CsvDataSource
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
 import edu.ie3.osmogrid.exception.{IllegalConfigException, InputDataException}
 
+import java.nio.file.Paths
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
@@ -32,7 +34,7 @@ object AssetSource {
         val namingStrategy = if (hierarchic) {
           new FileNamingStrategy(
             new EntityPersistenceNamingStrategy(),
-            new DefaultDirectoryHierarchy(directory, "osm")
+            new DefaultDirectoryHierarchy(Paths.get(directory), "osm")
           )
         } else
           new FileNamingStrategy()
@@ -55,8 +57,10 @@ object AssetSource {
       implicit val implicitEc: ExecutionContextExecutor =
         executionContextExecutor
       Future {
-        val typeSource: CsvTypeSource =
-          new CsvTypeSource(csvSep, directoryPath, namingStrategy)
+        val dataSource: CsvDataSource =
+          new CsvDataSource(csvSep, Paths.get(directoryPath), namingStrategy)
+        val typeSource: TypeSource =
+          new TypeSource(dataSource)
         val transformerTypes = typeSource.getTransformer2WTypes.asScala.toSeq
         val lineTypes = typeSource.getLineTypes.asScala.toSeq
         (transformerTypes, lineTypes) match {
