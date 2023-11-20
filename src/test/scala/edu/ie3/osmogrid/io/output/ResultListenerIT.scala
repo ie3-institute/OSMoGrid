@@ -19,6 +19,7 @@ import edu.ie3.osmogrid.io.output.ResultListenerProtocol.PersistenceListenerEven
 import edu.ie3.util.io.FileIOUtils
 import edu.ie3.test.common.{IOTestCommons, ThreeWindingTestData, UnitSpec}
 
+import java.nio.file.Paths
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.Future
 import scala.concurrent.Await
@@ -112,7 +113,8 @@ class ResultListenerIT
         val gridData = CsvJointGridContainerSource.read(
           jointGrid.getGridName,
           ";",
-          testTmpDir
+          Paths.get(testTmpDir),
+          false
         )
 
         gridData shouldBe jointGrid

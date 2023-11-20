@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Rely on Java 17
   - Workaround for `spotless`: Add module exports to `gradle.properties`
+- Update to PSDM 4.1.0
 
 ### Removed
 - Legacy Java code
