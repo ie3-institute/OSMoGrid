@@ -6,8 +6,8 @@
 
 package edu.ie3.osmogrid.io
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.scaladsl.{ActorContext, StashBuffer}
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.scaladsl.{ActorContext, StashBuffer}
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
   Transformer2WTypeInput

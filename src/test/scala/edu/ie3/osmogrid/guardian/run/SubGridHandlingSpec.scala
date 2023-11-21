@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
 import edu.ie3.datamodel.models.UniqueEntity
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container.SubGridContainer

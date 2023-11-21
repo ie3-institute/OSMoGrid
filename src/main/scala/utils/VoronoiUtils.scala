@@ -6,7 +6,7 @@
 
 package utils
 
-import akka.actor.typed.scaladsl.ActorContext
+import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.util.exceptions.GeoException
 import edu.ie3.util.geo.GeoUtils

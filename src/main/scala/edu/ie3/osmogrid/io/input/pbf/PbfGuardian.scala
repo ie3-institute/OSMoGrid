@@ -6,8 +6,8 @@
 
 package edu.ie3.osmogrid.io.input.pbf
 
-import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors, Routers}
+import org.apache.pekko.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
+import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors, Routers}
 import com.acervera.osm4scala.BlobTupleIterator
 import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.exception.PbfReadFailedException

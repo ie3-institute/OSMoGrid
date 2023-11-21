@@ -6,8 +6,8 @@
 
 package edu.ie3.osmogrid.io.input.pbf
 
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior, PostStop}
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
 import com.acervera.osm4scala.EntityIterator.fromBlob
 import com.acervera.osm4scala.model.RelationMemberEntityTypes.RelationMemberEntityTypes
 import com.acervera.osm4scala.model.{

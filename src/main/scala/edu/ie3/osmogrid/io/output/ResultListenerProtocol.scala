@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.io.output
 
-import akka.actor.typed.scaladsl.{ActorContext, StashBuffer}
+import org.apache.pekko.actor.typed.scaladsl.{ActorContext, StashBuffer}
 import edu.ie3.datamodel.models.input.container.JointGridContainer
 
 import java.util.UUID

@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import akka.actor.typed.scaladsl.ActorContext
+import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.lv.coordinator
 

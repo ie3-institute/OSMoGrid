@@ -6,8 +6,8 @@
 
 package edu.ie3.osmogrid.lv
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig

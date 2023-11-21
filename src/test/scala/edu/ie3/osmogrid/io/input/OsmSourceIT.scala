@@ -6,9 +6,9 @@
 
 package edu.ie3.osmogrid.io.input
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior}
+import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.io.input.OsmSource.PbfFileSource
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter

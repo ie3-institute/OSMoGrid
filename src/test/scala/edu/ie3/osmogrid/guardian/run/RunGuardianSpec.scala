@@ -6,13 +6,17 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import akka.actor.testkit.typed.CapturedLogEvent
-import akka.actor.testkit.typed.Effect.{MessageAdapter, Spawned, WatchedWith}
-import akka.actor.testkit.typed.scaladsl.{
+import org.apache.pekko.actor.testkit.typed.CapturedLogEvent
+import org.apache.pekko.actor.testkit.typed.Effect.{
+  MessageAdapter,
+  Spawned,
+  WatchedWith
+}
+import org.apache.pekko.actor.testkit.typed.scaladsl.{
   BehaviorTestKit,
   ScalaTestWithActorTestKit
 }
-import akka.actor.typed.{ActorRef, Behavior}
+import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.ConfigFailFastSpec.viableConfigurationString
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.IllegalConfigException

@@ -6,8 +6,12 @@
 
 package edu.ie3.osmogrid.io.output
 
-import akka.actor.typed.{Behavior, PostStop}
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer}
+import org.apache.pekko.actor.typed.{Behavior, PostStop}
+import org.apache.pekko.actor.typed.scaladsl.{
+  ActorContext,
+  Behaviors,
+  StashBuffer
+}
 import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Output

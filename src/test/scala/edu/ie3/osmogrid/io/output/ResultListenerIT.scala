@@ -6,8 +6,8 @@
 
 package edu.ie3.osmogrid.io.output
 
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import com.typesafe.config.ConfigFactory
 import edu.ie3.datamodel.io.source.csv.CsvJointGridContainerSource
 import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}

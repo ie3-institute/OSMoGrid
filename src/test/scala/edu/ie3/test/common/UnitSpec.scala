@@ -6,7 +6,7 @@
 
 package edu.ie3.test.common
 
-import akka.actor.testkit.typed.scaladsl.LogCapturing
+import org.apache.pekko.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.{
   GivenWhenThen,
   OptionValues,

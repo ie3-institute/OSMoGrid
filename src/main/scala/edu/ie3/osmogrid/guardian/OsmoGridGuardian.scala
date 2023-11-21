@@ -6,8 +6,8 @@
 
 package edu.ie3.osmogrid.guardian
 
-import akka.actor.typed.{ActorRef, Behavior}
-import akka.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.{ActorRef, Behavior}
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol

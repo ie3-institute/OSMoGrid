@@ -6,8 +6,8 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.scaladsl.ActorContext
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Output}
 import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
 import edu.ie3.osmogrid.exception.UnsupportedRequestException

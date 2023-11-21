@@ -6,8 +6,8 @@
 
 package edu.ie3.osmogrid.lv
 
-import akka.actor.typed.{ActorRef, Behavior}
-import akka.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.{ActorRef, Behavior}
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 
 object DistrictCoordinator {
   sealed trait Request

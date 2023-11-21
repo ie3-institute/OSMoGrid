@@ -6,8 +6,8 @@
 
 package edu.ie3.osmogrid.lv.region_coordinator
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel.BoundaryAdminLevelValue

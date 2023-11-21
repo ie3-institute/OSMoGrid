@@ -6,8 +6,8 @@
 
 package edu.ie3.osmogrid.mv
 
-import akka.actor.testkit.typed.CapturedLogEvent
-import akka.actor.testkit.typed.scaladsl.{
+import org.apache.pekko.actor.testkit.typed.CapturedLogEvent
+import org.apache.pekko.actor.testkit.typed.scaladsl.{
   ActorTestKit,
   BehaviorTestKit,
   ScalaTestWithActorTestKit

@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.io.input
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
 import com.typesafe.config.ConfigFactory
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.$TsCfgValidator
