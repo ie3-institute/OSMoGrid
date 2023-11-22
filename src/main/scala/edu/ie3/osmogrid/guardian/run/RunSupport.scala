@@ -13,11 +13,7 @@ import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
 import edu.ie3.osmogrid.exception.UnsupportedRequestException
 import edu.ie3.osmogrid.io.input.{InputDataEvent, InputDataProvider}
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
-import edu.ie3.osmogrid.lv.coordinator
-import edu.ie3.osmogrid.lv.coordinator.{
-  LvCoordinator,
-  Request => LvCoordinatorRequest
-}
+import edu.ie3.osmogrid.lv.{LvCoordinator, LvRequest, LvResponse, ReqLvGrids}
 
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
@@ -35,7 +31,7 @@ trait RunSupport {
     */
   protected def initRun(
       runGuardianData: RunGuardianData,
-      ctx: ActorContext[Request]
+      ctx: ActorContext[RunRequest]
   ): Try[ChildReferences] = {
     val log = ctx.log
     ConfigFailFast
@@ -109,7 +105,7 @@ trait RunSupport {
   private def spawnInputDataProvider(
       runId: UUID,
       inputConfig: OsmoGridConfig.Input,
-      ctx: ActorContext[Request]
+      ctx: ActorContext[RunRequest]
   ): ActorRef[InputDataEvent] = {
     ctx.log.info("Starting input data provider ...")
     val inputProvider =
@@ -132,10 +128,10 @@ trait RunSupport {
     * @return
     *   References to [[ResultListener]]
     */
-  protected def spawnResultListener(
+  private def spawnResultListener(
       runId: UUID,
       outputConfig: OsmoGridConfig.Output,
-      ctx: ActorContext[Request]
+      ctx: ActorContext[RunRequest]
   ): Option[ActorRef[ResultListenerProtocol]] = {
     val resultListener = outputConfig match {
       case Output(Some(_), _) =>
@@ -174,9 +170,9 @@ trait RunSupport {
       runId: UUID,
       inputDataProvider: ActorRef[InputDataEvent],
       lvConfig: OsmoGridConfig.Generation.Lv,
-      lvCoordinatorAdapter: ActorRef[coordinator.Response],
-      ctx: ActorContext[Request]
-  ): ActorRef[LvCoordinatorRequest] = {
+      lvCoordinatorAdapter: ActorRef[LvResponse],
+      ctx: ActorContext[RunRequest]
+  ): ActorRef[LvRequest] = {
     val lvCoordinator =
       ctx.spawn(
         LvCoordinator(lvConfig, inputDataProvider, lvCoordinatorAdapter),
@@ -185,7 +181,7 @@ trait RunSupport {
     ctx.watchWith(lvCoordinator, LvCoordinatorDied)
 
     ctx.log.info("Starting voltage level grid generation ...")
-    lvCoordinator ! coordinator.ReqLvGrids
+    lvCoordinator ! ReqLvGrids
 
     lvCoordinator
   }

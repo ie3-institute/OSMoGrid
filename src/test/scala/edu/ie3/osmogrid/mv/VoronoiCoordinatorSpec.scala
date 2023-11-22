@@ -14,7 +14,6 @@ import akka.actor.testkit.typed.scaladsl.{
 }
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.messages.Mv._
 import edu.ie3.test.common.{MvTestData, UnitSpec}
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.event.Level
@@ -54,7 +53,7 @@ class VoronoiCoordinatorSpec
         VoronoiCoordinator(mvCoordinator.ref)
       )
       idleTestKit.run(
-        StartGraphConversion(
+        StartMvGraphConversion(
           1,
           new OsmGraph(),
           new NodeConversion(Map.empty, Map.empty),
@@ -64,7 +63,7 @@ class VoronoiCoordinatorSpec
 
       idleTestKit.logEntries() should contain only CapturedLogEvent(
         Level.WARN,
-        "Received unsupported message 'StartGraphConversion(1,([], []),NodeConversion(Map(),Map()),AssetInformation(List(LineTypeInput{uuid=6b223bc3-69e2-4eb8-a2c0-76be1cd2c998, id=NA2XS2Y 1x400 RM/25 6/10 kV, b=1.6964599999999997E8 µS/km, g=0.0 µS/km, r=0.078 Ω/km, x=0.0942 Ω/km, iMax=535 A, vRated=10 kV}),List()))' in data awaiting state. Keep on going."
+        "Received unsupported message 'StartMvGraphConversion(1,([], []),NodeConversion(Map(),Map()),AssetInformation(List(LineTypeInput{uuid=6b223bc3-69e2-4eb8-a2c0-76be1cd2c998, id=NA2XS2Y 1x400 RM/25 6/10 kV, b=1.6964599999999997E8 µS/km, g=0.0 µS/km, r=0.078 Ω/km, x=0.0942 Ω/km, iMax=535 A, vRated=10 kV}),List()))' in data awaiting state. Keep on going."
       )
     }
   }
@@ -78,7 +77,7 @@ class VoronoiCoordinatorSpec
 
     "create a graph correctly" in {
       idleTestKit.run(
-        StartGraphGeneration(1, polygon, streetGraph, assetInformation)
+        StartMvGraphGeneration(1, polygon, streetGraph, assetInformation)
       )
       idleTestKit.isAlive shouldBe true
     }
@@ -93,7 +92,7 @@ class VoronoiCoordinatorSpec
       graph.addEdge(osmNode1, osmNode2)
 
       idleTestKit.run(
-        StartGraphConversion(1, graph, nodeConversion, assetInformation)
+        StartMvGraphConversion(1, graph, nodeConversion, assetInformation)
       )
 
       idleTestKit

@@ -65,7 +65,7 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
                 AssetReadFailed(exception)
             }
             readAssetData(providerData, replyTo)
-          case Terminate =>
+          case InputTerminate =>
             terminate(ctx.log, providerData)
           case invalid =>
             ctx.log.error(
@@ -80,7 +80,7 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
 
   private def readOsmData(
       providerData: ProviderData,
-      replyTo: ActorRef[Response]
+      replyTo: ActorRef[InputResponse]
   ): Behaviors.Receive[InputDataEvent] =
     Behaviors.receiveMessage {
       case osmResponse: RepOsm =>
@@ -96,7 +96,7 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
 
   private def readAssetData(
       providerData: ProviderData,
-      replyTo: ActorRef[Response]
+      replyTo: ActorRef[InputResponse]
   ): Behaviors.Receive[InputDataEvent] = {
     Behaviors.receiveMessage {
       case repAssetTypes: RepAssetTypes =>

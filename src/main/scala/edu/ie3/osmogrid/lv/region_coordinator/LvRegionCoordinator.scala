@@ -6,57 +6,17 @@
 
 package edu.ie3.osmogrid.lv.region_coordinator
 
-import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
-import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
-import edu.ie3.osmogrid.io.input.BoundaryAdminLevel.BoundaryAdminLevelValue
-import edu.ie3.osmogrid.io.input.AssetInformation
-import edu.ie3.osmogrid.lv.LvGridGenerator
-import edu.ie3.osmogrid.lv.LvGridGenerator.GenerateGrid
-import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
+import edu.ie3.osmogrid.lv.{GenerateLvGrid, LvGridGenerator}
 
 import java.util.UUID
 
 object LvRegionCoordinator {
 
-  sealed trait Request
+  def apply(): Behaviors.Receive[LvRegionRequest] = idle()
 
-  /** When receiving such message, the LvRegionCoordinator partitions given
-    * OsmoGrid model by dividing its entities along the administrative
-    * boundaries of given level
-    *
-    * @param osmoGridModel
-    *   The OsmoGrid model to partition
-    * @param assetInformation
-    *   The asset type information with which to build the grid
-    * @param administrativeLevel
-    *   The administrative boundary level at which to partition
-    * @param lvConfig
-    *   The configuration for lv grid generation
-    * @param lvCoordinatorRegionCoordinatorAdapter
-    *   The actor reference that will be used to communicate expected grids
-    * @param lvCoordinatorGridGeneratorAdapter
-    *   The actor reference that will be used to send the generated grid to
-    */
-  final case class Partition(
-      osmoGridModel: LvOsmoGridModel,
-      assetInformation: AssetInformation,
-      administrativeLevel: BoundaryAdminLevelValue,
-      lvConfig: OsmoGridConfig.Generation.Lv,
-      lvCoordinatorRegionCoordinatorAdapter: ActorRef[
-        LvRegionCoordinator.Response
-      ],
-      lvCoordinatorGridGeneratorAdapter: ActorRef[LvGridGenerator.Response]
-  ) extends Request
-
-  sealed trait Response
-
-  final case class GridToExpect(gridUuid: UUID) extends Response
-
-  def apply(): Behaviors.Receive[Request] = idle()
-
-  private def idle(): Behaviors.Receive[Request] = Behaviors.receive {
+  private def idle(): Behaviors.Receive[LvRegionRequest] = Behaviors.receive {
     (ctx, msg) =>
       msg match {
         case Partition(
@@ -110,7 +70,7 @@ object LvRegionCoordinator {
                 val gridGenerator = ctx.spawnAnonymous(LvGridGenerator())
                 val gridUuid = UUID.randomUUID()
                 lvCoordinatorRegionCoordinatorAdapter ! GridToExpect(gridUuid)
-                gridGenerator ! GenerateGrid(
+                gridGenerator ! GenerateLvGrid(
                   lvCoordinatorGridGeneratorAdapter,
                   gridUuid,
                   osmoGridModel,

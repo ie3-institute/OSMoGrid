@@ -8,54 +8,64 @@ package edu.ie3.osmogrid.guardian.run
 
 import akka.actor.typed.ActorRef
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.io.input
+import edu.ie3.osmogrid.io.input.InputDataEvent
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
-import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.lv.{LvRequest, LvResponse}
 
 import java.util.UUID
 
 /* This file only contains package-level definitions */
 
 /* Received requests */
-sealed trait Request
+sealed trait RunRequest
 
-object Run extends Request
+object Run extends RunRequest
 
 /** Container object with all available adapters for outside protocol messages
   *
   * @param lvCoordinator
   *   Adapter for messages from [[LvCoordinator]]
   */
-private final case class MessageAdapters(
-    lvCoordinator: ActorRef[coordinator.Response]
+private[run] final case class MessageAdapters(
+    lvCoordinator: ActorRef[LvResponse]
 )
 
-private object MessageAdapters {
+private[run] object MessageAdapters {
   final case class WrappedLvCoordinatorResponse(
-      response: coordinator.Response
-  ) extends Request
+      response: LvResponse
+  ) extends RunRequest
 
 }
 
 /* Death watch messages */
-sealed trait Watch extends Request
+sealed trait RunWatch extends RunRequest
 
-object InputDataProviderDied extends Watch
+object InputDataProviderDied extends RunWatch
 
-object ResultEventListenerDied extends Watch
+object ResultEventListenerDied extends RunWatch
 
-object LvCoordinatorDied extends Watch
+object LvCoordinatorDied extends RunWatch
 
 /* Sent out responses */
-sealed trait Response
+sealed trait RunResponse
 
-final case class Done(runId: UUID) extends Response
+final case class Done(runId: UUID) extends RunResponse
 
-final case class ChildReferences(
-    inputDataProvider: ActorRef[input.InputDataEvent],
+/** Container object containing references to all child actors.
+  * @param inputDataProvider
+  *   reference of an actor that provides input data
+  * @param resultListener
+  *   option for a listener for result data
+  * @param additionalResultListeners
+  *   sequence of additional result data listeners
+  * @param lvCoordinator
+  *   option for a reference of a low voltage actor
+  */
+private[run] final case class ChildReferences(
+    inputDataProvider: ActorRef[InputDataEvent],
     resultListener: Option[ActorRef[ResultListenerProtocol]],
     additionalResultListeners: Seq[ActorRef[ResultListenerProtocol]],
-    lvCoordinator: Option[ActorRef[coordinator.Request]]
+    lvCoordinator: Option[ActorRef[LvRequest]]
 ) {
   def resultListeners: Seq[ActorRef[ResultListenerProtocol]] =
     resultListener
@@ -64,7 +74,8 @@ final case class ChildReferences(
 }
 
 sealed trait StateData
-private final case class RunGuardianData(
+
+private[run] final case class RunGuardianData(
     runId: UUID,
     cfg: OsmoGridConfig,
     additionalListener: Seq[ActorRef[ResultListenerProtocol]],
@@ -83,7 +94,7 @@ private final case class RunGuardianData(
   * @param lvCoordinatorTerminated
   *   Optional information, if the [[LvCoordinator]] has stopped
   */
-final case class StoppingData(
+private[run] final case class StoppingData(
     runId: UUID,
     inputDataProviderTerminated: Boolean,
     resultListenerTerminated: Boolean,

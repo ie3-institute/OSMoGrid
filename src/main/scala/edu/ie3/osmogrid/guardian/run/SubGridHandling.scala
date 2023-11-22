@@ -24,7 +24,7 @@ import edu.ie3.datamodel.utils.ContainerUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.GridException
 import edu.ie3.osmogrid.guardian.run.SubGridHandling.assignSubnetNumbers
-import edu.ie3.osmogrid.io.output.ResultListenerProtocol
+import edu.ie3.osmogrid.io.output.{GridResult, ResultListenerProtocol}
 import org.slf4j.Logger
 
 import java.util.UUID
@@ -55,7 +55,7 @@ trait SubGridHandling {
       val jointGrid =
         ContainerUtils.combineToJointGrid(updatedSubGrids.asJava)
       resultListener.foreach { listener =>
-        listener ! ResultListenerProtocol.GridResult(jointGrid)
+        listener ! GridResult(jointGrid)
       }
     }
   }
