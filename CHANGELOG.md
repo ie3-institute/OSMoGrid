@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A `ResultListener` handles given grid results
   - Receives a JointGridContainer
   - Writes grid data into csv files
+- Added `MvCoordinator`
+- Switched from `akka` to `pekko`
 
 ### Changed
 - Rely on Java 17
