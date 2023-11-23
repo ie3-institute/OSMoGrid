@@ -6,8 +6,8 @@
 
 package edu.ie3.osmogrid.lv
 
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.Behavior
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 
 object SubDistrictCoordinator {
   def apply(): Behavior[SubDistrictRequest] = idle

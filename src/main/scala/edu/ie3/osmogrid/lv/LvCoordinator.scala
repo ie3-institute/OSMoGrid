@@ -6,8 +6,8 @@
 
 package edu.ie3.osmogrid.lv
 
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import akka.actor.typed.{ActorRef, Behavior, PostStop}
+import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
+import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.IllegalStateException
@@ -75,7 +75,7 @@ object LvCoordinator extends ActorStopSupportStateless {
     )
   }
 
-  /** Idle state to receive any kind of [[Request]]
+  /** Idle state to receive any kind of [[LvRequest]]
     *
     * @param stateData
     *   Current orientation of the Actor aka. the applicable state data

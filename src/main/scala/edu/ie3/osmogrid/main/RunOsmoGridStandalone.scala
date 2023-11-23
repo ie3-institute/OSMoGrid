@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.main
 
-import akka.actor.typed.ActorSystem
+import org.apache.pekko.actor.typed.ActorSystem
 import edu.ie3.osmogrid.cfg.{ArgsParser, OsmoGridConfig}
 import edu.ie3.osmogrid.guardian.{GuardianRequest, OsmoGridGuardian, Run}
 

@@ -6,9 +6,9 @@
 
 package edu.ie3.osmogrid.lv.region_coordinator
 
-import akka.actor.typed.scaladsl.Behaviors
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.lv.{GenerateLvGrid, LvGridGenerator}
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 
 import java.util.UUID
 

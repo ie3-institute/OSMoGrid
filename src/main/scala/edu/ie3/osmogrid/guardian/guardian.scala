@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.guardian
 
-import akka.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.ActorRef
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 

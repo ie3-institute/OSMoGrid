@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import akka.actor.typed.scaladsl.ActorContext
+import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.io.input.InputTerminate
 import edu.ie3.osmogrid.lv.LvTerminate
 import edu.ie3.osmogrid.mv.MvTerminate
