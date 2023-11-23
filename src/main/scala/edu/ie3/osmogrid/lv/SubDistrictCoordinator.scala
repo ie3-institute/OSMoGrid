@@ -6,15 +6,13 @@
 
 package edu.ie3.osmogrid.lv
 
-import org.apache.pekko.actor.typed.{ActorRef, Behavior}
-import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.Behaviors
 
 object SubDistrictCoordinator {
-  sealed trait Request
+  def apply(): Behavior[SubDistrictRequest] = idle
 
-  def apply(): Behavior[Request] = idle
-
-  def idle: Behavior[Request] = Behaviors.receive { (ctx, msg) =>
+  def idle: Behavior[SubDistrictRequest] = Behaviors.receive { (ctx, msg) =>
     ctx.log.info(s"Received a message: $msg")
     Behaviors.same
   }

@@ -6,28 +6,292 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
-import edu.ie3.datamodel.models.UniqueEntity
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import edu.ie3.datamodel.models.input.NodeInput
+import edu.ie3.datamodel.models.input.connector.`type`.Transformer3WTypeInput
+import edu.ie3.datamodel.models.input.connector.{
+  Transformer2WInput,
+  Transformer3WInput
+}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
+import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils._
+import edu.ie3.datamodel.models.{StandardUnits, UniqueEntity}
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
-import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
-import edu.ie3.osmogrid.lv.coordinator
+import edu.ie3.osmogrid.io.output.OutputRequest
+import edu.ie3.osmogrid.lv.LvResponse
+import edu.ie3.osmogrid.exception.GridException
+import edu.ie3.osmogrid.io.output.ResultListenerProtocol
+import edu.ie3.osmogrid.mv.MvResponse
 import edu.ie3.test.common.{GridSupport, UnitSpec}
+import org.locationtech.jts.geom.Point
 import org.scalatest.BeforeAndAfterAll
+import org.scalatestplus.mockito.MockitoSugar.mock
 import org.slf4j.{Logger, LoggerFactory}
+import tech.units.indriya.quantity.Quantities
+import utils.GridContainerUtils
 
+import java.util.UUID
+import scala.collection.immutable.Seq
 import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 class SubGridHandlingSpec
     extends UnitSpec
     with GridSupport
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with SubGridHandling {
   private val testKit: ActorTestKit = ActorTestKit()
 
+  "The SubGridHandling" should {
+    val resultListener = testKit.createTestProbe[ResultListenerProtocol]()
+    val lvCoordinator = testKit.createTestProbe[LvResponse]()
+    val mvCoordinator = testKit.createTestProbe[MvResponse]
+
+    val listener = Seq(resultListener.ref)
+    val msgAdapters: MessageAdapters = MessageAdapters(
+      lvCoordinator.ref,
+      mvCoordinator.ref
+    )
+    val log = testKit.system.log
+
+    "handle empty results correctly" in {
+      val empty = Try {
+        handleResults(
+          None,
+          None,
+          None,
+          None,
+          listener,
+          msgAdapters
+        )(log)
+      }
+
+      empty match {
+        case Failure(exception: GridException) =>
+          exception.msg shouldBe "Error during creating of joint grid container, because no grids were found."
+        case Success(value) =>
+          throw new Error(
+            s"This test should not pass! But received values: $value"
+          )
+      }
+    }
+
+    "process lv results correctly" in {
+      val lv = mockSubGrid(1, MV_10KV, LV)
+
+      val processed = processResults(
+        Some(Seq(lv)),
+        None,
+        None,
+        None
+      )
+
+      processed.size shouldBe 1
+      processed(0) shouldBe lv
+    }
+
+    "process and update lv results correctly" in {
+      val lv = mockSubGrid(1, MV_10KV, LV)
+      val node =
+        GridContainerUtils.filterLv(Seq(lv))(0).copy().subnet(10).build()
+
+      val processed = processResults(
+        Some(Seq(lv)),
+        None,
+        None,
+        Some(Seq(node), assetInformation)
+      )(0)
+
+      processed.getRawGrid.getNodes.size() shouldBe 2
+      processed.getRawGrid.getNodes should contain(node)
+
+      processed.getRawGrid.getTransformer2Ws.size() shouldBe 1
+      processed.getRawGrid.getTransformer2Ws.asScala
+        .toSeq(0)
+        .getType shouldBe trafo_10kV_to_lv
+
+      processed.getRawGrid.getLines shouldBe lv.getRawGrid.getLines
+      processed.getRawGrid.getTransformer3Ws shouldBe lv.getRawGrid.getTransformer3Ws
+      processed.getRawGrid.getSwitches shouldBe lv.getRawGrid.getSwitches
+      processed.getSubnet shouldBe 1
+      processed.getSystemParticipants shouldBe lv.getSystemParticipants
+      processed.getGraphics shouldBe lv.getGraphics
+    }
+  }
+
   "Supporting sub grid handling" when {
+    "update container correctly" in {
+      val updateContainer =
+        PrivateMethod[Seq[SubGridContainer]](Symbol("updateContainer"))
+
+      val lv1 = mockSubGrid(1, MV_10KV, LV)
+
+      // change the voltage level of the first found mv node to 20 kV
+      val node = GridContainerUtils
+        .filterLv(Seq(lv1))(0)
+        .copy()
+        .subnet(10)
+        .voltLvl(MV_20KV)
+        .build()
+
+      val updated = SubGridHandling invokePrivate updateContainer(
+        Seq(lv1),
+        Seq(node),
+        assetInformation
+      )
+
+      updated.size shouldBe 1
+
+      val updatesNodes = updated(0).getRawGrid.getNodes.asScala.toSeq
+      updatesNodes.size shouldBe 2
+      updatesNodes should contain(node)
+
+      val updatedTransformer =
+        updated(0).getRawGrid.getTransformer2Ws.asScala.toSeq
+
+      updatedTransformer.size shouldBe 1
+
+      updatedTransformer(0).getType shouldBe trafo_20kV_to_lv
+    }
+
+    "update transformer2W correctly" in {
+      val updateTransformer2Ws = PrivateMethod[Try[Seq[Transformer2WInput]]](
+        Symbol("updateTransformer2Ws")
+      )
+
+      val lv1 = mockSubGrid(1, MV_10KV, LV)
+      val transformerType = assetInformation.transformerTypes.toSeq(1)
+
+      // change the voltage level of the first found mv node to 20 kV
+      val node = GridContainerUtils
+        .filterLv(Seq(lv1))(0)
+        .copy()
+        .subnet(10)
+        .voltLvl(MV_20KV)
+        .build()
+
+      val nodeMapping: Map[UUID, NodeInput] =
+        lv1.getRawGrid.getNodes.asScala.map { n =>
+          val id = n.getUuid
+
+          if (id == node.getUuid) {
+            id -> node
+          } else {
+            id -> n
+          }
+        }.toMap
+
+      val updated: Try[Seq[Transformer2WInput]] =
+        SubGridHandling invokePrivate updateTransformer2Ws(
+          lv1.getRawGrid.getTransformer2Ws.asScala.toSeq,
+          nodeMapping,
+          assetInformation.transformerTypes
+        )
+
+      updated.fold(
+        _ => throw new Error("This test should pass!"),
+        s =>
+          s.headOption match {
+            case Some(transformer) =>
+              transformer.getId shouldBe "Dummy transformer"
+              transformer.getNodeA shouldBe node
+              transformer.getParallelDevices shouldBe 1
+              transformer.getType shouldBe transformerType
+              transformer.getTapPos shouldBe 0
+              transformer.isAutoTap shouldBe false
+            case None => throw new Error("This test should pass!")
+          }
+      )
+    }
+
+    "update transformer3W correctly" in {
+      val updateTransformer3Ws = PrivateMethod[Try[Seq[Transformer3WInput]]](
+        Symbol("updateTransformer3Ws")
+      )
+
+      // include at least a single node for voltage level determination
+      val dummyNodeA = new NodeInput(
+        UUID.randomUUID(),
+        s"Dummy node in 10",
+        Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
+        true,
+        mock[Point],
+        MV_10KV,
+        10
+      )
+
+      val dummyNodeB = new NodeInput(
+        UUID.randomUUID(),
+        s"Dummy node in 10",
+        Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
+        false,
+        mock[Point],
+        MV_10KV,
+        20
+      )
+
+      val dummyNodeC = new NodeInput(
+        UUID.randomUUID(),
+        s"Dummy node in 1",
+        Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
+        false,
+        mock[Point],
+        LV,
+        1
+      )
+
+      val dummyTrafo = new Transformer3WInput(
+        UUID.randomUUID(),
+        s"Dummy transformer",
+        dummyNodeA,
+        dummyNodeB,
+        dummyNodeC,
+        1,
+        mock[Transformer3WTypeInput],
+        0,
+        false
+      )
+
+      // change the voltage level of the first found mv node to 20 kV
+      val node = dummyNodeA
+        .copy()
+        .subnet(10)
+        .voltLvl(MV_20KV)
+        .build()
+
+      val nodeMapping: Map[UUID, NodeInput] = Map(
+        dummyNodeA.getUuid -> node,
+        dummyNodeB.getUuid -> dummyNodeB,
+        dummyNodeC.getUuid -> dummyNodeC
+      )
+
+      val updated: Try[Seq[Transformer3WInput]] =
+        SubGridHandling invokePrivate updateTransformer3Ws(
+          Seq(dummyTrafo),
+          nodeMapping,
+          Seq(dummyTransformer3WType)
+        )
+
+      updated.fold(
+        _ => throw new Error("This test should pass!"),
+        s =>
+          s.headOption match {
+            case Some(transformer) =>
+              transformer.getId shouldBe "Dummy transformer"
+              transformer.getNodeA shouldBe node
+              transformer.getNodeB shouldBe dummyNodeB
+              transformer.getNodeC shouldBe dummyNodeC
+              transformer.getParallelDevices shouldBe 1
+              transformer.getType shouldBe dummyTransformer3WType
+              transformer.getTapPos shouldBe 0
+              transformer.isAutoTap shouldBe false
+            case None => throw new Error("This test should pass!")
+          }
+      )
+
+    }
+
     "assigning sub grid numbers to a single sub grid container" should {
       val assignSubnetNumber =
         PrivateMethod[Try[SubGridContainer]](Symbol("assignSubnetNumber"))
@@ -76,15 +340,18 @@ class SubGridHandlingSpec
         LoggerFactory.getLogger("SubGridHandlingTestLogger")
 
       val lvCoordinatorAdapter =
-        testKit.createTestProbe[coordinator.Response]("LvCoordinatorAdapter")
+        testKit.createTestProbe[LvResponse]("LvCoordinatorAdapter")
+      val mvCoordinatorAdapter =
+        testKit.createTestProbe[MvResponse]("MvCoordinatorAdapter")
       val resultListener =
-        testKit.createTestProbe[ResultListenerProtocol.Request](
+        testKit.createTestProbe[OutputRequest](
           "ResultListener"
         )
 
       val grids = Range.inclusive(11, 20).map(mockSubGrid)
       val messageAdapters = new MessageAdapters(
-        lvCoordinatorAdapter.ref
+        lvCoordinatorAdapter.ref,
+        mvCoordinatorAdapter.ref
       )
       val cfg = OsmoGridConfigFactory
         .parse {
@@ -92,7 +359,10 @@ class SubGridHandlingSpec
           |input.osm.file.pbf=test.pbf
           |input.asset.file.directory=assets/
           |output.csv.directory=output/
-          |generation.lv.distinctHouseConnections=true""".stripMargin
+          |generation.lv.distinctHouseConnections=true
+          |generation.mv.spawnMissingHvNodes = false
+          |generation.mv.voltageLevel.id = mv
+          |generation.mv.voltageLevel.default = 10.0""".stripMargin
         }
         .success
         .get

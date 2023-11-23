@@ -7,14 +7,13 @@
 package edu.ie3.osmogrid.model
 
 import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
-import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
-import edu.ie3.util.osm.model.{OsmContainer, OsmEntity}
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
 import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
+import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
+import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
+import edu.ie3.util.osm.model.{OsmContainer, OsmEntity}
 
 import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
-import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
-
 import scala.collection.parallel.ParSeq
 import scala.reflect.ClassTag
 

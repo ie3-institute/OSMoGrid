@@ -11,7 +11,6 @@ import org.apache.pekko.actor.testkit.typed.scaladsl.{
   BehaviorTestKit,
   ScalaTestWithActorTestKit
 }
-import edu.ie3.osmogrid.lv.LvGridGenerator.RepLvGrid
 import edu.ie3.osmogrid.lv.region_coordinator.LvTestModel
 import edu.ie3.osmogrid.model.OsmTestData
 import edu.ie3.test.common.UnitSpec
@@ -28,7 +27,7 @@ class LvGridGeneratorSpec
 
     "build an lv grid upon request" in {
       val lvCoordinator = asynchronousTestKit
-        .createTestProbe[LvGridGenerator.Response]("GridGeneratorAdapter")
+        .createTestProbe[LvGridResponse]("GridGeneratorAdapter")
 
       val idleTestKit = BehaviorTestKit(
         LvGridGenerator()
@@ -38,7 +37,7 @@ class LvGridGeneratorSpec
       val osmData = TestLvOsmoGridModel.lvOsmoGridModel
       val assetInformation = LvTestModel.assetInformation
       val config = LvTestModel.lvConfig
-      val generateGrid = LvGridGenerator.GenerateGrid(
+      val generateGrid = GenerateLvGrid(
         lvCoordinator.ref,
         gridUuid,
         osmData,

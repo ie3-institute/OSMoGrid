@@ -11,11 +11,6 @@ import org.apache.pekko.actor.testkit.typed.Effect.Spawned
 import org.apache.pekko.actor.testkit.typed.scaladsl.BehaviorTestKit
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
-import edu.ie3.osmogrid.guardian.OsmoGridGuardian.{
-  GuardianData,
-  RunGuardianDied
-}
-import edu.ie3.osmogrid.guardian.run.Request
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.test.common.UnitSpec
 import org.slf4j.event.Level
@@ -25,7 +20,7 @@ import java.util.UUID
 class OsmoGridGuardianSpec extends UnitSpec {
   "Having an overall OsmoGridGuardian" when {
     "being idle" should {
-      val guardianData = OsmoGridGuardian.GuardianData(Seq.empty[UUID])
+      val guardianData = GuardianData(Seq.empty[UUID])
       val config = OsmoGridConfigFactory.defaultTestConfig
       val additionalListeners =
         Seq.empty[ActorRef[ResultListenerProtocol]]
@@ -35,12 +30,12 @@ class OsmoGridGuardianSpec extends UnitSpec {
 
       "spawn a new RunGuardian on request" in {
         idleTestKit.run(
-          OsmoGridGuardian.Run(config, additionalListeners, runId)
+          Run(config, additionalListeners, runId)
         )
 
         /* Check if the right child is spawned */
         idleTestKit.expectEffectPF {
-          case Spawned(childBehav: Behavior[Request], name, props) =>
+          case Spawned(childBehav: Behavior[_], name, props) =>
             name shouldBe s"RunGuardian_$runId"
           case Spawned(childBehav, _, _) =>
             fail(s"Spawned a child with wrong behavior '$childBehav'.")

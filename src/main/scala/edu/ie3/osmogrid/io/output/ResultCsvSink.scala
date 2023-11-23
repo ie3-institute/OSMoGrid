@@ -40,7 +40,7 @@ final case class ResultCsvSink(
   )
 
   def handleResult(
-      gridResult: ResultListenerProtocol.GridResult
+      gridResult: GridResult
   ): Future[Unit] =
     Future(csvFileSink.persistJointGrid(gridResult.grid))
 

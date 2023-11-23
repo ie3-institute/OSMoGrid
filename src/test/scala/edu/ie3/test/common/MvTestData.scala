@@ -8,18 +8,15 @@ package edu.ie3.test.common
 
 import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.io.input.AssetInformation
-import utils.GridConversion.NodeConversion
-import utils.Solver.StepResultOption
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
-import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
 import org.locationtech.jts.geom.Coordinate
 import tech.units.indriya.quantity.Quantities
+import utils.GridConversion.NodeConversion
 import utils.MvUtils.{Connection, Connections, getAllUniqueCombinations}
+import utils.Solver.StepResultOption
 import utils.VoronoiUtils.VoronoiPolygon
 
 import java.util.UUID
@@ -196,17 +193,4 @@ trait MvTestData {
 
     graph
   }
-
-  val defaultLineTypeMv = new LineTypeInput(
-    UUID.fromString("6b223bc3-69e2-4eb8-a2c0-76be1cd2c998"),
-    "NA2XS2Y 1x400 RM/25 6/10 kV",
-    169.646.asSiemensPerKilometre,
-    0.0.asSiemensPerKilometre,
-    0.078.asOhmPerKilometre,
-    0.0942.asOhmPerKilometre,
-    535.0.asAmpere,
-    10.0.asKiloVolt
-  )
-  val assetInformation: AssetInformation =
-    AssetInformation(Seq(defaultLineTypeMv), Seq.empty)
 }

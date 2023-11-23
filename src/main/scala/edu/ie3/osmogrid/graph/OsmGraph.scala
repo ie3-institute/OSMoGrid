@@ -10,21 +10,20 @@ import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.osmogrid.exception.GraphCopyException
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
-import tech.units.indriya.unit.Units.METRE
-
-import java.util.function.Supplier
-import javax.measure.quantity.Length
 import org.jgrapht.graph.SimpleWeightedGraph
 import org.jgrapht.util.SupplierUtil
 import org.locationtech.jts.geom.Polygon
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
+import tech.units.indriya.unit.Units.METRE
 import utils.GraphUtils.{getLineSegmentBetweenNodes, hasIntersection}
 import utils.MvUtils.Connection
 
 import java.util
+import java.util.function.Supplier
 import javax.measure.Quantity
+import javax.measure.quantity.Length
 import scala.jdk.CollectionConverters._
 
 @SerialVersionUID(-2797654003980753341L)
