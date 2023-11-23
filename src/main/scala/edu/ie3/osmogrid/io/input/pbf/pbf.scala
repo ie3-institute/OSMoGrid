@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.io.input.pbf
 
-import akka.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.ActorRef
 import com.acervera.osm4scala.BlobTupleIterator
 import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 import edu.ie3.util.osm.model.OsmContainer

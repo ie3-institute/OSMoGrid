@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.cfg
 
-import akka.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.ActorRef
 import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.{Lv, Mv}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}

@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.lv.region_coordinator
 
-import akka.actor.testkit.typed.scaladsl.{
+import org.apache.pekko.actor.testkit.typed.scaladsl.{
   ActorTestKit,
   ScalaTestWithActorTestKit,
   TestProbe

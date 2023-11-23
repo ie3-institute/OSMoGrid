@@ -6,8 +6,8 @@
 
 package edu.ie3.osmogrid.io.input
 
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.ActorContext
+import org.apache.pekko.actor.typed.ActorSystem
+import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Osm
 import edu.ie3.osmogrid.exception.IllegalConfigException
@@ -49,8 +49,8 @@ object OsmSource {
         name = s"pbf-reader-guardian-${UUID.randomUUID()}"
       )
 
-      import akka.actor.typed.scaladsl.AskPattern._
-      import akka.util.Timeout
+      import org.apache.pekko.actor.typed.scaladsl.AskPattern._
+      import org.apache.pekko.util.Timeout
 
       import concurrent.duration.DurationInt
 

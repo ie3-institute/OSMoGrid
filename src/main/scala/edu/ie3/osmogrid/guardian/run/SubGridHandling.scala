@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import akka.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.connector._
 import edu.ie3.datamodel.models.input.connector.`type`.{
   Transformer2WTypeInput,

@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.lv
 
-import akka.actor.testkit.typed.scaladsl.{
+import org.apache.pekko.actor.testkit.typed.scaladsl.{
   ActorTestKit,
   BehaviorTestKit,
   ScalaTestWithActorTestKit

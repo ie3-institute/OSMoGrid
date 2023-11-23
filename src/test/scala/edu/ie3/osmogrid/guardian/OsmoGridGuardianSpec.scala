@@ -6,10 +6,10 @@
 
 package edu.ie3.osmogrid.guardian
 
-import akka.actor.testkit.typed.CapturedLogEvent
-import akka.actor.testkit.typed.Effect.Spawned
-import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
-import akka.actor.typed.{ActorRef, Behavior}
+import org.apache.pekko.actor.testkit.typed.CapturedLogEvent
+import org.apache.pekko.actor.testkit.typed.Effect.Spawned
+import org.apache.pekko.actor.testkit.typed.scaladsl.BehaviorTestKit
+import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.test.common.UnitSpec

@@ -6,15 +6,18 @@
 
 package edu.ie3.osmogrid.lv
 
-import akka.actor.testkit.typed.CapturedLogEvent
-import akka.actor.testkit.typed.Effect.{MessageAdapter, SpawnedAnonymous}
-import akka.actor.testkit.typed.scaladsl.{
+import org.apache.pekko.actor.testkit.typed.CapturedLogEvent
+import org.apache.pekko.actor.testkit.typed.Effect.{
+  MessageAdapter,
+  SpawnedAnonymous
+}
+import org.apache.pekko.actor.testkit.typed.scaladsl.{
   ActorTestKit,
   BehaviorTestKit,
   ScalaTestWithActorTestKit
 }
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.Behavior
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
   Transformer2WTypeInput
