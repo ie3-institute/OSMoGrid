@@ -19,9 +19,10 @@ import javax.imageio.ImageIO
 import scala.jdk.CollectionConverters._
 
 object GraphUtils {
-  private val FOLDER: Path = new File(".").toPath.resolve("OutputData")
+  val FOLDER: Path = new File(".").toPath.resolve("OutputData")
 
   /** Method for drawing an [[OsmGraph]].
+    *
     * @param osmGraph
     *   to be drawn
     * @param name

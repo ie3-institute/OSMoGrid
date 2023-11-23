@@ -418,8 +418,10 @@ class LvCoordinatorSpec
 
         /* The result is forwarded once we received all the grids we expect*/
         lvCoordinatorAdapter.expectMessageType[RepLvGrids] match {
-          case RepLvGrids(grids) =>
+          case RepLvGrids(grids, streetGraph) =>
             grids should contain theSameElementsAs Seq(mockedSubgrid)
+            streetGraph.vertexSet().size() shouldBe 0
+            streetGraph.edgeSet().size() shouldBe 0
         }
 
         awaitingTestKit.isAlive shouldBe false

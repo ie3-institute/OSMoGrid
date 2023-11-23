@@ -9,16 +9,24 @@ package edu.ie3.osmogrid.guardian.run
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.guardian.run.MessageAdapters.WrappedLvCoordinatorResponse
+import edu.ie3.osmogrid.guardian.run.MessageAdapters.{
+  WrappedLvCoordinatorResponse,
+  WrappedMvCoordinatorResponse
+}
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.RepLvGrids
+import edu.ie3.osmogrid.mv.{ProvidedLvData, RepMvGrids, WrappedMvResponse}
 
 import java.util.UUID
 import scala.util.{Failure, Success}
 
 /** Actor to take care of a specific simulation run
   */
-object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
+object RunGuardian
+    extends RunSupport
+    with StopSupport
+    with SubGridHandling
+    with VoltageSupport {
 
   /** Instantiate the actor
     *
@@ -34,13 +42,17 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
       additionalListener: Seq[ActorRef[ResultListenerProtocol]] = Seq.empty,
       runId: UUID
   ): Behavior[RunRequest] = Behaviors.setup { ctx =>
+    // overwriting the default voltage config
+    setVoltageConfig(cfg.voltage)
+
     idle(
       RunGuardianData(
         runId,
         cfg,
         additionalListener,
         MessageAdapters(
-          ctx.messageAdapter(msg => WrappedLvCoordinatorResponse(msg))
+          ctx.messageAdapter(msg => WrappedLvCoordinatorResponse(msg)),
+          ctx.messageAdapter(msg => WrappedMvCoordinatorResponse(msg))
         )
       )
     )
@@ -64,7 +76,11 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
           case Success(childReferences) =>
             running(
               runGuardianData,
-              childReferences
+              childReferences,
+              FinishedGridData.empty(
+                childReferences.lvCoordinator.isDefined,
+                childReferences.mvCoordinator.isDefined
+              )
             )
           case Failure(exception) =>
             ctx.log.error(
@@ -86,29 +102,83 @@ object RunGuardian extends RunSupport with StopSupport with SubGridHandling {
     *   Meta information describing the current actor's state
     * @param childReferences
     *   References to child actors
+    * @param finishedGridData
+    *   Container for finished grid data
     * @return
     *   The next state
     */
   private def running(
       runGuardianData: RunGuardianData,
-      childReferences: ChildReferences
+      childReferences: ChildReferences,
+      finishedGridData: FinishedGridData
   ): Behavior[RunRequest] = Behaviors.receive {
     case (
           ctx,
           WrappedLvCoordinatorResponse(
-            RepLvGrids(subGridContainers)
+            RepLvGrids(subGridContainers, streetGraph)
           )
         ) =>
-      /* Handle the grid results and wait for the listener to report back */
-      handleLvResults(
-        subGridContainers,
-        runGuardianData.cfg.generation,
+      ctx.log.info(s"Received lv grids.")
+
+      // if a mv coordinator is present, send the lv results to the mv coordinator
+      childReferences.mvCoordinator.foreach { mv =>
+        mv ! WrappedMvResponse(
+          ProvidedLvData(subGridContainers, streetGraph)
+        )
+      }
+
+      val updated = finishedGridData.copy(lvData = Some(subGridContainers))
+
+      // check if all possible data was received
+      if (updated.receivedAllData) {
+
+        // if all data was received,
+        ctx.self ! HandleGridResults
+        Behaviors.same
+      } else {
+
+        // if some expected data is still missing, keep waiting for missing data
+        running(runGuardianData, childReferences, updated)
+      }
+
+    case (
+          ctx,
+          WrappedMvCoordinatorResponse(
+            RepMvGrids(subGridContainer, nodeChanges, assetInformation)
+          )
+        ) =>
+      ctx.log.info(s"Received mv grids.")
+
+      val updated = finishedGridData.copy(
+        mvData = Some(subGridContainer),
+        toBeUpdated = Some((nodeChanges, assetInformation))
+      )
+
+      // check if all possible data was received
+      if (updated.receivedAllData) {
+
+        // if all data was received,
+        ctx.self ! HandleGridResults
+        Behaviors.same
+      } else {
+
+        // if some expected data is still missing, keep waiting for missing data
+        running(runGuardianData, childReferences, updated)
+      }
+
+    case (ctx, HandleGridResults) =>
+      ctx.log.info(s"Starting to handle grid results.")
+
+      handleResults(
+        finishedGridData.lvData,
+        finishedGridData.mvData,
+        None,
+        finishedGridData.toBeUpdated,
         childReferences.resultListeners,
         runGuardianData.msgAdapters
       )(ctx.log)
 
       Behaviors.same
-
     case (ctx, ResultEventListenerDied) =>
       // we wait for exact one listener as we only started one
       /* Start coordinated shutdown */

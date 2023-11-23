@@ -10,7 +10,7 @@ import akka.actor.typed.ActorRef
 import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.{Lv, Mv}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Input, Output}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Input, Output, Voltage}
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.io.output.OutputRequest
@@ -23,10 +23,11 @@ object ConfigFailFast extends LazyLogging {
       additionalListener: Seq[ActorRef[OutputRequest]] = Seq.empty
   ): Try[OsmoGridConfig] = Try {
     cfg match {
-      case OsmoGridConfig(generation, input, output) =>
+      case OsmoGridConfig(generation, input, output, voltage) =>
         checkInputConfig(input)
         checkOutputConfig(output, additionalListener)
         checkGenerationConfig(generation)
+        checkVoltageConfig(voltage)
     }
     cfg
   }
@@ -59,7 +60,6 @@ object ConfigFailFast extends LazyLogging {
           ),
           _,
           _,
-          _,
           _
         ) =>
       (BoundaryAdminLevel.get(lowest), BoundaryAdminLevel.get(starting)) match {
@@ -83,7 +83,15 @@ object ConfigFailFast extends LazyLogging {
 
   // TODO: Add some checks if necessary in the future
   private def checkMvConfig(mv: OsmoGridConfig.Generation.Mv): Unit = mv match {
-    case Mv(_, _) =>
+    case Mv(spawnMissingHvNodes) =>
+      spawnMissingHvNodes match {
+        case true  =>
+        case false =>
+        case other =>
+          throw IllegalConfigException(
+            s"The given value for `spawnMissingHvNodes` can not be parsed (provided: $other)."
+          )
+      }
   }
 
   private def checkInputConfig(input: OsmoGridConfig.Input): Unit =
@@ -142,4 +150,6 @@ object ConfigFailFast extends LazyLogging {
       "Output directory and separator must be set when using .csv file sink!"
     )
 
+  // TODO: Check if necessary
+  private def checkVoltageConfig(voltage: Voltage): Unit = {}
 }

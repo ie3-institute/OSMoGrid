@@ -21,6 +21,7 @@ import edu.ie3.osmogrid.io.input.{
   InputResponse,
   RepAssetTypes
 }
+import edu.ie3.osmogrid.io.input.{AssetInformation, RepAssetTypes}
 import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
 import org.slf4j.Logger
 import utils.GridConversion.NodeConversion
@@ -226,7 +227,7 @@ private[mv] final case class AwaitingInputData(
     val needed =
       lvGrids.isDefined && streetGraph.isDefined && assetInformation.isDefined
 
-    if (!cfg.spawnMissingHvNodes) {
+    if (cfg.spawnMissingHvNodes) {
       needed
     } else {
       needed && hvGrids.isDefined

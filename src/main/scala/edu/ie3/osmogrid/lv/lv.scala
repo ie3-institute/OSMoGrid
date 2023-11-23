@@ -13,6 +13,8 @@ import edu.ie3.osmogrid.exception.{
   IllegalStateException,
   RequestFailedException
 }
+import edu.ie3.osmogrid.exception.RequestFailedException
+import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.input.{AssetInformation, InputResponse}
 import edu.ie3.osmogrid.lv.region_coordinator.{
@@ -97,8 +99,11 @@ sealed trait LvGridResponse
   *
   * @param grids
   *   Collection of low voltage grids
+  * @param streetGraph
+  *   [[OsmGraph]] of the streets
   */
-final case class RepLvGrids(grids: Seq[SubGridContainer]) extends LvResponse
+final case class RepLvGrids(grids: Seq[SubGridContainer], streetGraph: OsmGraph)
+    extends LvResponse
 
 final case class RepLvGrid(
     gridUuid: UUID,
