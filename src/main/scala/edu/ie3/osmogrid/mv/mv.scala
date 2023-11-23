@@ -16,6 +16,11 @@ import edu.ie3.osmogrid.exception.{
 }
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input
+import edu.ie3.osmogrid.io.input.{
+  AssetInformation,
+  InputResponse,
+  RepAssetTypes
+}
 import edu.ie3.osmogrid.io.input.{AssetInformation, RepAssetTypes}
 import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
 import org.slf4j.Logger
@@ -155,12 +160,12 @@ final case class ProvidedHvData(
   *   adapter for input data provider
   */
 private[mv] final case class MvMessageAdapters(
-    inputDataProvider: ActorRef[input.Response]
+    inputDataProvider: ActorRef[InputResponse]
 )
 
 private[mv] object MvMessageAdapters {
   final case class WrappedInputResponse(
-      response: input.Response
+      response: InputResponse
   ) extends MvRequest
 }
 

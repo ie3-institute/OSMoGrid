@@ -14,6 +14,7 @@ import edu.ie3.osmogrid.guardian.run.MessageAdapters.{
   WrappedMvCoordinatorResponse
 }
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
+import edu.ie3.osmogrid.lv.RepLvGrids
 import edu.ie3.osmogrid.lv.coordinator.RepLvGrids
 import edu.ie3.osmogrid.mv.{ProvidedLvData, RepMvGrids, WrappedMvResponse}
 
@@ -41,7 +42,7 @@ object RunGuardian
       cfg: OsmoGridConfig,
       additionalListener: Seq[ActorRef[ResultListenerProtocol]] = Seq.empty,
       runId: UUID
-  ): Behavior[Request] = Behaviors.setup { ctx =>
+  ): Behavior[RunRequest] = Behaviors.setup { ctx =>
     // overwriting the default voltage config
     setVoltageConfig(cfg.voltage)
 
@@ -65,7 +66,7 @@ object RunGuardian
     * @return
     *   the next state
     */
-  private def idle(runGuardianData: RunGuardianData): Behavior[Request] =
+  private def idle(runGuardianData: RunGuardianData): Behavior[RunRequest] =
     Behaviors.receive {
       case (ctx, Run) =>
         /* Start a run */
@@ -111,7 +112,7 @@ object RunGuardian
       runGuardianData: RunGuardianData,
       childReferences: ChildReferences,
       finishedGridData: FinishedGridData
-  ): Behavior[Request] = Behaviors.receive {
+  ): Behavior[RunRequest] = Behaviors.receive {
     case (
           ctx,
           WrappedLvCoordinatorResponse(
@@ -186,7 +187,7 @@ object RunGuardian
         s"Run ${runGuardianData.runId} finished. Stop all run-related processes."
       )
       stopping(stopChildren(runGuardianData.runId, childReferences, ctx))
-    case (ctx, watch: Watch) =>
+    case (ctx, watch: RunWatch) =>
       /* Somebody died unexpectedly. Start coordinated shutdown */
       stopping(
         handleUnexpectedShutDown(
@@ -213,8 +214,8 @@ object RunGuardian
     */
   private def stopping(
       stoppingData: StoppingData
-  ): Behavior[Request] = Behaviors.receive {
-    case (ctx, watch: Watch) =>
+  ): Behavior[RunRequest] = Behaviors.receive {
+    case (ctx, watch: RunWatch) =>
       val updatedStoppingData = registerCoordinatedShutDown(watch, stoppingData)
       if (updatedStoppingData.allChildrenTerminated) {
         ctx.log.info(

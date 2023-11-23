@@ -17,6 +17,8 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils._
 import edu.ie3.datamodel.models.{StandardUnits, UniqueEntity}
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
+import edu.ie3.osmogrid.io.output.OutputRequest
+import edu.ie3.osmogrid.lv.LvResponse
 import edu.ie3.osmogrid.exception.GridException
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.coordinator
@@ -339,11 +341,11 @@ class SubGridHandlingSpec
         LoggerFactory.getLogger("SubGridHandlingTestLogger")
 
       val lvCoordinatorAdapter =
-        testKit.createTestProbe[coordinator.Response]("LvCoordinatorAdapter")
+        testKit.createTestProbe[LvResponse]("LvCoordinatorAdapter")
       val mvCoordinatorAdapter =
         testKit.createTestProbe[MvResponse]("MvCoordinatorAdapter")
       val resultListener =
-        testKit.createTestProbe[ResultListenerProtocol.Request](
+        testKit.createTestProbe[OutputRequest](
           "ResultListener"
         )
 

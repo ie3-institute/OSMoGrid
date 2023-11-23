@@ -4,11 +4,10 @@
  * Research group Distribution grid planning and operation
  */
 
-package edu.ie3.osmogrid.lv.coordinator
+package edu.ie3.osmogrid.lv
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
-import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.IllegalStateException
@@ -19,10 +18,14 @@ import edu.ie3.osmogrid.io.input.{
   ReqAssetTypes,
   ReqOsm
 }
-import edu.ie3.osmogrid.lv.LvGridGenerator
-import edu.ie3.osmogrid.lv.coordinator.MessageAdapters.{
+import edu.ie3.osmogrid.lv.LvMessageAdapters.{
   WrappedGridGeneratorResponse,
   WrappedRegionResponse
+}
+import edu.ie3.osmogrid.lv.region_coordinator.{
+  GridToExpect,
+  LvRegionCoordinator,
+  Partition
 }
 import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
 import edu.ie3.osmogrid.model.OsmoGridModel
@@ -36,39 +39,6 @@ import scala.util.{Failure, Success}
   */
 object LvCoordinator extends ActorStopSupportStateless {
   private var streetGraph = new OsmGraph()
-
-  final case class ResultData(
-      expectedGrids: Set[UUID],
-      subGridContainers: Seq[SubGridContainer]
-  ) {
-
-    def update(expectedGrid: UUID): ResultData = {
-      ResultData(expectedGrids + expectedGrid, subGridContainers)
-    }
-
-    def update(
-        expectedGrid: UUID,
-        subGridContainer: Seq[SubGridContainer]
-    ): ResultData = {
-      if (expectedGrids.contains(expectedGrid)) {
-        return ResultData(
-          expectedGrids - expectedGrid,
-          subGridContainers ++ subGridContainer
-        )
-      }
-      throw IllegalStateException(
-        s"Trying to update with subgrid container that was not expected. UUID: $expectedGrid"
-      )
-    }
-
-  }
-
-  object ResultData {
-    def empty: ResultData = {
-      ResultData(Set.empty[UUID], Seq.empty[SubGridContainer])
-    }
-
-  }
 
   /** Build a [[LvCoordinator]] with given additional information
     *
@@ -84,19 +54,19 @@ object LvCoordinator extends ActorStopSupportStateless {
   def apply(
       cfg: OsmoGridConfig.Generation.Lv,
       inputDataProvider: ActorRef[InputDataEvent],
-      runGuardian: ActorRef[Response]
-  ): Behavior[Request] = Behaviors.setup[Request] { context =>
+      runGuardian: ActorRef[LvResponse]
+  ): Behavior[LvRequest] = Behaviors.setup[LvRequest] { context =>
     /* Define message adapters */
     val messageAdapters =
-      MessageAdapters(
+      LvMessageAdapters(
         context.messageAdapter(msg =>
-          MessageAdapters.WrappedInputDataResponse(msg)
+          LvMessageAdapters.WrappedInputDataResponse(msg)
         ),
         context.messageAdapter(msg =>
-          MessageAdapters.WrappedRegionResponse(msg)
+          LvMessageAdapters.WrappedRegionResponse(msg)
         ),
         context.messageAdapter(msg =>
-          MessageAdapters.WrappedGridGeneratorResponse(msg)
+          LvMessageAdapters.WrappedGridGeneratorResponse(msg)
         )
       )
 
@@ -112,9 +82,9 @@ object LvCoordinator extends ActorStopSupportStateless {
     * @return
     *   The next state
     */
-  private def idle(stateData: IdleData): Behavior[Request] =
+  private def idle(stateData: IdleData): Behavior[LvRequest] =
     Behaviors
-      .receive[Request] {
+      .receive[LvRequest] {
         case (
               ctx,
               ReqLvGrids
@@ -147,7 +117,7 @@ object LvCoordinator extends ActorStopSupportStateless {
           awaitInputData(
             AwaitingData.empty(stateData)
           )
-        case (ctx, Terminate) =>
+        case (ctx, LvTerminate) =>
           terminate(ctx.log)
         case (ctx, unsupported) =>
           ctx.log.error(
@@ -168,10 +138,10 @@ object LvCoordinator extends ActorStopSupportStateless {
     */
   private def awaitInputData(
       awaitingData: AwaitingData
-  ): Behavior[Request] =
+  ): Behavior[LvRequest] =
     Behaviors
-      .receive[Request] {
-        case (ctx, MessageAdapters.WrappedInputDataResponse(response)) =>
+      .receive[LvRequest] {
+        case (ctx, LvMessageAdapters.WrappedInputDataResponse(response)) =>
           /* Register what has been responded */
           awaitingData.registerResponse(response, ctx.log) match {
             case Success(updatedStateData) =>
@@ -183,7 +153,7 @@ object LvCoordinator extends ActorStopSupportStateless {
               )
               stopBehavior
           }
-        case (ctx, Terminate) =>
+        case (ctx, LvTerminate) =>
           terminate(ctx.log)
         case (ctx, unsupported) =>
           ctx.log.warn(
@@ -208,8 +178,8 @@ object LvCoordinator extends ActorStopSupportStateless {
     */
   private def handleUpdatedAwaitingData(
       awaitingData: AwaitingData,
-      ctx: ActorContext[Request]
-  ): Behavior[Request] = {
+      ctx: ActorContext[LvRequest]
+  ): Behavior[LvRequest] = {
     /* Check, if everything is in place */
     if (awaitingData.isComprehensive) {
       /* Process the data */
@@ -225,7 +195,7 @@ object LvCoordinator extends ActorStopSupportStateless {
       )
 
       /* Spawn an coordinator for the region */
-      ctx.self ! StartGeneration(
+      ctx.self ! StartLvGeneration(
         awaitingData.cfg,
         ctx.spawnAnonymous(
           LvRegionCoordinator()
@@ -253,15 +223,15 @@ object LvCoordinator extends ActorStopSupportStateless {
     *   The next state
     */
   private def awaitResults(
-      guardian: ActorRef[Response],
-      msgAdapters: MessageAdapters,
+      guardian: ActorRef[LvResponse],
+      msgAdapters: LvMessageAdapters,
       resultData: ResultData
-  ): Behavior[Request] =
+  ): Behavior[LvRequest] =
     Behaviors
-      .receive[Request] {
+      .receive[LvRequest] {
         case (
               ctx,
-              StartGeneration(
+              StartLvGeneration(
                 cfg,
                 regionCoordinator,
                 osmoGridModel,
@@ -276,7 +246,7 @@ object LvCoordinator extends ActorStopSupportStateless {
           BoundaryAdminLevel.get(cfg.boundaryAdminLevel.starting) match {
             case Some(startingLevel) =>
               /* Forward the generation request */
-              regionCoordinator ! LvRegionCoordinator.Partition(
+              regionCoordinator ! Partition(
                 osmoGridModel,
                 assetInformation,
                 startingLevel,
@@ -293,7 +263,7 @@ object LvCoordinator extends ActorStopSupportStateless {
           }
         case (ctx, WrappedRegionResponse(response)) =>
           response match {
-            case LvRegionCoordinator.GridToExpect(gridUuid) =>
+            case GridToExpect(gridUuid) =>
               ctx.log.info(
                 s"Expecting grid with UUID: $gridUuid to be generated."
               )
@@ -306,7 +276,7 @@ object LvCoordinator extends ActorStopSupportStateless {
           }
         case (ctx, WrappedGridGeneratorResponse(response)) =>
           response match {
-            case LvGridGenerator.RepLvGrid(gridUuid, subGridContainer) =>
+            case RepLvGrid(gridUuid, subGridContainer) =>
               ctx.log.info(
                 s"Received expected grid: $gridUuid"
               )
@@ -330,7 +300,7 @@ object LvCoordinator extends ActorStopSupportStateless {
               }
           }
 
-        case (ctx, Terminate) =>
+        case (ctx, LvTerminate) =>
           terminate(ctx.log)
         case (ctx, unsupported) =>
           ctx.log.error(

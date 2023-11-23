@@ -7,14 +7,13 @@
 package edu.ie3.osmogrid.io.output
 
 import edu.ie3.datamodel.io.source.csv.CsvJointGridContainerSource
-import edu.ie3.osmogrid.io.output.ResultListenerProtocol.GridResult
-import edu.ie3.util.io.FileIOUtils
 import edu.ie3.test.common.{IOTestCommons, ThreeWindingTestData, UnitSpec}
+import edu.ie3.util.io.FileIOUtils
 
 import java.nio.file.Paths
 import java.util.UUID
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
 
 class ResultCsvSinkIT
     extends UnitSpec
