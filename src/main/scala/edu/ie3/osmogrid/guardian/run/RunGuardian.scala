@@ -15,7 +15,6 @@ import edu.ie3.osmogrid.guardian.run.MessageAdapters.{
 }
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.RepLvGrids
-import edu.ie3.osmogrid.lv.coordinator.RepLvGrids
 import edu.ie3.osmogrid.mv.{ProvidedLvData, RepMvGrids, WrappedMvResponse}
 
 import java.util.UUID

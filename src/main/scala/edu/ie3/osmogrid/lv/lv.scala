@@ -102,7 +102,8 @@ sealed trait LvGridResponse
   * @param streetGraph
   *   [[OsmGraph]] of the streets
   */
-final case class RepLvGrids(grids: Seq[SubGridContainer], streetGraph: OsmGraph) extends LvResponse
+final case class RepLvGrids(grids: Seq[SubGridContainer], streetGraph: OsmGraph)
+    extends LvResponse
 
 final case class RepLvGrid(
     gridUuid: UUID,

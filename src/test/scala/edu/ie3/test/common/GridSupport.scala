@@ -110,7 +110,7 @@ trait GridSupport {
       mock[ComparableQuantity[Power]],
       mock[ComparableQuantity[Power]],
       20.asKiloVolt,
-      20.asKiloVolt,
+      10.asKiloVolt,
       0.4.asKiloVolt,
       mock[ComparableQuantity[ElectricResistance]],
       mock[ComparableQuantity[ElectricResistance]],

@@ -23,7 +23,6 @@ import edu.ie3.osmogrid.io.input.{InputRequest, InputTerminate}
 import edu.ie3.osmogrid.io.output.{GridResult, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv._
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
-import edu.ie3.osmogrid.lv.coordinator
 import edu.ie3.osmogrid.mv._
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.slf4j.event.Level
@@ -85,7 +84,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
 
         /* Two message adapters are registered */
         idleTestKit
-          .expectEffectType[MessageAdapter[LvResponse, Request]]
+          .expectEffectType[MessageAdapter[LvResponse, LvRequest]]
         idleTestKit
           .expectEffectType[MessageAdapter[MvResponse, MvRequest]]
 
@@ -175,7 +174,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
 
         runningTestKit.run(
           MessageAdapters.WrappedLvCoordinatorResponse(
-            coordinator.RepLvGrids(lvGrids, streetGraph)
+            RepLvGrids(lvGrids, streetGraph)
           )
         )
 

@@ -10,12 +10,9 @@ import akka.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.io.input.InputDataEvent
-import edu.ie3.osmogrid.io.input
-import edu.ie3.osmogrid.io.input.AssetInformation
+import edu.ie3.osmogrid.io.input.{AssetInformation, InputDataEvent}
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.{LvRequest, LvResponse}
-import edu.ie3.osmogrid.lv.coordinator
 import edu.ie3.osmogrid.mv.{MvRequest, MvResponse}
 
 import java.util.UUID
@@ -58,7 +55,7 @@ object ResultEventListenerDied extends RunWatch
 
 object LvCoordinatorDied extends RunWatch
 
-object MvCoordinatorDied extends Watch
+object MvCoordinatorDied extends RunWatch
 
 /* Sent out responses */
 sealed trait RunResponse
@@ -145,4 +142,4 @@ object FinishedGridData {
 
 /** Message to tell the [[RunGuardian]] to start handling the received results.
   */
-object HandleGridResults extends Request
+object HandleGridResults extends RunRequest

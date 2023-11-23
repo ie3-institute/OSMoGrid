@@ -30,18 +30,11 @@ import edu.ie3.osmogrid.io.input.{
 }
 import edu.ie3.osmogrid.lv
 import edu.ie3.osmogrid.lv.LvMessageAdapters.{
-import edu.ie3.osmogrid.io.input.{AssetInformation, BoundaryAdminLevel}
-import edu.ie3.osmogrid.lv.LvGridGenerator.RepLvGrid
-import edu.ie3.osmogrid.lv.coordinator.LvCoordinator.ResultData
-import edu.ie3.osmogrid.lv.coordinator.MessageAdapters.{
   WrappedGridGeneratorResponse,
   WrappedInputDataResponse,
   WrappedRegionResponse
 }
-import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
-import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator.Partition
 import edu.ie3.osmogrid.lv.region_coordinator.LvTestModel.assetInformation
-import edu.ie3.osmogrid.lv.{LvGridGenerator, coordinator}
 import edu.ie3.osmogrid.lv.region_coordinator.{
   GridToExpect,
   LvRegionRequest,

@@ -13,12 +13,8 @@ import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
 import edu.ie3.osmogrid.exception.UnsupportedRequestException
 import edu.ie3.osmogrid.io.input.{InputDataEvent, InputDataProvider}
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
-import edu.ie3.osmogrid.lv.{
-  LvCoordinator,
-  Request => LvCoordinatorRequest
-}
-import edu.ie3.osmogrid.mv.{MvCoordinator, MvRequest, MvResponse, ReqMvGrids}
 import edu.ie3.osmogrid.lv.{LvCoordinator, LvRequest, LvResponse, ReqLvGrids}
+import edu.ie3.osmogrid.mv.{MvCoordinator, MvRequest, MvResponse, ReqMvGrids}
 
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
@@ -218,7 +214,7 @@ trait RunSupport {
       inputDataProvider: ActorRef[InputDataEvent],
       mvConfig: OsmoGridConfig.Generation.Mv,
       mvCoordinatorAdapter: ActorRef[MvResponse],
-      ctx: ActorContext[Request]
+      ctx: ActorContext[RunRequest]
   ): ActorRef[MvRequest] = {
     val mvCoordinator =
       ctx.spawn(

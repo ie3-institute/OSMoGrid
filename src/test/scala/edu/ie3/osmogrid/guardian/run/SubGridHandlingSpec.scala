@@ -21,7 +21,6 @@ import edu.ie3.osmogrid.io.output.OutputRequest
 import edu.ie3.osmogrid.lv.LvResponse
 import edu.ie3.osmogrid.exception.GridException
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
-import edu.ie3.osmogrid.lv.coordinator
 import edu.ie3.osmogrid.mv.MvResponse
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.locationtech.jts.geom.Point
@@ -46,7 +45,7 @@ class SubGridHandlingSpec
 
   "The SubGridHandling" should {
     val resultListener = testKit.createTestProbe[ResultListenerProtocol]()
-    val lvCoordinator = testKit.createTestProbe[coordinator.Response]()
+    val lvCoordinator = testKit.createTestProbe[LvResponse]()
     val mvCoordinator = testKit.createTestProbe[MvResponse]
 
     val listener = Seq(resultListener.ref)
@@ -228,7 +227,7 @@ class SubGridHandlingSpec
         Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
         false,
         mock[Point],
-        MV_20KV,
+        MV_10KV,
         20
       )
 
