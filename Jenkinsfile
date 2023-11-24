@@ -456,7 +456,6 @@ def constantBranchesProps() {
     [
       string(defaultValue: '', description: '', name: 'deploy', trim: true)
     ]),
-    [$class: 'RebuildSettings', autoRebuild: false, rebuildDisabled: false],
     [$class: 'ThrottleJobProperty', categories: [], limitOneJobWithMatchingParams: false, maxConcurrentPerNode: 0, maxConcurrentTotal: 0, paramsToUseForLimit: '', throttleEnabled: true, throttleOption: 'project']
   ])
 }
