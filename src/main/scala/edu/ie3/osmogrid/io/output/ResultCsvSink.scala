@@ -15,6 +15,7 @@ import edu.ie3.datamodel.io.naming.{
 import edu.ie3.datamodel.io.processor.ProcessorProvider
 import edu.ie3.datamodel.io.sink.CsvFileSink
 
+import java.nio.file.Paths
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -27,21 +28,19 @@ final case class ResultCsvSink(
 ) extends ResultSink {
 
   private val csvFileSink = new CsvFileSink(
-    saveFolderPath,
-    new ProcessorProvider(),
+    Paths.get(saveFolderPath),
     new FileNamingStrategy(
       new EntityPersistenceNamingStrategy(),
       if (hierarchic)
-        new DefaultDirectoryHierarchy(saveFolderPath, "grid")
+        new DefaultDirectoryHierarchy(Paths.get(saveFolderPath), "grid")
       else
         new FlatDirectoryHierarchy()
     ),
-    false,
     csvSeparator
   )
 
   def handleResult(
-      gridResult: ResultListenerProtocol.GridResult
+      gridResult: GridResult
   ): Future[Unit] =
     Future(csvFileSink.persistJointGrid(gridResult.grid))
 

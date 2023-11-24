@@ -6,12 +6,17 @@
 
 package edu.ie3.osmogrid.io.input
 
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.ActorContext
+import org.apache.pekko.actor.typed.ActorSystem
+import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Osm
 import edu.ie3.osmogrid.exception.IllegalConfigException
-import edu.ie3.osmogrid.io.input.pbf.PbfGuardian
+import edu.ie3.osmogrid.io.input.pbf.{
+  PbfGuardian,
+  PbfReadFailed,
+  PbfReadSuccessful,
+  PbfRun
+}
 import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 
 import java.io.File
@@ -44,8 +49,8 @@ object OsmSource {
         name = s"pbf-reader-guardian-${UUID.randomUUID()}"
       )
 
-      import akka.actor.typed.scaladsl.AskPattern._
-      import akka.util.Timeout
+      import org.apache.pekko.actor.typed.scaladsl.AskPattern._
+      import org.apache.pekko.util.Timeout
 
       import concurrent.duration.DurationInt
 
@@ -54,10 +59,10 @@ object OsmSource {
       implicit val system: ActorSystem[_] = ctx.system
       implicit val ec: ExecutionContextExecutor = system.executionContext
 
-      pbfReader.ask(sender => PbfGuardian.Run(sender)).flatMap {
-        case PbfGuardian.PbfReadSuccessful(osmoGridModel) =>
+      pbfReader.ask(sender => PbfRun(sender)).flatMap {
+        case PbfReadSuccessful(osmoGridModel) =>
           Future.successful(osmoGridModel)
-        case PbfGuardian.PbfReadFailed(exception) =>
+        case PbfReadFailed(exception) =>
           Future.failed(exception)
       }
     }

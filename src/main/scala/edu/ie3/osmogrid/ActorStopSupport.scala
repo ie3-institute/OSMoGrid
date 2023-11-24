@@ -6,8 +6,8 @@
 
 package edu.ie3.osmogrid
 
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.Behavior
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.slf4j.Logger
 
 /** Support trait for executing clean up tasks with stopping an actor

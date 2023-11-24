@@ -6,14 +6,22 @@
 
 package edu.ie3.osmogrid.io.output
 
-import akka.actor.typed.{Behavior, PostStop}
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer}
+import org.apache.pekko.actor.typed.scaladsl.{
+  ActorContext,
+  Behaviors,
+  StashBuffer
+}
+import org.apache.pekko.actor.typed.{Behavior, PostStop}
 import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Output
 import edu.ie3.osmogrid.exception.IllegalConfigException
-import edu.ie3.osmogrid.io.output.ResultListenerProtocol.PersistenceListenerEvent._
-import edu.ie3.osmogrid.io.output.ResultListenerProtocol._
+import edu.ie3.osmogrid.io.output.PersistenceListenerEvent.{
+  InitComplete,
+  InitFailed,
+  ResultHandlingFailed,
+  ResultHandlingSucceeded
+}
 
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global

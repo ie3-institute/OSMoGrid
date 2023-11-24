@@ -6,43 +6,48 @@
 
 package edu.ie3.osmogrid.cfg
 
-import akka.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.ActorRef
 import com.typesafe.scalalogging.LazyLogging
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.{Lv, Mv}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Input, Output}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Input, Output, Voltage}
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
-import edu.ie3.osmogrid.io.output.ResultListenerProtocol
+import edu.ie3.osmogrid.io.output.OutputRequest
 
 import scala.util.Try
 
 object ConfigFailFast extends LazyLogging {
   def check(
       cfg: OsmoGridConfig,
-      additionalListener: Seq[ActorRef[ResultListenerProtocol.Request]] =
-        Seq.empty
+      additionalListener: Seq[ActorRef[OutputRequest]] = Seq.empty
   ): Try[OsmoGridConfig] = Try {
     cfg match {
-      case OsmoGridConfig(generation, input, output) =>
+      case OsmoGridConfig(generation, input, output, voltage) =>
         checkInputConfig(input)
         checkOutputConfig(output, additionalListener)
         checkGenerationConfig(generation)
+        checkVoltageConfig(voltage)
     }
     cfg
   }
 
   private def checkGenerationConfig(generation: Generation): Unit =
     generation match {
-      case Generation(lv) =>
+      case Generation(lv, mv) =>
         /* Check, that at least one config is set */
         if (Vector(lv).count(_.isDefined) < 1)
           throw IllegalConfigException(
-            "At least one voltage level generation config has to be defined."
+            "At least one lv voltage level generation config has to be defined."
+          )
+        if (Vector(mv).count(_.isDefined) < 1)
+          throw IllegalConfigException(
+            "At least one mv voltage level generation config has to be defined."
           )
 
         /* Check single configs */
         lv.foreach(checkLvConfig)
+        mv.foreach(checkMvConfig)
     }
 
   // TODO Check Filter for osm
@@ -53,7 +58,6 @@ object ConfigFailFast extends LazyLogging {
             lowest,
             starting
           ),
-          _,
           _,
           _,
           _
@@ -74,6 +78,19 @@ object ConfigFailFast extends LazyLogging {
           )
         case _ =>
         // all good, do nothing
+      }
+  }
+
+  // TODO: Add some checks if necessary in the future
+  private def checkMvConfig(mv: OsmoGridConfig.Generation.Mv): Unit = mv match {
+    case Mv(spawnMissingHvNodes) =>
+      spawnMissingHvNodes match {
+        case true  =>
+        case false =>
+        case other =>
+          throw IllegalConfigException(
+            s"The given value for `spawnMissingHvNodes` can not be parsed (provided: $other)."
+          )
       }
   }
 
@@ -111,7 +128,7 @@ object ConfigFailFast extends LazyLogging {
 
   private def checkOutputConfig(
       output: OsmoGridConfig.Output,
-      additionalListener: Seq[ActorRef[ResultListenerProtocol.Request]]
+      additionalListener: Seq[ActorRef[OutputRequest]]
   ): Unit =
     output match {
       case Output(Some(file), _) =>
@@ -133,4 +150,6 @@ object ConfigFailFast extends LazyLogging {
       "Output directory and separator must be set when using .csv file sink!"
     )
 
+  // TODO: Check if necessary
+  private def checkVoltageConfig(voltage: Voltage): Unit = {}
 }

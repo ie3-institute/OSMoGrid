@@ -6,63 +6,27 @@
 
 package edu.ie3.osmogrid.io.input.pbf
 
-import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors, Routers}
+import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors, Routers}
+import org.apache.pekko.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import com.acervera.osm4scala.BlobTupleIterator
 import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.exception.PbfReadFailedException
-import edu.ie3.osmogrid.io.input.pbf.PbfWorker.ReadBlobMsg
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
-import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
+import edu.ie3.osmogrid.model.SourceFilter
 import edu.ie3.util.osm.model.OsmContainer
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
 
-import java.io.{File, FileInputStream, InputStream}
+import java.io.{File, FileInputStream}
 import java.util.UUID
-import scala.collection.parallel.immutable.{ParSeq, ParVector}
 import scala.util.{Failure, Success, Try}
 
-// internal state data
-protected final case class StateData(
-    pbfIS: InputStream,
-    blobIterator: BlobTupleIterator,
-    workerPool: ActorRef[PbfWorker.Request],
-    workerResponseMapper: ActorRef[PbfWorker.Response],
-    filter: SourceFilter,
-    sender: Option[ActorRef[PbfGuardian.Response]] = None,
-    noOfBlobs: Int = -1,
-    noOfResponses: Int = 0,
-    receivedModels: ParSeq[ParOsmContainer] = ParVector.empty,
-    startTime: Long = -1
-) {
-  def allBlobsRead(): Boolean = noOfResponses == noOfBlobs
-}
-
 private[input] object PbfGuardian extends ActorStopSupport[StateData] {
-
-  // external request protocol
-  sealed trait Request
-
-  final case class Run(replyTo: ActorRef[PbfGuardian.Response]) extends Request
-
-  // external reply protocol
-  sealed trait Response
-
-  final case class PbfReadSuccessful(osmoGridModel: OsmoGridModel)
-      extends Response
-
-  final case class PbfReadFailed(exception: Throwable) extends Response
-
-  // internal private protocol
-  private final case class WrappedPbfWorkerResponse(
-      response: PbfWorker.Response
-  ) extends Request
 
   def apply(
       pbfFile: File,
       filter: SourceFilter,
       noOfActors: Int = Runtime.getRuntime.availableProcessors()
-  ): Behavior[Request] = Behaviors.setup[Request] { ctx =>
+  ): Behavior[PbfGuardianRequest] = Behaviors.setup[PbfGuardianRequest] { ctx =>
     ctx.log.info(s"Start reading pbf file using $noOfActors actors ...")
     val pool = Routers.pool(poolSize = noOfActors) {
       Behaviors
@@ -72,7 +36,7 @@ private[input] object PbfGuardian extends ActorStopSupport[StateData] {
     val router = ctx.spawn(pool, s"pbf-worker-pool-${UUID.randomUUID()}")
     val pbfIS = new FileInputStream(pbfFile)
 
-    val workerResponseMapper: ActorRef[PbfWorker.Response] =
+    val workerResponseMapper: ActorRef[PbfWorkerResponse] =
       ctx.messageAdapter(rsp => WrappedPbfWorkerResponse(rsp))
 
     idle(
@@ -86,64 +50,65 @@ private[input] object PbfGuardian extends ActorStopSupport[StateData] {
     )
   }
 
-  private def idle(stateData: StateData): Behavior[Request] = Behaviors
-    .receive[Request] { case (ctx, msg) =>
-      msg match {
-        case Run(sender) =>
-          // start the reading process
-          val start = System.currentTimeMillis()
-          Try {
-            readPbf(
-              stateData.blobIterator,
-              stateData.workerPool,
-              stateData.workerResponseMapper
-            )
-          } match {
-            case Success(noOfBlobs) if noOfBlobs > 0 =>
-              ctx.log.debug(s"Reading $noOfBlobs blobs ...")
-              idle(
-                stateData.copy(
-                  sender = Some(sender),
-                  noOfBlobs = noOfBlobs,
-                  startTime = start
-                )
+  private def idle(stateData: StateData): Behavior[PbfGuardianRequest] =
+    Behaviors
+      .receive[PbfGuardianRequest] { case (ctx, msg) =>
+        msg match {
+          case PbfRun(sender) =>
+            // start the reading process
+            val start = System.currentTimeMillis()
+            Try {
+              readPbf(
+                stateData.blobIterator,
+                stateData.workerPool,
+                stateData.workerResponseMapper
               )
-            case Success(_) =>
-              sender ! PbfReadFailed(
-                PbfReadFailedException(
-                  "Input file is empty, stopping."
-                )
-              )
-              terminate(ctx.log, stateData)
-            case Failure(exception) =>
-              sender ! PbfReadFailed(
-                PbfReadFailedException(
-                  "Reading input failed.",
-                  exception
-                )
-              )
-              terminate(ctx.log, stateData)
-          }
-
-        case WrappedPbfWorkerResponse(response) =>
-          response match {
-            case PbfWorker.ReadSuccessful(osmContainer) =>
-              addOsmoGridModel(osmContainer, stateData, ctx)
-            case PbfWorker.ReadFailed(blobHeader, blob, filter, exception) =>
-              ctx.log.error("Error reading blob data.", exception)
-              stateData.sender.foreach(
-                _ !
-                  PbfReadFailed(
-                    PbfReadFailedException(
-                      "Error while reading pbf file from blob!"
-                    )
-                      .initCause(exception)
+            } match {
+              case Success(noOfBlobs) if noOfBlobs > 0 =>
+                ctx.log.debug(s"Reading $noOfBlobs blobs ...")
+                idle(
+                  stateData.copy(
+                    sender = Some(sender),
+                    noOfBlobs = noOfBlobs,
+                    startTime = start
                   )
-              )
-              terminate(ctx.log, stateData)
-          }
+                )
+              case Success(_) =>
+                sender ! PbfReadFailed(
+                  PbfReadFailedException(
+                    "Input file is empty, stopping."
+                  )
+                )
+                terminate(ctx.log, stateData)
+              case Failure(exception) =>
+                sender ! PbfReadFailed(
+                  PbfReadFailedException(
+                    "Reading input failed.",
+                    exception
+                  )
+                )
+                terminate(ctx.log, stateData)
+            }
+
+          case WrappedPbfWorkerResponse(response) =>
+            response match {
+              case ReadSuccessful(osmContainer) =>
+                addOsmoGridModel(osmContainer, stateData, ctx)
+              case ReadFailed(blobHeader, blob, filter, exception) =>
+                ctx.log.error("Error reading blob data.", exception)
+                stateData.sender.foreach(
+                  _ !
+                    PbfReadFailed(
+                      PbfReadFailedException(
+                        "Error while reading pbf file from blob!"
+                      )
+                        .initCause(exception)
+                    )
+                )
+                terminate(ctx.log, stateData)
+            }
+        }
       }
-    }
 
   override protected def cleanUp(stateData: StateData): Unit =
     stateData.pbfIS.close()
@@ -151,7 +116,7 @@ private[input] object PbfGuardian extends ActorStopSupport[StateData] {
   private def addOsmoGridModel(
       osmContainer: OsmContainer,
       stateData: StateData,
-      ctx: ActorContext[Request]
+      ctx: ActorContext[PbfGuardianRequest]
   ) = {
 
     def status(stateData: StateData): Unit = {
@@ -211,8 +176,8 @@ private[input] object PbfGuardian extends ActorStopSupport[StateData] {
 
   private def readPbf(
       blobIterator: BlobTupleIterator,
-      workerPool: ActorRef[PbfWorker.Request],
-      workerResponseMapper: ActorRef[PbfWorker.Response]
+      workerPool: ActorRef[PbfWorkerRequest],
+      workerResponseMapper: ActorRef[PbfWorkerResponse]
   ): Int =
     blobIterator.foldLeft(0) { case (counter, (blobHeader, blob)) =>
       workerPool ! ReadBlobMsg(blobHeader, blob, workerResponseMapper)

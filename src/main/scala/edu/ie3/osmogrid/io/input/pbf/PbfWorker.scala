@@ -6,65 +6,27 @@
 
 package edu.ie3.osmogrid.io.input.pbf
 
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior, PostStop}
+import org.apache.pekko.actor.typed.Behavior
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import com.acervera.osm4scala.EntityIterator.fromBlob
-import com.acervera.osm4scala.model.RelationMemberEntityTypes.RelationMemberEntityTypes
-import com.acervera.osm4scala.model.{
-  Info,
-  NodeEntity,
-  RelationEntity,
-  RelationMemberEntity,
-  WayEntity
-}
+import com.acervera.osm4scala.model.{NodeEntity, RelationEntity, WayEntity}
 import edu.ie3.osmogrid.model.Osm4ScalaMapper.{osmNode, osmRelation, osmWay}
-import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
-import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
-import edu.ie3.util.geo.GeoUtils
-import edu.ie3.util.osm.model.OsmContainer
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
-import edu.ie3.util.osm.model.OsmEntity.{MetaInformation, Node, Relation, Way}
-import edu.ie3.util.osm.model.OsmEntity.Relation.{
-  RelationMember,
-  RelationMemberType
-}
-import org.openstreetmap.osmosis.osmbinary.fileformat.{Blob, BlobHeader}
+import edu.ie3.util.osm.model.OsmEntity.{Node, Relation, Way}
+import org.openstreetmap.osmosis.osmbinary.fileformat.Blob
 
-import java.time.ZonedDateTime
-import java.util.UUID
 import scala.collection.parallel.immutable.ParSeq
 
 private[pbf] object PbfWorker {
+  def apply(): Behavior[PbfWorkerRequest] =
+    Behaviors.receiveMessage[PbfWorkerRequest] {
+      case ReadBlobMsg(_, blob, replyTo) =>
+        val osmContainer = readBlob(blob)
 
-  // external request protocol
-  sealed trait Request
+        replyTo ! ReadSuccessful(osmContainer)
 
-  final case class ReadBlobMsg(
-      blobHeader: BlobHeader,
-      blob: Blob,
-      replyTo: ActorRef[PbfWorker.Response]
-  ) extends Request
-
-  // external response protocol
-  sealed trait Response
-
-  final case class ReadSuccessful(osmContainer: OsmContainer) extends Response
-
-  final case class ReadFailed(
-      blobHeader: BlobHeader,
-      blob: Blob,
-      filter: SourceFilter,
-      exception: Throwable
-  ) extends Response
-
-  def apply(): Behavior[Request] = Behaviors.receiveMessage[Request] {
-    case ReadBlobMsg(_, blob, replyTo) =>
-      val osmContainer = readBlob(blob)
-
-      replyTo ! ReadSuccessful(osmContainer)
-
-      Behaviors.same
-  }
+        Behaviors.same
+    }
 
   private def readBlob(blob: Blob): ParOsmContainer = {
     val (nodes, ways, relations) = fromBlob(blob).foldLeft(

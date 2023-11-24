@@ -6,18 +6,15 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.scaladsl.ActorContext
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Output}
 import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
 import edu.ie3.osmogrid.exception.UnsupportedRequestException
 import edu.ie3.osmogrid.io.input.{InputDataEvent, InputDataProvider}
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
-import edu.ie3.osmogrid.lv.coordinator
-import edu.ie3.osmogrid.lv.coordinator.{
-  LvCoordinator,
-  Request => LvCoordinatorRequest
-}
+import edu.ie3.osmogrid.lv.{LvCoordinator, LvRequest, LvResponse, ReqLvGrids}
+import edu.ie3.osmogrid.mv.{MvCoordinator, MvRequest, MvResponse, ReqMvGrids}
 
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
@@ -35,7 +32,7 @@ trait RunSupport {
     */
   protected def initRun(
       runGuardianData: RunGuardianData,
-      ctx: ActorContext[Request]
+      ctx: ActorContext[RunRequest]
   ): Try[ChildReferences] = {
     val log = ctx.log
     ConfigFailFast
@@ -49,8 +46,9 @@ trait RunSupport {
         )
 
         /* Check, which voltage level configs are given. Start with lv level, if this is desired for. */
+        // TODO: Re-do this part!
         validConfig.generation match {
-          case Generation(Some(lvConfig)) =>
+          case Generation(Some(lvConfig), Some(mvConfig)) =>
             ctx.log.info("Starting low voltage grid coordinator ...")
             val inputProvider =
               spawnInputDataProvider(
@@ -74,12 +72,21 @@ trait RunSupport {
               ctx
             )
 
+            val mvCoordinator = startMvGridGeneration(
+              runGuardianData.runId,
+              inputProvider,
+              mvConfig,
+              runGuardianData.msgAdapters.mvCoordinator,
+              ctx
+            )
+
             Success(
               ChildReferences(
                 inputProvider,
                 resultListener,
                 runGuardianData.additionalListener,
-                Some(lvCoordinator)
+                Some(lvCoordinator),
+                Some(mvCoordinator)
               )
             )
           case unsupported =>
@@ -109,7 +116,7 @@ trait RunSupport {
   private def spawnInputDataProvider(
       runId: UUID,
       inputConfig: OsmoGridConfig.Input,
-      ctx: ActorContext[Request]
+      ctx: ActorContext[RunRequest]
   ): ActorRef[InputDataEvent] = {
     ctx.log.info("Starting input data provider ...")
     val inputProvider =
@@ -132,10 +139,10 @@ trait RunSupport {
     * @return
     *   References to [[ResultListener]]
     */
-  protected def spawnResultListener(
+  private def spawnResultListener(
       runId: UUID,
       outputConfig: OsmoGridConfig.Output,
-      ctx: ActorContext[Request]
+      ctx: ActorContext[RunRequest]
   ): Option[ActorRef[ResultListenerProtocol]] = {
     val resultListener = outputConfig match {
       case Output(Some(_), _) =>
@@ -174,9 +181,9 @@ trait RunSupport {
       runId: UUID,
       inputDataProvider: ActorRef[InputDataEvent],
       lvConfig: OsmoGridConfig.Generation.Lv,
-      lvCoordinatorAdapter: ActorRef[coordinator.Response],
-      ctx: ActorContext[Request]
-  ): ActorRef[LvCoordinatorRequest] = {
+      lvCoordinatorAdapter: ActorRef[LvResponse],
+      ctx: ActorContext[RunRequest]
+  ): ActorRef[LvRequest] = {
     val lvCoordinator =
       ctx.spawn(
         LvCoordinator(lvConfig, inputDataProvider, lvCoordinatorAdapter),
@@ -185,8 +192,40 @@ trait RunSupport {
     ctx.watchWith(lvCoordinator, LvCoordinatorDied)
 
     ctx.log.info("Starting voltage level grid generation ...")
-    lvCoordinator ! coordinator.ReqLvGrids
+    lvCoordinator ! ReqLvGrids
 
     lvCoordinator
+  }
+
+  /** Spawn a [[MvCoordinator]] for the targeted run and ask it to start.
+    * @param runId
+    *   identifier for the targeted run
+    * @param mvConfig
+    *   configuration for medium voltage grid generation
+    * @param mvCoordinatorAdapter
+    *   message adapter to understand responses from [[MvCoordinator]]
+    * @param ctx
+    *   current actor context
+    * @return
+    *   an [[ActorRef]] for a [[MvRequest]]
+    */
+  private def startMvGridGeneration(
+      runId: UUID,
+      inputDataProvider: ActorRef[InputDataEvent],
+      mvConfig: OsmoGridConfig.Generation.Mv,
+      mvCoordinatorAdapter: ActorRef[MvResponse],
+      ctx: ActorContext[RunRequest]
+  ): ActorRef[MvRequest] = {
+    val mvCoordinator =
+      ctx.spawn(
+        MvCoordinator(mvConfig, inputDataProvider, mvCoordinatorAdapter),
+        s"LvCoordinator_${runId.toString}"
+      )
+    ctx.watchWith(mvCoordinator, MvCoordinatorDied)
+
+    ctx.log.info("Starting voltage level grid generation ...")
+    mvCoordinator ! ReqMvGrids
+
+    mvCoordinator
   }
 }

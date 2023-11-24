@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.io.input
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
 import com.typesafe.config.ConfigFactory
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.$TsCfgValidator
@@ -28,7 +28,7 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
         val config: OsmoGridConfig.Input =
           createConfig("/Witten_Stockum.pbf", "/lv_assets")
 
-        val requestProbe = testKit.createTestProbe[Response]()
+        val requestProbe = testKit.createTestProbe[InputResponse]()
         val testActor = testKit.spawn(
           InputDataProvider(config)
         )
@@ -38,7 +38,7 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
         testActor ! ReqOsm(requestProbe.ref, filter = filter)
 
         requestProbe
-          .expectMessageType[Response](
+          .expectMessageType[InputResponse](
             30 seconds
           ) match {
           case RepOsm(lvModel: LvOsmoGridModel) =>
@@ -55,7 +55,7 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
         val config: OsmoGridConfig.Input =
           createConfig("/Witten_Stockum.pbf", "/lv_assets")
 
-        val requestProbe = testKit.createTestProbe[Response]()
+        val requestProbe = testKit.createTestProbe[InputResponse]()
         val testActor = testKit.spawn(
           InputDataProvider(config)
         )
@@ -80,7 +80,7 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
         val config: OsmoGridConfig.Input =
           createConfig("/Empty_Osm.pbf", "/lv_assets")
 
-        val requestProbe = testKit.createTestProbe[Response]()
+        val requestProbe = testKit.createTestProbe[InputResponse]()
         val testActor = testKit.spawn(
           InputDataProvider(config)
         )
@@ -91,7 +91,7 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
         )
 
         requestProbe
-          .expectMessageType[Response](
+          .expectMessageType[InputResponse](
             3 seconds
           ) match {
           case OsmReadFailed(exception) =>
@@ -110,7 +110,7 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
           createConfig("/Witten_Stockum.pbf", resourceName)
         val assetDir = getResourcePath(resourceName)
 
-        val requestProbe = testKit.createTestProbe[Response]()
+        val requestProbe = testKit.createTestProbe[InputResponse]()
         val testActor = testKit.spawn(
           InputDataProvider(config)
         )
@@ -119,7 +119,7 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
           requestProbe.ref
         )
         requestProbe
-          .expectMessageType[Response](
+          .expectMessageType[InputResponse](
             3 seconds
           ) match {
           case AssetReadFailed(exception) =>
@@ -143,7 +143,7 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
         val config: OsmoGridConfig.Input =
           createConfig("/Corrupted_Osm.pbf", "/lv_assets")
 
-        val requestProbe = testKit.createTestProbe[Response]()
+        val requestProbe = testKit.createTestProbe[InputResponse]()
         val testActor = testKit.spawn(
           InputDataProvider(config)
         )
@@ -154,7 +154,7 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
         )
 
         requestProbe
-          .expectMessageType[Response](
+          .expectMessageType[InputResponse](
             3 seconds
           ) match {
           case OsmReadFailed(exception) =>
@@ -171,7 +171,7 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
           createConfig("/Witten_Stockum.pbf", resourceName)
         val assetDir = getResourcePath(resourceName)
 
-        val requestProbe = testKit.createTestProbe[Response]()
+        val requestProbe = testKit.createTestProbe[InputResponse]()
         val testActor = testKit.spawn(
           InputDataProvider(config)
         )
@@ -180,7 +180,7 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
           requestProbe.ref
         )
         requestProbe
-          .expectMessageType[Response](
+          .expectMessageType[InputResponse](
             3 seconds
           ) match {
           case AssetReadFailed(exception) =>

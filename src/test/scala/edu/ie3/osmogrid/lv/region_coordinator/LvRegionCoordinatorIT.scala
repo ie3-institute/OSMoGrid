@@ -6,14 +6,14 @@
 
 package edu.ie3.osmogrid.lv.region_coordinator
 
-import akka.actor.testkit.typed.Effect.SpawnedAnonymous
-import akka.actor.testkit.typed.scaladsl.{
+import org.apache.pekko.actor.testkit.typed.Effect.SpawnedAnonymous
+import org.apache.pekko.actor.testkit.typed.scaladsl.{
   BehaviorTestKit,
   ScalaTestWithActorTestKit,
   TestProbe
 }
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
-import edu.ie3.osmogrid.lv.{LvGridGenerator, MunicipalityCoordinator}
+import edu.ie3.osmogrid.lv.{LvGridRequest, LvGridResponse}
 import edu.ie3.test.common.UnitSpec
 import org.scalatest.BeforeAndAfterAll
 
@@ -30,15 +30,15 @@ class LvRegionCoordinatorIT
     "having more iterations to go" should {
       "start another partition task" in {
         val adminLevel = BoundaryAdminLevel.COUNTY_LEVEL
-        val regionCoordinatorReply = TestProbe[LvRegionCoordinator.Response]()
-        val gridGeneratorReply = TestProbe[LvGridGenerator.Response]
+        val regionCoordinatorReply = TestProbe[LvRegionResponse]()
+        val gridGeneratorReply = TestProbe[LvGridResponse]
 
         val testKit = BehaviorTestKit(
           LvRegionCoordinator()
         )
 
         testKit.run(
-          LvRegionCoordinator.Partition(
+          Partition(
             osmoGridModel = osmoGridModel,
             administrativeLevel = adminLevel,
             lvConfig = lvConfig,
@@ -50,11 +50,11 @@ class LvRegionCoordinatorIT
 
         val messages = Range(0, 3).map { _ =>
           val spawned = testKit
-            .expectEffectType[SpawnedAnonymous[LvRegionCoordinator.Request]]
+            .expectEffectType[SpawnedAnonymous[LvRegionRequest]]
           val spawnedInbox = testKit.childInbox(spawned.ref)
 
           spawnedInbox.receiveMessage() match {
-            case partitionMsg: LvRegionCoordinator.Partition =>
+            case partitionMsg: Partition =>
               partitionMsg
             case other => fail(s"Received unexpected message $other")
           }
@@ -109,9 +109,9 @@ class LvRegionCoordinatorIT
       "start LvGridGenerators with the results" in {
         val adminLevel = BoundaryAdminLevel.COUNTY_LEVEL
         val lvCoordinatorRegionCoordinatorAdapter =
-          TestProbe[LvRegionCoordinator.Response]()
+          TestProbe[LvRegionResponse]()
         val lvCoordinatorGridGeneratorAdapter =
-          TestProbe[LvGridGenerator.Response]()
+          TestProbe[LvGridResponse]()
 
         val testKit = BehaviorTestKit(
           LvRegionCoordinator()
@@ -123,7 +123,7 @@ class LvRegionCoordinatorIT
         )
 
         testKit.run(
-          LvRegionCoordinator.Partition(
+          Partition(
             osmoGridModel = osmoGridModel,
             administrativeLevel = adminLevel,
             lvConfig = lvConfigCapped,
@@ -137,7 +137,7 @@ class LvRegionCoordinatorIT
 
         Range(0, 3).foreach { _ =>
           testKit
-            .expectEffectType[SpawnedAnonymous[LvGridGenerator.Request]]
+            .expectEffectType[SpawnedAnonymous[LvGridRequest]]
         }
       }
     }

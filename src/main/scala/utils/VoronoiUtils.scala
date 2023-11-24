@@ -6,7 +6,7 @@
 
 package utils
 
-import akka.actor.typed.scaladsl.ActorContext
+import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.util.exceptions.GeoException
 import edu.ie3.util.geo.GeoUtils
@@ -34,6 +34,11 @@ object VoronoiUtils {
       transitionPointsToLowerVoltLvl: List[NodeInput],
       polygon: Option[Polygon]
   ) {
+
+    /** Returns all nodes of this polygon.
+      */
+    def allNodes: List[NodeInput] =
+      transitionPointsToLowerVoltLvl :+ transitionPointToHigherVoltLvl
 
     /** Method to add nodes, that are connected to a lower voltage level, to
       * this voronoi polygon.

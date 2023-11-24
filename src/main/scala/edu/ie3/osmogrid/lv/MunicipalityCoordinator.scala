@@ -6,18 +6,18 @@
 
 package edu.ie3.osmogrid.lv
 
-import akka.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import edu.ie3.osmogrid.model.OsmoGridModel
 
 object MunicipalityCoordinator {
-  sealed trait Request
 
   def apply(
       osmoGridModel: OsmoGridModel
-  ): Behaviors.Receive[Request] = idle()
+  ): Behaviors.Receive[MunicipalityRequest] = idle()
 
-  def idle(): Behaviors.Receive[Request] = Behaviors.receive { (ctx, msg) =>
-    ctx.log.info(s"Received a message: $msg")
-    Behaviors.same
+  def idle(): Behaviors.Receive[MunicipalityRequest] = Behaviors.receive {
+    (ctx, msg) =>
+      ctx.log.info(s"Received a message: $msg")
+      Behaviors.same
   }
 }

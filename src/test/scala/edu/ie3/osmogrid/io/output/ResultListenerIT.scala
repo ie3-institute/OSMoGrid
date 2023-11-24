@@ -6,24 +6,27 @@
 
 package edu.ie3.osmogrid.io.output
 
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
 import edu.ie3.datamodel.io.source.csv.CsvJointGridContainerSource
-import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.$TsCfgValidator
 import edu.ie3.osmogrid.cfg.ConfigFailFastSpec.viableConfigurationString
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.$TsCfgValidator
+import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
 import edu.ie3.osmogrid.exception.IllegalConfigException
-import edu.ie3.osmogrid.io.output.ResultListenerProtocol._
-import edu.ie3.osmogrid.io.output.ResultListenerProtocol.PersistenceListenerEvent._
-import edu.ie3.util.io.FileIOUtils
+import edu.ie3.osmogrid.io.output.PersistenceListenerEvent.{
+  InitComplete,
+  InitFailed,
+  ResultHandlingSucceeded
+}
 import edu.ie3.test.common.{IOTestCommons, ThreeWindingTestData, UnitSpec}
+import edu.ie3.util.io.FileIOUtils
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.Future
-import scala.concurrent.Await
-import scala.jdk.CollectionConverters._
 import java.util.UUID
+import scala.concurrent.{Await, Future}
+import java.nio.file.Paths
+import scala.concurrent.duration.DurationInt
+import scala.jdk.CollectionConverters._
 
 class ResultListenerIT
     extends ScalaTestWithActorTestKit
@@ -112,7 +115,8 @@ class ResultListenerIT
         val gridData = CsvJointGridContainerSource.read(
           jointGrid.getGridName,
           ";",
-          testTmpDir
+          Paths.get(testTmpDir),
+          false
         )
 
         gridData shouldBe jointGrid

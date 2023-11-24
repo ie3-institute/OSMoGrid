@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.lv.region_coordinator
 
-import akka.actor.testkit.typed.scaladsl.{
+import org.apache.pekko.actor.testkit.typed.scaladsl.{
   ActorTestKit,
   ScalaTestWithActorTestKit,
   TestProbe
@@ -16,9 +16,7 @@ import edu.ie3.datamodel.models.input.connector.`type`.{
   Transformer2WTypeInput
 }
 import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
-import edu.ie3.osmogrid.io.input
-import edu.ie3.osmogrid.io.input.InputDataProvider
-import edu.ie3.osmogrid.io.input.AssetInformation
+import edu.ie3.osmogrid.io.input._
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.UnitSpec
@@ -59,7 +57,8 @@ object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
     val cfg = OsmoGridConfigFactory
       .parseWithoutFallback(
         s"""input.osm.pbf.file = "${resourcePath.replace("\\", "\\\\")}"
-           |input.asset.file.directory = ${getResourcePath("/lv_assets")}
+           |input.asset.file.directory = "${getResourcePath("/lv_assets")
+            .replace("\\", "\\\\")}"
            |input.asset.file.separator = ","
            |input.asset.file.hierarchic = false
            |output.gridName = "test_grid"
@@ -71,6 +70,9 @@ object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
            |generation.lv.boundaryAdminLevel.starting = 2
            |generation.lv.boundaryAdminLevel.lowest = 8
            |generation.lv.minDistance = 10
+           |generation.mv.spawnMissingHvNodes = false
+           |generation.mv.voltageLevel.id = mv
+           |generation.mv.voltageLevel.default = 10.0
            |""".stripMargin
       )
       .success
@@ -80,15 +82,15 @@ object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
       InputDataProvider(cfg.input)
     )
 
-    val inputReply = TestProbe[input.Response]()
+    val inputReply = TestProbe[InputResponse]()
 
-    inputActor ! input.ReqOsm(
+    inputActor ! ReqOsm(
       inputReply.ref,
       filter = LvFilter()
     )
 
     inputReply
-      .expectMessageType[input.RepOsm](30 seconds)
+      .expectMessageType[RepOsm](30 seconds)
       .osmModel match {
       case lvModel: LvOsmoGridModel => (cfg.generation.lv.value, lvModel)
     }
