@@ -112,6 +112,8 @@ dependencies {
   testImplementation "org.scalatestplus:mockito-3-12_$scalaVersion:3.2.10.0" // syntactic sugar
 }
 
+test.dependsOn processScoverageResources
+
 // scapegoat hook configuration
 // https://github.com/sksamuel/scapegoat
 // using compileScala instead of tasks.withType(ScalaCompile) prevents applying scapegoat to scala test classes
