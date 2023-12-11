@@ -45,7 +45,25 @@ object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
         0.4.asKiloVolt
       )
     ),
-    Seq(mock[Transformer2WTypeInput])
+    Seq(
+      new Transformer2WTypeInput(
+        UUID.fromString("a0cbd90a-4e9f-47db-8dca-041d3a288f77"),
+        "0.63 MVA 10/0.4 kV Dyn5 ASEA",
+        1.7384731670445954.asOhm,
+        9.36379511166658.asOhm,
+        630.asKiloVoltAmpere,
+        10.0.asKiloVolt,
+        0.4.asKiloVolt,
+        16500.0.asNanoSiemens,
+        145.8952227629774.asNanoSiemens,
+        2.5.asPercent,
+        0.0.asDegreeGeom,
+        false,
+        0,
+        -2,
+        2
+      )
+    )
   )
 
   protected def readOsmModel()
@@ -67,6 +85,7 @@ object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
            |generation.lv.ratedVoltage = 0.4
            |generation.lv.gridName = "testLvGrid"
            |generation.lv.considerHouseConnectionPoints = false
+           |generation.lv.loadSimultaneousFactor = 0.15
            |generation.lv.boundaryAdminLevel.starting = 2
            |generation.lv.boundaryAdminLevel.lowest = 8
            |generation.lv.minDistance = 10

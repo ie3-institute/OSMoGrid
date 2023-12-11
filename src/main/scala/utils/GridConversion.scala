@@ -6,110 +6,78 @@
 
 package utils
 
-import edu.ie3.datamodel.models.input.connector.LineInput
-import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
+import edu.ie3.datamodel.models.input.connector.`type`.{
+  LineTypeInput,
+  Transformer2WTypeInput
+}
+import edu.ie3.datamodel.models.input.connector.{
+  LineInput,
+  SwitchInput,
+  Transformer2WInput,
+  Transformer3WInput
+}
 import edu.ie3.datamodel.models.input.container.{
   GraphicElements,
   RawGridElements,
   SubGridContainer,
   SystemParticipants
 }
-import edu.ie3.datamodel.models.input.system.characteristic.OlmCharacteristicInput
-import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
-import edu.ie3.osmogrid.exception.IllegalStateException
-import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.io.input.AssetInformation
+import edu.ie3.datamodel.models.input.graphics.{
+  LineGraphicInput,
+  NodeGraphicInput
+}
+import edu.ie3.datamodel.models.input.system._
+import edu.ie3.datamodel.models.input.system.characteristic.{
+  CosPhiFixed,
+  OlmCharacteristicInput
+}
+import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
+import edu.ie3.datamodel.models.profile.BdewStandardLoadProfile
+import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
+import edu.ie3.util.quantities.QuantityUtils._
+import org.locationtech.jts.geom.impl.CoordinateArraySequence
+import org.locationtech.jts.geom.{LineString, Point}
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 
+import java.util
 import java.util.UUID
 import javax.measure.Quantity
-import javax.measure.quantity.{ElectricPotential, Length}
-import scala.jdk.CollectionConverters._
+import javax.measure.quantity.{Dimensionless, Length, Power}
 
 object GridConversion {
 
-  /** Method to convert an [[OsmGraph]] into a [[SubGridContainer]] and a
-    * sequence of changed [[NodeInput]]s.
+  /** Create a node.
     *
-    * @param n
-    *   subnet number
-    * @param graph
-    *   grid graph
-    * @param nodeConversion
-    *   conversion between [[Node]]s and [[NodeInput]]s
+    * @param vTarget
+    *   the target voltage of the node
+    * @param voltageLevel
+    *   the voltage level
+    * @param id
+    *   the id of the node
+    * @param coordinate
+    *   the coordinate of the node position
     * @return
-    *   a [[SubGridContainer]] and node changes
+    *   the created node
     */
-  def convertMv(
-      n: Int,
-      graph: OsmGraph,
-      nodeConversion: NodeConversion,
-      assetInformation: AssetInformation
-  ): (SubGridContainer, Seq[NodeInput]) = {
-    // converting the osm nodes to psdm nodes
-    val nodes: Seq[NodeInput] =
-      graph
-        .vertexSet()
-        .asScala
-        .map { node =>
-          nodeConversion.getPSDMNode(node).copy().subnet(n).build()
-        }
-        .toSeq
-
-    val lineTypes
-        : Map[ComparableQuantity[ElectricPotential], Seq[LineTypeInput]] =
-      assetInformation.lineTypes.groupBy { lt => lt.getvRated() }
-
-    // converting the edges into psdm lines
-    val lines: Set[LineInput] = graph
-      .edgeSet()
-      .asScala
-      .zipWithIndex
-      .map { case (e, index) =>
-        val nodeA = nodeConversion.getPSDMNode(graph.getEdgeSource(e))
-        val nodeB = nodeConversion.getPSDMNode(graph.getEdgeTarget(e))
-
-        val lineType =
-          lineTypes(nodeA.getVoltLvl.getNominalVoltage).headOption.getOrElse(
-            throw IllegalStateException(
-              "There are no line types within received asset types. Can not build the grid!"
-            )
-          )
-
-        // creating a new PSDM line
-        buildLine(
-          s"${n}_$index",
-          nodeA,
-          nodeB,
-          1,
-          lineType,
-          e.getDistance
-        )
-      }
-      .toSet
-
-    val elements: List[AssetInput] = List(nodes, lines).flatten
-
-    // creating sub grid container
-    val rawGridElements = new RawGridElements(elements.asJava)
-    val participants = new SystemParticipants(
-      Set.empty[SystemParticipants].asJava
+  def buildNode(
+      voltageLevel: VoltageLevel
+  )(id: String, coordinate: Point, isSlack: Boolean)(implicit
+      subnet: Int = 1,
+      vTarget: ComparableQuantity[Dimensionless] = 1d.asPu
+  ): NodeInput = {
+    new NodeInput(
+      UUID.randomUUID(),
+      id,
+      vTarget,
+      isSlack,
+      coordinate,
+      voltageLevel,
+      subnet
     )
-    val graphics = new GraphicElements(Set.empty[GraphicElements].asJava)
-    val subGridContainer = new SubGridContainer(
-      s"Subnet_$n",
-      n,
-      rawGridElements,
-      participants,
-      graphics
-    )
-
-    // returning the finished data
-    (subGridContainer, nodes)
   }
 
   /** Method for creating a [[LineInput]].
@@ -147,6 +115,176 @@ object GridConversion {
         nodeB.getGeoPosition.getCoordinate
       ),
       OlmCharacteristicInput.CONSTANT_CHARACTERISTIC
+    )
+  }
+
+  /** Builds line between the nodes. Includes passed passed osm street node to
+    * the geo position to track the street profile.
+    *
+    * @param firstNode
+    *   node at which the line starts
+    * @param secondNode
+    *   node at which the line ends
+    * @param passedStreetNodes
+    *   osm street nodes the line follows along
+    * @param lineType
+    *   type of the line to build
+    * @return
+    *   the built line
+    */
+  def buildLine(
+      firstNode: NodeInput,
+      secondNode: NodeInput,
+      passedStreetNodes: Seq[Node],
+      lineType: LineTypeInput
+  ): LineInput = {
+    val lineGeoNodes = passedStreetNodes
+      .map(_.coordinate.getCoordinate)
+      .toArray
+    val geoPosition = new LineString(
+      new CoordinateArraySequence(
+        lineGeoNodes
+      ),
+      GeoUtils.DEFAULT_GEOMETRY_FACTORY
+    )
+    val id = s"Line between: " + passedStreetNodes.headOption
+      .getOrElse(
+        throw new IllegalArgumentException(
+          s"Line between $firstNode and $secondNode has no first node."
+        )
+      )
+      .id + "-" + passedStreetNodes.lastOption
+      .getOrElse(
+        throw new IllegalArgumentException(
+          s"Line between $firstNode and $secondNode has no last node."
+        )
+      )
+      .id
+    new LineInput(
+      UUID.randomUUID(),
+      id,
+      firstNode,
+      secondNode,
+      0,
+      lineType,
+      GeoUtils.calcHaversine(geoPosition),
+      geoPosition,
+      // todo: What do we expect as OlmCharacteristic?
+      null
+    )
+  }
+
+  /** Creates a [[Transformer2WInput]].
+    *
+    * @param nodeA
+    *   higher voltage node
+    * @param nodeB
+    *   lower voltage node
+    * @param parallelDevices
+    *   overall amount of parallel transformers to automatically construct (e.g.
+    *   parallelDevices = 2 will build a total of two transformers using the
+    *   specified parameters)
+    * @param transformerType
+    *   of 2W transformer
+    * @param id
+    *   of the asset
+    * @param tapPos
+    *   Tap position of this transformer
+    * @param autoTap
+    *   True, if the tap position of the transformer is adapted automatically
+    * @return
+    *   a new [[Transformer2WInput]]
+    */
+  def buildTransformer2W(
+      nodeA: NodeInput,
+      nodeB: NodeInput,
+      parallelDevices: Int,
+      transformerType: Transformer2WTypeInput
+  )(implicit
+      id: String = s"Transformer between ${nodeA.getId} and ${nodeB.getId}",
+      tapPos: Int = 0,
+      autoTap: Boolean = false
+  ): Transformer2WInput = new Transformer2WInput(
+    UUID.randomUUID(),
+    id,
+    nodeA,
+    nodeB,
+    parallelDevices,
+    transformerType,
+    tapPos,
+    autoTap
+  )
+
+  /** Creates a load.
+    *
+    * @param id
+    *   the id for the load to build
+    * @param ratedPower
+    *   the rated power of the load
+    * @param node
+    *   the node at which the load will be connected
+    * @return
+    *   the created load
+    */
+  def buildLoad(id: String, ratedPower: ComparableQuantity[Power])(
+      node: NodeInput
+  )(implicit uuid: UUID = UUID.randomUUID()) =
+    new LoadInput(
+      uuid,
+      id,
+      node,
+      CosPhiFixed.CONSTANT_CHARACTERISTIC,
+      BdewStandardLoadProfile.H0,
+      false,
+      // todo: What to do for econsannual?
+      0.asWattHour,
+      ratedPower,
+      1d
+    )
+
+  /** Builds a GridContainer by adding all assets together
+    */
+  def buildGridContainer(
+      gridName: String,
+      nodes: util.Set[NodeInput],
+      lines: util.Set[LineInput],
+      loads: util.Set[LoadInput]
+  )(implicit
+      subnetNr: Int = 1,
+      transformer2Ws: util.Set[Transformer2WInput] =
+        new util.HashSet[Transformer2WInput]
+  ): SubGridContainer = {
+    val rawGridElements = new RawGridElements(
+      nodes,
+      lines,
+      transformer2Ws,
+      new util.HashSet[Transformer3WInput],
+      new util.HashSet[SwitchInput],
+      new util.HashSet[MeasurementUnitInput]
+    )
+    val systemParticipants = new SystemParticipants(
+      new util.HashSet[BmInput],
+      new util.HashSet[ChpInput],
+      new util.HashSet[EvcsInput],
+      new util.HashSet[EvInput],
+      new util.HashSet[FixedFeedInInput],
+      new util.HashSet[HpInput],
+      loads,
+      new util.HashSet[PvInput],
+      new util.HashSet[StorageInput],
+      new util.HashSet[WecInput],
+      new util.HashSet[EmInput]
+    )
+    val graphicElements = new GraphicElements(
+      new util.HashSet[NodeGraphicInput],
+      new util.HashSet[LineGraphicInput]
+    )
+    new SubGridContainer(
+      gridName,
+      subnetNr,
+      rawGridElements,
+      systemParticipants,
+      graphicElements
     )
   }
 

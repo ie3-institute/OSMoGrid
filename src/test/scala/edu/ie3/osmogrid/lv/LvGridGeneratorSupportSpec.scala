@@ -7,16 +7,20 @@
 package edu.ie3.osmogrid.lv
 
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
+import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.buildConnectedGridGraphs
 import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.buildGrid
 import edu.ie3.osmogrid.model.OsmTestData
-import edu.ie3.test.common.UnitSpec
+import edu.ie3.test.common.{GridSupport, UnitSpec}
 import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
 
 import java.util.UUID
 import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
 
-class LvGridGeneratorSupportSpec extends UnitSpec with OsmTestData {
+class LvGridGeneratorSupportSpec
+    extends UnitSpec
+    with OsmTestData
+    with GridSupport {
 
   "The LV grid generator support" should {
 
@@ -37,7 +41,7 @@ class LvGridGeneratorSupportSpec extends UnitSpec with OsmTestData {
         case _ => fail("Expected exactly one graph.")
       }
 
-      val ratedVoltage = 10.asKiloVolt
+      val ratedVoltage = 0.4.asKiloVolt
       val lineType = new LineTypeInput(
         UUID.randomUUID,
         "Default generated line type",
@@ -53,15 +57,18 @@ class LvGridGeneratorSupportSpec extends UnitSpec with OsmTestData {
         osmGraph,
         buildingGraphConnections.par,
         ratedVoltage,
+        10.asKiloVolt,
         considerHouseConnectionPoints = false,
+        0.15,
         lineType,
+        trafo_10kV_to_lv,
         "testGrid"
       ) match {
-        case Some(subGridContainer) =>
-          subGridContainer.getRawGrid.getNodes.size() shouldBe 2
+        case List(subGridContainer) =>
+          subGridContainer.getRawGrid.getNodes.size() shouldBe 3
           subGridContainer.getRawGrid.getLines.size() shouldBe 1
           subGridContainer.getSystemParticipants.getLoads.size() shouldBe 2
-        case None =>
+        case Nil =>
           fail("No grid received!")
       }
 

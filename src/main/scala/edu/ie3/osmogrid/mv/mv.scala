@@ -76,12 +76,15 @@ final case class StartMvGraphGeneration(
   *   of the graph
   * @param graph
   *   with grid structure
+  * @param hvNode
+  *   node to hv grid
   * @param nodeConversion
   *   for converting osm nodes into corresponding PSDM nodes
   */
 final case class StartMvGraphConversion(
     nr: Int,
     graph: OsmGraph,
+    hvNode: NodeInput,
     nodeConversion: NodeConversion,
     assetInformation: AssetInformation
 ) extends MvRequest

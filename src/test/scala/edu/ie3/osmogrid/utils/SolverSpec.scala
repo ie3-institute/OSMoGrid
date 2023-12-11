@@ -345,7 +345,7 @@ class SolverSpec extends UnitSpec with MvTestData {
       vertexes.size shouldBe 7
       edges.size shouldBe 7
 
-      vertexes shouldBe connections.nodes
+      vertexes shouldBe connections.elements
       edges.contains(graph.getEdge(transitionPoint, osmNode1)) shouldBe true
       edges.contains(graph.getEdge(transitionPoint, osmNode2)) shouldBe true
       edges.contains(graph.getEdge(osmNode1, osmNode3)) shouldBe true

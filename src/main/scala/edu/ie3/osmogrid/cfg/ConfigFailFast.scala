@@ -59,6 +59,7 @@ object ConfigFailFast extends LazyLogging {
             starting
           ),
           _,
+          loadSimultaneousFactor,
           _,
           _
         ) =>
@@ -78,6 +79,12 @@ object ConfigFailFast extends LazyLogging {
           )
         case _ =>
         // all good, do nothing
+      }
+
+      if (loadSimultaneousFactor < 0 || loadSimultaneousFactor > 1) {
+        throw IllegalConfigException(
+          s"The load simultaneous factor (provided: $loadSimultaneousFactor) has to be between 0 and 1."
+        )
       }
   }
 
