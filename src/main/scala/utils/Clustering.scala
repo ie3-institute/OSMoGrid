@@ -10,10 +10,11 @@ import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.connector.LineInput
 import edu.ie3.datamodel.models.input.connector.`type`.Transformer2WTypeInput
+import edu.ie3.datamodel.models.input.system.LoadInput
 import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.GridElements
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
-import utils.Clustering.Cluster
+import utils.Clustering.{Cluster, isImprovement, totalDistance}
 
 import java.util.concurrent.ThreadLocalRandom
 import javax.measure.quantity.Power
@@ -79,14 +80,13 @@ final case class Clustering(
           val substations = changeable.filter { c => c != s } :+ n
           val other = nodes.filter { c => c != n } :+ s
 
-          val clusters = createClusters(substations, other)
+          val clusters = createClusters(substations :++ osmSubstations, other)
 
           (clusters, totalDistance(clusters))
         }
       }
-      .sortBy(_._2)
-      .headOption
-      .map { o => o._1 }
+      .minByOption(_._2)
+      .map(_._1)
   }
 
   /** Creates [[Cluster]] based on the given data.
@@ -122,44 +122,6 @@ final case class Clustering(
       }
       .toList
   }
-
-  /** Checks if there are still improvements
-    * @param old
-    *   clusters
-    * @param current
-    *   new clusters
-    * @return
-    *   true if the are still improvements
-    */
-  private def isImprovement(
-      old: List[Cluster],
-      current: List[Cluster]
-  ): Boolean = {
-    val o = old.map { c => c.distances }.reduceOption { (a, b) => a + b }
-    val c = current.map { c => c.distances }.reduceOption { (a, b) => a + b }
-
-    (c, o) match {
-      case (Some(oldDistance), Some(newDistance)) =>
-        // ensures that the improvement is at least 5 % each iteration
-        newDistance <= oldDistance * 0.95
-      case (_, _) =>
-        // no improvement
-        false
-    }
-  }
-
-  /** Calculates the total connection distance of a list of [[Cluster]]s.
-    * @param list
-    *   of clusters
-    * @return
-    *   either the total distance or [[Double.MaxValue]]
-    */
-  private def totalDistance(list: List[Cluster]): Double = {
-    list.map { l => l.distances }.reduceOption { (a, b) => a + b } match {
-      case Some(value) => value
-      case None        => Double.MaxValue
-    }
-  }
 }
 
 object Clustering {
@@ -169,35 +131,11 @@ object Clustering {
       transformer2WTypeInput: Transformer2WTypeInput,
       loadSimultaneousFactor: Double
   ): Clustering = {
-    // calculates the maximum power
-    val maxPower: ComparableQuantity[Power] =
-      if (gridElements.loads.size < 10) {
-        // will lead to only one substation
-        transformer2WTypeInput.getsRated()
-      } else {
-        gridElements.loads.map { l => l.getsRated() }.reduceOption {
-          (powerA, powerB) => powerA.add(powerB)
-        } match {
-          case Some(power) => power.multiply(loadSimultaneousFactor)
-          case None        => Quantities.getQuantity(0d, StandardUnits.S_RATED)
-        }
-      }
-
-    // calculates the number of substations we need
-    val substationCount: Int =
-      if (transformer2WTypeInput.getsRated().isGreaterThan(maxPower)) {
-        1 // if one substation is enough
-      } else {
-        // rounds up the number of substations
-        Math
-          .ceil(
-            maxPower
-              .divide(transformer2WTypeInput.getsRated())
-              .getValue
-              .doubleValue()
-          )
-          .toInt
-      }
+    val substationCount = getSubstationCount(
+      gridElements.loads.toSet,
+      loadSimultaneousFactor,
+      transformer2WTypeInput
+    )
 
     val connections: Connections[NodeInput] =
       Connections(gridElements, lines.toSeq)
@@ -223,8 +161,76 @@ object Clustering {
       connections,
       osmSubstations,
       additionalSubstations,
-      gridElements.nodes.values.toList
+      gridElements.nodes.values.toList.diff(additionalSubstations)
     )
+  }
+
+  /** Calculates the number of substations that are needed.
+    * @param loads
+    *   all loads
+    * @param loadSimultaneousFactor
+    *   for loads
+    * @param transformer2WTypeInput
+    *   type of transformer
+    * @return
+    *   a number of substations
+    */
+  private def getSubstationCount(
+      loads: Set[LoadInput],
+      loadSimultaneousFactor: Double,
+      transformer2WTypeInput: Transformer2WTypeInput
+  ): Int = {
+    // calculates the maximum power
+    val maxPower: ComparableQuantity[Power] =
+      loads.toList.map { l => l.getsRated() }.reduceOption { (powerA, powerB) =>
+        powerA.add(powerB)
+      } match {
+        case Some(power) => power.multiply(loadSimultaneousFactor)
+        case None        => Quantities.getQuantity(0d, StandardUnits.S_RATED)
+      }
+
+    // calculates the number of substations we need
+    if (transformer2WTypeInput.getsRated().isGreaterThan(maxPower)) {
+      1 // if one substation is enough
+    } else {
+      // rounds up the number of substations
+      Math
+        .ceil(
+          maxPower
+            .divide(transformer2WTypeInput.getsRated())
+            .getValue
+            .doubleValue()
+        )
+        .toInt
+    }
+  }
+
+  /** Checks if there are still improvements
+    *
+    * @param old
+    *   clusters
+    * @param current
+    *   new clusters
+    * @return
+    *   true if the are still improvements
+    */
+  def isImprovement(
+      old: List[Cluster],
+      current: List[Cluster]
+  ): Boolean = totalDistance(current) <= totalDistance(old) * 0.95
+
+  /** Calculates the total connection distance of a list of [[Cluster]]s.
+    *
+    * @param list
+    *   of clusters
+    * @return
+    *   either the total distance or [[Double.MaxValue]]
+    */
+  private def totalDistance(list: List[Cluster]): Double = {
+    list.map { l => l.distances }.reduceOption { (a, b) => a + b } match {
+      case Some(value) => value
+      case None        => Double.MaxValue
+    }
   }
 
   final case class Cluster(

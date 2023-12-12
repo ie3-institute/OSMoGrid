@@ -213,14 +213,18 @@ object Connections {
     val paths = vertexes.map { v => shortestPath.getPaths(v) }.toList
 
     paths.flatMap { p =>
-      vertexes.map { v =>
-        val path = p.getPath(v)
-        Connection(
-          p.getSourceVertex,
-          v,
-          Quantities.getQuantity(path.getWeight, Units.METRE),
-          Some(path)
-        )
+      vertexes.flatMap { v =>
+        if (p.getSourceVertex != v) {
+          val path = p.getPath(v)
+          Some(
+            Connection(
+              p.getSourceVertex,
+              v,
+              Quantities.getQuantity(path.getWeight, Units.METRE),
+              Some(path)
+            )
+          )
+        } else None
       }
     }
   }

@@ -39,7 +39,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
       "build the graph correctly" in {
 
         val osmoGridModel = TestLvOsmoGridModel.lvOsmoGridModel
-        val powerDensity = 10.asKiloWattPerSquareMetre
+        val powerDensity = 10.asWattPerSquareMetre
         val minDistance = 1.asKilometre
         val considerBuildingConnections = false
 
@@ -115,7 +115,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
             Seq.empty.par,
             highways,
             nodes.nodesMap,
-            0.5d.asKiloWattPerSquareMetre,
+            500.asWattPerSquareMetre,
             0.0001.asKilometre
           )
         buildingGraphConnections.size shouldBe 2

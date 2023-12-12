@@ -26,7 +26,7 @@ class LvGridGeneratorSupportSpec
 
     "build an lv grid correctly" in {
       val osmoGridModel = TestLvOsmoGridModel.lvOsmoGridModel
-      val powerDensity = 10.asKiloWattPerSquareMetre
+      val powerDensity = 10.asWattPerSquareMetre
       val minDistance = 0.002.asKilometre
       val considerBuildingConnections = false
 

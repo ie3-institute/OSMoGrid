@@ -39,7 +39,7 @@ object LvGridGenerator extends LazyLogging {
           )
         ) =>
       ctx.log.info(s"Received request to generate grid: $gridUuid")
-      val powerDensity = config.averagePowerDensity.asKiloWattPerSquareMetre
+      val powerDensity = config.averagePowerDensity.asWattPerSquareMetre
       val minDistance = Quantities.getQuantity(config.minDistance, Units.METRE)
       val connectedGridGraphs =
         buildConnectedGridGraphs(

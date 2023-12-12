@@ -228,9 +228,9 @@ object GridConversion {
     */
   def buildLoad(id: String, ratedPower: ComparableQuantity[Power])(
       node: NodeInput
-  )(implicit uuid: UUID = UUID.randomUUID()) =
+  ) =
     new LoadInput(
-      uuid,
+      UUID.randomUUID(),
       id,
       node,
       CosPhiFixed.CONSTANT_CHARACTERISTIC,
