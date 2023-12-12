@@ -13,7 +13,7 @@ sphinx {
   group 'Documentation'
 
   sourceDirectory = "${docBaseDirPath}/readthedocs"
-  outputDirectory = "${project.rootDir}/docs/readthedocs"
+  outputDirectory = layout.buildDirectory.dir("/docs/readthedocs")
 }
 
 /**
@@ -39,11 +39,11 @@ task puml2png() {
 
   doLast {
     /* Get the PlantUML-jar or download it, if it is not available */
-    def pumlJarFile = project.file("${project.rootDir}/plantuml.jar")
+    def pumlJarFile = layout.buildDirectory.file("plantuml.jar").get().asFile
     if (!pumlJarFile.exists() || !pumlJarFile.isFile()) {
       download.run {
         src 'https://downloads.sourceforge.net/project/plantuml/plantuml.jar'
-        dest buildDir
+        dest layout.buildDirectory.get()
       }
     }
     javaexec {
@@ -70,11 +70,11 @@ task puml2svg() {
 
   doLast {
     /* Get the PlantUML-jar or download it, if it is not available */
-    def pumlJarFile = project.file("${project.rootDir}/plantuml.jar")
+    def pumlJarFile = layout.buildDirectory.file("plantuml.jar").get().asFile
     if (!pumlJarFile.exists() || !pumlJarFile.isFile()) {
       download.run {
         src 'https://downloads.sourceforge.net/project/plantuml/plantuml.jar'
-        dest rootDir
+        dest layout.buildDirectory.get()
       }
     }
     javaexec {

@@ -121,7 +121,7 @@ test.dependsOn processScoverageResources
 tasks.withType(ScalaCompile) {
   scalaCompileOptions.additionalParameters = [
     "-Xplugin:" + configurations.scalaCompilerPlugin.asPath,
-    "-P:scapegoat:dataDir:" + buildDir + "/reports/scapegoat/src/",
+    "-P:scapegoat:dataDir:" + layout.buildDirectory.dir("reports/scapegoat/src/").get(),
     "-P:scapegoat:disabledInspections:VariableShadowing",
     "-P:scapegoat:overrideLevels:LonelySealedTrait=warning",
     "-P:scapegoat:ignoredFiles:.*/SimonaConfig.scala" // see scapegoat-sbt page for this param
@@ -132,7 +132,7 @@ tasks.withType(ScalaCompile) {
 compileTestScala {
   scalaCompileOptions.additionalParameters = [
     "-Xplugin:" + configurations.scalaCompilerPlugin.asPath,
-    "-P:scapegoat:dataDir:" + buildDir + "/reports/scapegoat/testsrc/",
+    "-P:scapegoat:dataDir:" + layout.buildDirectory.dir("reports/scapegoat/testsrc/").get(),
     "-P:scapegoat:disabledInspections:VariableShadowing",
     "-P:scapegoat:overrideLevels:LonelySealedTrait=warning"
   ]
