@@ -26,7 +26,8 @@ final case class Clustering(
     nodes: List[NodeInput]
 ) {
 
-  /** Method to run the algorithm.
+  /** Method to run the algorithm. This algorithm is based on PAM (Partitioning
+    * Around Medoids).
     * @param maxIteration
     *   maximal number of iterations
     * @return
