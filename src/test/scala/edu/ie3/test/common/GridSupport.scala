@@ -55,6 +55,17 @@ import javax.measure.quantity._
 import scala.jdk.CollectionConverters._
 
 trait GridSupport {
+  val defaultLineTypeLv = new LineTypeInput(
+    UUID.randomUUID,
+    "Default generated line type",
+    0.0.asSiemensPerKilometre,
+    0.07.asSiemensPerKilometre,
+    0.32.asOhmPerKilometre,
+    0.07.asOhmPerKilometre,
+    235.0.asAmpere,
+    0.4.asKiloVolt
+  )
+
   val defaultLineTypeMv = new LineTypeInput(
     UUID.fromString("6b223bc3-69e2-4eb8-a2c0-76be1cd2c998"),
     "NA2XS2Y 1x400 RM/25 6/10 kV",

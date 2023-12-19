@@ -17,8 +17,8 @@ import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 import tech.units.indriya.unit.Units.METRE
+import utils.Connections.Connection
 import utils.GraphUtils.{getLineSegmentBetweenNodes, hasIntersection}
-import utils.MvUtils.Connection
 
 import java.util
 import java.util.function.Supplier
@@ -65,7 +65,7 @@ class OsmGraph(
     * @param connection
     *   to be added
     */
-  def addConnection(connection: Connection): Unit =
+  def addConnection(connection: Connection[Node]): Unit =
     addWeightedEdge(connection.nodeA, connection.nodeB, connection.distance)
 
   def setEdgeWeight(
@@ -86,7 +86,7 @@ class OsmGraph(
 
   def reconnectNodes(
       common: Node,
-      connection: Connection,
+      connection: Connection[Node],
       doubleEdges: List[DistanceWeightedEdge]
   ): List[DistanceWeightedEdge] = {
     val edgeA = removeEdge(common, connection.nodeA)

@@ -11,6 +11,7 @@ import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.ActorStopSupportStateless
+import edu.ie3.osmogrid.mv.MvGridGeneratorSupport.buildGrid
 import utils.GridConversion
 import utils.MvUtils.generateMvGraph
 import utils.VoronoiUtils.VoronoiPolygon
@@ -56,6 +57,7 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
           ctx.self ! StartMvGraphConversion(
             nr,
             graph,
+            polygon.transitionPointToHigherVoltLvl,
             nodeConversion,
             assetInformation
           )
@@ -88,6 +90,7 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
             StartMvGraphConversion(
               nr,
               graph,
+              hvNode,
               nodeConversion,
               assetInformation
             )
@@ -96,7 +99,7 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
 
         // converting the graph
         val (subgrid, nodes) =
-          GridConversion.convertMv(nr, graph, nodeConversion, assetInformation)
+          buildGrid(nr, graph, hvNode, nodeConversion, assetInformation)
 
         // sending the finished data back to the coordinator
         coordinator ! WrappedMvResponse(

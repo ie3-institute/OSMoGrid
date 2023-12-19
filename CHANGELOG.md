@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Writes grid data into csv files
 - Added `MvCoordinator`
 - Switched from `akka` to `pekko`
+- Adding the clustering of low voltage grids
 
 ### Changed
 - Rely on Java 17
