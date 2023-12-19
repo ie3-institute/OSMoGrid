@@ -39,7 +39,7 @@ object LvGridGenerator extends LazyLogging {
           )
         ) =>
       ctx.log.info(s"Received request to generate grid: $gridUuid")
-      val powerDensity = config.averagePowerDensity.asKiloWattPerSquareMetre
+      val powerDensity = config.averagePowerDensity.asWattPerSquareMetre
       val minDistance = Quantities.getQuantity(config.minDistance, Units.METRE)
       val connectedGridGraphs =
         buildConnectedGridGraphs(
@@ -54,6 +54,19 @@ object LvGridGenerator extends LazyLogging {
         )
       )
 
+      val lvVoltage = voltages.lv.default.asKiloVolt
+      val mvVoltage = voltages.mv.default.asKiloVolt
+
+      val transformer2WTypes = assetInformation.transformerTypes
+        .find { t =>
+          t.getvRatedA() == mvVoltage && t.getvRatedB() == lvVoltage
+        }
+        .getOrElse(
+          throw IllegalStateException(
+            s"There are no transformer2WType for voltage levels $mvVoltage and $lvVoltage found within received asset types. Cannot build the grid!"
+          )
+        )
+
       ctx.log.info(
         s"Finished building of grid graph. Starting to build electrical grid for grid: $gridUuid"
       )
@@ -62,9 +75,12 @@ object LvGridGenerator extends LazyLogging {
           buildGrid(
             graph,
             buildingGraphConnections.par,
-            voltages.lv.default.asKiloVolt,
+            lvVoltage,
+            mvVoltage,
             config.considerHouseConnectionPoints,
+            config.loadSimultaneousFactor,
             lineType,
+            transformer2WTypes,
             gridUuid.toString
           )
       }

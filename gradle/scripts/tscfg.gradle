@@ -3,11 +3,11 @@
 ////////////////////////////////////////////////////////////////////////////
 task genConfigClass {
   doLast {
-    def tscfgJarFile = project.file('build/tscfg-' + tscfgVersion + '.jar')
+    def tscfgJarFile = layout.buildDirectory.file('tscfg-' + tscfgVersion + '.jar').get().asFile
     if (!tscfgJarFile.exists() || !tscfgJarFile.isFile()) {
       download.run {
         src 'https://github.com/carueda/tscfg/releases/download/v' + tscfgVersion + '/tscfg-' + tscfgVersion + '.jar'
-        dest buildDir
+        dest layout.buildDirectory.get()
       }
     }
     javaexec {
@@ -35,11 +35,11 @@ task genConfigClass {
 ////////////////////////////////////////////////////////////////////////////
 task genConfigSample {
   doLast {
-    def tscfgJarFile = project.file('build/tscfg-' + tscfgVersion + '.jar')
+    def tscfgJarFile = layout.buildDirectory.file('tscfg-' + tscfgVersion + '.jar').get().asFile
     if (!tscfgJarFile.exists() || !tscfgJarFile.isFile()) {
       download.run {
         src 'https://github.com/carueda/tscfg/releases/download/v' + tscfgVersion + '/tscfg-' + tscfgVersion + '.jar'
-        dest buildDir
+        dest layout.buildDirectory.get()
       }
     }
     javaexec {

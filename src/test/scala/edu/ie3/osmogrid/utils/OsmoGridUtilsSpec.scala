@@ -16,6 +16,7 @@ import tech.units.indriya.unit.Units
 import utils.OsmoGridUtils.{
   buildStreetGraph,
   calcHouseholdPower,
+  getAllUniqueCombinations,
   spawnDummyHvNode
 }
 
@@ -67,6 +68,22 @@ class OsmoGridUtilsSpec extends UnitSpec with MvTestData with OsmTestData {
         streetGraph.getEdge(node5, node6),
         streetGraph.getEdge(node6, node1)
       )
+    }
+
+    "return all unique combinations correctly" in {
+      val cases = Table(
+        ("nodes", "combinations"),
+        (List(osmNode1), List.empty),
+        (List(osmNode1, osmNode2), List((osmNode1, osmNode2))),
+        (
+          List(osmNode1, osmNode2, osmNode3),
+          List((osmNode1, osmNode2), (osmNode1, osmNode3), (osmNode2, osmNode3))
+        )
+      )
+
+      forAll(cases) { (nodes, combinations) =>
+        getAllUniqueCombinations(nodes) shouldBe combinations
+      }
     }
 
     "spawn a dummy hv node correctly" in {

@@ -6,16 +6,18 @@
 
 package edu.ie3.test.common
 
-import edu.ie3.datamodel.models.StandardUnits
-import edu.ie3.datamodel.models.input.NodeInput
+import edu.ie3.datamodel.models.{OperationTime, StandardUnits}
+import edu.ie3.datamodel.models.input.{NodeInput, OperatorInput}
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.locationtech.jts.geom.Coordinate
 import tech.units.indriya.quantity.Quantities
+import utils.Connections
+import utils.Connections.Connection
 import utils.GridConversion.NodeConversion
-import utils.MvUtils.{Connection, Connections, getAllUniqueCombinations}
+import utils.OsmoGridUtils.getAllUniqueCombinations
 import utils.Solver.StepResultOption
 import utils.VoronoiUtils.VoronoiPolygon
 
@@ -39,8 +41,13 @@ trait MvTestData {
     metaInformation = None
   )
   val nodeToHv = new NodeInput(
-    UUID.randomUUID(),
+    UUID.fromString("92c3a19d-2a07-4472-bd7a-cbb49a5ae5fd"),
     s"Transition point",
+    new OperatorInput(
+      UUID.fromString("8d4b3c30-8622-496f-831b-9376e367c499"),
+      "_"
+    ),
+    OperationTime.notLimited(),
     Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
     true,
     GeoUtils.buildPoint(50.0, 7.0),
@@ -85,7 +92,7 @@ trait MvTestData {
 
     NodeConversion(conversion, conversion.map { case (k, v) => v -> k })
   }
-  val connections: Connections = {
+  val connections: Connections[Node] = {
     val uniqueConnections = getAllUniqueCombinations(
       List(
         transitionPoint,
@@ -120,7 +127,7 @@ trait MvTestData {
 
   val graphAfterTwoSteps: OsmGraph = {
     val osmGraph: OsmGraph = new OsmGraph()
-    connections.nodes.foreach { node => osmGraph.addVertex(node) }
+    connections.elements.foreach { node => osmGraph.addVertex(node) }
     osmGraph.addConnection(
       connections.getConnection(transitionPoint, osmNode1)
     )
@@ -181,7 +188,7 @@ trait MvTestData {
   val streetGraph: OsmGraph = {
     val graph = new OsmGraph()
 
-    connections.nodes.foreach { n => graph.addVertex(n) }
+    connections.elements.foreach { n => graph.addVertex(n) }
 
     List(
       connections.getConnection(transitionPoint, osmNode1),

@@ -22,6 +22,7 @@ object OsmoGridConfig {
         averagePowerDensity: scala.Double,
         boundaryAdminLevel: OsmoGridConfig.Generation.Lv.BoundaryAdminLevel,
         considerHouseConnectionPoints: scala.Boolean,
+        loadSimultaneousFactor: scala.Double,
         minDistance: scala.Double,
         osm: OsmoGridConfig.Generation.Lv.Osm
     )
@@ -110,6 +111,10 @@ object OsmoGridConfig {
           considerHouseConnectionPoints = c.hasPathOrNull(
             "considerHouseConnectionPoints"
           ) && c.getBoolean("considerHouseConnectionPoints"),
+          loadSimultaneousFactor =
+            if (c.hasPathOrNull("loadSimultaneousFactor"))
+              c.getDouble("loadSimultaneousFactor")
+            else 0.2,
           minDistance = $_reqDbl(parentPath, c, "minDistance", $tsCfgValidator),
           osm = OsmoGridConfig.Generation.Lv.Osm(
             if (c.hasPathOrNull("osm")) c.getConfig("osm")

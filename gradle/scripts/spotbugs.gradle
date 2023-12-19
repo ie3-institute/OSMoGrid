@@ -1,21 +1,25 @@
 // spotBugs is a code check tool, working on byte code
 
-spotbugs{
+def classLoader = plugins['com.github.spotbugs'].class.classLoader
+def SpotBugsEffort = classLoader.findLoadedClass('com.github.spotbugs.snom.Effort')
+def SpotBugsConfidence = classLoader.findLoadedClass('com.github.spotbugs.snom.Confidence')
+
+spotbugs {
   ignoreFailures = true // dont let the build fail on rule violations
-  effort = 'max'
-  reportLevel = 'high'
+  effort = SpotBugsEffort.valueOf('MAX')
+  reportLevel = SpotBugsConfidence.valueOf('HIGH')
 }
 
-spotbugsMain{
-  reports{
-    html.enabled false
-    xml.enabled true
+spotbugsMain {
+  reports {
+    html.required.set(false)
+    xml.required.set(true)
   }
 }
 
-spotbugsTest{
-  reports{
-    html.enabled false
-    xml.enabled true
+spotbugsTest {
+  reports {
+    html.required.set(false)
+    xml.required.set(true)
   }
 }

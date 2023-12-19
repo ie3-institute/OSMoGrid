@@ -8,59 +8,36 @@ package edu.ie3.osmogrid.lv
 
 import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
-import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
-import edu.ie3.datamodel.models.input.connector.{
-  LineInput,
-  SwitchInput,
-  Transformer2WInput,
-  Transformer3WInput
+import edu.ie3.datamodel.models.input.NodeInput
+import edu.ie3.datamodel.models.input.connector.LineInput
+import edu.ie3.datamodel.models.input.connector.`type`.{
+  LineTypeInput,
+  Transformer2WTypeInput
 }
-import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
-import edu.ie3.datamodel.models.input.container.{
-  GraphicElements,
-  RawGridElements,
-  SubGridContainer,
-  SystemParticipants
-}
-import edu.ie3.datamodel.models.input.graphics.{
-  LineGraphicInput,
-  NodeGraphicInput
-}
-import edu.ie3.datamodel.models.input.system.{
-  BmInput,
-  ChpInput,
-  EmInput,
-  EvInput,
-  EvcsInput,
-  FixedFeedInInput,
-  HpInput,
-  LoadInput,
-  PvInput,
-  StorageInput,
-  WecInput
-}
-import edu.ie3.datamodel.models.input.system.characteristic.CosPhiFixed
-import edu.ie3.datamodel.models.profile.BdewStandardLoadProfile
-import edu.ie3.datamodel.models.voltagelevels.{
-  GermanVoltageLevelUtils,
-  VoltageLevel
-}
+import edu.ie3.datamodel.models.input.container.SubGridContainer
+import edu.ie3.datamodel.models.input.system.LoadInput
+import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.graph.OsmGraph
+import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.BuildingGraphConnection
-import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
-import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
-import org.locationtech.jts.geom.impl.CoordinateArraySequence
-import org.locationtech.jts.geom.{LineString, Point}
 import tech.units.indriya.ComparableQuantity
-import java.util
-import java.util.UUID
-import javax.measure.quantity.{Dimensionless, ElectricPotential, Power}
+import utils.Clustering.Cluster
+import utils.GridConversion.{
+  buildGridContainer,
+  buildLine,
+  buildLoad,
+  buildNode,
+  buildTransformer2W
+}
+import utils.{Clustering, VoltageUtils}
+
+import javax.measure.quantity.ElectricPotential
 import scala.annotation.tailrec
 import scala.collection.Set
-import scala.jdk.CollectionConverters._
 import scala.collection.parallel.{ParMap, ParSeq}
+import scala.jdk.CollectionConverters._
 
 object LvGridGeneratorSupport extends LazyLogging {
 
@@ -73,14 +50,19 @@ object LvGridGeneratorSupport extends LazyLogging {
     */
   final case class GridElements(
       nodes: Map[Node, NodeInput],
+      substations: Map[Node, NodeInput],
       loads: Set[LoadInput]
   ) {
     def +(load: LoadInput): GridElements = {
-      GridElements(this.nodes, this.loads + load)
+      GridElements(this.nodes, this.substations, this.loads + load)
     }
 
-    def ++(nodes: Map[Node, NodeInput]): GridElements = {
-      GridElements(this.nodes ++ nodes, this.loads)
+    def ++(nodes: Map[Node, NodeInput], substations: Boolean): GridElements = {
+      if (substations) {
+        GridElements(this.nodes, this.substations ++ nodes, this.loads)
+      } else {
+        GridElements(this.nodes ++ nodes, this.substations, this.loads)
+      }
     }
   }
 
@@ -93,10 +75,14 @@ object LvGridGeneratorSupport extends LazyLogging {
     *   the osm graph to traverse
     * @param buildingGraphConnections
     *   the building connections to the street graph
-    * @param ratedVoltage
-    *   the rated voltage of the grid to build
+    * @param ratedVoltageLv
+    *   the rated low voltage of the grid to build
+    * @param ratedVoltageMv
+    *   the rated medium voltage of the grid to build
     * @param considerHouseConnectionPoints
     *   whether or not to build distinct lines to houses
+    * @param loadSimultaneousFactor
+    *   simultaneous factor for loads
     * @param lineType
     *   the line type for the electrical lines
     * @param gridName
@@ -107,32 +93,33 @@ object LvGridGeneratorSupport extends LazyLogging {
   def buildGrid(
       osmGraph: OsmGraph,
       buildingGraphConnections: ParSeq[BuildingGraphConnection],
-      ratedVoltage: ComparableQuantity[ElectricPotential],
+      ratedVoltageLv: ComparableQuantity[ElectricPotential],
+      ratedVoltageMv: ComparableQuantity[ElectricPotential],
       considerHouseConnectionPoints: Boolean,
+      loadSimultaneousFactor: Double,
       lineType: LineTypeInput,
+      transformer2WTypeInput: Transformer2WTypeInput,
       gridName: String
-  ): Option[SubGridContainer] = {
-
+  ): List[SubGridContainer] = {
     val nodesWithBuildings: ParMap[Node, BuildingGraphConnection] =
       buildingGraphConnections.map(bgc => (bgc.graphConnectionNode, bgc)).toMap
 
-    val vTarget = 1d.asPu
-    val voltageLevel = GermanVoltageLevelUtils.parse(ratedVoltage)
-    val nodeCreator = createNode(vTarget, voltageLevel) _
+    val voltageLevel = new VoltageLevel("lv", ratedVoltageLv)
+    val nodeCreator = buildNode(voltageLevel) _
 
     val gridElements = osmGraph
       .vertexSet()
       .asScala
-      .foldLeft(GridElements(Map(), Set()))((gridElements, osmNode) => {
+      .foldLeft(GridElements(Map(), Map(), Set()))((gridElements, osmNode) => {
         nodesWithBuildings.get(osmNode) match {
           case Some(buildingGraphConnection: BuildingGraphConnection)
               if buildingGraphConnection.isSubstation =>
             val substationNode = nodeCreator(
               "",
               osmNode.coordinate,
-              true
+              false
             )
-            gridElements ++ Map(osmNode -> substationNode)
+            gridElements ++ (Map(osmNode -> substationNode), true)
           case Some(buildingGraphConnection: BuildingGraphConnection) =>
             val highwayNode = nodeCreator(
               buildingGraphConnection
@@ -142,7 +129,7 @@ object LvGridGeneratorSupport extends LazyLogging {
               osmNode.coordinate,
               false
             )
-            val loadCreator = createLoad(
+            val loadCreator = buildLoad(
               "Load of building: " + buildingGraphConnection.building.id.toString,
               buildingGraphConnection.buildingPower
             ) _
@@ -159,14 +146,14 @@ object LvGridGeneratorSupport extends LazyLogging {
                 false
               )
               val load = loadCreator(buildingConnectionNode)
-              gridElements ++ Map(
+              gridElements ++ (Map(
                 osmNode -> highwayNode,
                 osmBuildingConnectionNode -> buildingConnectionNode
-              ) + load
+              ), false) + load
 
             } else {
               val load = loadCreator(highwayNode)
-              gridElements ++ Map(osmNode -> highwayNode) + load
+              gridElements ++ (Map(osmNode -> highwayNode), false) + load
             }
 
           case None if osmGraph.degreeOf(osmNode) > 2 =>
@@ -175,13 +162,13 @@ object LvGridGeneratorSupport extends LazyLogging {
               osmNode.coordinate,
               false
             )
-            gridElements ++ Map(osmNode -> node)
+            gridElements ++ (Map(osmNode -> node), false)
           case None =>
             gridElements
         }
       })
     if (gridElements.loads.isEmpty) {
-      return None
+      return List.empty
     }
     val (startNode, startNodeInput) = gridElements.nodes.headOption.getOrElse(
       throw new IllegalArgumentException(
@@ -207,70 +194,64 @@ object LvGridGeneratorSupport extends LazyLogging {
       )
     }
 
-    Some(
-      buildGridContainer(
-        gridName,
-        gridElements.nodes.values.toSet.asJava,
-        lineInputs.asJava,
-        gridElements.loads.asJava
+    clusterLvGrids(
+      gridElements,
+      lineInputs,
+      gridName,
+      loadSimultaneousFactor,
+      ratedVoltageMv,
+      transformer2WTypeInput
+    )
+  }
+
+  def clusterLvGrids(
+      gridElements: GridElements,
+      lineInputs: Set[LineInput],
+      gridNameBase: String,
+      loadSimultaneousFactor: Double,
+      ratedVoltageMv: ComparableQuantity[ElectricPotential],
+      transformer2WTypeInput: Transformer2WTypeInput
+  ): List[SubGridContainer] = {
+    val cluster: List[Cluster] = Clustering
+      .setup(
+        gridElements,
+        lineInputs.toSet,
+        transformer2WTypeInput,
+        loadSimultaneousFactor
       )
-    )
-  }
+      .run
+    val lineMap = lineInputs.map { l => (l.getNodeA, l.getNodeB) -> l }.toMap
 
-  /** Create a node.
-    *
-    * @param vTarget
-    *   the target voltage of the node
-    * @param voltageLevel
-    *   the voltage level
-    * @param id
-    *   the id of the node
-    * @param coordinate
-    *   the coordinate of the node position
-    * @return
-    *   the created node
-    */
-  private def createNode(
-      vTarget: ComparableQuantity[Dimensionless],
-      voltageLevel: VoltageLevel
-  )(id: String, coordinate: Point, isSlack: Boolean): NodeInput = {
-    new NodeInput(
-      UUID.randomUUID(),
-      id,
-      vTarget,
-      isSlack,
-      coordinate,
-      voltageLevel,
-      1
-    )
-  }
+    // converting the cluster into an actual psdm subgrid
+    cluster.map { c =>
+      val substation = c.substation
+      val nodes = c.nodes.toSet + substation
+      val lines: Map[(NodeInput, NodeInput), LineInput] = lineMap.filter {
+        case ((nodeA, nodeB), _) =>
+          nodes.contains(nodeA) && nodes.contains(nodeB)
+      }
 
-  /** Creates a load.
-    *
-    * @param id
-    *   the id for the load to build
-    * @param ratedPower
-    *   the rated power of the load
-    * @param node
-    *   the node at which the load will be connected
-    * @return
-    *   the created load
-    */
-  private def createLoad(id: String, ratedPower: ComparableQuantity[Power])(
-      node: NodeInput
-  ) =
-    new LoadInput(
-      UUID.randomUUID(),
-      id,
-      node,
-      CosPhiFixed.CONSTANT_CHARACTERISTIC,
-      BdewStandardLoadProfile.H0,
-      false,
-      // todo: What to do for econsannual?
-      0.asWattHour,
-      ratedPower,
-      1d
-    )
+      val voltageLevel = new VoltageLevel("mv", ratedVoltageMv)
+
+      val mvNode = buildNode(voltageLevel)(
+        s"Mv node to lv node ${substation.getId}",
+        substation.getGeoPosition,
+        isSlack = true
+      )(subnet = 100)
+
+      val transformer2W =
+        buildTransformer2W(mvNode, substation, 1, transformer2WTypeInput)
+
+      val allNodes: Set[NodeInput] = nodes + mvNode
+
+      buildGridContainer(
+        gridNameBase,
+        allNodes.asJava,
+        lines.values.toSet.asJava,
+        gridElements.loads.asJava
+      )(transformer2Ws = Set(transformer2W).asJava)
+    }
+  }
 
   /** Recursively traverses the graph by starting at a given node and follows
     * all connected edges sequentially, building all lines between nodes in the
@@ -356,62 +337,6 @@ object LvGridGeneratorSupport extends LazyLogging {
     }
   }
 
-  /** Builds line between the nodes. Includes passed passed osm street node to
-    * the geo position to track the street profile.
-    *
-    * @param firstNode
-    *   node at which the line starts
-    * @param secondNode
-    *   node at which the line ends
-    * @param passedStreetNodes
-    *   osm street nodes the line follows along
-    * @param lineType
-    *   type of the line to build
-    * @return
-    *   the built line
-    */
-  private def buildLine(
-      firstNode: NodeInput,
-      secondNode: NodeInput,
-      passedStreetNodes: Seq[Node],
-      lineType: LineTypeInput
-  ): LineInput = {
-    val lineGeoNodes = passedStreetNodes
-      .map(_.coordinate.getCoordinate)
-      .toArray
-    val geoPosition = new LineString(
-      new CoordinateArraySequence(
-        lineGeoNodes
-      ),
-      GeoUtils.DEFAULT_GEOMETRY_FACTORY
-    )
-    val id = s"Line between: " + passedStreetNodes.headOption
-      .getOrElse(
-        throw new IllegalArgumentException(
-          s"Line between $firstNode and $secondNode has no first node."
-        )
-      )
-      .id + "-" + passedStreetNodes.lastOption
-      .getOrElse(
-        throw new IllegalArgumentException(
-          s"Line between $firstNode and $secondNode has no last node."
-        )
-      )
-      .id
-    new LineInput(
-      UUID.randomUUID(),
-      id,
-      firstNode,
-      secondNode,
-      0,
-      lineType,
-      GeoUtils.calcHaversine(geoPosition),
-      geoPosition,
-      // todo: What do we expect as OlmCharacteristic?
-      null
-    )
-  }
-
   /** Looks for the next [[Node]] that has an associated [[NodeInput]]. Returns
     * all passed [[Node]]s we passed during the search. Includes the node at
     * which we found a [[NodeInput]].
@@ -490,45 +415,4 @@ object LvGridGeneratorSupport extends LazyLogging {
     else graph.getEdgeSource(edge)
   }
 
-  /** Builds a GridContainer by adding all assets together
-    */
-  private def buildGridContainer(
-      gridName: String,
-      nodes: java.util.Set[NodeInput],
-      lines: java.util.Set[LineInput],
-      loads: java.util.Set[LoadInput]
-  ) = {
-    val rawGridElements = new RawGridElements(
-      nodes,
-      lines,
-      new util.HashSet[Transformer2WInput],
-      new util.HashSet[Transformer3WInput],
-      new util.HashSet[SwitchInput],
-      new util.HashSet[MeasurementUnitInput]
-    )
-    val systemParticipants = new SystemParticipants(
-      new util.HashSet[BmInput],
-      new util.HashSet[ChpInput],
-      new util.HashSet[EvcsInput],
-      new util.HashSet[EvInput],
-      new util.HashSet[FixedFeedInInput],
-      new util.HashSet[HpInput],
-      loads,
-      new util.HashSet[PvInput],
-      new util.HashSet[StorageInput],
-      new util.HashSet[WecInput],
-      new util.HashSet[EmInput]
-    )
-    val graphicElements = new GraphicElements(
-      new util.HashSet[NodeGraphicInput],
-      new util.HashSet[LineGraphicInput]
-    )
-    new SubGridContainer(
-      gridName,
-      1,
-      rawGridElements,
-      systemParticipants,
-      graphicElements
-    )
-  }
 }

@@ -6,6 +6,7 @@
 
 package utils
 
+import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
 import edu.ie3.osmogrid.exception.OsmDataException
@@ -18,11 +19,15 @@ import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
 import edu.ie3.util.quantities.PowerSystemUnits
 import edu.ie3.util.quantities.QuantityUtils.{RichQuantity, RichQuantityDouble}
 import edu.ie3.util.quantities.interfaces.Irradiance
+import org.jgrapht.alg.interfaces.ShortestPathAlgorithm
+import org.jgrapht.alg.shortestpath.DijkstraShortestPath
 import org.locationtech.jts.algorithm.Centroid
 import org.locationtech.jts.geom.{Coordinate, Polygon}
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.unit.Units
+import utils.Connections.Connection
 
+import java.util
 import java.util.UUID
 import javax.measure.quantity.{Area, Power}
 import scala.collection.parallel.ParSeq
@@ -120,6 +125,47 @@ object OsmoGridUtils {
       }
     })
     graph
+  }
+
+  /** Method to find all unique connections. If less than two nodes are
+    * provided, an empty list is returned. <p> Uniqueness: a -> b == b -> a
+    *
+    * @param nodes
+    *   list of nodes
+    * @return
+    *   a list of all unique connections
+    */
+  def getAllUniqueCombinations(
+      nodes: List[Node]
+  ): List[(Node, Node)] = {
+    if (nodes.size < 2) {
+      List.empty
+    } else if (nodes.size == 2) {
+      List((nodes(0), nodes(1)))
+    } else {
+      val connections: util.List[(Node, Node)] =
+        new util.ArrayList[(Node, Node)]
+
+      // algorithm to find all unique combinations
+      nodes.foreach(nodeA => {
+        nodes.foreach(nodeB => {
+          // it makes no sense to connect a node to itself => nodeA and nodeB cannot be the same
+          if (nodeA != nodeB) {
+            // two combinations possible
+            val t1 = (nodeA, nodeB)
+            val t2 = (nodeB, nodeA)
+
+            // if none of the combinations is already added, the first combination is added
+            if (!connections.contains(t1) && !connections.contains(t2)) {
+              connections.add(t1)
+            }
+          }
+        })
+      })
+
+      // returns all unique connections
+      connections.asScala.toList
+    }
   }
 
   /** This method is used for medium voltage grid generation were we do not have

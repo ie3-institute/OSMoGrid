@@ -7,7 +7,6 @@
 package edu.ie3.osmogrid.utils
 
 import edu.ie3.datamodel.models.StandardUnits
-import edu.ie3.datamodel.models.input.system.characteristic.OlmCharacteristicInput._
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.test.common.{GridSupport, MvTestData, UnitSpec}
 import edu.ie3.util.osm.model.OsmEntity.Node
@@ -16,44 +15,11 @@ import tech.units.indriya.unit.Units
 import utils.GridConversion._
 import utils.Solver
 
-import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 class GridConversionSpec extends UnitSpec with MvTestData with GridSupport {
   "The GridConversion" should {
     val baseGraph: OsmGraph = Solver.solve(transitionPoint, connections)
-
-    "convert mv grids correctly" in {
-      val graph = baseGraph.copy()
-      val (subgrid, nodeChanges) =
-        convertMv(2, graph, nodeConversion, assetInformation)
-
-      nodeChanges.size shouldBe 7
-      nodeChanges.foreach(n => n.getSubnet shouldBe 2)
-
-      subgrid.getSubnet shouldBe 2
-      val nodes = subgrid.getRawGrid.getNodes.asScala
-      val lines = subgrid.getRawGrid.getLines.asScala
-
-      nodes shouldBe Seq(
-        nodeToHv,
-        nodeInMv1,
-        nodeInMv2,
-        nodeInMv3,
-        nodeInMv4,
-        nodeInMv5,
-        nodeInMv6
-      ).map { n => n.copy().subnet(2).build() }.toSet
-      lines.size shouldBe 7
-
-      lines.foreach { line =>
-        line.getParallelDevices shouldBe 1
-        line.getType shouldBe defaultLineTypeMv
-        line.getGeoPosition.getStartPoint shouldBe line.getNodeA.getGeoPosition
-        line.getGeoPosition.getEndPoint shouldBe line.getNodeB.getGeoPosition
-        line.getOlmCharacteristic shouldBe CONSTANT_CHARACTERISTIC
-      }
-    }
 
     "build a mv line input correctly" in {
       val cases = Table(

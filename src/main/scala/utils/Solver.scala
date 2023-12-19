@@ -10,7 +10,7 @@ import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.slf4j.LoggerFactory
-import utils.MvUtils.{Connection, Connections}
+import utils.Connections.Connection
 
 import javax.measure.Quantity
 import javax.measure.quantity.Length
@@ -31,7 +31,7 @@ object Solver {
   final case class StepResultOption(
       graph: OsmGraph,
       nextNode: Node,
-      usedConnections: List[Connection],
+      usedConnections: List[Connection[Node]],
       removedEdge: DistanceWeightedEdge,
       addedWeight: Quantity[Length]
   )
@@ -48,15 +48,15 @@ object Solver {
     */
   def solve(
       nodeToHv: Node,
-      connections: Connections
+      connections: Connections[Node]
   )(implicit neighborCount: Int = 5): OsmGraph = {
     val graph = new OsmGraph()
-    connections.nodes.foreach(n => graph.addVertex(n))
+    connections.elements.foreach(n => graph.addVertex(n))
 
-    if (connections.nodes.length == 1) {
+    if (connections.elements.length == 1) {
       graph
-    } else if (connections.nodes.length < 3) {
-      val node = connections.nodes.filter(n => n != nodeToHv)(0)
+    } else if (connections.elements.length < 3) {
+      val node = connections.elements.filter(n => n != nodeToHv)(0)
       graph.addWeightedEdge(
         nodeToHv,
         node,
@@ -106,7 +106,7 @@ object Solver {
   private def step(
       nodeToHv: Node,
       stepResult: StepResult,
-      connections: Connections,
+      connections: Connections[Node],
       neighborCount: Int
   ): Option[StepResult] = {
     // extracting some information from the previous step
@@ -204,7 +204,7 @@ object Solver {
       neighbor: Node,
       osmGraph: OsmGraph,
       edges: Set[DistanceWeightedEdge],
-      connections: Connections
+      connections: Connections[Node]
   ): List[StepResultOption] = {
     if (neighbor == nodeToHv || osmGraph.getEdge(current, neighbor) != null) {
       // if neighbor is transition point or the neighbor is already connected to the current node
@@ -258,10 +258,10 @@ object Solver {
     */
   private def firstStep(
       nodeToHv: Node,
-      connections: Connections
+      connections: Connections[Node]
   ): StepResult = {
     val graph = new OsmGraph()
-    val nodes: List[Node] = connections.nodes
+    val nodes: List[Node] = connections.elements
 
     // adding all nodes to the graph
     nodes.foreach { node => graph.addVertex(node) }

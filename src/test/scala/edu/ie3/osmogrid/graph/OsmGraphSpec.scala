@@ -11,7 +11,7 @@ import edu.ie3.util.geo.GeoUtils
 import org.locationtech.jts.geom.Polygon
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
-import utils.MvUtils.Connection
+import utils.Connections.Connection
 
 import scala.jdk.CollectionConverters._
 
@@ -117,7 +117,7 @@ class OsmGraphSpec extends UnitSpec with MvTestData {
 
     "check if edges intersects each other correctly" in {
       val graph = new OsmGraph()
-      connections.nodes.foreach { node => graph.addVertex(node) }
+      connections.elements.foreach { node => graph.addVertex(node) }
       graph.addEdge(osmNode1, osmNode4)
       graph.addEdge(transitionPoint, osmNode5)
 
