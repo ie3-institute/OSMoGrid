@@ -3,9 +3,9 @@ plugins {
   id 'java' //java support
   id 'scala'
   id 'pmd' // code check, working on source code
-  id 'com.diffplug.spotless' version '6.23.3'//code format
-  id 'com.github.spotbugs' version '6.0.3' // code check, working on byte code
-  id 'de.undercouch.download' version '5.5.0'
+  id 'com.diffplug.spotless' version '6.25.0'//code format
+  id 'com.github.spotbugs' version '6.0.8' // code check, working on byte code
+  id 'de.undercouch.download' version '5.6.0'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.32" // run scalatest without specific spec task
   id "org.sonarqube" version "4.4.1.3373" // sonarqube
@@ -17,11 +17,11 @@ ext {
   javaVersion = JavaVersion.VERSION_17
 
   scalaVersion = '2.13'
-  scalaBinaryVersion = '2.13.12'
+  scalaBinaryVersion = '2.13.13'
   pekkoVersion = '1.0.2'
 
   tscfgVersion = '0.9.995'
-  scapegoatVersion = '2.1.3'
+  scapegoatVersion = '2.1.5'
 
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
   docsDirName = 'docs'
@@ -72,7 +72,7 @@ dependencies {
 
   // logging
   implementation "com.typesafe.scala-logging:scala-logging_${scalaVersion}:3.9.5"
-  implementation 'ch.qos.logback:logback-classic:1.2.13'
+  implementation 'ch.qos.logback:logback-classic:1.5.2'
 
   // config
   implementation 'com.typesafe:config:1.4.3'
@@ -82,7 +82,7 @@ dependencies {
   implementation 'com.acervera.osm4scala:osm4scala-core_2.13:1.0.11'
 
   // ie³ power system utils
-  implementation('com.github.ie3-institute:PowerSystemUtils:2.0') {
+  implementation('com.github.ie3-institute:PowerSystemUtils:2.2') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
@@ -104,11 +104,11 @@ dependencies {
   implementation 'org.locationtech.jts:jts-core:1.19.0'
 
   // testing
-  testImplementation "org.scalatest:scalatest_$scalaVersion:3.2.17"
+  testImplementation "org.scalatest:scalatest_$scalaVersion:3.2.18"
   testRuntimeOnly 'com.vladsch.flexmark:flexmark-all:0.64.8' //scalatest html output
   testImplementation 'org.pegdown:pegdown:1.6.0'
 
-  testImplementation 'org.mockito:mockito-core:5.8.0' // mocking framework
+  testImplementation 'org.mockito:mockito-core:5.11.0' // mocking framework
   testImplementation "org.scalatestplus:mockito-3-12_$scalaVersion:3.2.10.0" // syntactic sugar
 }
 
