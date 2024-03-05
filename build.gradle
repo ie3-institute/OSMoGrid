@@ -82,7 +82,7 @@ dependencies {
   implementation 'com.acervera.osm4scala:osm4scala-core_2.13:1.0.11'
 
   // ie³ power system utils
-  implementation('com.github.ie3-institute:PowerSystemUtils:2.2') {
+  implementation('com.github.ie3-institute:PowerSystemUtils:2.2.1') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
