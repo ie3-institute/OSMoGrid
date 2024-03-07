@@ -8,6 +8,7 @@ package edu.ie3.osmogrid.io.input
 
 import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
 import com.typesafe.config.ConfigFactory
+import edu.ie3.datamodel.exceptions.SourceException
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.$TsCfgValidator
 import edu.ie3.osmogrid.exception.{InputDataException, PbfReadFailedException}
@@ -184,9 +185,9 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
             3 seconds
           ) match {
           case AssetReadFailed(exception) =>
-            exception shouldBe InputDataException(
-              s"There are no or corrupt transformer types at: $assetDir"
-            )
+            exception.getClass shouldBe classOf[SourceException]
+            exception.getMessage shouldBe s"edu.ie3.datamodel.exceptions.FailureException: 1 exception(s) occurred within \"Transformer2WTypeInput\" data, one is: " +
+              s"edu.ie3.datamodel.exceptions.FactoryException: An error occurred when creating instance of Transformer2WTypeInput.class."
           case RepAssetTypes(
                 assetInformation: AssetInformation
               ) =>

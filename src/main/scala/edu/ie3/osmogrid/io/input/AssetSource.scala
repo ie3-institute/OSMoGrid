@@ -19,7 +19,7 @@ import edu.ie3.osmogrid.exception.{IllegalConfigException, InputDataException}
 
 import java.nio.file.Paths
 import scala.concurrent.{ExecutionContextExecutor, Future}
-import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters._
 
 trait AssetSource {
 
@@ -61,8 +61,9 @@ object AssetSource {
           new CsvDataSource(csvSep, Paths.get(directoryPath), namingStrategy)
         val typeSource: TypeSource =
           new TypeSource(dataSource)
-        val transformerTypes = typeSource.getTransformer2WTypes.asScala.toSeq
-        val lineTypes = typeSource.getLineTypes.asScala.toSeq
+        val transformerTypes =
+          typeSource.getTransformer2WTypes.asScala.values.toSeq
+        val lineTypes = typeSource.getLineTypes.asScala.values.toSeq
         (transformerTypes, lineTypes) match {
           case (Nil, _) =>
             throw InputDataException(

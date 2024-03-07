@@ -109,8 +109,7 @@ object TestGridFactory {
       Set.empty[LoadInput].asJava,
       Set.empty[PvInput].asJava,
       Set.empty[StorageInput].asJava,
-      Set.empty[WecInput].asJava,
-      Set.empty[EmInput].asJava
+      Set.empty[WecInput].asJava
     )
 
   def createEmptyGraphicElements(): GraphicElements =

@@ -622,7 +622,7 @@ object SubGridHandling {
     )
 
     val evcss = updateParticipants(
-      participants.getEvCS.asScala.toSeq,
+      participants.getEvcs.asScala.toSeq,
       nodeMapping,
       (evcs: EvcsInput, node: NodeInput) => evcs.copy().node(node).build()
     ).fold(
@@ -726,19 +726,6 @@ object SubGridHandling {
       identity
     )
 
-    val ems = updateParticipants(
-      participants.getEmSystems.asScala.toSeq,
-      nodeMapping,
-      (em: EmInput, node: NodeInput) => em.copy().node(node).build()
-    ).fold(
-      exception =>
-        throw GridException(
-          "Unable to update node references of em systems.",
-          exception
-        ),
-      identity
-    )
-
     new SystemParticipants(
       bms.toSet.asJava,
       chps.toSet.asJava,
@@ -749,8 +736,7 @@ object SubGridHandling {
       loads.toSet.asJava,
       pvs.toSet.asJava,
       storages.toSet.asJava,
-      wecs.toSet.asJava,
-      ems.toSet.asJava
+      wecs.toSet.asJava
     )
   }
 
