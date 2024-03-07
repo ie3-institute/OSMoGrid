@@ -31,7 +31,7 @@ class LvRegionCoordinatorIT
       "start another partition task" in {
         val adminLevel = BoundaryAdminLevel.COUNTY_LEVEL
         val regionCoordinatorReply = TestProbe[LvRegionResponse]()
-        val gridGeneratorReply = TestProbe[LvGridResponse]
+        val gridGeneratorReply = TestProbe[LvGridResponse]()
 
         val testKit = BehaviorTestKit(
           LvRegionCoordinator()

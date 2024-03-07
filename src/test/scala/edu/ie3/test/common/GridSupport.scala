@@ -181,8 +181,7 @@ trait GridSupport {
       Set.empty[LoadInput].asJava,
       Set.empty[PvInput].asJava,
       Set.empty[StorageInput].asJava,
-      Set.empty[WecInput].asJava,
-      Set.empty[EmInput].asJava
+      Set.empty[WecInput].asJava
     )
 
     val mockedGraphics = new GraphicElements(
@@ -265,8 +264,7 @@ trait GridSupport {
       Set.empty[LoadInput].asJava,
       Set.empty[PvInput].asJava,
       Set.empty[StorageInput].asJava,
-      Set.empty[WecInput].asJava,
-      Set.empty[EmInput].asJava
+      Set.empty[WecInput].asJava
     )
 
     val mockedGraphics = new GraphicElements(
@@ -408,6 +406,7 @@ trait GridSupport {
       s"Load in $subgridNo",
       nodeB,
       mock[ReactivePowerCharacteristic],
+      null,
       BdewStandardLoadProfile.H0,
       false,
       Quantities.getQuantity(3000d, KILOWATTHOUR),
@@ -420,6 +419,7 @@ trait GridSupport {
       s"PV in $subgridNo",
       nodeA,
       mock[ReactivePowerCharacteristic],
+      null,
       0d,
       Quantities.getQuantity(0d, DEGREE_GEOM),
       Quantities.getQuantity(100d, PERCENT),
@@ -441,8 +441,7 @@ trait GridSupport {
       Set(loadInput).asJava,
       Set(pvInput).asJava,
       Set.empty[StorageInput].asJava,
-      Set.empty[WecInput].asJava,
-      Set.empty[EmInput].asJava
+      Set.empty[WecInput].asJava
     )
 
     // GRAPHICS (just mocked) //

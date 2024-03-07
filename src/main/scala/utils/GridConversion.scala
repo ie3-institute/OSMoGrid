@@ -234,6 +234,7 @@ object GridConversion {
       id,
       node,
       CosPhiFixed.CONSTANT_CHARACTERISTIC,
+      null,
       BdewStandardLoadProfile.H0,
       false,
       // todo: What to do for econsannual?
@@ -272,8 +273,7 @@ object GridConversion {
       loads,
       new util.HashSet[PvInput],
       new util.HashSet[StorageInput],
-      new util.HashSet[WecInput],
-      new util.HashSet[EmInput]
+      new util.HashSet[WecInput]
     )
     val graphicElements = new GraphicElements(
       new util.HashSet[NodeGraphicInput],

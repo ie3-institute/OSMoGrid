@@ -26,7 +26,6 @@ import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.input.{InputRequest, InputTerminate}
 import edu.ie3.osmogrid.io.output.{GridResult, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv._
-import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.mv._
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.slf4j.event.Level
@@ -136,7 +135,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         testKit.createTestProbe[input.InputDataEvent]()
       val resultListener = testKit.createTestProbe[ResultListenerProtocol]()
       val lvCoordinator = testKit.createTestProbe[LvRequest]()
-      val mvCoordinator = testKit.createTestProbe[MvRequest]
+      val mvCoordinator = testKit.createTestProbe[MvRequest]()
 
       /* State data */
       val runGuardianData = RunGuardianData(
