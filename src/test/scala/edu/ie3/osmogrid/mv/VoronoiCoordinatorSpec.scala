@@ -6,16 +6,15 @@
 
 package edu.ie3.osmogrid.mv
 
+import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
+import edu.ie3.osmogrid.graph.OsmGraph
+import edu.ie3.test.common.{GridSupport, MvTestData, UnitSpec}
 import org.apache.pekko.actor.testkit.typed.CapturedLogEvent
 import org.apache.pekko.actor.testkit.typed.scaladsl.{
   ActorTestKit,
   BehaviorTestKit,
   ScalaTestWithActorTestKit
 }
-import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
-import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.test.common.{MvTestData, UnitSpec}
-import edu.ie3.test.common.{GridSupport, MvTestData, UnitSpec}
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.event.Level
 import utils.GridConversion.NodeConversion
@@ -117,7 +116,7 @@ class VoronoiCoordinatorSpec
     }
 
     "send a finish message to the mv coordinator" in {
-      val message = mvCoordinator.receiveMessage
+      val message = mvCoordinator.receiveMessage()
 
       message match {
         case WrappedMvResponse(

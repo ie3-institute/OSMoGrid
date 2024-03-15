@@ -31,7 +31,6 @@ import tech.units.indriya.quantity.Quantities
 import utils.GridContainerUtils
 
 import java.util.UUID
-import scala.collection.immutable.Seq
 import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
@@ -46,7 +45,7 @@ class SubGridHandlingSpec
   "The SubGridHandling" should {
     val resultListener = testKit.createTestProbe[ResultListenerProtocol]()
     val lvCoordinator = testKit.createTestProbe[LvResponse]()
-    val mvCoordinator = testKit.createTestProbe[MvResponse]
+    val mvCoordinator = testKit.createTestProbe[MvResponse]()
 
     val listener = Seq(resultListener.ref)
     val msgAdapters: MessageAdapters = MessageAdapters(
