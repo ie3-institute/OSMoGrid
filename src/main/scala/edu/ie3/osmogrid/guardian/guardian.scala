@@ -49,6 +49,8 @@ private[guardian] final case class GuardianData(
 
   def remove(run: UUID): GuardianData =
     this.copy(runs = runs.filterNot(_ == run))
+
+  def isComplete: Boolean = runs.isEmpty
 }
 
 private[guardian] object GuardianData {
