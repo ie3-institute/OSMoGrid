@@ -122,7 +122,6 @@ class ResultListenerIT
         )
 
         gridData shouldBe jointGrid
-        FileIOUtils.deleteRecursively(testTmpDir)
       }
     }
   }
