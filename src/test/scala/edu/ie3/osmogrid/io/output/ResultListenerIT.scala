@@ -12,7 +12,11 @@ import edu.ie3.osmogrid.cfg.ConfigFailFastSpec.viableConfigurationString
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.$TsCfgValidator
 import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
 import edu.ie3.osmogrid.exception.IllegalConfigException
-import edu.ie3.osmogrid.io.output.PersistenceListenerEvent.{InitComplete, InitFailed, ResultHandlingSucceeded}
+import edu.ie3.osmogrid.io.output.PersistenceListenerEvent.{
+  InitComplete,
+  InitFailed,
+  ResultHandlingSucceeded
+}
 import edu.ie3.test.common.{ThreeWindingTestData, UnitSpec}
 import edu.ie3.util.io.FileIOUtils
 import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
