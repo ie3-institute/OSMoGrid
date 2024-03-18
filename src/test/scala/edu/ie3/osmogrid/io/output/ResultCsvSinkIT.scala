@@ -7,29 +7,32 @@
 package edu.ie3.osmogrid.io.output
 
 import edu.ie3.datamodel.io.source.csv.CsvJointGridContainerSource
-import edu.ie3.test.common.{IOTestCommons, ThreeWindingTestData, UnitSpec}
+import edu.ie3.test.common.{ThreeWindingTestData, UnitSpec}
 import edu.ie3.util.io.FileIOUtils
 
-import java.nio.file.Paths
+import java.nio.file.{Files, Path}
 import java.util.UUID
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 
-class ResultCsvSinkIT
-    extends UnitSpec
-    with IOTestCommons
-    with ThreeWindingTestData {
+class ResultCsvSinkIT extends UnitSpec with ThreeWindingTestData {
+
+  val tmpDirectory: Path = Files.createTempDirectory("tmpDirectory")
+
+  override protected def afterAll(): Unit = {
+    super.afterAll()
+    FileIOUtils.deleteRecursively(tmpDirectory)
+  }
 
   "A ResultCsvSink" should {
     "handle a given valid GridResult correctly" in {
-      createDir(testTmpDir)
       val runId = UUID.randomUUID()
       val csvSeparator = ";"
       val hierarchic = false
 
       val resultSink = ResultCsvSink(
         runId,
-        testTmpDir,
+        tmpDirectory.toFile.getPath,
         csvSeparator,
         hierarchic
       )
@@ -44,13 +47,11 @@ class ResultCsvSinkIT
       val gridData = CsvJointGridContainerSource.read(
         jointGrid.getGridName,
         csvSeparator,
-        Paths.get(testTmpDir),
+        tmpDirectory,
         hierarchic
       )
 
       gridData shouldBe jointGrid
-
-      FileIOUtils.deleteRecursively(testTmpDir)
     }
   }
 }
