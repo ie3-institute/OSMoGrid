@@ -45,6 +45,10 @@ class ResultListenerIT
     .getOrElse(fail("Unable to parse malicious config"))
     .output
 
+  override protected def afterAll(): Unit = {
+    super.afterAll()
+    FileIOUtils.deleteRecursively(testTmpDir)
+  }
 
   "A ResultListener" when {
     "initializing its sinks" should {
@@ -118,8 +122,6 @@ class ResultListenerIT
         )
 
         gridData shouldBe jointGrid
-
-        FileIOUtils.deleteRecursively(testTmpDir)
       }
     }
   }
