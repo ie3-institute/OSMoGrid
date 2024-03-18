@@ -45,10 +45,6 @@ class ResultListenerIT
     .getOrElse(fail("Unable to parse malicious config"))
     .output
 
-  override protected def afterAll(): Unit = {
-    super.afterAll()
-    FileIOUtils.deleteRecursively(testTmpDir)
-  }
 
   "A ResultListener" when {
     "initializing its sinks" should {
@@ -89,7 +85,9 @@ class ResultListenerIT
 
     "handling a grid result" should {
       "write the grid data correctly into csv files" in {
+
         createDir(testTmpDir)
+
         val parsedCfg = ConfigFactory.parseMap(
           Map("csv.directory" -> testTmpDir).asJava
         )
@@ -120,6 +118,8 @@ class ResultListenerIT
         )
 
         gridData shouldBe jointGrid
+
+        FileIOUtils.deleteRecursively(testTmpDir)
       }
     }
   }

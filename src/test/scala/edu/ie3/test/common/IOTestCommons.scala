@@ -18,7 +18,7 @@ trait IOTestCommons {
 
   protected val testTmpDir: String = System.getProperty(
     "user.dir"
-  ) + File.separator + "test" + File.separator + "tmp_" + this.getClass.getSimpleName
+  ) + File.separator + "src" + File.separator + "test" + File.separator + "tmp_" + this.getClass.getSimpleName
 
   def createDir(dir: String): Boolean = new File(dir).mkdirs()
 
