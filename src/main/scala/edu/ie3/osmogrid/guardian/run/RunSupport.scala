@@ -219,7 +219,7 @@ trait RunSupport {
     val mvCoordinator =
       ctx.spawn(
         MvCoordinator(mvConfig, inputDataProvider, mvCoordinatorAdapter),
-        s"LvCoordinator_${runId.toString}"
+        s"MvCoordinator_${runId.toString}"
       )
     ctx.watchWith(mvCoordinator, MvCoordinatorDied)
 
