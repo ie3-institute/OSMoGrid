@@ -6,8 +6,6 @@
 
 package edu.ie3.osmogrid.io.output
 
-import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
 import edu.ie3.datamodel.io.source.csv.CsvJointGridContainerSource
 import edu.ie3.osmogrid.cfg.ConfigFailFastSpec.viableConfigurationString
@@ -19,19 +17,20 @@ import edu.ie3.osmogrid.io.output.PersistenceListenerEvent.{
   InitFailed,
   ResultHandlingSucceeded
 }
-import edu.ie3.test.common.{IOTestCommons, ThreeWindingTestData, UnitSpec}
+import edu.ie3.test.common.{ThreeWindingTestData, UnitSpec}
 import edu.ie3.util.io.FileIOUtils
+import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 
+import java.nio.file.{Files, Path}
 import java.util.UUID
-import scala.concurrent.{Await, Future}
-import java.nio.file.Paths
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
 import scala.jdk.CollectionConverters._
 
 class ResultListenerIT
     extends ScalaTestWithActorTestKit
     with UnitSpec
-    with IOTestCommons
     with ThreeWindingTestData {
 
   private val testProbe = testKit.createTestProbe[ResultListenerProtocol]()
@@ -45,9 +44,11 @@ class ResultListenerIT
     .getOrElse(fail("Unable to parse malicious config"))
     .output
 
+  val tmpDir: Path = Files.createTempDirectory("tmpDir")
+
   override protected def afterAll(): Unit = {
     super.afterAll()
-    FileIOUtils.deleteRecursively(testTmpDir)
+    FileIOUtils.deleteRecursively(tmpDir)
   }
 
   "A ResultListener" when {
@@ -89,9 +90,9 @@ class ResultListenerIT
 
     "handling a grid result" should {
       "write the grid data correctly into csv files" in {
-        createDir(testTmpDir)
+
         val parsedCfg = ConfigFactory.parseMap(
-          Map("csv.directory" -> testTmpDir).asJava
+          Map("csv.directory" -> tmpDir.toFile.getAbsolutePath).asJava
         )
         val config =
           OsmoGridConfig.Output(parsedCfg, "output", new $TsCfgValidator())
@@ -115,7 +116,7 @@ class ResultListenerIT
         val gridData = CsvJointGridContainerSource.read(
           jointGrid.getGridName,
           ";",
-          Paths.get(testTmpDir),
+          tmpDir,
           false
         )
 

@@ -34,12 +34,9 @@ class OsmoGridGuardianSpec extends UnitSpec {
         )
 
         /* Check if the right child is spawned */
-        idleTestKit.expectEffectPF {
-          case Spawned(childBehav: Behavior[_], name, props) =>
-            name shouldBe s"RunGuardian_$runId"
-          case Spawned(childBehav, _, _) =>
-            fail(s"Spawned a child with wrong behavior '$childBehav'.")
-        }
+        idleTestKit
+          .expectEffectType[Spawned[_]]
+          .childName shouldBe s"RunGuardian_$runId"
       }
 
       "report a dead RunGuardian" in {
@@ -69,6 +66,14 @@ class OsmoGridGuardianSpec extends UnitSpec {
         GuardianData(Seq(run0, run1))
           .remove(run0)
           .runs should contain theSameElementsAs Seq(run1)
+      }
+
+      "properly declare runs complete" in {
+        val data1 = GuardianData(Seq(run0, run1))
+          .remove(run0)
+        data1.isComplete shouldBe false
+
+        data1.remove(run1).isComplete shouldBe true
       }
     }
   }

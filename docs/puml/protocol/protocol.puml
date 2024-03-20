@@ -34,7 +34,7 @@ LvCoordinator -> InputDataProvider: <font color="red">!</font>ReqOsm(...)
 InputDataProvider <--> Input: //Read//
 LvCoordinator -> InputDataProvider: <font color="red">!</font>ReqAssetTypes(...)
 InputDataProvider <--> Input: //Read//
-InputDataProvider -> LvCoordinator: <font color="red">!</font>RepOsm(OsmoGridModel)
+InputDataProvider -> LvCoordinator: <font color="red">!</font>RepOsm(OsmModel)
 InputDataProvider -> LvCoordinator: <font color="red">!</font>RepAssetTypes(AssetInformation)
 LvCoordinator -> LvCoordinator: <font color="red">!</font>StartGeneration(...)
 LvCoordinator --> LvRegionCoordinator: //Spawn//

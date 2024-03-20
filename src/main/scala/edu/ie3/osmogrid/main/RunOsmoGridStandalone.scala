@@ -15,8 +15,7 @@ object RunOsmoGridStandalone {
   def main(args: Array[String]): Unit = {
     val cfg: OsmoGridConfig = ArgsParser.prepare(args)
 
-    val actorSystem: ActorSystem[GuardianRequest] =
-      ActorSystem(OsmoGridGuardian(), "OSMoGridGuardian")
+    val actorSystem = ActorSystem(OsmoGridGuardian(), "OSMoGridGuardian")
     actorSystem ! Run(cfg)
   }
 }

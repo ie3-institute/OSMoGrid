@@ -31,7 +31,12 @@ object OsmoGridGuardian {
         watch match {
           case RunGuardianDied(runId) =>
             ctx.log.info(s"Run $runId terminated.")
-            idle(guardianData.remove(runId))
+
+            val updatedGuardianData = guardianData.remove(runId)
+            if (updatedGuardianData.isComplete)
+              Behaviors.stopped
+            else
+              idle(updatedGuardianData)
         }
     }
 }
