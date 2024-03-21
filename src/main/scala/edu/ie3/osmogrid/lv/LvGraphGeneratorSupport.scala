@@ -167,7 +167,7 @@ object LvGraphGeneratorSupport {
       nodes: Map[Long, Node],
       powerDensity: ComparableQuantity[Irradiance],
       minDistance: ComparableQuantity[Length]
-  ): ParSeq[BuildingGraphConnection] = {
+  ): Seq[BuildingGraphConnection] = {
     val landusePolygons =
       landuses.map(closedWay => safeBuildPolygon(closedWay, nodes))
     (buildings ++ substations).flatMap(building => {
@@ -223,7 +223,7 @@ object LvGraphGeneratorSupport {
         )
       } else None
     })
-  }
+  }.seq.toSeq
 
   /** Get closest point of the buildings center to the highway section spanning
     * linePtA and linePtB. If we find a point closer to the building center that
@@ -294,9 +294,9 @@ object LvGraphGeneratorSupport {
     */
   private def updateGraphWithBuildingConnections(
       graph: OsmGraph,
-      buildingGraphConnections: ParSeq[BuildingGraphConnection],
+      buildingGraphConnections: Seq[BuildingGraphConnection],
       considerBuildingConnections: Boolean
-  ): (OsmGraph, ParSeq[BuildingGraphConnection]) = {
+  ): (OsmGraph, Seq[BuildingGraphConnection]) = {
     val updatedBgcs = buildingGraphConnections.map(bgc => {
       if (bgc.hasNewNode) {
         graph.addVertex(bgc.graphConnectionNode)
@@ -322,7 +322,7 @@ object LvGraphGeneratorSupport {
 
   private def divideDisconnectedGraphs(
       graph: OsmGraph,
-      buildingGraphConnections: ParSeq[
+      buildingGraphConnections: Seq[
         LvGraphGeneratorSupport.BuildingGraphConnection
       ]
   ): Seq[(OsmGraph, Seq[BuildingGraphConnection])] = {
@@ -363,6 +363,6 @@ object LvGraphGeneratorSupport {
         graphSeq :+ (subgraph, buildingGraphConnections)
       })
 
-    } else Seq((graph, buildingGraphConnections.seq.toSeq))
+    } else Seq((graph, buildingGraphConnections))
   }
 }
