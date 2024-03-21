@@ -222,31 +222,26 @@ object Solver {
           val removedEdge = copy.removeEdge(source, target)
 
           // finds the two connections needed to add the neighbor to the copied graph
-          val connectionA = connections.getConnection(source, neighbor)
-          val connectionB = connections.getConnection(neighbor, target)
-
-          (connectionA, connectionB) match {
-            case (Some(conA), Some(conB)) =>
-              copy.addConnection(conA)
-              copy.addConnection(conB)
+          connections
+            .getConnection(source, neighbor)
+            .zip(connections.getConnection(neighbor, target))
+            .map { case (connectionA, connectionB) =>
+              copy.addConnection(connectionA)
+              copy.addConnection(connectionB)
 
               // calculating the added weight
-              val addedWeight: Quantity[Length] = conA.distance
-                .add(conB.distance)
+              val addedWeight: Quantity[Length] = connectionA.distance
+                .add(connectionB.distance)
                 .subtract(removedEdge.getDistance)
 
-              Some(
-                StepResultOption(
-                  copy,
-                  neighbor,
-                  List(conA, conB),
-                  removedEdge,
-                  addedWeight
-                )
+              StepResultOption(
+                copy,
+                neighbor,
+                List(connectionA, connectionB),
+                removedEdge,
+                addedWeight
               )
-            case _ =>
-              None
-          }
+            }
         }
       }.toList
   }
