@@ -197,7 +197,7 @@ object LvGridGeneratorSupport extends LazyLogging {
     )
   }
 
-  def clusterLvGrids(
+  private def clusterLvGrids(
       gridElements: GridElements,
       lineInputs: Set[LineInput],
       gridNameBase: String,

@@ -16,7 +16,11 @@ import org.jgrapht.alg.shortestpath.DijkstraShortestPath
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 import utils.Connections
-import utils.Connections.{Connection, buildUniqueConnections}
+import utils.Connections.{
+  Connection,
+  buildUndirectedConnections,
+  buildUndirectedShortestPathConnections
+}
 import utils.OsmoGridUtils.getAllUniqueCombinations
 
 import scala.util.{Failure, Success, Try}
@@ -188,7 +192,7 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
       }
     }
 
-    "build unique connections correctly using shortest path " in {
+    "build undirected connections correctly using shortest path " in {
       val graph = new OsmGraph()
       List(osmNode1, osmNode2, osmNode3).foreach(v => graph.addVertex(v))
       graph.addWeightedEdge(
@@ -219,7 +223,7 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
       val shortestPath =
         new DijkstraShortestPath[Node, DistanceWeightedEdge](graph)
       val connections: List[Connection[Node]] =
-        buildUniqueConnections(graph, shortestPath)
+        buildUndirectedShortestPathConnections(graph, shortestPath)
 
       connections.size shouldBe 3
 
@@ -242,7 +246,7 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
       connections(2).path.isDefined shouldBe true
     }
 
-    "fail to build unique connections if the graph contains unconnected vertexes" in {
+    "fail to build undirected connections if the graph contains unconnected vertexes" in {
       val graph = new OsmGraph()
       List(osmNode1, osmNode2, osmNode3).foreach(v => graph.addVertex(v))
       graph.addWeightedEdge(
@@ -257,19 +261,19 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
       val shortestPath =
         new DijkstraShortestPath[Node, DistanceWeightedEdge](graph)
 
-      Try(buildUniqueConnections(graph, shortestPath)) match {
+      Try(buildUndirectedShortestPathConnections(graph, shortestPath)) match {
         case Failure(exception) =>
           exception.getMessage == "No path could be found between Node(1,50.5,7.0,Map(),None) and Node(3,51.5,7.5,Map(),None), because the node Node(3,51.5,7.5,Map(),None) is not connected to the graph."
         case Success(_) => fail("This test should not succeed.")
       }
     }
 
-    "build unique connections correctly" in {
+    "build undirected connections correctly" in {
       val streetGraph = new OsmGraph()
 
       val uniqueCombinations =
         List((osmNode1, osmNode2), (osmNode1, osmNode3), (osmNode2, osmNode3))
-      val connections = buildUniqueConnections(
+      val connections = buildUndirectedConnections(
         uniqueCombinations,
         streetGraph
       )

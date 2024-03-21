@@ -158,7 +158,7 @@ object Connections {
       new DijkstraShortestPath[NodeInput, DistanceWeightedEdge](graph)
 
     val connectionList: List[Connection[NodeInput]] =
-      buildUniqueConnections(graph, shortestPath)
+      buildUndirectedShortestPathConnections(graph, shortestPath)
     Connections(nodes, connectionList)
   }
 
@@ -190,15 +190,17 @@ object Connections {
     }.toMap
 
     val distanceMapAlt: Map[(T, T), Connection[T]] = distanceMap.map {
-      case (tuple, connection) =>
-        (tuple._2, tuple._1) -> connection
+      case ((nodeA, nodeB), connection) =>
+        (nodeB, nodeA) -> connection
     }
 
     Connections(elements, connectionMap.toMap, distanceMap ++ distanceMapAlt)
   }
 
-  /** Method for creating unique [[Connection]]s using a
-    * [[ShortestPathAlgorithm]].
+  /** Method for creating undirected [[Connection]]s using a
+    * [[ShortestPathAlgorithm]]. Excluding connections that have the same source
+    * and target vertex (loops) and duplicated connections.
+    *
     * @param graph
     *   with paths
     * @param shortestPath
@@ -208,7 +210,7 @@ object Connections {
     * @return
     *   a list of unique [[Connection]]s
     */
-  def buildUniqueConnections[T](
+  def buildUndirectedShortestPathConnections[T](
       graph: Graph[T, DistanceWeightedEdge],
       shortestPath: ShortestPathAlgorithm[T, DistanceWeightedEdge]
   ): List[Connection[T]] = {
@@ -236,8 +238,8 @@ object Connections {
     }
   }
 
-  /** Method for creating unique [[Connection]]s.
-    *
+  /** Method for creating undirected [[Connection]]s. Excluding connections that
+    * have the same source and target vertex (loops) and duplicated connections.
     * @param uniqueCombinations
     *   list of all unique combinations of [[Node]]s
     * @param streetGraph
@@ -245,7 +247,7 @@ object Connections {
     * @return
     *   a list of unique [[Connection]]s
     */
-  def buildUniqueConnections(
+  def buildUndirectedConnections(
       uniqueCombinations: List[(Node, Node)],
       streetGraph: OsmGraph
   ): List[Connection[Node]] = {
