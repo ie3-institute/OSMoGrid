@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Workaround for `spotless`: Add module exports to `gradle.properties`
 - Update to PSDM 4.1.0
 - Replaced akka with pekko [#345](https://github.com/ie3-institute/OSMoGrid/issues/345)
+- `getConnection` in `Connections` will return an option [#392](https://github.com/ie3-institute/OSMoGrid/issues/392)
 
 ### Removed
 - Legacy Java code

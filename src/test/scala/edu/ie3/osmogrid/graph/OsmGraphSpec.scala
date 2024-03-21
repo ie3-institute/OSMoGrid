@@ -32,7 +32,11 @@ class OsmGraphSpec extends UnitSpec with MvTestData {
     "add a connection correctly" in {
       val graph = newGraph
       graph.addVertex(osmNode3)
-      graph.addConnection(connections.getConnection(osmNode1, osmNode3))
+
+      connections.getConnection(osmNode1, osmNode3) match {
+        case Some(connection) => graph.addConnection(connection)
+        case None             => fail(s"Expected a connection.")
+      }
 
       graph.vertexSet().size() shouldBe 4
       graph.edgeSet().asScala shouldBe Set(

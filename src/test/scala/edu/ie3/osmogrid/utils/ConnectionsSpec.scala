@@ -102,17 +102,12 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
       )
 
       forAll(cases) { (nodeA, nodeB, connection) =>
-        connections.getConnection(nodeA, nodeB) shouldBe connection
+        connections.getConnection(nodeA, nodeB) shouldBe Some(connection)
       }
     }
 
     "throws an exception for not known node combinations when retrieving connection" in {
-      val notFound = connections.getConnection(osmNode1, osmNode6)
-
-      notFound.nodeA shouldBe osmNode1
-      notFound.nodeB shouldBe osmNode6
-      notFound.distance.getValue.doubleValue() shouldBe Double.MaxValue
-      notFound.path shouldBe None
+      connections.getConnection(osmNode1, osmNode6) shouldBe None
     }
 
     "return the correct distance between tow nodes" in {
@@ -124,13 +119,12 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
       )
 
       forAll(cases) { (nodeA, nodeB, distance) =>
-        connections.getDistance(nodeA, nodeB) shouldBe distance
+        connections.getDistance(nodeA, nodeB) shouldBe Some(distance)
       }
     }
 
     "return a connection with Double.MaxValue for not known node combinations when retrieving distance" in {
-      connections.getDistance(osmNode1, osmNode6) shouldBe Quantities
-        .getQuantity(Double.MaxValue, Units.METRE)
+      connections.getDistance(osmNode1, osmNode6) shouldBe None
     }
 
     "return the nearest neighbors for a given node" in {

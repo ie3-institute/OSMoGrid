@@ -161,7 +161,7 @@ class SolverSpec extends UnitSpec with MvTestData {
                   ) =>
                 graph.edgeSet().size() shouldBe 4
                 nextNode shouldBe neighbor
-                usedConnections shouldBe List(connectionA, connectionB)
+                usedConnections shouldBe List(connectionA, connectionB).flatten
                 removedEdge shouldBe expectedRemovedEdgeA
                 addedWeight.getValue.doubleValue() shouldBe weightA
               case _ => throw new Error("This should not happen!")
@@ -177,7 +177,7 @@ class SolverSpec extends UnitSpec with MvTestData {
                   ) =>
                 graph.edgeSet().size() shouldBe 4
                 nextNode shouldBe neighbor
-                usedConnections shouldBe List(connectionC, connectionA)
+                usedConnections shouldBe List(connectionC, connectionA).flatten
                 removedEdge shouldBe expectedRemovedEdgeB
                 addedWeight.getValue.doubleValue() shouldBe weightB
               case _ => throw new Error("This should not happen!")
