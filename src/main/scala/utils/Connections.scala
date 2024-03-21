@@ -9,11 +9,13 @@ package utils
 import edu.ie3.datamodel.graph.{DistanceWeightedEdge, DistanceWeightedGraph}
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.connector.LineInput
+import edu.ie3.osmogrid.exception.GridException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.GridElements
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm
+import org.jgrapht.alg.interfaces.ShortestPathAlgorithm.SingleSourcePaths
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath
 import org.jgrapht.{Graph, GraphPath}
 import org.slf4j.{Logger, LoggerFactory}
@@ -21,6 +23,7 @@ import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 import utils.Connections.{Connection, log}
+import utils.OsmoGridUtils.getAllUniqueCombinations
 
 import javax.measure.quantity.Length
 import scala.collection.mutable
@@ -210,22 +213,26 @@ object Connections {
       shortestPath: ShortestPathAlgorithm[T, DistanceWeightedEdge]
   ): List[Connection[T]] = {
     val vertexes = graph.vertexSet().asScala
-    val paths = vertexes.map { v => shortestPath.getPaths(v) }.toList
+    val paths = vertexes.map { v => v -> shortestPath.getPaths(v) }.toMap
 
-    paths.flatMap { p =>
-      vertexes.flatMap { v =>
-        if (p.getSourceVertex != v) {
-          val path = p.getPath(v)
-          Some(
-            Connection(
-              p.getSourceVertex,
-              v,
-              Quantities.getQuantity(path.getWeight, Units.METRE),
-              Some(path)
-            )
+    getAllUniqueCombinations(graph.vertexSet().asScala.toList).map {
+      case (nodeA, nodeB) =>
+        val path = paths(nodeA).getPath(nodeB)
+
+        if (path == null) {
+          val unconnected =
+            if (graph.edgesOf(nodeA).size() == 0) nodeA else nodeB
+          throw GridException(
+            s"No path could be found between $nodeA and $nodeB, because the node $unconnected is not connected to the graph."
           )
-        } else None
-      }
+        }
+
+        Connection(
+          nodeA,
+          nodeB,
+          Quantities.getQuantity(path.getWeight, Units.METRE),
+          Some(path)
+        )
     }
   }
 

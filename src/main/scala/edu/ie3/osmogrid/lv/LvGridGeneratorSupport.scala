@@ -19,19 +19,12 @@ import edu.ie3.datamodel.models.input.system.LoadInput
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.BuildingGraphConnection
 import edu.ie3.util.osm.model.OsmEntity.Node
 import tech.units.indriya.ComparableQuantity
+import utils.Clustering
 import utils.Clustering.Cluster
-import utils.GridConversion.{
-  buildGridContainer,
-  buildLine,
-  buildLoad,
-  buildNode,
-  buildTransformer2W
-}
-import utils.{Clustering, VoltageUtils}
+import utils.GridConversion._
 
 import javax.measure.quantity.ElectricPotential
 import scala.annotation.tailrec
@@ -54,7 +47,7 @@ object LvGridGeneratorSupport extends LazyLogging {
       loads: Set[LoadInput]
   ) {
     def +(load: LoadInput): GridElements = {
-      GridElements(this.nodes, this.substations, this.loads + load)
+      GridElements(this.nodes, this.substations, this.loads ++ Seq(load))
     }
 
     def ++(nodes: Map[Node, NodeInput], substations: Boolean): GridElements = {
@@ -181,7 +174,7 @@ object LvGridGeneratorSupport extends LazyLogging {
       osmGraph,
       Set.empty,
       Set.empty,
-      gridElements.nodes,
+      gridElements.nodes ++ gridElements.substations,
       lineType
     )
 
@@ -286,7 +279,7 @@ object LvGridGeneratorSupport extends LazyLogging {
     if (alreadyVisited.contains(currentNode)) return (alreadyVisited, lines)
     val connectedEdges = osmGraph.edgesOf(currentNode).asScala
     // traverse through every edge of the current node to build lines
-    connectedEdges.foldLeft((alreadyVisited + currentNode, lines)) {
+    connectedEdges.foldLeft((alreadyVisited ++ Seq(currentNode), lines)) {
       case ((updatedAlreadyVisited, updatedLines), edge) =>
         val nextNode = getOtherEdgeNode(osmGraph, currentNode, edge)
         if (!alreadyVisited.contains(nextNode)) {
@@ -296,7 +289,7 @@ object LvGridGeneratorSupport extends LazyLogging {
               osmGraph,
               nextNode,
               edge,
-              updatedAlreadyVisited + currentNode,
+              updatedAlreadyVisited ++ Seq(currentNode),
               nodeToNodeInput
             )
           maybeNextNodeInput.zip(maybeNextNode) match {
@@ -314,8 +307,8 @@ object LvGridGeneratorSupport extends LazyLogging {
                 nextNode,
                 nextNodeInput,
                 osmGraph,
-                alreadyVisited ++ passedStreetNodes + currentNode,
-                lines + newLine,
+                alreadyVisited ++ passedStreetNodes ++ Seq(currentNode),
+                lines ++ Seq(newLine),
                 nodeToNodeInput,
                 lineTypeInput
               )
@@ -326,7 +319,7 @@ object LvGridGeneratorSupport extends LazyLogging {
             // if there is no more node input along the edge we are done with this branch of the graph
             case None =>
               (
-                updatedAlreadyVisited ++ passedStreetNodes + currentNode,
+                updatedAlreadyVisited ++ passedStreetNodes ++ Seq(currentNode),
                 updatedLines
               )
           }
@@ -379,7 +372,7 @@ object LvGridGeneratorSupport extends LazyLogging {
               graph,
               nextNode,
               nextEdge,
-              alreadyVisited + currentNode,
+              alreadyVisited ++ Seq(currentNode),
               nodeToNodeInput,
               passedNodes :+ currentNode
             )
