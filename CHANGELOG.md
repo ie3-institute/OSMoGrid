@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced akka with pekko [#345](https://github.com/ie3-institute/OSMoGrid/issues/345)
 - Fixed bug in `LvGridGeneratorSupport` [#388](https://github.com/ie3-institute/OSMoGrid/issues/388)
 - `getConnection` in `Connections` will return an option [#392](https://github.com/ie3-institute/OSMoGrid/issues/392)
+- Changed some `ParSeq` in `LvGraphGeneratorSupport` to Seq [#387](https://github.com/ie3-institute/OSMoGrid/issues/387)
 
 ### Removed
 - Legacy Java code

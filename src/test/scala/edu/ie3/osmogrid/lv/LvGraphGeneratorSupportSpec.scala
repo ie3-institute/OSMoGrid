@@ -101,14 +101,14 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
     "determining building graph connections" should {
       "calculate all building graph connections" in {
         val calcBuildingGraphConnections =
-          PrivateMethod[ParSeq[BuildingGraphConnection]](
+          PrivateMethod[Seq[BuildingGraphConnection]](
             Symbol("calcBuildingGraphConnections")
           )
         val landuses = Seq(ways.landuse2).par
         val buildings = Seq(ways.building1, ways.building2).par
         val highways = Seq(ways.highway1, ways.highway2).par
 
-        val buildingGraphConnections: ParSeq[BuildingGraphConnection] =
+        val buildingGraphConnections: Seq[BuildingGraphConnection] =
           LvGraphGeneratorSupport invokePrivate calcBuildingGraphConnections(
             landuses,
             buildings,
@@ -203,7 +203,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
           isSubstation = false
         )
         val updateGraphWithBuildingConnections =
-          PrivateMethod[(OsmGraph, ParSeq[BuildingGraphConnection])](
+          PrivateMethod[(OsmGraph, Seq[BuildingGraphConnection])](
             Symbol("updateGraphWithBuildingConnections")
           )
 
@@ -215,7 +215,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
           val (graph, bgcs) =
             LvGraphGeneratorSupport invokePrivate updateGraphWithBuildingConnections(
               osmGraph,
-              Seq(buildingGraphConnection).par,
+              Seq(buildingGraphConnection),
               true
             )
           graph.vertexSet().size() shouldBe 4
@@ -226,7 +226,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
           ) shouldBe false
           graph.containsEdge(nodes.highway1Node1, connectingNode) shouldBe true
           graph.containsEdge(connectingNode, nodes.highway1Node2) shouldBe true
-          bgcs.seq match {
+          bgcs match {
             case Nil => fail("Building graph connections are empty")
             case Seq(bgc: BuildingGraphConnection) =>
               graph.containsEdge(
@@ -247,7 +247,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
           val (graph, bgcs) =
             LvGraphGeneratorSupport invokePrivate updateGraphWithBuildingConnections(
               osmGraph,
-              Seq(buildingGraphConnection).par,
+              Seq(buildingGraphConnection),
               false
             )
           graph.vertexSet().size() shouldBe 3
@@ -258,7 +258,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
           ) shouldBe false
           graph.containsEdge(nodes.highway1Node1, connectingNode) shouldBe true
           graph.containsEdge(connectingNode, nodes.highway1Node2) shouldBe true
-          bgcs.seq match {
+          bgcs match {
             case Nil => fail("Building graph connections are empty")
             case Seq(bgc: BuildingGraphConnection) =>
               bgc.buildingConnectionNode shouldBe None
