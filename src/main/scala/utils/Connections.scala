@@ -15,16 +15,14 @@ import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.GridElements
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm
-import org.jgrapht.alg.interfaces.ShortestPathAlgorithm.SingleSourcePaths
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath
 import org.jgrapht.{Graph, GraphPath}
 import org.slf4j.{Logger, LoggerFactory}
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
-import utils.Connections.{Connection, log}
-import utils.OsmoGridUtils.getAllUniqueCombinations
 import utils.Connections.Connection
+import utils.OsmoGridUtils.getAllUniqueCombinations
 
 import javax.measure.quantity.Length
 import scala.collection.mutable
