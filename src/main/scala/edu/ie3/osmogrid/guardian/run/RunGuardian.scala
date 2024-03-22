@@ -120,6 +120,9 @@ object RunGuardian
         ) =>
       ctx.log.info(s"Received lv grids.")
 
+      // lv coordinator is now allowed to die in peace
+      childReferences.lvCoordinator.foreach(ctx.unwatch)
+
       // if a mv coordinator is present, send the lv results to the mv coordinator
       childReferences.mvCoordinator.foreach { mv =>
         mv ! WrappedMvResponse(
