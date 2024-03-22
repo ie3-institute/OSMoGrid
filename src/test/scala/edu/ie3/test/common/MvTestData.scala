@@ -161,14 +161,19 @@ trait MvTestData {
   val graphAfterTwoSteps: OsmGraph = {
     val osmGraph: OsmGraph = new OsmGraph()
     connections.elements.foreach { node => osmGraph.addVertex(node) }
-    osmGraph.addConnection(
-      connections.getConnection(transitionPoint, osmNode1)
-    )
-    osmGraph.addConnection(
-      connections.getConnection(transitionPoint, osmNode2)
-    )
-    osmGraph.addConnection(connections.getConnection(osmNode1, osmNode3))
-    osmGraph.addConnection(connections.getConnection(osmNode3, osmNode2))
+
+    connections
+      .getConnection(transitionPoint, osmNode1)
+      .foreach(osmGraph.addConnection)
+    connections
+      .getConnection(transitionPoint, osmNode2)
+      .foreach(osmGraph.addConnection)
+    connections
+      .getConnection(osmNode1, osmNode3)
+      .foreach(osmGraph.addConnection)
+    connections
+      .getConnection(osmNode3, osmNode2)
+      .foreach(osmGraph.addConnection)
 
     osmGraph
   }
@@ -181,7 +186,8 @@ trait MvTestData {
     val usedConnections1 = List(
       connections.getConnection(osmNode2, osmNode4),
       connections.getConnection(osmNode3, osmNode4)
-    )
+    ).flatten
+
     usedConnections1.foreach(c => copy1.addConnection(c))
     val addedWeight1 = usedConnections1(0).distance
       .add(usedConnections1(1).distance)
@@ -191,7 +197,8 @@ trait MvTestData {
     val usedConnections2 = List(
       connections.getConnection(osmNode1, osmNode4),
       connections.getConnection(osmNode3, osmNode4)
-    )
+    ).flatten
+
     usedConnections2.foreach(c => copy2.addConnection(c))
     val addedWeight2 = usedConnections2(0).distance
       .add(usedConnections2(1).distance)
@@ -229,7 +236,7 @@ trait MvTestData {
       connections.getConnection(osmNode1, osmNode2),
       connections.getConnection(osmNode2, osmNode3),
       connections.getConnection(osmNode3, osmNode1)
-    ).foreach { c => graph.addConnection(c) }
+    ).flatten.foreach(graph.addConnection)
 
     graph
   }

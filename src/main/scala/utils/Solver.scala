@@ -7,6 +7,7 @@
 package utils
 
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
+import edu.ie3.osmogrid.exception.SolverException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.slf4j.LoggerFactory
@@ -221,25 +222,26 @@ object Solver {
           val removedEdge = copy.removeEdge(source, target)
 
           // finds the two connections needed to add the neighbor to the copied graph
-          val connectionA = connections.getConnection(source, neighbor)
-          val connectionB = connections.getConnection(neighbor, target)
-          copy.addConnection(connectionA)
-          copy.addConnection(connectionB)
+          connections
+            .getConnection(source, neighbor)
+            .zip(connections.getConnection(neighbor, target))
+            .map { case (connectionA, connectionB) =>
+              copy.addConnection(connectionA)
+              copy.addConnection(connectionB)
 
-          // calculating the added weight
-          val addedWeight: Quantity[Length] = connectionA.distance
-            .add(connectionB.distance)
-            .subtract(removedEdge.getDistance)
+              // calculating the added weight
+              val addedWeight: Quantity[Length] = connectionA.distance
+                .add(connectionB.distance)
+                .subtract(removedEdge.getDistance)
 
-          Some(
-            StepResultOption(
-              copy,
-              neighbor,
-              List(connectionA, connectionB),
-              removedEdge,
-              addedWeight
-            )
-          )
+              StepResultOption(
+                copy,
+                neighbor,
+                List(connectionA, connectionB),
+                removedEdge,
+                addedWeight
+              )
+            }
         }
       }.toList
   }
@@ -284,7 +286,14 @@ object Solver {
     )
 
     // connecting nodeA and nodeB
-    graph.addConnection(connections.getConnection(nodeA, nodeB))
+
+    connections.getConnection(nodeA, nodeB) match {
+      case Some(connection) => graph.addConnection(connection)
+      case None =>
+        throw SolverException(
+          s"An connection between $nodeA and $nodeB was expected"
+        )
+    }
 
     StepResult(graph, nodeA, nodes.diff(List(nodeToHv, nodeA, nodeB)))
   }

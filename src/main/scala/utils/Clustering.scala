@@ -115,7 +115,9 @@ final case class Clustering(
       .groupMap(_._2)(_._1)
       .map { case (s, list) =>
         list
-          .map { n => connections.getDistance(s, n).getValue.doubleValue() }
+          .flatMap { n =>
+            connections.getDistance(s, n).map(_.getValue.doubleValue())
+          }
           .reduceOption { (a, b) => a + b } match {
           case Some(value) => Cluster(s, list, value)
           case None        => Cluster(s, list, Double.MaxValue)
