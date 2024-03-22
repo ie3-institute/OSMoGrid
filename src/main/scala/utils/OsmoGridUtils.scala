@@ -6,7 +6,6 @@
 
 package utils
 
-import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
 import edu.ie3.osmogrid.exception.OsmDataException
@@ -19,13 +18,10 @@ import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
 import edu.ie3.util.quantities.PowerSystemUnits
 import edu.ie3.util.quantities.QuantityUtils.{RichQuantity, RichQuantityDouble}
 import edu.ie3.util.quantities.interfaces.Irradiance
-import org.jgrapht.alg.interfaces.ShortestPathAlgorithm
-import org.jgrapht.alg.shortestpath.DijkstraShortestPath
 import org.locationtech.jts.algorithm.Centroid
 import org.locationtech.jts.geom.{Coordinate, Polygon}
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.unit.Units
-import utils.Connections.Connection
 
 import java.util
 import java.util.UUID
@@ -135,16 +131,16 @@ object OsmoGridUtils {
     * @return
     *   a list of all unique connections
     */
-  def getAllUniqueCombinations(
-      nodes: List[Node]
-  ): List[(Node, Node)] = {
+  def getAllUniqueCombinations[T](
+      nodes: List[T]
+  ): List[(T, T)] = {
     if (nodes.size < 2) {
       List.empty
     } else if (nodes.size == 2) {
       List((nodes(0), nodes(1)))
     } else {
-      val connections: util.List[(Node, Node)] =
-        new util.ArrayList[(Node, Node)]
+      val connections: util.List[(T, T)] =
+        new util.ArrayList[(T, T)]
 
       // algorithm to find all unique combinations
       nodes.foreach(nodeA => {
