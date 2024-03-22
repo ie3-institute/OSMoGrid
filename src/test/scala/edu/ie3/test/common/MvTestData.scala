@@ -6,13 +6,21 @@
 
 package edu.ie3.test.common
 
-import edu.ie3.datamodel.models.{OperationTime, StandardUnits}
+import edu.ie3.datamodel.models.input.connector.LineInput
+import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
+import edu.ie3.datamodel.models.input.system.characteristic.OlmCharacteristicInput
 import edu.ie3.datamodel.models.input.{NodeInput, OperatorInput}
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
+import edu.ie3.datamodel.models.{OperationTime, StandardUnits}
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.util.geo.GeoUtils
+import edu.ie3.util.geo.GeoUtils.{
+  buildSafeLineStringBetweenCoords,
+  calcHaversine
+}
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.locationtech.jts.geom.Coordinate
+import org.scalatestplus.mockito.MockitoSugar.mock
 import tech.units.indriya.quantity.Quantities
 import utils.Connections
 import utils.Connections.Connection
@@ -62,6 +70,10 @@ trait MvTestData {
   protected val (osmNode5, nodeInMv5) = buildPoint(5L, 51.0, 9.0)
   protected val (osmNode6, nodeInMv6) = buildPoint(6L, 50.5, 8.5)
 
+  protected val lineHvto1: LineInput = buildLine(nodeToHv, nodeInMv1)
+  protected val lineHvto2: LineInput = buildLine(nodeToHv, nodeInMv2)
+  protected val line1to2: LineInput = buildLine(nodeInMv1, nodeInMv2)
+
   def buildPoint(i: Long, lat: Double, lon: Double): (Node, NodeInput) = {
     val node = Node(i, lat, lon, Map.empty, None)
     val nodeInput = new NodeInput(
@@ -75,6 +87,27 @@ trait MvTestData {
     )
     (node, nodeInput)
   }
+
+  private def buildLine(nodeA: NodeInput, nodeB: NodeInput): LineInput =
+    new LineInput(
+      UUID.randomUUID(),
+      s"Line between ${nodeA.getId} and ${nodeB.getId}",
+      OperatorInput.NO_OPERATOR_ASSIGNED,
+      OperationTime.notLimited(),
+      nodeA,
+      nodeB,
+      1,
+      mock[LineTypeInput],
+      calcHaversine(
+        nodeA.getGeoPosition.getCoordinate,
+        nodeB.getGeoPosition.getCoordinate
+      ),
+      buildSafeLineStringBetweenCoords(
+        nodeA.getGeoPosition.getCoordinate,
+        nodeB.getGeoPosition.getCoordinate
+      ),
+      OlmCharacteristicInput.CONSTANT_CHARACTERISTIC
+    )
 
   def toCoordinate(node: Node): Coordinate =
     GeoUtils.buildCoordinate(node.latitude, node.longitude)
@@ -105,7 +138,7 @@ trait MvTestData {
       )
     )
       .map { case (nodeA, nodeB) =>
-        val distance = GeoUtils.calcHaversine(
+        val distance = calcHaversine(
           nodeA.coordinate.getCoordinate,
           nodeB.coordinate.getCoordinate
         )

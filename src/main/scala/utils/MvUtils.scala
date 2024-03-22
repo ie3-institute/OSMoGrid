@@ -10,7 +10,10 @@ import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.slf4j.{Logger, LoggerFactory}
-import utils.Connections.buildUniqueConnections
+import utils.Connections.{
+  buildUndirectedConnections,
+  buildUndirectedShortestPathConnections
+}
 import utils.GridConversion.NodeConversion
 import utils.OsmoGridUtils.getAllUniqueCombinations
 import utils.VoronoiUtils.VoronoiPolygon
@@ -46,7 +49,7 @@ object MvUtils {
     val uniqueConnections = getAllUniqueCombinations(osmNodes)
     val connections: Connections[Node] = Connections(
       osmNodes,
-      buildUniqueConnections(uniqueConnections, streetGraph)
+      buildUndirectedConnections(uniqueConnections, streetGraph)
     )
 
     (nodeConversion, connections)
