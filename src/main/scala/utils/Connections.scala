@@ -15,14 +15,13 @@ import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.GridElements
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm
-import org.jgrapht.alg.interfaces.ShortestPathAlgorithm.SingleSourcePaths
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath
 import org.jgrapht.{Graph, GraphPath}
 import org.slf4j.{Logger, LoggerFactory}
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
-import utils.Connections.{Connection, log}
+import utils.Connections.Connection
 import utils.OsmoGridUtils.getAllUniqueCombinations
 
 import javax.measure.quantity.Length
@@ -50,9 +49,7 @@ case class Connections[T](
     *   a list of all [[Connection]] for a given [[Node]]
     */
   def getConnections(node: T): List[Connection[T]] = {
-    connections(node).map { nodeB => (node, nodeB) }.map { tuple =>
-      connectionMap(tuple)
-    }
+    connections(node).flatMap { nodeB => getConnection(node, nodeB) }
   }
 
   /** @param nodeA
@@ -60,34 +57,21 @@ case class Connections[T](
     * @param nodeB
     *   end
     * @return
-    *   the [[Connection]] between two given [[Node]]s, if the two nodes are not
-    *   connected a connection with distance [[Double.MaxValue]] is returned
+    *   an option for the [[Connection]] between two given [[Node]]s, if the two
+    *   nodes are not connected an empty option is returned
     */
-  def getConnection(nodeA: T, nodeB: T): Connection[T] =
-    connectionMap.get((nodeA, nodeB)) match {
-      case Some(value) => value
-      case None =>
-        log.warn(
-          s"The given nodes $nodeA and $nodeB are not connected! A Connection with distance ${Double.MaxValue} is returned instead."
-        )
-        Connection(
-          nodeA,
-          nodeB,
-          Quantities.getQuantity(Double.MaxValue, Units.METRE),
-          None
-        )
-    }
+  def getConnection(nodeA: T, nodeB: T): Option[Connection[T]] =
+    connectionMap.get((nodeA, nodeB))
 
   /** @param nodeA
     *   start
     * @param nodeB
     *   end
     * @return
-    *   distance between the given nodes, if the two nodes are not connected
-    *   [[Double.MaxValue]] is returned
+    *   an option for the distance between the given nodes
     */
-  def getDistance(nodeA: T, nodeB: T): ComparableQuantity[Length] =
-    getConnection(nodeA, nodeB).distance
+  def getDistance(nodeA: T, nodeB: T): Option[ComparableQuantity[Length]] =
+    getConnection(nodeA, nodeB).map(_.distance)
 
   /** @param node
     *   given node
