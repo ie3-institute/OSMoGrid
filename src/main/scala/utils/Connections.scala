@@ -199,7 +199,7 @@ object Connections {
 
   /** Method for creating undirected [[Connection]]s using a
     * [[ShortestPathAlgorithm]]. Excluding connections that have the same source
-    * and target vertex (loops) and duplicated connections.
+    * and target vertex (loops) and bidirectional connections.
     *
     * @param graph
     *   with paths
@@ -222,10 +222,8 @@ object Connections {
         val path = paths(nodeA).getPath(nodeB)
 
         if (path == null) {
-          val unconnected =
-            if (graph.edgesOf(nodeA).size() == 0) nodeA else nodeB
           throw GridException(
-            s"No path could be found between $nodeA and $nodeB, because the node $unconnected is not connected to the graph."
+            s"No path could be found between $nodeA and $nodeB, because either node is not connected to the graph."
           )
         }
 
@@ -239,7 +237,8 @@ object Connections {
   }
 
   /** Method for creating undirected [[Connection]]s. Excluding connections that
-    * have the same source and target vertex (loops) and duplicated connections.
+    * have the same source and target vertex (loops) and bidirectional
+    * connections.
     * @param uniqueCombinations
     *   list of all unique combinations of [[Node]]s
     * @param streetGraph

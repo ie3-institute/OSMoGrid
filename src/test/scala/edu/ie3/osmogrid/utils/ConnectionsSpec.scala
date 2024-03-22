@@ -263,7 +263,7 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
 
       Try(buildUndirectedShortestPathConnections(graph, shortestPath)) match {
         case Failure(exception) =>
-          exception.getMessage == "No path could be found between Node(1,50.5,7.0,Map(),None) and Node(3,51.5,7.5,Map(),None), because the node Node(3,51.5,7.5,Map(),None) is not connected to the graph."
+          exception.getMessage == "No path could be found between Node(1,50.5,7.0,Map(),None) and Node(3,51.5,7.5,Map(),None), because either node is not connected to the graph."
         case Success(_) => fail("This test should not succeed.")
       }
     }
