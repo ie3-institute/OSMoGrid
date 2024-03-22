@@ -152,6 +152,9 @@ object RunGuardian
         ) =>
       ctx.log.info(s"Received mv grids.")
 
+      // mv coordinator is now allowed to die in peace
+      childReferences.mvCoordinator.foreach(ctx.unwatch)
+
       val updated = finishedGridData.copy(
         mvData = Some(subGridContainer),
         toBeUpdated = Some((nodeChanges, assetInformation))
