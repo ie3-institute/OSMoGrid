@@ -221,8 +221,8 @@ object MvCoordinator extends ActorStopSupportStateless {
             if (cfg.spawnMissingHvNodes) {
               List(spawnDummyHvNode(mvToLv))
             } else {
-              // if no hv node is given, the first mv node is used as a slack node
-              List(mvToLv(0).copy().slack(true).build())
+              // if no hv node is given, the first mv node is used instead
+              List(mvToLv(0))
             }
         }
 
@@ -240,18 +240,16 @@ object MvCoordinator extends ActorStopSupportStateless {
         // spawns a voronoi coordinator for each polygon
         val subnets: Set[Int] = polygons.zipWithIndex.map {
           case (polygon, index) =>
-            val nr: Int = 100 + index * 20
-
             val voronoiCoordinator: ActorRef[MvRequest] =
               ctx.spawnAnonymous(VoronoiCoordinator(ctx.self))
             voronoiCoordinator ! StartMvGraphGeneration(
-              nr,
+              index,
               polygon,
               streetGraph,
               assetInformation
             )
 
-            nr
+            index
         }.toSet
 
         // awaiting the psdm grid data
@@ -282,16 +280,10 @@ object MvCoordinator extends ActorStopSupportStateless {
     .receive[MvRequest] {
       case (
             ctx,
-            WrappedMvResponse(
-              FinishedMvGridData(
-                subGridContainer,
-                nodeChanges
-              )
-            )
+            WrappedMvResponse(FinishedMvGridData(subGridContainer))
           ) =>
         // updating the result data
-        val updated =
-          resultData.update(subGridContainer, nodeChanges)
+        val updated = resultData.update(subGridContainer)
 
         // if all sub grids are received, send a message to the run guardian
         if (updated.subnets.isEmpty) {
@@ -301,7 +293,6 @@ object MvCoordinator extends ActorStopSupportStateless {
 
           runGuardian ! RepMvGrids(
             updated.subGridContainer,
-            updated.nodes,
             resultData.assetInformation
           )
           Behaviors.stopped

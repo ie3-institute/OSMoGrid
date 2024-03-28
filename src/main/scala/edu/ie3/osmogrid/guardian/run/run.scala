@@ -125,7 +125,7 @@ final case class FinishedGridData(
     mvExpected: Boolean,
     lvData: Option[Seq[SubGridContainer]],
     mvData: Option[Seq[SubGridContainer]],
-    toBeUpdated: Option[(Seq[NodeInput], AssetInformation)]
+    assetInformation: AssetInformation
 ) extends StateData {
   def receivedAllData: Boolean = {
     val lv = lvExpected == lvData.isDefined
@@ -137,7 +137,13 @@ final case class FinishedGridData(
 
 object FinishedGridData {
   def empty(lvExpected: Boolean, mvExpected: Boolean): FinishedGridData =
-    FinishedGridData(lvExpected, mvExpected, None, None, None)
+    FinishedGridData(
+      lvExpected,
+      mvExpected,
+      None,
+      None,
+      AssetInformation.apply(Seq.empty, Seq.empty, Seq.empty)
+    )
 }
 
 /** Message to tell the [[RunGuardian]] to start handling the received results.

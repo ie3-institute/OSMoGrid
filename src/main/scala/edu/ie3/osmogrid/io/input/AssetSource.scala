@@ -74,7 +74,7 @@ object AssetSource {
               s"There are no or corrupt line types at: $directoryPath"
             )
           case (_, _) =>
-            AssetInformation(lineTypes, transformerTypes)
+            AssetInformation(lineTypes, transformerTypes, Seq.empty)
         }
       }
     }

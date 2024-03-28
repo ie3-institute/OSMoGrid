@@ -35,7 +35,7 @@ object MvGridGeneratorSupport {
     * @param nodeConversion
     *   conversion between [[Node]]s and [[NodeInput]]s
     * @return
-    *   a [[SubGridContainer]] and node changes
+    *   a [[SubGridContainer]]
     */
   def buildGrid(
       n: Int,
@@ -43,7 +43,7 @@ object MvGridGeneratorSupport {
       hvNode: NodeInput,
       nodeConversion: NodeConversion,
       assetInformation: AssetInformation
-  ): (SubGridContainer, Seq[NodeInput]) = {
+  ): SubGridContainer = {
     // converting the osm nodes to psdm nodes
     val nodes: Seq[NodeInput] =
       graph
@@ -53,9 +53,11 @@ object MvGridGeneratorSupport {
           val nodeInput = nodeConversion.getPSDMNode(node)
           val copy = nodeInput.copy().subnet(n)
 
-          // only the hv node should be a slack node
+          // only the given hv node should be a slack node
           if (nodeInput.getUuid != hvNode.getUuid) {
             copy.slack(false)
+          } else {
+            copy.slack(true)
           }
           copy.build()
         }
@@ -94,13 +96,13 @@ object MvGridGeneratorSupport {
       .toSet
 
     val subGridContainer = buildGridContainer(
-      s"Subnet_$n",
+      s"Subgrid_mv_$n",
       nodes.toSet.asJava,
       lines.asJava,
       new util.HashSet[LoadInput]()
     )(n)
 
     // returning the finished data
-    (subGridContainer, nodes)
+    subGridContainer
   }
 }

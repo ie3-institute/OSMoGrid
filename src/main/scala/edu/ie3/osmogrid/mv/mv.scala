@@ -6,7 +6,6 @@
 
 package edu.ie3.osmogrid.mv
 
-import org.apache.pekko.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
@@ -15,14 +14,13 @@ import edu.ie3.osmogrid.exception.{
   RequestFailedException
 }
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.input.{
   AssetInformation,
   InputResponse,
   RepAssetTypes
 }
-import edu.ie3.osmogrid.io.input.{AssetInformation, RepAssetTypes}
 import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
+import org.apache.pekko.actor.typed.ActorRef
 import org.slf4j.Logger
 import utils.GridConversion.NodeConversion
 import utils.VoronoiUtils.VoronoiPolygon
@@ -94,12 +92,9 @@ final case class StartMvGraphConversion(
   *
   * @param subGridContainer
   *   container with the generated grid
-  * @param nodeChanges
-  *   nodes that were changed during mv generation
   */
 private[mv] final case class FinishedMvGridData(
-    subGridContainer: SubGridContainer,
-    nodeChanges: Seq[NodeInput]
+    subGridContainer: SubGridContainer
 ) extends MvResponse
 
 /** Request for a mv coordinator to start the generation of medium voltage
@@ -125,14 +120,11 @@ final case class StartMvGeneration(
   *
   * @param grids
   *   Collection of medium voltage grids
-  * @param nodeChanges
-  *   updated nodes
   * @param assetInformation
   *   contains information for assets
   */
 final case class RepMvGrids(
     grids: Seq[SubGridContainer],
-    nodeChanges: Seq[NodeInput],
     assetInformation: AssetInformation
 ) extends MvResponse
 
@@ -262,15 +254,12 @@ private[mv] object AwaitingInputData {
   *   a set of sub grids that are not generated yet
   * @param subGridContainer
   *   all finished sub grids
-  * @param nodes
-  *   that were changed during the mv generation
   * @param assetInformation
   *   information for assets
   */
 private[mv] final case class MvResultData(
     subnets: Set[Int],
     subGridContainer: Seq[SubGridContainer],
-    nodes: Seq[NodeInput],
     assetInformation: AssetInformation
 ) extends MvRequest {
 
@@ -278,20 +267,16 @@ private[mv] final case class MvResultData(
     *
     * @param subgrid
     *   that was generated
-    * @param nodeChanges
-    *   [[NodeInput]]s that were changed
     * @return
     *   an updated [[MvResultData]]
     */
   def update(
-      subgrid: SubGridContainer,
-      nodeChanges: Seq[NodeInput]
+      subgrid: SubGridContainer
   ): MvResultData = {
     if (subnets.contains(subgrid.getSubnet)) {
       MvResultData(
         subnets - subgrid.getSubnet,
         subGridContainer :+ subgrid,
-        nodes ++ nodeChanges,
         assetInformation
       )
     } else {
@@ -317,6 +302,6 @@ private[mv] object MvResultData {
       subnets: Set[Int],
       assetInformation: AssetInformation
   ): MvResultData = {
-    MvResultData(subnets, Seq.empty, Seq.empty, assetInformation)
+    MvResultData(subnets, Seq.empty, assetInformation)
   }
 }

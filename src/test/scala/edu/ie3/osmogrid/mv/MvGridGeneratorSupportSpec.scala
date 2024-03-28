@@ -21,11 +21,8 @@ class MvGridGeneratorSupportSpec
   "The MvGridGeneratorSupport" should {
     "build a mv grid correctly" in {
       val graph: OsmGraph = Solver.solve(transitionPoint, connections)
-      val (subgrid, nodeChanges) =
+      val subgrid =
         buildGrid(2, graph, nodeToHv, nodeConversion, assetInformation)
-
-      nodeChanges.size shouldBe 7
-      nodeChanges.foreach(n => n.getSubnet shouldBe 2)
 
       subgrid.getSubnet shouldBe 2
       val nodes = subgrid.getRawGrid.getNodes.asScala

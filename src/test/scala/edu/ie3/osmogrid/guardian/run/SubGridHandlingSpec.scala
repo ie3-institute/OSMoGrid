@@ -6,31 +6,37 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
-import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.datamodel.models.input.connector.`type`.Transformer3WTypeInput
 import edu.ie3.datamodel.models.input.connector.{
   Transformer2WInput,
   Transformer3WInput
 }
-import edu.ie3.datamodel.models.input.container.SubGridContainer
+import edu.ie3.datamodel.models.input.container.{
+  GraphicElements,
+  RawGridElements,
+  SubGridContainer,
+  SystemParticipants
+}
+import edu.ie3.datamodel.models.input.graphics.GraphicInput
+import edu.ie3.datamodel.models.input.system.SystemParticipantInput
+import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
+import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils._
 import edu.ie3.datamodel.models.{StandardUnits, UniqueEntity}
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
-import edu.ie3.osmogrid.io.output.OutputRequest
-import edu.ie3.osmogrid.lv.LvResponse
 import edu.ie3.osmogrid.exception.GridException
-import edu.ie3.osmogrid.io.output.ResultListenerProtocol
+import edu.ie3.osmogrid.io.output.{OutputRequest, ResultListenerProtocol}
+import edu.ie3.osmogrid.lv.LvResponse
 import edu.ie3.osmogrid.mv.MvResponse
 import edu.ie3.test.common.{GridSupport, UnitSpec}
+import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
 import org.locationtech.jts.geom.Point
 import org.scalatest.BeforeAndAfterAll
 import org.scalatestplus.mockito.MockitoSugar.mock
 import org.slf4j.{Logger, LoggerFactory}
 import tech.units.indriya.quantity.Quantities
-import utils.GridContainerUtils
 
 import java.util.UUID
+import scala.collection.immutable.Seq
 import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
@@ -60,7 +66,7 @@ class SubGridHandlingSpec
           None,
           None,
           None,
-          None,
+          assetInformation,
           listener,
           msgAdapters
         )(log)
@@ -83,108 +89,104 @@ class SubGridHandlingSpec
         Some(Seq(lv)),
         None,
         None,
-        None
+        assetInformation
       )
 
-      processed.size shouldBe 1
-      processed(0) shouldBe lv
+      val jointGrid = processed.getOrElse(fail("Expected a joint grid!"))
+
+      val rawGridElements = jointGrid.getRawGrid
+      rawGridElements.getNodes.asScala
+        .filter(_.getId == "Dummy A node in 1")
+        .map { node => node.getSubnet shouldBe 2 }
+      rawGridElements.getTransformer2Ws.asScala
+        .toSeq(0)
+        .getNodeA
+        .getSubnet shouldBe 2
+
+      jointGrid.getSystemParticipants shouldBe lv.getSystemParticipants
+      jointGrid.getGraphics shouldBe lv.getGraphics
     }
 
     "process and update lv results correctly" in {
       val lv = mockSubGrid(1, MV_10KV, LV)
-      val node =
-        GridContainerUtils.filterLv(Seq(lv))(0).copy().subnet(10).build()
+
+      val commonNode = lv.getRawGrid.getNodes.asScala
+        .filter(_.isSlack)
+        .toSeq(0)
+        .copy()
+        .slack(false)
+        .build()
+
+      val mv = new SubGridContainer(
+        "2",
+        2,
+        new RawGridElements(List[AssetInput](commonNode).asJava),
+        new SystemParticipants(List.empty[SystemParticipantInput].asJava),
+        new GraphicElements(List.empty[GraphicInput].asJava)
+      )
+
+      val expectedUpdatedNode = commonNode.copy().subnet(2).build()
 
       val processed = processResults(
         Some(Seq(lv)),
+        Some(Seq(mv)),
         None,
-        None,
-        Some(Seq(node), assetInformation)
-      )(0)
+        assetInformation
+      )
 
-      processed.getRawGrid.getNodes.size() shouldBe 2
-      processed.getRawGrid.getNodes should contain(node)
+      val jointGrid = processed.getOrElse(fail("Expected a joint grid!"))
 
-      processed.getRawGrid.getTransformer2Ws.size() shouldBe 1
-      processed.getRawGrid.getTransformer2Ws.asScala
+      val rawGridElements = jointGrid.getRawGrid
+      rawGridElements.getNodes.asScala should contain(expectedUpdatedNode)
+      rawGridElements.getTransformer2Ws.asScala
         .toSeq(0)
-        .getType shouldBe trafo_10kV_to_lv
+        .getNodeA shouldBe expectedUpdatedNode
 
-      processed.getRawGrid.getLines shouldBe lv.getRawGrid.getLines
-      processed.getRawGrid.getTransformer3Ws shouldBe lv.getRawGrid.getTransformer3Ws
-      processed.getRawGrid.getSwitches shouldBe lv.getRawGrid.getSwitches
-      processed.getSubnet shouldBe 1
-      processed.getSystemParticipants shouldBe lv.getSystemParticipants
-      processed.getGraphics shouldBe lv.getGraphics
+      jointGrid.getSystemParticipants shouldBe lv.getSystemParticipants
+      jointGrid.getGraphics shouldBe lv.getGraphics
     }
   }
 
   "Supporting sub grid handling" when {
-    "update container correctly" in {
-      val updateContainer =
-        PrivateMethod[Seq[SubGridContainer]](Symbol("updateContainer"))
-
-      val lv1 = mockSubGrid(1, MV_10KV, LV)
-
-      // change the voltage level of the first found mv node to 20 kV
-      val node = GridContainerUtils
-        .filterLv(Seq(lv1))(0)
-        .copy()
-        .subnet(10)
-        .voltLvl(MV_20KV)
-        .build()
-
-      val updated = SubGridHandling invokePrivate updateContainer(
-        Seq(lv1),
-        Seq(node),
-        assetInformation
-      )
-
-      updated.size shouldBe 1
-
-      val updatesNodes = updated(0).getRawGrid.getNodes.asScala.toSeq
-      updatesNodes.size shouldBe 2
-      updatesNodes should contain(node)
-
-      val updatedTransformer =
-        updated(0).getRawGrid.getTransformer2Ws.asScala.toSeq
-
-      updatedTransformer.size shouldBe 1
-
-      updatedTransformer(0).getType shouldBe trafo_20kV_to_lv
-    }
 
     "update transformer2W correctly" in {
       val updateTransformer2Ws = PrivateMethod[Try[Seq[Transformer2WInput]]](
         Symbol("updateTransformer2Ws")
       )
 
-      val lv1 = mockSubGrid(1, MV_10KV, LV)
-      val transformerType = assetInformation.transformerTypes.toSeq(1)
+      val dummyNodeA = new NodeInput(
+        UUID.randomUUID(),
+        s"Dummy node in 10",
+        Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
+        false,
+        mock[Point],
+        MV_20KV,
+        10
+      )
+      val dummyNodeB = new NodeInput(
+        UUID.randomUUID(),
+        s"Dummy node in 1",
+        Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
+        false,
+        mock[Point],
+        LV,
+        1
+      )
 
-      // change the voltage level of the first found mv node to 20 kV
-      val node = GridContainerUtils
-        .filterLv(Seq(lv1))(0)
-        .copy()
-        .subnet(10)
-        .voltLvl(MV_20KV)
-        .build()
-
-      val nodeMapping: Map[UUID, NodeInput] =
-        lv1.getRawGrid.getNodes.asScala.map { n =>
-          val id = n.getUuid
-
-          if (id == node.getUuid) {
-            id -> node
-          } else {
-            id -> n
-          }
-        }.toMap
+      val dummyTrafo = new Transformer2WInput(
+        UUID.randomUUID(),
+        s"Dummy transformer",
+        dummyNodeA,
+        dummyNodeB,
+        1,
+        trafo_10kV_to_lv,
+        0,
+        false
+      )
 
       val updated: Try[Seq[Transformer2WInput]] =
         SubGridHandling invokePrivate updateTransformer2Ws(
-          lv1.getRawGrid.getTransformer2Ws.asScala.toSeq,
-          nodeMapping,
+          Seq(dummyTrafo),
           assetInformation.transformerTypes
         )
 
@@ -194,9 +196,10 @@ class SubGridHandlingSpec
           s.headOption match {
             case Some(transformer) =>
               transformer.getId shouldBe "Dummy transformer"
-              transformer.getNodeA shouldBe node
+              transformer.getNodeA shouldBe dummyNodeA
+              transformer.getNodeB shouldBe dummyNodeB
               transformer.getParallelDevices shouldBe 1
-              transformer.getType shouldBe transformerType
+              transformer.getType shouldBe trafo_20kV_to_lv
               transformer.getTapPos shouldBe 0
               transformer.isAutoTap shouldBe false
             case None => throw new Error("This test should pass!")
@@ -209,17 +212,15 @@ class SubGridHandlingSpec
         Symbol("updateTransformer3Ws")
       )
 
-      // include at least a single node for voltage level determination
       val dummyNodeA = new NodeInput(
         UUID.randomUUID(),
-        s"Dummy node in 10",
+        s"Dummy node in 20",
         Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
         true,
         mock[Point],
-        MV_10KV,
-        10
+        MV_20KV,
+        20
       )
-
       val dummyNodeB = new NodeInput(
         UUID.randomUUID(),
         s"Dummy node in 10",
@@ -227,9 +228,8 @@ class SubGridHandlingSpec
         false,
         mock[Point],
         MV_10KV,
-        20
+        10
       )
-
       val dummyNodeC = new NodeInput(
         UUID.randomUUID(),
         s"Dummy node in 1",
@@ -247,29 +247,15 @@ class SubGridHandlingSpec
         dummyNodeB,
         dummyNodeC,
         1,
-        mock[Transformer3WTypeInput],
+        trafo_HV_10kV_LV,
         0,
         false
-      )
-
-      // change the voltage level of the first found mv node to 20 kV
-      val node = dummyNodeA
-        .copy()
-        .subnet(10)
-        .voltLvl(MV_20KV)
-        .build()
-
-      val nodeMapping: Map[UUID, NodeInput] = Map(
-        dummyNodeA.getUuid -> node,
-        dummyNodeB.getUuid -> dummyNodeB,
-        dummyNodeC.getUuid -> dummyNodeC
       )
 
       val updated: Try[Seq[Transformer3WInput]] =
         SubGridHandling invokePrivate updateTransformer3Ws(
           Seq(dummyTrafo),
-          nodeMapping,
-          Seq(dummyTransformer3WType)
+          Seq(trafo_20kV_10kV_LV)
         )
 
       updated.fold(
@@ -278,11 +264,11 @@ class SubGridHandlingSpec
           s.headOption match {
             case Some(transformer) =>
               transformer.getId shouldBe "Dummy transformer"
-              transformer.getNodeA shouldBe node
+              transformer.getNodeA shouldBe dummyNodeA
               transformer.getNodeB shouldBe dummyNodeB
               transformer.getNodeC shouldBe dummyNodeC
               transformer.getParallelDevices shouldBe 1
-              transformer.getType shouldBe dummyTransformer3WType
+              transformer.getType shouldBe trafo_20kV_10kV_LV
               transformer.getTapPos shouldBe 0
               transformer.isAutoTap shouldBe false
             case None => throw new Error("This test should pass!")
@@ -291,45 +277,76 @@ class SubGridHandlingSpec
 
     }
 
-    "assigning sub grid numbers to a single sub grid container" should {
-      val assignSubnetNumber =
-        PrivateMethod[Try[SubGridContainer]](Symbol("assignSubnetNumber"))
+    "assigning sub grid numbers to a single sub grid containers nodes" should {
+      val assignSubgridNumbers =
+        PrivateMethod[Map[UUID, NodeInput]](Symbol("assignSubgridNumbers"))
 
-      "return the same container with adapted nodes and sub grid number" in {
+      "return adapted nodes" in {
         Given("a simple subgrid with a small grid graph and a few participants")
         val givenContainer = simpleSubGrid(111)
-        val newSubnet = 42
+        val newSubnet: Int = 42
 
         When("assigning a different subgrid number")
-        val actualContainer =
-          (SubGridHandling invokePrivate assignSubnetNumber(
-            givenContainer,
-            newSubnet
-          )).success.get
+        val actual = SubGridHandling invokePrivate assignSubgridNumbers(
+          Seq(givenContainer),
+          newSubnet
+        )
 
         Then(
           "subnet number should be set in all nodes and new nodes should be linked"
         )
-        checkSubgridContainer(givenContainer, actualContainer, newSubnet)
+
+        val givenNodes = givenContainer.getRawGrid.getNodes.asScala.map {
+          node => node.getUuid -> node
+        }.toMap
+        val lvNodes: Map[UUID, NodeInput] =
+          givenNodes.filter(_._2.getVoltLvl == GermanVoltageLevelUtils.LV)
+
+        actual.values.foreach { node =>
+          if (lvNodes.contains(node.getUuid)) {
+            if (node.getSubnet != 42) {
+              fail(
+                s"Expected 42 as subgrid number, but got ${node.getSubnet} instead!"
+              )
+            }
+          } else {
+            if (node.getSubnet != 43) {
+              fail(
+                s"Expected 43 as subgrid number, but got ${node.getSubnet} instead!"
+              )
+            }
+          }
+        }
       }
     }
 
-    "assigning sub grid numbers to a series of sub grid containers" should {
-      val assignSubnetNumbers =
-        PrivateMethod[Try[Seq[SubGridContainer]]](Symbol("assignSubnetNumbers"))
+    "assigning sub grid numbers to a series of sub grid containers nodes" should {
+      val assignSubgridNumbers =
+        PrivateMethod[Map[UUID, NodeInput]](Symbol("assignSubgridNumbers"))
 
-      "return the same containers with adapted nodes and sub grid numbers" in {
+      "return the adapted nodes" in {
         val givenContainers = Range.inclusive(42, 52).map(simpleSubGrid)
 
-        val actual =
-          SubGridHandling invokePrivate assignSubnetNumbers(givenContainers)
-        val actualContainers = actual.success.get
+        val actual = SubGridHandling invokePrivate assignSubgridNumbers(
+          givenContainers,
+          42
+        )
+        actual.size shouldBe givenContainers.size * 5
 
-        actualContainers.size shouldBe givenContainers.size
+        val topNodes = actual.values.filter(_.getId.contains("Top"))
+        topNodes.size shouldBe 22
+        topNodes.foreach(node => node.getSubnet shouldBe 53)
 
-        givenContainers.zip(actualContainers).zipWithIndex.foreach {
-          case ((given, actual), subnetNo) =>
-            checkSubgridContainer(given, actual, subnetNo + 1)
+        val lvNodes =
+          actual.filter(_._2.getVoltLvl == GermanVoltageLevelUtils.LV)
+        lvNodes.size shouldBe 33
+
+        givenContainers.zipWithIndex.map { case (grid, index) =>
+          val uuids = grid.getRawGrid.getNodes.asScala
+            .filter(_.getVoltLvl == GermanVoltageLevelUtils.LV)
+            .map(_.getUuid)
+
+          uuids.foreach { uuid => lvNodes(uuid).getSubnet shouldBe index + 42 }
         }
       }
     }
@@ -370,117 +387,4 @@ class SubGridHandlingSpec
   }
 
   override protected def afterAll(): Unit = testKit.shutdownTestKit()
-
-  /** Checks the actual [[SubGridContainer]] and compares it to the given one
-    * regarding node mapping. Besides nodes and sub grid numbers, no other
-    * parameters are compared here: It is assumed that entities with the same
-    * UUID have the same properties besides the mentioned ones.
-    * @param given
-    *   the [[SubGridContainer]] that was given for the test
-    * @param actual
-    *   the [[SubGridContainer]] that was computed during the test
-    * @param expectedSubgridNo
-    *   the subgrid number that is expected for the computed sub grid
-    */
-  private def checkSubgridContainer(
-      `given`: SubGridContainer,
-      actual: SubGridContainer,
-      expectedSubgridNo: Int
-  ): Unit = {
-    actual.getSubnet shouldBe expectedSubgridNo
-
-    // CHECK NODES
-    actual.getRawGrid.getNodes.size shouldBe given.getRawGrid.getNodes.size()
-    actual.getRawGrid.getNodes.asScala
-      .foreach(_.getSubnet shouldBe expectedSubgridNo)
-
-    val givenToActualNodes = createMapByUUID(
-      given.getRawGrid.getNodes.asScala,
-      actual.getRawGrid.getNodes.asScala
-    )
-
-    // compare nodes before and after
-    given.getRawGrid.getNodes.asScala
-      .map { givenNode =>
-        (givenNode, givenToActualNodes.get(givenNode).value)
-      }
-      .foreach { case (given, actual) =>
-        actual shouldBe given.copy().subnet(actual.getSubnet).build()
-      }
-
-    // CHECK OTHER GRID ELEMENTS
-    (
-      createMapByUUID(
-        given.getRawGrid.getLines.asScala,
-        actual.getRawGrid.getLines.asScala
-      ).toSeq ++
-        createMapByUUID(
-          given.getRawGrid.getSwitches.asScala,
-          actual.getRawGrid.getSwitches.asScala
-        ).toSeq ++
-        createMapByUUID(
-          given.getRawGrid.getTransformer2Ws.asScala,
-          actual.getRawGrid.getTransformer2Ws.asScala
-        ).toSeq
-    ).foreach { case (given, actual) =>
-      checkNode(given.getNodeA, actual.getNodeA, givenToActualNodes)
-      checkNode(given.getNodeB, actual.getNodeB, givenToActualNodes)
-    }
-
-    createMapByUUID(
-      given.getRawGrid.getTransformer3Ws.asScala,
-      actual.getRawGrid.getTransformer3Ws.asScala
-    ).toSeq.foreach { case (given, actual) =>
-      checkNode(given.getNodeA, actual.getNodeA, givenToActualNodes)
-      checkNode(given.getNodeB, actual.getNodeB, givenToActualNodes)
-      checkNode(given.getNodeC, actual.getNodeC, givenToActualNodes)
-    }
-
-    createMapByUUID(
-      given.getRawGrid.getMeasurementUnits.asScala,
-      actual.getRawGrid.getMeasurementUnits.asScala
-    ).toSeq.foreach { case (given, actual) =>
-      checkNode(given.getNode, actual.getNode, givenToActualNodes)
-    }
-
-    // CHECK SYSTEM PARTICIPANTS
-    createMapByUUID(
-      given.getSystemParticipants.allEntitiesAsList.asScala,
-      actual.getSystemParticipants.allEntitiesAsList.asScala
-    ).toSeq.foreach { case (given, actual) =>
-      checkNode(given.getNode, actual.getNode, givenToActualNodes)
-    }
-  }
-
-  private def checkNode(
-      givenNode: NodeInput,
-      actualNode: NodeInput,
-      givenToActualNodes: Map[NodeInput, NodeInput]
-  ): Unit = {
-    val expectedNode = givenToActualNodes.getOrElse(
-      givenNode,
-      throw new RuntimeException(
-        s"Actual node with UUID ${givenNode.getUuid} not found."
-      )
-    )
-    actualNode shouldBe expectedNode
-  }
-
-  private def createMapByUUID[T <: UniqueEntity](
-      `given`: Iterable[T],
-      actual: Iterable[T]
-  )(implicit tag: ClassTag[T]): Map[T, T] = {
-    val actualByUUID = actual.map { actualEntity =>
-      actualEntity.getUuid -> actualEntity
-    }.toMap
-
-    given.map { givenEntity =>
-      givenEntity -> actualByUUID.getOrElse(
-        givenEntity.getUuid,
-        throw new RuntimeException(
-          s"Actual ${tag.runtimeClass.getSimpleName} with UUID ${givenEntity.getUuid} not found."
-        )
-      )
-    }.toMap
-  }
 }
