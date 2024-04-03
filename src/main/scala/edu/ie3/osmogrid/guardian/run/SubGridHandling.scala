@@ -97,59 +97,11 @@ trait SubGridHandling {
 
     // combining lv and mv grids
     val lvMvOption: Option[(JointGridContainer, Int)] =
-      (lvOption, mvData) match {
-        case (Some((jointLvGrids, offset)), Some(mvGrids)) =>
-          val changedNodes = assignSubgridNumbers(mvGrids, offset)
-          val jointMvGrids = combineSafe(mvGrids, offset)
-
-          Some(
-            updateAndCombine(
-              "Combined_mv_lv_grids",
-              jointLvGrids,
-              jointMvGrids,
-              changedNodes
-            ),
-            offset + mvGrids.size + 1
-          )
-        case (None, Some(mvGrids)) =>
-          val changedNodes = assignSubgridNumbers(mvGrids)
-          val jointMvGrids = combineSafe(mvGrids, 1)
-
-          Some((updateGrid(changedNodes, jointMvGrids), mvGrids.size + 1))
-        case (Some(jointGrids), _) =>
-          // if no mv grids were provided
-          Some(jointGrids)
-        case (_, _) =>
-          None
-      }
+      updateAndCombine(lvOption, mvData)
 
     // combining lv, mv and hv grids
     val lvMvHvOption: Option[(JointGridContainer, Int)] =
-      (lvMvOption, hvData) match {
-        case (Some((combinedLvMv, offset)), Some(hvGrids)) =>
-          val changedNodes = assignSubgridNumbers(hvGrids, offset)
-          val jointHvGrids = combineSafe(hvGrids, offset)
-
-          Some(
-            updateAndCombine(
-              "Combined_hv_mv_lv_grids",
-              combinedLvMv,
-              jointHvGrids,
-              changedNodes
-            ),
-            offset + hvGrids.size + 1
-          )
-        case (None, Some(hvGrids)) =>
-          val changedNodes = assignSubgridNumbers(hvGrids)
-          val jointHvGrids = combineSafe(hvGrids, 1)
-
-          Some(updateGrid(changedNodes, jointHvGrids), hvGrids.size + 1)
-        case (Some(jointGrids), _) =>
-          // if no hv grids were provided
-          Some(jointGrids)
-        case (_, _) =>
-          None
-      }
+      updateAndCombine(lvMvOption, hvData)
 
     lvMvHvOption.map { case (grid, _) =>
       // check and update some assets
@@ -160,28 +112,26 @@ trait SubGridHandling {
         assetInformation.transformerTypes
       ).fold(
         t => throw t,
-        seq => seq
+        _.toSet
       )
       val transformer3Ws = updateTransformer3Ws(
         rawGridElements.getTransformer3Ws.asScala.toSeq,
         assetInformation.transformer3WTypes
       ).fold(
         t => throw t,
-        seq => seq
+        _.toSet
       )
-
-      val assets: Seq[AssetInput] = Seq(
-        rawGridElements.getNodes.asScala,
-        rawGridElements.getLines.asScala,
-        transformer2Ws,
-        transformer3Ws,
-        rawGridElements.getSwitches.asScala,
-        rawGridElements.getMeasurementUnits.asScala
-      ).flatten
 
       new JointGridContainer(
         grid.getGridName,
-        new RawGridElements(assets.asJava),
+        new RawGridElements(
+          rawGridElements.getNodes,
+          rawGridElements.getLines,
+          transformer2Ws.asJava,
+          transformer3Ws.asJava,
+          rawGridElements.getSwitches,
+          rawGridElements.getMeasurementUnits
+        ),
         grid.getSystemParticipants,
         grid.getGraphics
       )
@@ -250,8 +200,6 @@ object SubGridHandling {
 
   /** Method for combining two [[JointGridContainer]].
     *
-    * @param gridName
-    *   name of the new grid
     * @param grid1
     *   first grid
     * @param grid2
@@ -262,7 +210,6 @@ object SubGridHandling {
     *   a new joint grid
     */
   private def updateAndCombine(
-      gridName: String,
       grid1: JointGridContainer,
       grid2: JointGridContainer,
       changedNodes: Map[UUID, NodeInput]
@@ -271,7 +218,7 @@ object SubGridHandling {
     val updatedGrid2 = updateGrid(changedNodes, grid2)
 
     new JointGridContainer(
-      gridName,
+      "Combined_grids",
       new RawGridElements(
         List(updatedGrid1.getRawGrid, updatedGrid2.getRawGrid).asJava
       ),
@@ -286,6 +233,35 @@ object SubGridHandling {
       )
     )
   }
+
+  private def updateAndCombine(
+      jointGridOption: Option[(JointGridContainer, Int)],
+      subgridOptions: Option[Seq[SubGridContainer]]
+  ): Option[(JointGridContainer, Int)] =
+    (jointGridOption, subgridOptions) match {
+      case (Some((jointGrids, offset)), Some(subGrids)) =>
+        val changedNodes = assignSubgridNumbers(subGrids, offset)
+        val jointSubGrids = combineSafe(subGrids, offset)
+
+        Some(
+          updateAndCombine(
+            jointGrids,
+            jointSubGrids,
+            changedNodes
+          ),
+          offset + subGrids.size + 1
+        )
+      case (None, Some(mvGrids)) =>
+        val changedNodes = assignSubgridNumbers(mvGrids)
+        val jointMvGrids = combineSafe(mvGrids, 1)
+
+        Some((updateGrid(changedNodes, jointMvGrids), mvGrids.size + 1))
+      case (Some(jointGrids), _) =>
+        // if no sub grids were provided
+        Some(jointGrids)
+      case (_, _) =>
+        None
+    }
 
   /** Used to prevent loops in [[SubGridTopologyGraph]].
     * @param grids

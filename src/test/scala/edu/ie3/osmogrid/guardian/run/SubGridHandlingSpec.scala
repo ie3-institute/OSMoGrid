@@ -6,6 +6,7 @@
 
 package edu.ie3.osmogrid.guardian.run
 
+import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.input.connector.{
   Transformer2WInput,
   Transformer3WInput
@@ -21,7 +22,6 @@ import edu.ie3.datamodel.models.input.system.SystemParticipantInput
 import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils._
-import edu.ie3.datamodel.models.{StandardUnits, UniqueEntity}
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
 import edu.ie3.osmogrid.exception.GridException
 import edu.ie3.osmogrid.io.output.{OutputRequest, ResultListenerProtocol}
@@ -38,7 +38,6 @@ import tech.units.indriya.quantity.Quantities
 import java.util.UUID
 import scala.collection.immutable.Seq
 import scala.jdk.CollectionConverters._
-import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
 class SubGridHandlingSpec
