@@ -7,13 +7,13 @@
 package edu.ie3.osmogrid.guardian.run
 
 import edu.ie3.datamodel.graph.SubGridTopologyGraph
+import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
 import edu.ie3.datamodel.models.input.connector._
 import edu.ie3.datamodel.models.input.connector.`type`.{
   Transformer2WTypeInput,
   Transformer3WTypeInput
 }
 import edu.ie3.datamodel.models.input.container._
-import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
 import edu.ie3.datamodel.utils.{ContainerNodeUpdateUtil, ContainerUtils}
 import edu.ie3.osmogrid.exception.GridException
 import edu.ie3.osmogrid.guardian.run.SubGridHandling._
@@ -90,9 +90,9 @@ trait SubGridHandling {
     // combining lv grids
     val lvOption: Option[(JointGridContainer, Int)] = lvData.map { grids =>
       val changedNodes = assignSubgridNumbers(grids)
-      val jointGridContainer = combineSafe(grids, 2)
+      val jointGridContainer = combineSafe(grids, changedNodes)
 
-      (updateGrid(changedNodes, jointGridContainer), grids.size + 1)
+      (jointGridContainer, grids.size + 1)
     }
 
     // combining lv and mv grids
@@ -146,7 +146,7 @@ object SubGridHandling {
     * @param subnets
     *   to update
     * @param offset
-    *   number for nodes with higher volt levels
+    *   offset for the subnet number (default: 1)
     * @return
     *   a map of updated node
     */
@@ -174,28 +174,42 @@ object SubGridHandling {
   }
 
   /** Updates the nodes and all connected assets of a given grid.
-    * @param changedNodes
-    *   map of changed nodes
+    *
     * @param grid
     *   to be updated
+    * @param changedNodes
+    *   map of changed nodes
     * @return
     *   an updated grid
     */
   private def updateGrid[T <: GridContainer](
-      changedNodes: Map[UUID, NodeInput],
-      grid: T
+      grid: T,
+      changedNodes: Map[UUID, NodeInput]
   ): T = {
     val allNodes = grid.getRawGrid.getNodes.asScala.map { node =>
       node.getUuid -> node
     }.toMap
 
-    val updateMap = changedNodes.map { case (uuid, node) =>
-      allNodes(uuid) -> node
+    val updateMap = changedNodes.flatMap { case (uuid, node) =>
+      allNodes.get(uuid).map(old => old -> node)
     }
 
-    ContainerNodeUpdateUtil
-      .updateGridWithNodes(grid, updateMap.asJava)
-      .asInstanceOf[T]
+    ContainerNodeUpdateUtil.updateGridWithNodes(grid, updateMap.asJava) match {
+      case container: SubGridContainer =>
+        val nr = container.getRawGrid.getNodes.asScala
+          .map(_.getSubnet)
+          .minOption
+          .getOrElse(-1)
+
+        new SubGridContainer(
+          container.getGridName,
+          nr,
+          container.getRawGrid,
+          container.getSystemParticipants,
+          container.getGraphics
+        ).asInstanceOf[T]
+      case container: T => container
+    }
   }
 
   /** Method for combining two [[JointGridContainer]].
@@ -214,8 +228,8 @@ object SubGridHandling {
       grid2: JointGridContainer,
       changedNodes: Map[UUID, NodeInput]
   ): JointGridContainer = {
-    val updatedGrid1 = updateGrid(changedNodes, grid1)
-    val updatedGrid2 = updateGrid(changedNodes, grid2)
+    val updatedGrid1 = updateGrid(grid1, changedNodes)
+    val updatedGrid2 = updateGrid(grid2, changedNodes)
 
     new JointGridContainer(
       "Combined_grids",
@@ -241,7 +255,7 @@ object SubGridHandling {
     (jointGridOption, subgridOptions) match {
       case (Some((jointGrids, offset)), Some(subGrids)) =>
         val changedNodes = assignSubgridNumbers(subGrids, offset)
-        val jointSubGrids = combineSafe(subGrids, offset)
+        val jointSubGrids = combineSafe(subGrids, changedNodes)
 
         Some(
           updateAndCombine(
@@ -253,9 +267,9 @@ object SubGridHandling {
         )
       case (None, Some(mvGrids)) =>
         val changedNodes = assignSubgridNumbers(mvGrids)
-        val jointMvGrids = combineSafe(mvGrids, 1)
+        val jointMvGrids = combineSafe(mvGrids, changedNodes)
 
-        Some((updateGrid(changedNodes, jointMvGrids), mvGrids.size + 1))
+        Some((jointMvGrids, mvGrids.size + 1))
       case (Some(jointGrids), _) =>
         // if no sub grids were provided
         Some(jointGrids)
@@ -266,20 +280,19 @@ object SubGridHandling {
   /** Used to prevent loops in [[SubGridTopologyGraph]].
     * @param grids
     *   to combine safely
-    * @param nr
-    *   of the grid
+    * @param changedNodes
+    *   map of changed nodes
     * @return
     *   a [[SubGridContainer]]
     */
   private def combineSafe(
       grids: Seq[SubGridContainer],
-      nr: Int
+      changedNodes: Map[UUID, NodeInput]
   ): JointGridContainer = {
-    val changedNodes = assignSubgridNumbers(grids)
 
     if (grids.size == 1) {
       // build joint grid directly
-      val grid = updateGrid(changedNodes, grids(0))
+      val grid = updateGrid(grids(0), changedNodes)
 
       new JointGridContainer(
         grid.getGridName,
@@ -288,7 +301,28 @@ object SubGridHandling {
         grid.getGraphics
       )
     } else {
-      ContainerUtils.combineToJointGrid(grids.asJava)
+      val updatedGrids = grids.map { grid => updateGrid(grid, changedNodes) }
+
+      val higherVoltageNodes = updatedGrids.flatMap { grid =>
+        val nr = grid.getSubnet
+        grid.getRawGrid.getNodes.asScala.filter(_.getSubnet > nr)
+      }
+
+      val subGridContainer = Seq(
+        new SubGridContainer(
+          updatedGrids(0).getGridName,
+          higherVoltageNodes.map(_.getSubnet).toSeq(0),
+          new RawGridElements(
+            higherVoltageNodes.map(_.asInstanceOf[AssetInput]).asJava
+          ),
+          new SystemParticipants(Set.empty[SystemParticipants].asJava),
+          new GraphicElements(Set.empty[GraphicElements].asJava)
+        )
+      )
+
+      ContainerUtils.combineToJointGrid(
+        (updatedGrids ++ subGridContainer).asJava
+      )
     }
   }
 
