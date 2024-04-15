@@ -134,15 +134,11 @@ object RunGuardian
 
       // check if all possible data was received
       if (updated.receivedAllData) {
-
         // if all data was received,
         ctx.self ! HandleGridResults
-        Behaviors.same
-      } else {
-
-        // if some expected data is still missing, keep waiting for missing data
-        running(runGuardianData, childReferences, updated)
       }
+
+      running(runGuardianData, childReferences, updated)
 
     case (
           ctx,
@@ -162,15 +158,11 @@ object RunGuardian
 
       // check if all possible data was received
       if (updated.receivedAllData) {
-
         // if all data was received,
         ctx.self ! HandleGridResults
-        Behaviors.same
-      } else {
-
-        // if some expected data is still missing, keep waiting for missing data
-        running(runGuardianData, childReferences, updated)
       }
+
+      running(runGuardianData, childReferences, updated)
 
     case (ctx, HandleGridResults) =>
       ctx.log.info(s"Starting to handle grid results.")

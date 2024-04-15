@@ -224,6 +224,10 @@ object LvGridGeneratorSupport extends LazyLogging {
           nodes.contains(nodeA) && nodes.contains(nodeB)
       }
 
+      val loads = gridElements.loads.filter { load =>
+        nodes.contains(load.getNode)
+      }
+
       val voltageLevel = new VoltageLevel("mv", ratedVoltageMv)
 
       val mvNode = buildNode(voltageLevel)(
@@ -241,7 +245,7 @@ object LvGridGeneratorSupport extends LazyLogging {
         gridNameBase,
         allNodes.asJava,
         lines.values.toSet.asJava,
-        gridElements.loads.asJava
+        loads.asJava
       )(transformer2Ws = Set(transformer2W).asJava)
     }
   }
