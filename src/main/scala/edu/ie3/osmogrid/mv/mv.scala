@@ -6,23 +6,24 @@
 
 package edu.ie3.osmogrid.mv
 
-import org.apache.pekko.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.datamodel.models.input.container.SubGridContainer
+import edu.ie3.datamodel.models.input.container.{
+  JointGridContainer,
+  SubGridContainer
+}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.{
   IllegalStateException,
   RequestFailedException
 }
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.input.{
   AssetInformation,
   InputResponse,
   RepAssetTypes
 }
-import edu.ie3.osmogrid.io.input.{AssetInformation, RepAssetTypes}
 import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
+import org.apache.pekko.actor.typed.ActorRef
 import org.slf4j.Logger
 import utils.GridConversion.NodeConversion
 import utils.VoronoiUtils.VoronoiPolygon
@@ -125,6 +126,8 @@ final case class StartMvGeneration(
   *
   * @param grids
   *   Collection of medium voltage grids
+  * @param dummyHvGrid
+  *   if one was spawned
   * @param nodeChanges
   *   updated nodes
   * @param assetInformation
@@ -132,6 +135,7 @@ final case class StartMvGeneration(
   */
 final case class RepMvGrids(
     grids: Seq[SubGridContainer],
+    dummyHvGrid: Option[JointGridContainer],
     nodeChanges: Seq[NodeInput],
     assetInformation: AssetInformation
 ) extends MvResponse
@@ -260,6 +264,8 @@ private[mv] object AwaitingInputData {
   *
   * @param subnets
   *   a set of sub grids that are not generated yet
+  * @param dummyHvGrid
+  *   if one was spawned
   * @param subGridContainer
   *   all finished sub grids
   * @param nodes
@@ -269,6 +275,7 @@ private[mv] object AwaitingInputData {
   */
 private[mv] final case class MvResultData(
     subnets: Set[Int],
+    dummyHvGrid: Option[JointGridContainer],
     subGridContainer: Seq[SubGridContainer],
     nodes: Seq[NodeInput],
     assetInformation: AssetInformation
@@ -290,6 +297,7 @@ private[mv] final case class MvResultData(
     if (subnets.contains(subgrid.getSubnet)) {
       MvResultData(
         subnets - subgrid.getSubnet,
+        dummyHvGrid,
         subGridContainer :+ subgrid,
         nodes ++ nodeChanges,
         assetInformation
@@ -308,6 +316,8 @@ private[mv] object MvResultData {
     *
     * @param subnets
     *   sequence of sub grid numbers
+    * @param dummyHvGrid
+    *   if one was spawned
     * @param assetInformation
     *   information for assets
     * @return
@@ -315,8 +325,9 @@ private[mv] object MvResultData {
     */
   def empty(
       subnets: Set[Int],
+      dummyHvGrid: Option[JointGridContainer],
       assetInformation: AssetInformation
   ): MvResultData = {
-    MvResultData(subnets, Seq.empty, Seq.empty, assetInformation)
+    MvResultData(subnets, dummyHvGrid, Seq.empty, Seq.empty, assetInformation)
   }
 }

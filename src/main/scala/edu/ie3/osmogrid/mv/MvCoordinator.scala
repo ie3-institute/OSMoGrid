@@ -6,13 +6,15 @@
 
 package edu.ie3.osmogrid.mv
 
-import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
-import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
+import edu.ie3.datamodel.models.input.NodeInput
+import edu.ie3.datamodel.models.input.container.JointGridContainer
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.{InputDataEvent, ReqAssetTypes}
 import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
+import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
+import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
 import utils.OsmoGridUtils.spawnDummyHvNode
 import utils.{GridContainerUtils, VoronoiUtils}
 
@@ -27,7 +29,7 @@ object MvCoordinator extends ActorStopSupportStateless {
     * @param cfg
     *   config for the generation process
     * @param inputDataProvider
-    *   reference to the [[InputDataProvider]]
+    *   reference to the [[edu.ie3.osmogrid.io.input.InputDataProvider]]
     * @param runGuardian
     *   reference to the [[RunGuardian]] to report to
     * @return
@@ -214,20 +216,25 @@ object MvCoordinator extends ActorStopSupportStateless {
         val mvToLv = GridContainerUtils.filterLv(lvGrids)
 
         // collect all mv nodes from hv sub grid container or spawn a new mv node
-        val hvToMv = hvGrids match {
-          case Some(grids) =>
-            GridContainerUtils.filterHv(grids)
+        val hvOption = hvGrids.map(GridContainerUtils.filterHv)
+
+        val hvToMv: Option[(JointGridContainer, NodeInput)] =
+          Option.when(hvOption.isEmpty && cfg.spawnMissingHvNodes)(
+            spawnDummyHvNode(mvToLv, lvGrids(0).getGridName, assetInformation)
+          )
+
+        val transitionNodes = hvToMv match {
+          case Some(value) => List(value._2)
           case None =>
-            if (cfg.spawnMissingHvNodes) {
-              List(spawnDummyHvNode(mvToLv))
-            } else {
-              // if no hv node is given, the first mv node is used as a slack node
-              List(mvToLv(0).copy().slack(true).build())
-            }
+            hvOption.getOrElse(List(mvToLv(0).copy().slack(true).build()))
         }
 
         val (polygons, notAssignedNodes) =
-          VoronoiUtils.createVoronoiPolygons(hvToMv.toList, mvToLv.toList, ctx)
+          VoronoiUtils.createVoronoiPolygons(
+            transitionNodes.toList,
+            mvToLv.toList,
+            ctx
+          )
 
         ctx.log.debug(s"Given area was split into ${polygons.size} polygon(s).")
 
@@ -255,7 +262,10 @@ object MvCoordinator extends ActorStopSupportStateless {
         }.toSet
 
         // awaiting the psdm grid data
-        awaitResults(runGuardian, MvResultData.empty(subnets, assetInformation))
+        awaitResults(
+          runGuardian,
+          MvResultData.empty(subnets, hvToMv.map(_._1), assetInformation)
+        )
       case (ctx, MvTerminate) =>
         terminate(ctx.log)
       case (ctx, unsupported) =>
@@ -301,6 +311,7 @@ object MvCoordinator extends ActorStopSupportStateless {
 
           runGuardian ! RepMvGrids(
             updated.subGridContainer,
+            updated.dummyHvGrid,
             updated.nodes,
             resultData.assetInformation
           )

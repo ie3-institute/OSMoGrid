@@ -113,7 +113,6 @@ class SubGridHandlingSpec
       processed.getRawGrid.getLines shouldBe lv.getRawGrid.getLines
       processed.getRawGrid.getTransformer3Ws shouldBe lv.getRawGrid.getTransformer3Ws
       processed.getRawGrid.getSwitches shouldBe lv.getRawGrid.getSwitches
-      processed.getSubnet shouldBe 1
       processed.getSystemParticipants shouldBe lv.getSystemParticipants
       processed.getGraphics shouldBe lv.getGraphics
     }
@@ -160,7 +159,7 @@ class SubGridHandlingSpec
       )
 
       val lv1 = mockSubGrid(1, MV_10KV, LV)
-      val transformerType = assetInformation.transformerTypes.toSeq(1)
+      val transformerType = assetInformation.transformerTypes.toSeq(2)
 
       // change the voltage level of the first found mv node to 20 kV
       val node = GridContainerUtils
@@ -188,20 +187,20 @@ class SubGridHandlingSpec
           assetInformation.transformerTypes
         )
 
-      updated.fold(
-        _ => throw new Error("This test should pass!"),
-        s =>
-          s.headOption match {
-            case Some(transformer) =>
-              transformer.getId shouldBe "Dummy transformer"
-              transformer.getNodeA shouldBe node
-              transformer.getParallelDevices shouldBe 1
-              transformer.getType shouldBe transformerType
-              transformer.getTapPos shouldBe 0
-              transformer.isAutoTap shouldBe false
-            case None => throw new Error("This test should pass!")
-          }
-      )
+      updated match {
+        case Failure(_) => throw new Error("This test should pass!")
+        case Success(transformers) =>
+          transformers.size shouldBe 1
+          val transformer = transformers(0)
+
+          transformer.getId shouldBe "Dummy transformer"
+          transformer.getNodeA shouldBe node
+          transformer.getParallelDevices shouldBe 1
+          transformer.getType shouldBe transformerType
+          transformer.getTapPos shouldBe 0
+          transformer.isAutoTap shouldBe false
+      }
+
     }
 
     "update transformer3W correctly" in {

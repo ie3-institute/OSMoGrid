@@ -6,8 +6,7 @@
 
 package edu.ie3.osmogrid.utils
 
-import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
-import edu.ie3.test.common.{MvTestData, OsmTestData, UnitSpec}
+import edu.ie3.test.common.{GridSupport, MvTestData, OsmTestData, UnitSpec}
 import edu.ie3.util.geo.GeoUtils.buildCoordinate
 import edu.ie3.util.quantities.PowerSystemUnits
 import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
@@ -22,7 +21,11 @@ import utils.OsmoGridUtils.{
 
 import scala.jdk.CollectionConverters._
 
-class OsmoGridUtilsSpec extends UnitSpec with MvTestData with OsmTestData {
+class OsmoGridUtilsSpec
+    extends UnitSpec
+    with MvTestData
+    with OsmTestData
+    with GridSupport {
   "The OsmoGridUtils" should {
     "calculate the household power correctly" in {
 
@@ -87,25 +90,40 @@ class OsmoGridUtilsSpec extends UnitSpec with MvTestData with OsmTestData {
     }
 
     "spawn a dummy hv node correctly" in {
-      val hvNode1 = spawnDummyHvNode(
-        List(nodeInMv1, nodeInMv2, nodeInMv3, nodeInMv4, nodeInMv5, nodeInMv6)
+      val (dummyGrid1, mvNode1) = spawnDummyHvNode(
+        List(nodeInMv1, nodeInMv2, nodeInMv3, nodeInMv4, nodeInMv5, nodeInMv6),
+        "dummyGrid",
+        assetInformation
       )
 
-      hvNode1.getId shouldBe "Hv node of Node 6"
+      val hvNode1 = dummyGrid1.getRawGrid.getNodes.asScala
+        .find(node => node != mvNode1)
+        .getOrElse(
+          fail("Expected a hv node!")
+        )
+
+      hvNode1.getId shouldBe "Spawned hv node"
       hvNode1.getvTarget().getValue.doubleValue() shouldBe 1d
       hvNode1.isSlack shouldBe true
       hvNode1.getGeoPosition.getCoordinate shouldBe buildCoordinate(50.5, 8.5)
-      hvNode1.getVoltLvl shouldBe GermanVoltageLevelUtils.HV
-      hvNode1.getSubnet shouldBe 1
+      hvNode1.getVoltLvl.getNominalVoltage shouldBe 110.asKiloVolt
+      hvNode1.getSubnet shouldBe 1001
 
-      val hvNode2 = spawnDummyHvNode(List(nodeInMv1))
+      val (dummyGrid2, mvNode2) =
+        spawnDummyHvNode(List(nodeInMv1), "dummyGrid", assetInformation)
 
-      hvNode2.getId shouldBe "Hv node of Node 1"
+      val hvNode2 = dummyGrid2.getRawGrid.getNodes.asScala
+        .find(node => node != mvNode2)
+        .getOrElse(
+          fail("Expected a hv node!")
+        )
+
+      hvNode2.getId shouldBe "Spawned hv node"
       hvNode2.getvTarget().getValue.doubleValue() shouldBe 1d
       hvNode2.isSlack shouldBe true
       hvNode2.getGeoPosition.getCoordinate shouldBe buildCoordinate(50.5, 7)
-      hvNode2.getVoltLvl shouldBe GermanVoltageLevelUtils.HV
-      hvNode2.getSubnet shouldBe 1
+      hvNode2.getVoltLvl.getNominalVoltage shouldBe 110.asKiloVolt
+      hvNode2.getSubnet shouldBe 1001
 
     }
   }

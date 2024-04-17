@@ -8,7 +8,10 @@ package edu.ie3.osmogrid.guardian.run
 
 import org.apache.pekko.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.datamodel.models.input.container.SubGridContainer
+import edu.ie3.datamodel.models.input.container.{
+  GridContainer,
+  SubGridContainer
+}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.{AssetInformation, InputDataEvent}
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
@@ -125,6 +128,7 @@ final case class FinishedGridData(
     mvExpected: Boolean,
     lvData: Option[Seq[SubGridContainer]],
     mvData: Option[Seq[SubGridContainer]],
+    hvData: Option[Seq[GridContainer]],
     toBeUpdated: Option[(Seq[NodeInput], AssetInformation)]
 ) extends StateData {
   def receivedAllData: Boolean = {
@@ -137,7 +141,7 @@ final case class FinishedGridData(
 
 object FinishedGridData {
   def empty(lvExpected: Boolean, mvExpected: Boolean): FinishedGridData =
-    FinishedGridData(lvExpected, mvExpected, None, None, None)
+    FinishedGridData(lvExpected, mvExpected, None, None, None, None)
 }
 
 /** Message to tell the [[RunGuardian]] to start handling the received results.

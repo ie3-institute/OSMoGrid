@@ -77,6 +77,24 @@ trait GridSupport {
     10.0.asKiloVolt
   )
 
+  val trafo_hv_to_10kv = new Transformer2WTypeInput(
+    UUID.fromString("b49db20f-b8b5-4265-8318-f669b9d121e9"),
+    "63 MVA 110/10 kV YNd5",
+    0.6146031746031745.asOhm,
+    34.56596500037509.asOhm,
+    63000.0.asKiloVoltAmpere,
+    110.asKiloVolt,
+    10.asKiloVolt,
+    1818.181818181818.asNanoSiemens,
+    1015.6886939330394.asNanoSiemens,
+    1.5.asPercent,
+    0.0.asDegreeGeom,
+    false,
+    0,
+    -9,
+    9
+  )
+
   val trafo_10kV_to_lv = new Transformer2WTypeInput(
     UUID.fromString("a0cbd90a-4e9f-47db-8dca-041d3a288f77"),
     "0.63 MVA 10/0.4 kV Dyn5 ASEA",
@@ -141,7 +159,7 @@ trait GridSupport {
   val assetInformation: AssetInformation =
     AssetInformation(
       Seq(defaultLineTypeMv),
-      Seq(trafo_10kV_to_lv, trafo_20kV_to_lv)
+      Seq(trafo_hv_to_10kv, trafo_10kV_to_lv, trafo_20kV_to_lv)
     )
 
   /** Return a mocked test grid with given sub grid number

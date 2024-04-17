@@ -6,7 +6,6 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import org.apache.pekko.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.connector._
 import edu.ie3.datamodel.models.input.connector.`type`.{
   Transformer2WTypeInput,
@@ -19,11 +18,11 @@ import edu.ie3.datamodel.models.input.graphics.{
 }
 import edu.ie3.datamodel.models.input.system._
 import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
-import edu.ie3.datamodel.utils.ContainerUtils
 import edu.ie3.osmogrid.exception.GridException
 import edu.ie3.osmogrid.guardian.run.SubGridHandling._
 import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.osmogrid.io.output.{GridResult, OutputRequest}
+import org.apache.pekko.actor.typed.ActorRef
 import org.slf4j.Logger
 
 import java.util.UUID
@@ -51,21 +50,29 @@ trait SubGridHandling {
   protected def handleResults(
       lvData: Option[Seq[SubGridContainer]],
       mvData: Option[Seq[SubGridContainer]],
-      hvData: Option[Seq[SubGridContainer]],
+      hvData: Option[Seq[GridContainer]],
       toBeUpdated: Option[(Seq[NodeInput], AssetInformation)],
       resultListener: Seq[ActorRef[OutputRequest]],
       msgAdapters: MessageAdapters
   )(implicit log: Logger): Unit = {
     log.info("All requested grids successfully generated.")
 
-    val allGrids = processResults(lvData, mvData, hvData, toBeUpdated)
+    val allGrids: Seq[GridContainer] =
+      processResults(lvData, mvData, hvData, toBeUpdated)
 
     val jointGrid = if (allGrids.isEmpty) {
       throw GridException(
         s"Error during creating of joint grid container, because no grids were found."
       )
     } else {
-      ContainerUtils.combineToJointGrid(allGrids.asJava)
+      val gridName = allGrids(0).getGridName
+
+      new JointGridContainer(
+        gridName,
+        new RawGridElements(allGrids.map(_.getRawGrid).asJava),
+        new SystemParticipants(allGrids.map(_.getSystemParticipants).asJava),
+        new GraphicElements(allGrids.map(_.getGraphics).asJava)
+      )
     }
 
     // sending the finished grid to all interested listeners
@@ -90,9 +97,9 @@ trait SubGridHandling {
   protected def processResults(
       lvData: Option[Seq[SubGridContainer]],
       mvData: Option[Seq[SubGridContainer]],
-      hvData: Option[Seq[SubGridContainer]],
+      hvData: Option[Seq[GridContainer]],
       toBeUpdated: Option[(Seq[NodeInput], AssetInformation)]
-  ): Seq[SubGridContainer] = {
+  ): Seq[GridContainer] = {
     // updating lv grids
     val lvGrids: Option[Seq[SubGridContainer]] = lvData.map { grids =>
       // assigning some subnet numbers
@@ -105,14 +112,21 @@ trait SubGridHandling {
     }
 
     // updating hv grids
-    val hvGrids: Option[Seq[SubGridContainer]] = hvData.map { grids =>
-      // assigning some subnet numbers
-      val updated = assignSubnetNumbers(grids).fold(f => throw f, identity)
+    val hvGrids: Option[Seq[GridContainer]] = hvData.map { grids =>
+      if (grids.nonEmpty && grids(0).isInstanceOf[SubGridContainer]) {
+        // assigning some subnet numbers
+        val updated = assignSubnetNumbers(
+          grids.map(_.asInstanceOf[SubGridContainer])
+        ).fold(f => throw f, identity)
 
-      // removing some elements is defined
-      toBeUpdated
-        .map { r => updateContainer(updated, r._1, r._2) }
-        .getOrElse(updated)
+        // removing some elements is defined
+        toBeUpdated
+          .map { r => updateContainer(updated, r._1, r._2) }
+          .getOrElse(updated)
+      } else {
+        // do nothing if we receive a dummy hv grid
+        grids
+      }
     }
 
     Seq(lvGrids, mvData, hvGrids).flatMap { s => s.toSeq.flatten }
