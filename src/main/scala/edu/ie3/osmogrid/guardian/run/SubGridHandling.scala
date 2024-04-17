@@ -289,29 +289,18 @@ object SubGridHandling {
       grids: Seq[SubGridContainer],
       changedNodes: Map[UUID, NodeInput]
   ): JointGridContainer = {
+    val updatedGrids = grids.map { grid => updateGrid(grid, changedNodes) }
 
-    if (grids.size == 1) {
-      // build joint grid directly
-      val grid = updateGrid(grids(0), changedNodes)
+    val higherVoltageNodes = updatedGrids.flatMap { grid =>
+      val nr = grid.getSubnet
+      grid.getRawGrid.getNodes.asScala.filter(_.getSubnet > nr)
+    }
 
-      new JointGridContainer(
-        grid.getGridName,
-        grid.getRawGrid,
-        grid.getSystemParticipants,
-        grid.getGraphics
-      )
-    } else {
-      val updatedGrids = grids.map { grid => updateGrid(grid, changedNodes) }
-
-      val higherVoltageNodes = updatedGrids.flatMap { grid =>
-        val nr = grid.getSubnet
-        grid.getRawGrid.getNodes.asScala.filter(_.getSubnet > nr)
-      }
-
-      val subGridContainer = Seq(
+    val dummyContainer = if (higherVoltageNodes.nonEmpty) {
+      Seq(
         new SubGridContainer(
           updatedGrids(0).getGridName,
-          higherVoltageNodes.map(_.getSubnet).toSeq(0),
+          higherVoltageNodes.map(_.getSubnet)(0),
           new RawGridElements(
             higherVoltageNodes.map(_.asInstanceOf[AssetInput]).asJava
           ),
@@ -319,11 +308,11 @@ object SubGridHandling {
           new GraphicElements(Set.empty[GraphicElements].asJava)
         )
       )
+    } else Seq.empty
 
-      ContainerUtils.combineToJointGrid(
-        (updatedGrids ++ subGridContainer).asJava
-      )
-    }
+    ContainerUtils.combineToJointGrid(
+      (updatedGrids ++ dummyContainer).asJava
+    )
   }
 
   /** Method for updating the type of [[Transformer2WInput]]s.
