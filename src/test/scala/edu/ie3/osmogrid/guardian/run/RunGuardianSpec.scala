@@ -112,6 +112,12 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         }
         idleTestKit
           .expectEffectType[WatchedWith[ResultListenerProtocol, RunWatch]]
+
+        idleTestKit.expectEffectPF { case Spawned(_: Behavior[_], name, _) =>
+          name shouldBe s"MvCoordinator_$runId"
+        }
+        idleTestKit.expectEffectType[WatchedWith[MvRequest, RunWatch]]
+
         idleTestKit.expectEffectPF { case Spawned(_: Behavior[_], name, _) =>
           name shouldBe s"LvCoordinator_$runId"
         }
@@ -122,6 +128,11 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           .childInbox[LvRequest](s"LvCoordinator_$runId")
           .receiveAll()
           .contains(ReqLvGrids) shouldBe true
+
+        idleTestKit
+          .childInbox[MvRequest](s"MvCoordinator_$runId")
+          .receiveAll()
+          .contains(ReqMvGrids) shouldBe true
       }
     }
 
