@@ -185,7 +185,6 @@ object OsmoGridUtils {
     */
   def spawnDummyHvNode(
       mvNodes: Seq[NodeInput],
-      gridName: String,
       assetInformation: AssetInformation
   ): (JointGridContainer, NodeInput) = {
     if (mvNodes.isEmpty) {
@@ -260,7 +259,7 @@ object OsmoGridUtils {
     )
 
     (
-      GridContainerUtils.from(List(hvNode, transformer, node), gridName),
+      GridContainerUtils.from(List(hvNode, transformer, node), "dummyHvGrid"),
       node
     )
   }

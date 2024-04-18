@@ -92,7 +92,6 @@ class OsmoGridUtilsSpec
     "spawn a dummy hv node correctly" in {
       val (dummyGrid1, mvNode1) = spawnDummyHvNode(
         List(nodeInMv1, nodeInMv2, nodeInMv3, nodeInMv4, nodeInMv5, nodeInMv6),
-        "dummyGrid",
         assetInformation
       )
 
@@ -110,7 +109,7 @@ class OsmoGridUtilsSpec
       hvNode1.getSubnet shouldBe 1001
 
       val (dummyGrid2, mvNode2) =
-        spawnDummyHvNode(List(nodeInMv1), "dummyGrid", assetInformation)
+        spawnDummyHvNode(List(nodeInMv1), assetInformation)
 
       val hvNode2 = dummyGrid2.getRawGrid.getNodes.asScala
         .find(node => node != mvNode2)

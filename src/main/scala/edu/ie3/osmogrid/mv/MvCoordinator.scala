@@ -222,7 +222,7 @@ object MvCoordinator extends ActorStopSupportStateless {
         // check if spawning a dummy node is activated
         val hvToMv: Option[(JointGridContainer, NodeInput)] =
           Option.when(hvOption.isEmpty && cfg.spawnMissingHvNodes)(
-            spawnDummyHvNode(mvToLv, lvGrids(0).getGridName, assetInformation)
+            spawnDummyHvNode(mvToLv, assetInformation)
           )
 
         // get the mv transition nodes

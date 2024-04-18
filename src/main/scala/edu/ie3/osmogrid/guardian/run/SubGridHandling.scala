@@ -6,18 +6,13 @@
 
 package edu.ie3.osmogrid.guardian.run
 
+import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.connector._
 import edu.ie3.datamodel.models.input.connector.`type`.{
   Transformer2WTypeInput,
   Transformer3WTypeInput
 }
-import edu.ie3.datamodel.models.input.container.{RawGridElements, _}
-import edu.ie3.datamodel.models.input.graphics.{
-  LineGraphicInput,
-  NodeGraphicInput
-}
-import edu.ie3.datamodel.models.input.system._
-import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
+import edu.ie3.datamodel.models.input.container._
 import edu.ie3.datamodel.utils.ContainerNodeUpdateUtil
 import edu.ie3.datamodel.utils.validation.ValidationUtils
 import edu.ie3.osmogrid.exception.GridException
@@ -27,7 +22,6 @@ import edu.ie3.osmogrid.io.output.{GridResult, OutputRequest}
 import org.apache.pekko.actor.typed.ActorRef
 import org.slf4j.Logger
 import tech.units.indriya.ComparableQuantity
-import utils.GridContainerUtils
 
 import java.util.UUID
 import javax.measure.quantity.ElectricPotential
@@ -192,7 +186,24 @@ object SubGridHandling {
         Map.empty
     }
 
-    val hv = hvGrids.map(grids => assignSubNetNumbers(grids, hvOffset))
+    val hv = hvGrids.map { grids =>
+      if (grids.size == 1 && grids(0).getGridName == "dummyHvGrid") {
+
+        val hvNode: NodeInput = grids(0).getRawGrid.getNodes.asScala.toList
+          .sortBy(
+            _.getVoltLvl.getNominalVoltage.getValue.doubleValue()
+          )
+          .lastOption
+          .getOrElse(throw GridException("No hv node found."))
+
+        (
+          Map(hvNode.getUuid -> hvNode.copy().subnet(hvOffset).build()),
+          hvOffset + 2
+        )
+      } else {
+        assignSubNetNumbers(grids, hvOffset)
+      }
+    }
 
     // maps with updated nodes
     val updateMap = lv.map(_._1).getOrElse(Map.empty) ++ mvCombined ++ hv
@@ -312,7 +323,7 @@ object SubGridHandling {
 
     new JointGridContainer(
       jointGridContainer.getGridName,
-      rawGridElements,
+      rawGrid,
       jointGridContainer.getSystemParticipants,
       jointGridContainer.getGraphics
     )
