@@ -217,90 +217,126 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         resultListener.expectMessageType[GridResult]
       }
 
-      "initiate coordinated shutdown, if somebody unexpectedly dies" in {
-        runningTestKit.run(LvCoordinatorDied)
+      "being in stopping state without a LvCoordinator" should {
+        val stopping = PrivateMethod[Behavior[RunRequest]](Symbol("stopping"))
 
-        /* Event is logged */
-        runningTestKit.logEntries() should contain(
-          CapturedLogEvent(
-            Level.WARN,
-            s"Lv coordinator for run $runId unexpectedly died. Start coordinated shut down phase for this run."
+        val stoppingData = StoppingData(
+          runId,
+          inputDataProviderTerminated = false,
+          resultListenerTerminated = false,
+          lvCoordinatorTerminated = None,
+          mvCoordinatorTerminated = None
+        )
+
+        val stoppingTestKit = BehaviorTestKit(
+          RunGuardian invokePrivate stopping(stoppingData)
+        )
+
+        "log an error if faced to not supported request" in {
+          stoppingTestKit.run(Run)
+
+          stoppingTestKit.logEntries() should contain only CapturedLogEvent(
+            Level.ERROR,
+            s"Received a message, that I don't understand during coordinated shutdown phase of run $runId.\n\tMessage: $Run"
           )
+        }
+
+        "stop itself only once all awaited termination messages have been received" in {
+          stoppingTestKit.run(ResultEventListenerDied)
+
+          stoppingTestKit.isAlive shouldBe true
+
+          stoppingTestKit.run(InputDataProviderDied)
+
+          stoppingTestKit.isAlive shouldBe false
+        }
+      }
+
+      "being in stopping state with a LvCoordinator" should {
+        val stopping = PrivateMethod[Behavior[RunRequest]](Symbol("stopping"))
+
+        val stoppingData = StoppingData(
+          runId,
+          inputDataProviderTerminated = false,
+          resultListenerTerminated = false,
+          lvCoordinatorTerminated = Some(false),
+          mvCoordinatorTerminated = Some(false)
         )
-        /* All children are sent a termination request */
-        lvCoordinator.expectMessage(LvTerminate)
-        mvCoordinator.expectMessage(MvTerminate)
-        inputDataProvider.expectMessage(InputTerminate)
+
+        val stoppingTestKit = BehaviorTestKit(
+          RunGuardian invokePrivate stopping(stoppingData)
+        )
+
+        "stop itself only once all awaited termination messages have been received" in {
+          stoppingTestKit.run(InputDataProviderDied)
+
+          stoppingTestKit.isAlive shouldBe true
+
+          stoppingTestKit.run(ResultEventListenerDied)
+
+          stoppingTestKit.isAlive shouldBe true
+
+          stoppingTestKit.run(LvCoordinatorDied)
+
+          stoppingTestKit.isAlive shouldBe true
+
+          stoppingTestKit.run(MvCoordinatorDied)
+
+          stoppingTestKit.isAlive shouldBe false
+        }
       }
     }
 
-    "being in stopping state without a LvCoordinator" should {
-      val stopping = PrivateMethod[Behavior[RunRequest]](Symbol("stopping"))
+    "initiate coordinated shutdown, if somebody unexpectedly dies" in {
+      val running = PrivateMethod[Behavior[RunRequest]](Symbol("running"))
 
-      val stoppingData = StoppingData(
+      /* Test probes */
+      val lvCoordinatorAdapter = testKit.createTestProbe[LvResponse]()
+      val mvCoordinatorAdapter = testKit.createTestProbe[MvResponse]()
+      val inputDataProvider =
+        testKit.createTestProbe[input.InputDataEvent]()
+      val resultListener = testKit.createTestProbe[ResultListenerProtocol]()
+      val lvCoordinator = testKit.createTestProbe[LvRequest]()
+      val mvCoordinator = testKit.createTestProbe[MvRequest]()
+
+      /* State data */
+      val runGuardianData = RunGuardianData(
         runId,
-        inputDataProviderTerminated = false,
-        resultListenerTerminated = false,
-        lvCoordinatorTerminated = None,
-        mvCoordinatorTerminated = None
+        validConfig,
+        Seq.empty[ActorRef[ResultListenerProtocol]],
+        MessageAdapters(lvCoordinatorAdapter.ref, mvCoordinatorAdapter.ref)
       )
-
-      val stoppingTestKit = BehaviorTestKit(
-        RunGuardian invokePrivate stopping(stoppingData)
+      val childReferences = ChildReferences(
+        inputDataProvider.ref,
+        Some(resultListener.ref),
+        Seq.empty,
+        Some(lvCoordinator.ref),
+        Some(mvCoordinator.ref)
       )
+      val finishedGridData =
+        FinishedGridData.empty(lvExpected = true, mvExpected = true)
 
-      "log an error if faced to not supported request" in {
-        stoppingTestKit.run(Run)
-
-        stoppingTestKit.logEntries() should contain only CapturedLogEvent(
-          Level.ERROR,
-          s"Received a message, that I don't understand during coordinated shutdown phase of run $runId.\n\tMessage: $Run"
+      val runningTestKit = BehaviorTestKit(
+        RunGuardian invokePrivate running(
+          runGuardianData,
+          childReferences,
+          finishedGridData
         )
-      }
-
-      "stop itself only once all awaited termination messages have been received" in {
-        stoppingTestKit.run(ResultEventListenerDied)
-
-        stoppingTestKit.isAlive shouldBe true
-
-        stoppingTestKit.run(InputDataProviderDied)
-
-        stoppingTestKit.isAlive shouldBe false
-      }
-    }
-
-    "being in stopping state with a LvCoordinator" should {
-      val stopping = PrivateMethod[Behavior[RunRequest]](Symbol("stopping"))
-
-      val stoppingData = StoppingData(
-        runId,
-        inputDataProviderTerminated = false,
-        resultListenerTerminated = false,
-        lvCoordinatorTerminated = Some(false),
-        mvCoordinatorTerminated = Some(false)
       )
 
-      val stoppingTestKit = BehaviorTestKit(
-        RunGuardian invokePrivate stopping(stoppingData)
+      runningTestKit.run(LvCoordinatorDied)
+
+      /* Event is logged */
+      runningTestKit.logEntries() should contain(
+        CapturedLogEvent(
+          Level.WARN,
+          s"Lv coordinator for run $runId unexpectedly died. Start coordinated shut down phase for this run."
+        )
       )
-
-      "stop itself only once all awaited termination messages have been received" in {
-        stoppingTestKit.run(InputDataProviderDied)
-
-        stoppingTestKit.isAlive shouldBe true
-
-        stoppingTestKit.run(ResultEventListenerDied)
-
-        stoppingTestKit.isAlive shouldBe true
-
-        stoppingTestKit.run(LvCoordinatorDied)
-
-        stoppingTestKit.isAlive shouldBe true
-
-        stoppingTestKit.run(MvCoordinatorDied)
-
-        stoppingTestKit.isAlive shouldBe false
-      }
+      /* All children are sent a termination request */
+      lvCoordinator.expectMessage(LvTerminate)
+      mvCoordinator.expectMessage(MvTerminate)
+      inputDataProvider.expectMessage(InputTerminate)
     }
   }
 }

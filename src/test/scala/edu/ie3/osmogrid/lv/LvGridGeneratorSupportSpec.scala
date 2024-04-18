@@ -7,7 +7,7 @@
 package edu.ie3.osmogrid.lv
 
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
-import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.buildConnectedGridGraphs
 import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.buildGrid
 import edu.ie3.osmogrid.model.OsmTestData
@@ -41,7 +41,7 @@ class LvGridGeneratorSupportSpec
         case _ => fail("Expected exactly one graph.")
       }
 
-      val ratedVoltage = 0.4.asKiloVolt
+      val lvVoltage = GermanVoltageLevelUtils.LV
       val lineType = new LineTypeInput(
         UUID.randomUUID,
         "Default generated line type",
@@ -56,8 +56,8 @@ class LvGridGeneratorSupportSpec
       buildGrid(
         osmGraph,
         buildingGraphConnections.par,
-        ratedVoltage,
-        10.asKiloVolt,
+        lvVoltage,
+        GermanVoltageLevelUtils.MV_10KV,
         considerHouseConnectionPoints = false,
         0.15,
         lineType,

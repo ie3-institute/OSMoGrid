@@ -122,6 +122,7 @@ object RunGuardian
 
       // lv coordinator is now allowed to die in peace
       childReferences.lvCoordinator.foreach(ctx.unwatch)
+      val updatedChildReferences = childReferences.copy(lvCoordinator = None)
 
       // if a mv coordinator is present, send the lv results to the mv coordinator
       childReferences.mvCoordinator.foreach { mv =>
@@ -142,11 +143,11 @@ object RunGuardian
 
         // if all data was received,
         ctx.self ! HandleGridResults
-        running(runGuardianData, childReferences, updated)
+        running(runGuardianData, updatedChildReferences, updated)
       } else {
 
         // if some expected data is still missing, keep waiting for missing data
-        running(runGuardianData, childReferences, updated)
+        running(runGuardianData, updatedChildReferences, updated)
       }
 
     case (
@@ -164,6 +165,7 @@ object RunGuardian
 
       // mv coordinator is now allowed to die in peace
       childReferences.mvCoordinator.foreach(ctx.unwatch)
+      val updatedChildReferences = childReferences.copy(mvCoordinator = None)
 
       // save sub grids if the should be put out
       val option = if (finishedGridData.mvExpected) {
@@ -184,11 +186,11 @@ object RunGuardian
 
         // if all data was received,
         ctx.self ! HandleGridResults
-        running(runGuardianData, childReferences, updated)
+        running(runGuardianData, updatedChildReferences, updated)
       } else {
 
         // if some expected data is still missing, keep waiting for missing data
-        running(runGuardianData, childReferences, updated)
+        running(runGuardianData, updatedChildReferences, updated)
       }
 
     case (ctx, HandleGridResults) =>
@@ -204,7 +206,7 @@ object RunGuardian
         runGuardianData.msgAdapters
       )(ctx.log)
 
-      Behaviors.same
+      stopping(stopChildren(runGuardianData.runId, childReferences, ctx))
     case (ctx, ResultEventListenerDied) =>
       // we wait for exact one listener as we only started one
       /* Start coordinated shutdown */
