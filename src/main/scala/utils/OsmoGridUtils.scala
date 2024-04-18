@@ -260,12 +260,7 @@ object OsmoGridUtils {
     )
 
     (
-      new JointGridContainer(
-        gridName,
-        new RawGridElements(List(hvNode, transformer, node).asJava),
-        new SystemParticipants(List.empty[SystemParticipants].asJava),
-        new GraphicElements(List.empty[GraphicElements].asJava)
-      ),
+      GridContainerUtils.from(List(hvNode, transformer, node), gridName),
       node
     )
   }

@@ -10,7 +10,8 @@ import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, StashBuffer}
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
-  Transformer2WTypeInput
+  Transformer2WTypeInput,
+  Transformer3WTypeInput
 }
 import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 
@@ -62,5 +63,6 @@ final case class AssetReadFailed(reason: Throwable)
 
 final case class AssetInformation(
     lineTypes: Seq[LineTypeInput],
-    transformerTypes: Seq[Transformer2WTypeInput]
+    transformerTypes: Seq[Transformer2WTypeInput],
+    transformer3WTypes: Seq[Transformer3WTypeInput]
 )

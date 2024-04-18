@@ -25,7 +25,7 @@ class MvGridGeneratorSupportSpec
         buildGrid(2, graph, nodeToHv, nodeConversion, assetInformation)
 
       nodeChanges.size shouldBe 7
-      nodeChanges.foreach(n => n.getSubnet shouldBe 2)
+      nodeChanges.foreach(n => n._2.getSubnet shouldBe 2)
 
       subgrid.getSubnet shouldBe 2
       val nodes = subgrid.getRawGrid.getNodes.asScala

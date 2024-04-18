@@ -16,7 +16,10 @@ import edu.ie3.datamodel.models.input.connector.`type`.{
 }
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.datamodel.models.input.system.LoadInput
-import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
+import edu.ie3.datamodel.models.voltagelevels.{
+  GermanVoltageLevelUtils,
+  VoltageLevel
+}
 import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.BuildingGraphConnection
@@ -228,7 +231,7 @@ object LvGridGeneratorSupport extends LazyLogging {
         nodes.contains(load.getNode)
       }
 
-      val voltageLevel = new VoltageLevel("mv", ratedVoltageMv)
+      val voltageLevel = GermanVoltageLevelUtils.MV_10KV
 
       val mvNode = buildNode(voltageLevel)(
         s"Mv node to lv node ${substation.getId}",

@@ -218,14 +218,23 @@ object MvCoordinator extends ActorStopSupportStateless {
         // collect all mv nodes from hv sub grid container or spawn a new mv node
         val hvOption = hvGrids.map(GridContainerUtils.filterHv)
 
+        // if no hv subgrid container were provided or no mv nodes could be extracted
+        // check if spawning a dummy node is activated
         val hvToMv: Option[(JointGridContainer, NodeInput)] =
           Option.when(hvOption.isEmpty && cfg.spawnMissingHvNodes)(
             spawnDummyHvNode(mvToLv, lvGrids(0).getGridName, assetInformation)
           )
 
-        val transitionNodes = hvToMv match {
-          case Some(value) => List(value._2)
-          case None =>
+        // get the mv transition nodes
+        val transitionNodes = (hvOption, hvToMv) match {
+          case (Some(nodeList), _) =>
+            // found mv nodes from hv containers
+            nodeList
+          case (None, Some(value)) =>
+            // using a mv node with a spawned dummy hv node
+            List(value._2)
+          case (None, None) =>
+            // using a mv node with no dummy hv node
             hvOption.getOrElse(List(mvToLv(0).copy().slack(true).build()))
         }
 
@@ -247,18 +256,16 @@ object MvCoordinator extends ActorStopSupportStateless {
         // spawns a voronoi coordinator for each polygon
         val subnets: Set[Int] = polygons.zipWithIndex.map {
           case (polygon, index) =>
-            val nr: Int = 100 + index * 20
-
             val voronoiCoordinator: ActorRef[MvRequest] =
               ctx.spawnAnonymous(VoronoiCoordinator(ctx.self))
             voronoiCoordinator ! StartMvGraphGeneration(
-              nr,
+              index + 1,
               polygon,
               streetGraph,
               assetInformation
             )
 
-            nr
+            index + 1
         }.toSet
 
         // awaiting the psdm grid data

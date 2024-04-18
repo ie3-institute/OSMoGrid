@@ -170,10 +170,13 @@ object RunGuardian
         Some(subGridContainer)
       } else None
 
+      val nodeUpdates = Option.when(nodeChanges.nonEmpty)(nodeChanges)
+
       val updated = finishedGridData.copy(
         mvData = option,
         hvData = dummyHvGrid.map(Seq(_)), // converting to sequence
-        toBeUpdated = Some((nodeChanges, assetInformation))
+        mvNodeChanges = nodeUpdates,
+        assetInformation = Some(assetInformation)
       )
 
       // check if all possible data was received
@@ -195,7 +198,8 @@ object RunGuardian
         finishedGridData.lvData,
         finishedGridData.mvData,
         finishedGridData.hvData,
-        finishedGridData.toBeUpdated,
+        finishedGridData.mvNodeChanges,
+        finishedGridData.assetInformation,
         childReferences.resultListeners,
         runGuardianData.msgAdapters
       )(ctx.log)

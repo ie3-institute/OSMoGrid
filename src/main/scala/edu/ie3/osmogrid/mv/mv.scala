@@ -28,6 +28,7 @@ import org.slf4j.Logger
 import utils.GridConversion.NodeConversion
 import utils.VoronoiUtils.VoronoiPolygon
 
+import java.util.UUID
 import scala.util.{Failure, Success, Try}
 
 /** Trait for mv requests.
@@ -100,7 +101,7 @@ final case class StartMvGraphConversion(
   */
 private[mv] final case class FinishedMvGridData(
     subGridContainer: SubGridContainer,
-    nodeChanges: Seq[NodeInput]
+    nodeChanges: Map[UUID, NodeInput]
 ) extends MvResponse
 
 /** Request for a mv coordinator to start the generation of medium voltage
@@ -136,7 +137,7 @@ final case class StartMvGeneration(
 final case class RepMvGrids(
     grids: Seq[SubGridContainer],
     dummyHvGrid: Option[JointGridContainer],
-    nodeChanges: Seq[NodeInput],
+    nodeChanges: Map[UUID, NodeInput],
     assetInformation: AssetInformation
 ) extends MvResponse
 
@@ -277,7 +278,7 @@ private[mv] final case class MvResultData(
     subnets: Set[Int],
     dummyHvGrid: Option[JointGridContainer],
     subGridContainer: Seq[SubGridContainer],
-    nodes: Seq[NodeInput],
+    nodes: Map[UUID, NodeInput],
     assetInformation: AssetInformation
 ) extends MvRequest {
 
@@ -292,7 +293,7 @@ private[mv] final case class MvResultData(
     */
   def update(
       subgrid: SubGridContainer,
-      nodeChanges: Seq[NodeInput]
+      nodeChanges: Map[UUID, NodeInput]
   ): MvResultData = {
     if (subnets.contains(subgrid.getSubnet)) {
       MvResultData(
@@ -328,6 +329,6 @@ private[mv] object MvResultData {
       dummyHvGrid: Option[JointGridContainer],
       assetInformation: AssetInformation
   ): MvResultData = {
-    MvResultData(subnets, dummyHvGrid, Seq.empty, Seq.empty, assetInformation)
+    MvResultData(subnets, dummyHvGrid, Seq.empty, Map.empty, assetInformation)
   }
 }

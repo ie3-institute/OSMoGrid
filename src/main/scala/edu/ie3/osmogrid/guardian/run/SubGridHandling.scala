@@ -11,21 +11,26 @@ import edu.ie3.datamodel.models.input.connector.`type`.{
   Transformer2WTypeInput,
   Transformer3WTypeInput
 }
-import edu.ie3.datamodel.models.input.container._
+import edu.ie3.datamodel.models.input.container.{RawGridElements, _}
 import edu.ie3.datamodel.models.input.graphics.{
   LineGraphicInput,
   NodeGraphicInput
 }
 import edu.ie3.datamodel.models.input.system._
 import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
+import edu.ie3.datamodel.utils.ContainerNodeUpdateUtil
+import edu.ie3.datamodel.utils.validation.ValidationUtils
 import edu.ie3.osmogrid.exception.GridException
 import edu.ie3.osmogrid.guardian.run.SubGridHandling._
 import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.osmogrid.io.output.{GridResult, OutputRequest}
 import org.apache.pekko.actor.typed.ActorRef
 import org.slf4j.Logger
+import tech.units.indriya.ComparableQuantity
+import utils.GridContainerUtils
 
 import java.util.UUID
+import javax.measure.quantity.ElectricPotential
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -38,8 +43,10 @@ trait SubGridHandling {
     *   option for medium voltage grids
     * @param hvData
     *   option for high voltage grids
-    * @param toBeUpdated
-    *   option for [[RawGridElements]] that needs to be removed
+    * @param mvNodeChanges
+    *   option for mv nodes that may have been changed
+    * @param assetInformation
+    *   information for assets
     * @param resultListener
     *   listeners for the resulting grid
     * @param msgAdapters
@@ -51,14 +58,15 @@ trait SubGridHandling {
       lvData: Option[Seq[SubGridContainer]],
       mvData: Option[Seq[SubGridContainer]],
       hvData: Option[Seq[GridContainer]],
-      toBeUpdated: Option[(Seq[NodeInput], AssetInformation)],
+      mvNodeChanges: Option[Map[UUID, NodeInput]],
+      assetInformation: Option[AssetInformation],
       resultListener: Seq[ActorRef[OutputRequest]],
       msgAdapters: MessageAdapters
   )(implicit log: Logger): Unit = {
     log.info("All requested grids successfully generated.")
 
     val allGrids: Seq[GridContainer] =
-      processResults(lvData, mvData, hvData, toBeUpdated)
+      processResults(lvData, mvData, hvData, mvNodeChanges, assetInformation)
 
     val jointGrid = if (allGrids.isEmpty) {
       throw GridException(
@@ -67,12 +75,24 @@ trait SubGridHandling {
     } else {
       val gridName = allGrids(0).getGridName
 
-      new JointGridContainer(
+      val grid = new JointGridContainer(
         gridName,
         new RawGridElements(allGrids.map(_.getRawGrid).asJava),
         new SystemParticipants(allGrids.map(_.getSystemParticipants).asJava),
         new GraphicElements(allGrids.map(_.getGraphics).asJava)
       )
+
+      // maybe update some types
+      assetInformation.map(info => updateTypes(grid, info)).getOrElse(grid)
+    }
+
+    // validate grid
+    Try(ValidationUtils.check(jointGrid)) match {
+      case Failure(exception) =>
+        log.error(
+          s"An exception occurred while validating the generated grid. Exception: $exception"
+        )
+      case Success(_) =>
     }
 
     // sending the finished grid to all interested listeners
@@ -89,8 +109,10 @@ trait SubGridHandling {
     *   option for medium voltage grids
     * @param hvData
     *   option for high voltage grids
-    * @param toBeUpdated
-    *   option for [[RawGridElements]] that needs to be removed
+    * @param mvNodeChanges
+    *   option for mv nodes that may have been changed
+    * @param assetInformation
+    *   information for assets
     * @return
     *   a sequence of [[SubGridContainer]]
     */
@@ -98,369 +120,208 @@ trait SubGridHandling {
       lvData: Option[Seq[SubGridContainer]],
       mvData: Option[Seq[SubGridContainer]],
       hvData: Option[Seq[GridContainer]],
-      toBeUpdated: Option[(Seq[NodeInput], AssetInformation)]
+      mvNodeChanges: Option[Map[UUID, NodeInput]],
+      assetInformation: Option[AssetInformation]
   ): Seq[GridContainer] = {
-    // updating lv grids
-    val lvGrids: Option[Seq[SubGridContainer]] = lvData.map { grids =>
-      // assigning some subnet numbers
-      val updated = assignSubnetNumbers(grids).fold(f => throw f, identity)
+    // assigning unique subgrid numbers to all given grids
+    val nodeUpdateMap =
+      assignSubNetNumbers(lvData, mvData, mvNodeChanges, hvData)
 
-      // removing some elements is defined
-      toBeUpdated
-        .map { r => updateContainer(updated, r._1, r._2) }
-        .getOrElse(updated)
-    }
-
-    // updating hv grids
-    val hvGrids: Option[Seq[GridContainer]] = hvData.map { grids =>
-      if (grids.nonEmpty && grids(0).isInstanceOf[SubGridContainer]) {
-        // assigning some subnet numbers
-        val updated = assignSubnetNumbers(
-          grids.map(_.asInstanceOf[SubGridContainer])
-        ).fold(f => throw f, identity)
-
-        // removing some elements is defined
-        toBeUpdated
-          .map { r => updateContainer(updated, r._1, r._2) }
-          .getOrElse(updated)
-      } else {
-        // do nothing if we receive a dummy hv grid
-        grids
-      }
-    }
-
-    Seq(lvGrids, mvData, hvGrids).flatMap { s => s.toSeq.flatten }
+    // updating all grids with the updated nodes
+    Seq(lvData, mvData, hvData).flatten.flatten.map(grid =>
+      ContainerNodeUpdateUtil.updateGridWithNodes(grid, nodeUpdateMap.asJava)
+    )
   }
 }
 
 object SubGridHandling {
 
-  /** Method for updating [[SubGridContainer]].
-    * @param grids
-    *   to update
-    * @param nodes
-    *   that have changed
-    * @param assetInformation
-    *   information for assets
+  /** Method to assign subgrid numbers to nodes.
+    * @param lvGrids
+    *   option for low voltage grids
+    * @param mvGrids
+    *   option for medium voltage grids
+    * @param mvNodeChanges
+    *   option for medium voltage node changes
+    * @param hvGrids
+    *   option for high voltage grids
     * @return
-    *   an sequence of updated [[SubGridContainer]]
+    *   a map: old node to new node
     */
-  private def updateContainer(
-      grids: Seq[SubGridContainer],
-      nodes: Seq[NodeInput],
-      assetInformation: AssetInformation
-  ): Seq[SubGridContainer] = {
-    grids.map { grid =>
-      val updatedNodes: Map[UUID, NodeInput] = nodes.map { n =>
-        n.getUuid -> n
-      }.toMap
+  private def assignSubNetNumbers(
+      lvGrids: Option[Seq[GridContainer]],
+      mvGrids: Option[Seq[GridContainer]],
+      mvNodeChanges: Option[Map[UUID, NodeInput]],
+      hvGrids: Option[Seq[GridContainer]]
+  ): Map[NodeInput, NodeInput] = {
+    val lv = lvGrids.map(grids => assignSubNetNumbers(grids, 1))
+    val mvOffset = lv.map(_._2).getOrElse(1)
 
-      val nodeMapping: Map[UUID, NodeInput] =
-        grid.getRawGrid.getNodes.asScala.map { n =>
-          val id = n.getUuid
-          id -> updatedNodes.getOrElse(id, n)
+    val mv = mvGrids.map(grids => assignSubNetNumbers(grids, mvOffset))
+    val hvOffset = mv.map(_._2).getOrElse(100)
+
+    val mvCombined: Map[UUID, NodeInput] = (mv, mvNodeChanges) match {
+      case (Some(gridNodeChanges), Some(nodeChanges)) =>
+        // we need to combine multiple mv node changes
+        val gridNodeMap = gridNodeChanges._1
+
+        val commonKeys = nodeChanges.keySet.intersect(gridNodeMap.keySet)
+        val allKeys = gridNodeChanges._1.keySet ++ nodeChanges.keySet
+
+        allKeys.map { key =>
+          if (commonKeys.contains(key)) {
+            // update subnet information
+            key -> nodeChanges(key)
+              .copy()
+              .subnet(
+                gridNodeMap(key).getSubnet
+              )
+              .build()
+          } else key -> gridNodeMap.getOrElse(key, nodeChanges(key))
         }.toMap
 
-      val rawGridElements = grid.getRawGrid
+      case (Some(gridNodeChanges), None) =>
+        // we only got mv grid containers
+        gridNodeChanges._1
+      case (None, Some(nodeChanges)) =>
+        // we only got mv node changes
+        nodeChanges
 
-      // updating transformer2Ws
-      val t2W = updateTransformer2Ws(
-        rawGridElements.getTransformer2Ws.asScala.toSeq,
-        nodeMapping,
-        assetInformation.transformerTypes
-      ).fold(
-        exception =>
-          throw GridException(
-            "Unable to update transformers.",
-            exception
-          ),
-        identity
-      )
-
-      // updating transformer3Ws
-      // TODO: Add transformer3WType update (at the moment no transformer3WType are available)
-      val t3W = updateTransformer3Ws(
-        rawGridElements.getTransformer3Ws.asScala.toSeq,
-        nodeMapping,
-        Seq.empty
-      ).fold(
-        exception =>
-          throw GridException(
-            "Unable to update transformers.",
-            exception
-          ),
-        identity
-      )
-
-      val rawGrid: RawGridElements = new RawGridElements(
-        nodeMapping.values.toSet.asJava,
-        rawGridElements.getLines,
-        t2W.toSet.asJava,
-        t3W.toSet.asJava,
-        rawGridElements.getSwitches,
-        rawGridElements.getMeasurementUnits
-      )
-
-      new SubGridContainer(
-        grid.getGridName,
-        grid.getSubnet,
-        rawGrid,
-        grid.getSystemParticipants,
-        grid.getGraphics
-      )
+      case _ =>
+        // if no mv nodes are present
+        Map.empty
     }
+
+    val hv = hvGrids.map(grids => assignSubNetNumbers(grids, hvOffset))
+
+    // maps with updated nodes
+    val updateMap = lv.map(_._1).getOrElse(Map.empty) ++ mvCombined ++ hv
+      .map(_._1)
+      .getOrElse(Map.empty)
+
+    val allNodes: Seq[NodeInput] = List(lvGrids, mvGrids, hvGrids).flatten
+      .flatMap(_.flatMap(_.getRawGrid.getNodes.asScala))
+
+    // final update map
+    allNodes.map { node =>
+      node -> updateMap.getOrElse(node.getUuid, node)
+    }.toMap
   }
 
-  private def assignSubnetNumbers(
-      subnets: Seq[SubGridContainer]
-  ): Try[Seq[SubGridContainer]] = Try {
-    subnets.zipWithIndex.map { case (subGrid, subnetNumber) =>
-      assignSubnetNumber(subGrid, subnetNumber + 1) match {
-        case Success(value) => value
-        case Failure(exception) =>
-          throw GridException(
-            s"Unable to update subgrid container '$subGrid'.",
-            exception
-          )
-      }
-    }
-  }
-
-  /** Assign a certain subnet number to the [[SubGridContainer]]. This is done
-    * by iterating through all elements and assigning the subnet number to nodes
-    * and updating the element reference, respectively.
-    *
-    * @param subGrid
-    *   The sub grid container to be updated
-    * @param subnetNumber
-    *   The sub net number to be assigned
+  /** Method to assign a sub grid number with an offset for nodes that are on a
+    * higher voltage level. Nodes with a lower voltage level are not updated
+    * @param subGrids
+    *   with nodes
+    * @param offset
+    *   for nodes
     * @return
-    *   The updated [[SubGridContainer]]
+    *   a map of updated nodes and an offset for nodes with a higher voltage
+    *   level
     */
-  private def assignSubnetNumber(
-      subGrid: SubGridContainer,
-      subnetNumber: Int
-  ): Try[SubGridContainer] = Try {
-    val nodes = updateNodes(
-      subGrid.getRawGrid.getNodes.asScala.toSeq,
-      subnetNumber
-    )
+  private def assignSubNetNumbers(
+      subGrids: Seq[GridContainer],
+      offset: Int
+  ): (Map[UUID, NodeInput], Int) = {
+    val higherNodesOffset = offset + subGrids.size + 1
 
-    val rawGrid = updateRawGrid(subGrid.getRawGrid, nodes).fold(
-      exception =>
-        throw GridException(
-          "Unable to update raw grid structure.",
-          exception
-        ),
-      identity
-    )
+    val nodeMap = subGrids.zipWithIndex.flatMap { case (container, i) =>
+      val nodes = container.getRawGrid.getNodes.asScala.toSeq
+      val voltage =
+        findDominantVoltage(nodes.map(_.getVoltLvl.getNominalVoltage))
 
-    val systemParticipants =
-      updateSystemParticipants(subGrid.getSystemParticipants, nodes).fold(
-        exception =>
-          throw GridException(
-            "Unable to update system participants.",
-            exception
-          ),
-        identity
-      )
+      nodes.map { node =>
+        val nodeVoltage = node.getVoltLvl.getNominalVoltage
 
-    val graphics = updateGraphics(
-      subGrid.getGraphics,
-      nodes,
-      rawGrid.getLines.asScala.map(line => line.getUuid -> line).toMap
+        val updatedNode = if (nodeVoltage.isEquivalentTo(voltage)) {
+          node.copy().subnet(i + offset).build()
+        } else if (nodeVoltage.isGreaterThan(voltage)) {
+          node.copy().subnet(higherNodesOffset).build()
+        } else node
+
+        node.getUuid -> updatedNode
+      }.toMap
+    }.toMap
+
+    (nodeMap, higherNodesOffset)
+  }
+
+  /** Method to find the dominant voltage for a given sequence of voltages
+    * @param voltages
+    *   given voltages
+    * @return
+    *   a [[ComparableQuantity]]
+    */
+  private def findDominantVoltage(
+      voltages: Seq[ComparableQuantity[ElectricPotential]]
+  ): ComparableQuantity[ElectricPotential] = voltages
+    .groupBy(identity)
+    .maxByOption(_._2.size)
+    .map(_._1)
+    .getOrElse(throw GridException("No voltage found."))
+
+  /** Method to update some types.
+    * @param jointGridContainer
+    *   grid with entities
+    * @param assetInformation
+    *   information about types
+    * @return
+    *   updated grid
+    */
+  private def updateTypes(
+      jointGridContainer: JointGridContainer,
+      assetInformation: AssetInformation
+  ): JointGridContainer = {
+
+    val rawGridElements = jointGridContainer.getRawGrid
+
+    // updating transformer2Ws
+    val t2W = updateTransformer2Ws(
+      rawGridElements.getTransformer2Ws.asScala.toSeq,
+      assetInformation.transformerTypes
     ).fold(
       exception =>
         throw GridException(
-          "Unable to update graphic elements.",
+          "Unable to update transformers.",
           exception
         ),
       identity
     )
 
-    new SubGridContainer(
-      subGrid.getGridName,
-      subnetNumber,
-      rawGrid,
-      systemParticipants,
-      graphics
+    // updating transformer3Ws
+    // TODO: Add transformer3WType update (at the moment no transformer3WType are available)
+    val t3W = updateTransformer3Ws(
+      rawGridElements.getTransformer3Ws.asScala.toSeq,
+      assetInformation.transformer3WTypes
+    ).fold(
+      exception =>
+        throw GridException(
+          "Unable to update transformers.",
+          exception
+        ),
+      identity
     )
-  }
 
-  private def updateNodes(
-      nodes: Seq[NodeInput],
-      subnetNumber: Int
-  ): Map[UUID, NodeInput] = nodes
-    .map(node => node.getUuid -> node.copy().subnet(subnetNumber).build())
-    .toMap
-
-  /** Update the raw grid elements
-    *
-    * @param rawGrid
-    *   Container of raw grids
-    * @param nodeMapping
-    *   Mapping from node [[UUID]] to updated [[NodeInput]]
-    * @return
-    *   Container for grid elements with updated node references
-    */
-  private def updateRawGrid(
-      rawGrid: RawGridElements,
-      nodeMapping: Map[UUID, NodeInput]
-  ): Try[RawGridElements] = Try {
-    val lines =
-      updateNodeReferences(
-        rawGrid.getLines.asScala.toSeq,
-        nodeMapping,
-        (line: LineInput, nodeA: NodeInput, nodeB: NodeInput) =>
-          line.copy().nodeA(nodeA).nodeB(nodeB).build()
-      ).fold(
-        exception =>
-          throw GridException(
-            "Unable to update node references of lines.",
-            exception
-          ),
-        identity
-      )
-
-    // transformer top node is included within the node set
-    val transformers2w =
-      updateNodeReferences(
-        rawGrid.getTransformer2Ws.asScala.toSeq,
-        nodeMapping,
-        (transformer: Transformer2WInput, nodeA: NodeInput, nodeB: NodeInput) =>
-          transformer.copy().nodeA(nodeA).nodeB(nodeB).build()
-      ).fold(
-        exception =>
-          throw GridException(
-            "Unable to update node references of two winding transformers.",
-            exception
-          ),
-        identity
-      )
-
-    // transformer top nodes are included within the node set
-    val transformers3w =
-      updateNodeReferences(
-        rawGrid.getTransformer3Ws.asScala.toSeq,
-        nodeMapping
-      ).fold(
-        exception =>
-          throw GridException(
-            "Unable to update node references of three winding transformers.",
-            exception
-          ),
-        identity
-      )
-
-    val switches =
-      updateNodeReferences(
-        rawGrid.getSwitches.asScala.toSeq,
-        nodeMapping,
-        (swtch: SwitchInput, nodeA: NodeInput, nodeB: NodeInput) =>
-          swtch.copy().nodeA(nodeA).nodeB(nodeB).build()
-      ).fold(
-        exception =>
-          throw GridException(
-            "Unable to update node references of switches.",
-            exception
-          ),
-        identity
-      )
-
-    val measurements =
-      updateMeasurements(
-        rawGrid.getMeasurementUnits.asScala.toSeq,
-        nodeMapping
-      ).fold(
-        exception =>
-          throw GridException(
-            "Unable to update node references of measurements.",
-            exception
-          ),
-        identity
-      )
-
-    new RawGridElements(
-      nodeMapping.values.toSet.asJava,
-      lines.toSet.asJava,
-      transformers2w.toSet.asJava,
-      transformers3w.toSet.asJava,
-      switches.toSet.asJava,
-      measurements.toSet.asJava
+    val rawGrid: RawGridElements = new RawGridElements(
+      rawGridElements.getNodes,
+      rawGridElements.getLines,
+      t2W.toSet.asJava,
+      t3W.toSet.asJava,
+      rawGridElements.getSwitches,
+      rawGridElements.getMeasurementUnits
     )
-  }
 
-  /** Update the node references in two port connectors
-    *
-    * @param connectors
-    *   Collection of [[ConnectorInput]] to update
-    * @param nodeMapping
-    *   Mapping from node [[UUID]] to updated nodes
-    * @param updateFunc
-    *   Function, that does the update for the connector
-    * @tparam T
-    *   Type of the connector to update
-    * @return
-    *   Two-port connector with updated node references
-    */
-  private def updateNodeReferences[T <: ConnectorInput](
-      connectors: Seq[T],
-      nodeMapping: Map[UUID, NodeInput],
-      updateFunc: (T, NodeInput, NodeInput) => T
-  ): Try[Seq[T]] = Try {
-    connectors.map { originalConnector =>
-      nodeMapping
-        .get(originalConnector.getNodeA.getUuid)
-        .zip(nodeMapping.get(originalConnector.getNodeB.getUuid)) match {
-        case Some((nodeA, nodeB)) =>
-          updateFunc(originalConnector, nodeA, nodeB)
-        case None =>
-          throw GridException(
-            s"Unable to determine new nodes for connector '$originalConnector'."
-          )
-      }
-    }
-  }
-
-  /** Update the node references in [[Transformer3WInput]]s
-    *
-    * @param connectors
-    *   Collection of [[Transformer3WInput]] to update
-    * @param nodeMapping
-    *   Mapping from node [[UUID]] to updated nodes
-    * @return
-    *   [[Transformer3WInput]]s with updated node references
-    */
-  private def updateNodeReferences(
-      connectors: Seq[Transformer3WInput],
-      nodeMapping: Map[UUID, NodeInput]
-  ): Try[Seq[Transformer3WInput]] = Try {
-    connectors.map { originalTransformer =>
-      nodeMapping
-        .get(originalTransformer.getNodeA.getUuid)
-        .zip(nodeMapping.get(originalTransformer.getNodeB.getUuid))
-        .zip(nodeMapping.get(originalTransformer.getNodeC.getUuid)) match {
-        case Some(((nodeA, nodeB), nodeC)) =>
-          originalTransformer
-            .copy()
-            .nodeA(nodeA)
-            .nodeB(nodeB)
-            .nodeC(nodeC)
-            .build()
-        case None =>
-          throw GridException(
-            s"Unable to determine new nodes for three winding transformer '$originalTransformer'."
-          )
-      }
-    }
+    new JointGridContainer(
+      jointGridContainer.getGridName,
+      rawGridElements,
+      jointGridContainer.getSystemParticipants,
+      jointGridContainer.getGraphics
+    )
   }
 
   /** Method for updating [[Transformer2WInput]]s.
     *
     * @param transformer2Ws
     *   sequence of transformers
-    * @param nodeMapping
-    *   a map: uuids to updated nodes
     * @param typeInputs
     *   sequence of available [[Transformer2WTypeInput]]s
     * @return
@@ -469,26 +330,15 @@ object SubGridHandling {
     */
   private def updateTransformer2Ws(
       transformer2Ws: Seq[Transformer2WInput],
-      nodeMapping: Map[UUID, NodeInput],
       typeInputs: Seq[Transformer2WTypeInput]
   ): Try[Seq[Transformer2WInput]] = Try {
     transformer2Ws.map { originalTransformer =>
-      val originalA = originalTransformer.getNodeA.getUuid
-      val originalB = originalTransformer.getNodeB.getUuid
       val originalType = originalTransformer.getType
-      val copy = originalTransformer.copy()
-
-      // update nodes
-      var updated =
-        (nodeMapping.get(originalA), nodeMapping.get(originalB)) match {
-          case (Some(nodeA), Some(nodeB)) => copy.nodeA(nodeA).nodeB(nodeB)
-          case (Some(nodeA), None)        => copy.nodeA(nodeA)
-          case (None, Some(nodeB))        => copy.nodeB(nodeB)
-        }
+      val updated = originalTransformer.copy()
 
       // check if voltage ratings have changed
-      val voltLvlA = nodeMapping(originalA).getVoltLvl.getNominalVoltage
-      val voltLvlB = nodeMapping(originalB).getVoltLvl.getNominalVoltage
+      val voltLvlA = originalTransformer.getNodeA.getVoltLvl.getNominalVoltage
+      val voltLvlB = originalTransformer.getNodeB.getVoltLvl.getNominalVoltage
 
       if (
         originalType.getvRatedA() != voltLvlA || originalType
@@ -497,7 +347,7 @@ object SubGridHandling {
         typeInputs.find { t =>
           t.getvRatedA() == voltLvlA && t.getvRatedB() == voltLvlB
         } match {
-          case Some(value) => updated = updated.`type`(value)
+          case Some(value) => updated.`type`(value)
           case None =>
             throw GridException(
               s"No transformer2WType for voltage levels $voltLvlA and $voltLvlB found!"
@@ -510,10 +360,9 @@ object SubGridHandling {
   }
 
   /** Method for updating [[Transformer3WInput]]s.
+    *
     * @param transformer3Ws
     *   sequence of transformers
-    * @param nodeMapping
-    *   a map: uuids to updated nodes
     * @param typeInputs
     *   sequence of available [[Transformer3WTypeInput]]s
     * @return
@@ -522,34 +371,16 @@ object SubGridHandling {
     */
   private def updateTransformer3Ws(
       transformer3Ws: Seq[Transformer3WInput],
-      nodeMapping: Map[UUID, NodeInput],
       typeInputs: Seq[Transformer3WTypeInput]
   ): Try[Seq[Transformer3WInput]] = Try {
     transformer3Ws.map { originalTransformer =>
-      val originalA = originalTransformer.getNodeA.getUuid
-      val originalB = originalTransformer.getNodeB.getUuid
-      val originalC = originalTransformer.getNodeC.getUuid
       val originalType = originalTransformer.getType
-      val copy = originalTransformer.copy()
-
-      // update nodes
-      var updated = nodeMapping
-        .get(originalA)
-        .map { nodeA => copy.nodeA(nodeA) }
-        .getOrElse(copy)
-      updated = nodeMapping
-        .get(originalB)
-        .map { nodeB => copy.nodeB(nodeB) }
-        .getOrElse(copy)
-      updated = nodeMapping
-        .get(originalC)
-        .map { nodeC => copy.nodeC(nodeC) }
-        .getOrElse(copy)
+      val updated = originalTransformer.copy()
 
       // check if voltage ratings have changed
-      val voltLvlA = nodeMapping(originalA).getVoltLvl.getNominalVoltage
-      val voltLvlB = nodeMapping(originalB).getVoltLvl.getNominalVoltage
-      val voltLvlC = nodeMapping(originalC).getVoltLvl.getNominalVoltage
+      val voltLvlA = originalTransformer.getNodeA.getVoltLvl.getNominalVoltage
+      val voltLvlB = originalTransformer.getNodeB.getVoltLvl.getNominalVoltage
+      val voltLvlC = originalTransformer.getNodeC.getVoltLvl.getNominalVoltage
 
       if (
         originalType.getvRatedA() != voltLvlA || originalType
@@ -559,7 +390,7 @@ object SubGridHandling {
           t.getvRatedA() == voltLvlA && t.getvRatedB() == voltLvlB && t
             .getvRatedC() == voltLvlC
         } match {
-          case Some(value) => updated = updated.`type`(value)
+          case Some(value) => updated.`type`(value)
           case None =>
             throw GridException(
               s"No transformer3WType for voltage levels $voltLvlA, $voltLvlB and $voltLvlC found!"
@@ -569,258 +400,5 @@ object SubGridHandling {
 
       updated.build()
     }
-  }
-
-  /** Update the node references in [[MeasurementUnitInput]]s
-    *
-    * @param measurements
-    *   Collection of [[MeasurementUnitInput]] to update
-    * @param nodeMapping
-    *   Mapping from node [[UUID]] to updated nodes
-    * @return
-    *   Measurement devices with updated node references
-    */
-  private def updateMeasurements(
-      measurements: Seq[MeasurementUnitInput],
-      nodeMapping: Map[UUID, NodeInput]
-  ): Try[Seq[MeasurementUnitInput]] = Try {
-    measurements.map { originalMeasurement =>
-      nodeMapping.get(originalMeasurement.getNode.getUuid) match {
-        case Some(node) =>
-          originalMeasurement.copy().node(node).build()
-        case None =>
-          throw GridException(
-            s"Unable to determine new node for measurement unit '$originalMeasurement'."
-          )
-      }
-    }
-  }
-
-  /** Update the entirety of system participants
-    *
-    * @param participants
-    *   The system participant container
-    * @param nodeMapping
-    *   Mapping from node [[UUID]] to updated node
-    * @return
-    *   A container of updated system participants
-    */
-  private def updateSystemParticipants(
-      participants: SystemParticipants,
-      nodeMapping: Map[UUID, NodeInput]
-  ): Try[SystemParticipants] = Try {
-    val bms = updateParticipants(
-      participants.getBmPlants.asScala.toSeq,
-      nodeMapping,
-      (bm: BmInput, node: NodeInput) => bm.copy().node(node).build()
-    ).fold(
-      exception =>
-        throw GridException(
-          "Unable to update node references of biomass plants.",
-          exception
-        ),
-      identity
-    )
-
-    val chps = updateParticipants(
-      participants.getChpPlants.asScala.toSeq,
-      nodeMapping,
-      (chp: ChpInput, node: NodeInput) => chp.copy().node(node).build()
-    ).fold(
-      exception =>
-        throw GridException(
-          "Unable to update node references of combined heat and power plants.",
-          exception
-        ),
-      identity
-    )
-
-    val evcss = updateParticipants(
-      participants.getEvcs.asScala.toSeq,
-      nodeMapping,
-      (evcs: EvcsInput, node: NodeInput) => evcs.copy().node(node).build()
-    ).fold(
-      exception =>
-        throw GridException(
-          "Unable to update node references of charging stations.",
-          exception
-        ),
-      identity
-    )
-
-    val evs = updateParticipants(
-      participants.getEvs.asScala.toSeq,
-      nodeMapping,
-      (ev: EvInput, node: NodeInput) => ev.copy().node(node).build()
-    ).fold(
-      exception =>
-        throw GridException(
-          "Unable to update node references of electric vehicles.",
-          exception
-        ),
-      identity
-    )
-
-    val ffis = updateParticipants(
-      participants.getFixedFeedIns.asScala.toSeq,
-      nodeMapping,
-      (ffi: FixedFeedInInput, node: NodeInput) => ffi.copy().node(node).build()
-    ).fold(
-      exception =>
-        throw GridException(
-          "Unable to update node references of fixed feed ins.",
-          exception
-        ),
-      identity
-    )
-
-    val hps = updateParticipants(
-      participants.getHeatPumps.asScala.toSeq,
-      nodeMapping,
-      (hp: HpInput, node: NodeInput) => hp.copy().node(node).build()
-    ).fold(
-      exception =>
-        throw GridException(
-          "Unable to update node references of heat pumps.",
-          exception
-        ),
-      identity
-    )
-
-    val loads = updateParticipants(
-      participants.getLoads.asScala.toSeq,
-      nodeMapping,
-      (load: LoadInput, node: NodeInput) => load.copy().node(node).build()
-    ).fold(
-      exception =>
-        throw GridException(
-          "Unable to update node references of loads.",
-          exception
-        ),
-      identity
-    )
-
-    val pvs = updateParticipants(
-      participants.getPvPlants.asScala.toSeq,
-      nodeMapping,
-      (pv: PvInput, node: NodeInput) => pv.copy().node(node).build()
-    ).fold(
-      exception =>
-        throw GridException(
-          "Unable to update node references of participants.",
-          exception
-        ),
-      identity
-    )
-
-    val storages = updateParticipants(
-      participants.getStorages.asScala.toSeq,
-      nodeMapping,
-      (storage: StorageInput, node: NodeInput) =>
-        storage.copy().node(node).build()
-    ).fold(
-      exception =>
-        throw GridException(
-          "Unable to update node references of storages.",
-          exception
-        ),
-      identity
-    )
-
-    val wecs = updateParticipants(
-      participants.getWecPlants.asScala.toSeq,
-      nodeMapping,
-      (wec: WecInput, node: NodeInput) => wec.copy().node(node).build()
-    ).fold(
-      exception =>
-        throw GridException(
-          "Unable to update node references of wind energy converters.",
-          exception
-        ),
-      identity
-    )
-
-    new SystemParticipants(
-      bms.toSet.asJava,
-      chps.toSet.asJava,
-      evcss.toSet.asJava,
-      evs.toSet.asJava,
-      ffis.toSet.asJava,
-      hps.toSet.asJava,
-      loads.toSet.asJava,
-      pvs.toSet.asJava,
-      storages.toSet.asJava,
-      wecs.toSet.asJava
-    )
-  }
-
-  /** Update the given participants
-    *
-    * @param participants
-    *   Participants to update
-    * @param nodeMapping
-    *   Mapping from node [[UUID]] to updated nodes
-    * @param updateFunc
-    *   Function, that does the update for the participant
-    * @tparam T
-    *   Type of the participant
-    * @return
-    *   A sequence of updated participants
-    */
-  private def updateParticipants[T <: SystemParticipantInput](
-      participants: Seq[T],
-      nodeMapping: Map[UUID, NodeInput],
-      updateFunc: (T, NodeInput) => T
-  ): Try[Seq[T]] = Try {
-    participants.map { originalParticipant =>
-      nodeMapping.get(originalParticipant.getNode.getUuid) match {
-        case Some(node) =>
-          updateFunc(originalParticipant, node)
-        case None =>
-          throw GridException(
-            s"Unable to determine new node for system participant '$originalParticipant'."
-          )
-      }
-    }
-  }
-
-  private def updateGraphics(
-      graphics: GraphicElements,
-      nodeMapping: Map[UUID, NodeInput],
-      lineMapping: Map[UUID, LineInput]
-  ) = Try {
-    val nodes = graphics.getNodeGraphics.asScala.map { nodeGraphic =>
-      nodeMapping.get(nodeGraphic.getNode.getUuid) match {
-        case Some(node) =>
-          new NodeGraphicInput(
-            nodeGraphic.getUuid,
-            nodeGraphic.getGraphicLayer,
-            nodeGraphic.getPath,
-            node,
-            nodeGraphic.getPoint
-          )
-        case None =>
-          throw GridException(
-            s"Unable to determine new node for node graphic '$nodeGraphic'."
-          )
-      }
-    }
-    val lines = graphics.getLineGraphics.asScala.map { lineGraphic =>
-      lineMapping.get(lineGraphic.getLine.getUuid) match {
-        case Some(line) =>
-          new LineGraphicInput(
-            lineGraphic.getUuid,
-            lineGraphic.getGraphicLayer,
-            lineGraphic.getPath,
-            line
-          )
-        case None =>
-          throw GridException(
-            s"Unable to determine new node for line graphic '$lineGraphic'."
-          )
-      }
-    }
-
-    new GraphicElements(nodes.toSet.asJava, lines.toSet.asJava)
   }
 }
