@@ -131,7 +131,7 @@ object RunGuardian
         )
       }
 
-      // save sub grids if the should be put out
+      // store sub grids if they should be put out
       val option = if (finishedGridData.lvExpected) {
         Some(subGridContainer)
       } else None
@@ -167,7 +167,7 @@ object RunGuardian
       childReferences.mvCoordinator.foreach(ctx.unwatch)
       val updatedChildReferences = childReferences.copy(mvCoordinator = None)
 
-      // save sub grids if the should be put out
+      // store sub grids if they should be put out
       val option = if (finishedGridData.mvExpected) {
         Some(subGridContainer)
       } else None
