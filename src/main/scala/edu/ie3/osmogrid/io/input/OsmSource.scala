@@ -9,7 +9,6 @@ package edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Osm
 import edu.ie3.osmogrid.exception.IllegalConfigException
-import edu.ie3.osmogrid.io.input.pbf.Reader
 import edu.ie3.osmogrid.model.SourceFilter
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.scaladsl.ActorContext

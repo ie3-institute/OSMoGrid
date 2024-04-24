@@ -4,9 +4,8 @@
  * Research group Distribution grid planning and operation
  */
 
-package edu.ie3.osmogrid.io.input.pbf
+package edu.ie3.osmogrid.io.input
 
-import edu.ie3.osmogrid.io.input.{InputDataEvent, RepOsm}
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
