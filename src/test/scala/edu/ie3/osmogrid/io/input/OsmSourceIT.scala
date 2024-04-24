@@ -6,15 +6,15 @@
 
 package edu.ie3.osmogrid.io.input
 
+import edu.ie3.osmogrid.io.input.OsmSource.PbfFileSource
+import edu.ie3.osmogrid.model.OsmoGridModel
+import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
+import edu.ie3.osmogrid.model.SourceFilter.LvFilter
+import edu.ie3.test.common.{InputDataCheck, UnitSpec}
 import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}
-import edu.ie3.osmogrid.io.input.OsmSource.PbfFileSource
-import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
-import edu.ie3.osmogrid.model.SourceFilter.LvFilter
-import edu.ie3.osmogrid.model.OsmoGridModel
-import edu.ie3.test.common.{InputDataCheck, UnitSpec}
-import java.nio.file.Paths
+
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
