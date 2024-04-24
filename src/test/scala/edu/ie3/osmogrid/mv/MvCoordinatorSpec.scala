@@ -123,7 +123,7 @@ class MvCoordinatorSpec
           s"Starting medium voltage graph generation."
         ),
         CapturedLogEvent(
-          Level.DEBUG,
+          Level.INFO,
           s"Given area was split into 1 polygon(s)."
         )
       )

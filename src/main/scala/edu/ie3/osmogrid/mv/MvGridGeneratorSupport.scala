@@ -31,8 +31,8 @@ object MvGridGeneratorSupport {
     *   subnet number
     * @param graph
     *   grid graph
-    * @param hvNode
-    *   node to the hv grid
+    * @param mvSlackNode
+    *   option for an uuid of a mv slack node
     * @param nodeConversion
     *   conversion between [[edu.ie3.util.osm.model.OsmEntity.Node]]s and
     *   [[NodeInput]]s
@@ -42,7 +42,7 @@ object MvGridGeneratorSupport {
   def buildGrid(
       n: Int,
       graph: OsmGraph,
-      hvNode: NodeInput,
+      mvSlackNode: Option[UUID],
       nodeConversion: NodeConversion,
       assetInformation: AssetInformation
   ): (SubGridContainer, Map[UUID, NodeInput]) = {
@@ -53,16 +53,13 @@ object MvGridGeneratorSupport {
         .asScala
         .map { node =>
           val nodeInput = nodeConversion.getPSDMNode(node)
+          val uuid = nodeInput.getUuid
           val copy = nodeInput.copy().subnet(n)
 
-          // only the hv node should be a slack node
-          val updatedNode = if (nodeInput.getUuid != hvNode.getUuid) {
-            copy.slack(false).build()
-          } else {
-            copy.slack(true).build()
-          }
+          // necessary if a mv node is a slack node
+          val isSlack = mvSlackNode.contains(uuid)
 
-          updatedNode.getUuid -> updatedNode
+          uuid -> copy.slack(isSlack).build()
         }
         .toMap
 

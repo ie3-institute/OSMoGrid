@@ -226,16 +226,17 @@ object MvCoordinator extends ActorStopSupportStateless {
           )
 
         // get the mv transition nodes
-        val transitionNodes = (hvOption, hvToMv) match {
+        val (transitionNodes, uuidOption) = (hvOption, hvToMv) match {
           case (Some(nodeList), _) =>
             // found mv nodes from hv containers
-            nodeList
+            (nodeList, None)
           case (None, Some(value)) =>
             // using a mv node with a spawned dummy hv node
-            List(value._2)
+            (List(value._2), None)
           case (None, None) =>
             // using a mv node with no dummy hv node
-            hvOption.getOrElse(List(mvToLv(0).copy().slack(true).build()))
+            val mvSlackNode = mvToLv(0).copy().slack(true).build()
+            (hvOption.getOrElse(List(mvSlackNode)), Some(mvSlackNode.getUuid))
         }
 
         val (polygons, notAssignedNodes) =
@@ -245,7 +246,7 @@ object MvCoordinator extends ActorStopSupportStateless {
             ctx
           )
 
-        ctx.log.debug(s"Given area was split into ${polygons.size} polygon(s).")
+        ctx.log.info(s"Given area was split into ${polygons.size} polygon(s).")
 
         if (notAssignedNodes.nonEmpty) {
           ctx.log.warn(
@@ -261,6 +262,7 @@ object MvCoordinator extends ActorStopSupportStateless {
             voronoiCoordinator ! StartMvGraphGeneration(
               index + 1,
               polygon,
+              uuidOption,
               streetGraph,
               assetInformation
             )

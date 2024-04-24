@@ -62,12 +62,15 @@ object ReqMvGrids extends MvRequest
   *   of the graph
   * @param polygon
   *   with components for the graph
+  * @param mvSlackNode
+  *   option for an uuid of a mv slack node
   * @param streetGraph
   *   with all street nodes
   */
 final case class StartMvGraphGeneration(
     nr: Int,
     polygon: VoronoiPolygon,
+    mvSlackNode: Option[UUID],
     streetGraph: OsmGraph,
     assetInformation: AssetInformation
 ) extends MvRequest
@@ -79,14 +82,14 @@ final case class StartMvGraphGeneration(
   * @param graph
   *   with grid structure
   * @param hvNode
-  *   node to hv grid
+  *   option for an uuid a mv slack node
   * @param nodeConversion
   *   for converting osm nodes into corresponding PSDM nodes
   */
 final case class StartMvGraphConversion(
     nr: Int,
     graph: OsmGraph,
-    hvNode: NodeInput,
+    hvNode: Option[UUID],
     nodeConversion: NodeConversion,
     assetInformation: AssetInformation
 ) extends MvRequest
