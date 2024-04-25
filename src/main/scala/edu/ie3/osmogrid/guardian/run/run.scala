@@ -6,14 +6,17 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import org.apache.pekko.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.datamodel.models.input.container.SubGridContainer
+import edu.ie3.datamodel.models.input.container.{
+  GridContainer,
+  SubGridContainer
+}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.{AssetInformation, InputDataEvent}
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.{LvRequest, LvResponse}
 import edu.ie3.osmogrid.mv.{MvRequest, MvResponse}
+import org.apache.pekko.actor.typed.ActorRef
 
 import java.util.UUID
 
@@ -125,7 +128,9 @@ final case class FinishedGridData(
     mvExpected: Boolean,
     lvData: Option[Seq[SubGridContainer]],
     mvData: Option[Seq[SubGridContainer]],
-    toBeUpdated: Option[(Seq[NodeInput], AssetInformation)]
+    hvData: Option[Seq[GridContainer]],
+    mvNodeChanges: Option[Map[UUID, NodeInput]],
+    assetInformation: Option[AssetInformation]
 ) extends StateData {
   def receivedAllData: Boolean = {
     val lv = lvExpected == lvData.isDefined
@@ -137,7 +142,7 @@ final case class FinishedGridData(
 
 object FinishedGridData {
   def empty(lvExpected: Boolean, mvExpected: Boolean): FinishedGridData =
-    FinishedGridData(lvExpected, mvExpected, None, None, None)
+    FinishedGridData(lvExpected, mvExpected, None, None, None, None, None)
 }
 
 /** Message to tell the [[RunGuardian]] to start handling the received results.

@@ -123,17 +123,17 @@ class MvCoordinatorSpec
           s"Starting medium voltage graph generation."
         ),
         CapturedLogEvent(
-          Level.DEBUG,
+          Level.INFO,
           s"Given area was split into 1 polygon(s)."
         )
       )
     }
 
     "send all finished results to the guardian" in {
-      val mvGrid: SubGridContainer = mockSubGrid(100)
+      val mvGrid: SubGridContainer = mockSubGrid(1)
 
       idleTestKit.run(
-        WrappedMvResponse(FinishedMvGridData(mvGrid, Seq.empty))
+        WrappedMvResponse(FinishedMvGridData(mvGrid, Map.empty))
       )
 
       idleTestKit.logEntries() should contain(

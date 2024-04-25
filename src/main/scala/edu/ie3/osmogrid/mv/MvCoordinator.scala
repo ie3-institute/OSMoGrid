@@ -6,13 +6,15 @@
 
 package edu.ie3.osmogrid.mv
 
-import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
-import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
+import edu.ie3.datamodel.models.input.NodeInput
+import edu.ie3.datamodel.models.input.container.JointGridContainer
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.{InputDataEvent, ReqAssetTypes}
 import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
+import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
+import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
 import utils.OsmoGridUtils.spawnDummyHvNode
 import utils.{GridContainerUtils, VoronoiUtils}
 
@@ -27,7 +29,7 @@ object MvCoordinator extends ActorStopSupportStateless {
     * @param cfg
     *   config for the generation process
     * @param inputDataProvider
-    *   reference to the [[InputDataProvider]]
+    *   reference to the [[edu.ie3.osmogrid.io.input.InputDataProvider]]
     * @param runGuardian
     *   reference to the [[RunGuardian]] to report to
     * @return
@@ -214,22 +216,37 @@ object MvCoordinator extends ActorStopSupportStateless {
         val mvToLv = GridContainerUtils.filterLv(lvGrids)
 
         // collect all mv nodes from hv sub grid container or spawn a new mv node
-        val hvToMv = hvGrids match {
-          case Some(grids) =>
-            GridContainerUtils.filterHv(grids)
-          case None =>
-            if (cfg.spawnMissingHvNodes) {
-              List(spawnDummyHvNode(mvToLv))
-            } else {
-              // if no hv node is given, the first mv node is used as a slack node
-              List(mvToLv(0).copy().slack(true).build())
-            }
+        val hvOption = hvGrids.map(GridContainerUtils.filterHv)
+
+        // if no hv subgrid container were provided or no mv nodes could be extracted
+        // check if spawning a dummy node is activated
+        val hvToMv: Option[(JointGridContainer, NodeInput)] =
+          Option.when(hvOption.isEmpty && cfg.spawnMissingHvNodes)(
+            spawnDummyHvNode(mvToLv, assetInformation)
+          )
+
+        // get the mv transition nodes
+        val (transitionNodes, uuidOption) = (hvOption, hvToMv) match {
+          case (Some(nodeList), _) =>
+            // found mv nodes from hv containers
+            (nodeList, None)
+          case (None, Some(value)) =>
+            // using a mv node with a spawned dummy hv node
+            (List(value._2), None)
+          case (None, None) =>
+            // using a mv node with no dummy hv node
+            val mvSlackNode = mvToLv(0).copy().slack(true).build()
+            (hvOption.getOrElse(List(mvSlackNode)), Some(mvSlackNode.getUuid))
         }
 
         val (polygons, notAssignedNodes) =
-          VoronoiUtils.createVoronoiPolygons(hvToMv.toList, mvToLv.toList, ctx)
+          VoronoiUtils.createVoronoiPolygons(
+            transitionNodes.toList,
+            mvToLv.toList,
+            ctx
+          )
 
-        ctx.log.debug(s"Given area was split into ${polygons.size} polygon(s).")
+        ctx.log.info(s"Given area was split into ${polygons.size} polygon(s).")
 
         if (notAssignedNodes.nonEmpty) {
           ctx.log.warn(
@@ -240,22 +257,24 @@ object MvCoordinator extends ActorStopSupportStateless {
         // spawns a voronoi coordinator for each polygon
         val subnets: Set[Int] = polygons.zipWithIndex.map {
           case (polygon, index) =>
-            val nr: Int = 100 + index * 20
-
             val voronoiCoordinator: ActorRef[MvRequest] =
               ctx.spawnAnonymous(VoronoiCoordinator(ctx.self))
             voronoiCoordinator ! StartMvGraphGeneration(
-              nr,
+              index + 1,
               polygon,
+              uuidOption,
               streetGraph,
               assetInformation
             )
 
-            nr
+            index + 1
         }.toSet
 
         // awaiting the psdm grid data
-        awaitResults(runGuardian, MvResultData.empty(subnets, assetInformation))
+        awaitResults(
+          runGuardian,
+          MvResultData.empty(subnets, hvToMv.map(_._1), assetInformation)
+        )
       case (ctx, MvTerminate) =>
         terminate(ctx.log)
       case (ctx, unsupported) =>
@@ -301,6 +320,7 @@ object MvCoordinator extends ActorStopSupportStateless {
 
           runGuardian ! RepMvGrids(
             updated.subGridContainer,
+            updated.dummyHvGrid,
             updated.nodes,
             resultData.assetInformation
           )

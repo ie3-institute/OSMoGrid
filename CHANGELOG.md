@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Workaround for `spotless`: Add module exports to `gradle.properties`
 - Update to PSDM 4.1.0
 - Replaced akka with pekko [#345](https://github.com/ie3-institute/OSMoGrid/issues/345)
+- Improved `SubGridHandling` [#397](https://github.com/ie3-institute/OSMoGrid/issues/397)
 - Switched from `osm4scala` to `openstreetmap.osmosis` [#409](https://github.com/ie3-institute/OSMoGrid/issues/409)
 
 ### Fixed
@@ -43,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `getConnection` in `Connections` will return an option [#392](https://github.com/ie3-institute/OSMoGrid/issues/392)
 - Changed some `ParSeq` in `LvGraphGeneratorSupport` to Seq [#387](https://github.com/ie3-institute/OSMoGrid/issues/387)
 - LV Coordinator dies unexpectedly [#361](https://github.com/ie3-institute/OSMoGrid/issues/361)
+- Some bugs fixed [#405](https://github.com/ie3-institute/OSMoGrid/issues/405)
 
 ### Removed
 - Legacy Java code

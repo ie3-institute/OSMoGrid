@@ -46,6 +46,7 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
               StartMvGraphGeneration(
                 nr,
                 polygon,
+                mvSlackNode,
                 streetGraph,
                 assetInformation
               )
@@ -57,7 +58,7 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
           ctx.self ! StartMvGraphConversion(
             nr,
             graph,
-            polygon.transitionPointToHigherVoltLvl,
+            mvSlackNode,
             nodeConversion,
             assetInformation
           )
@@ -90,7 +91,7 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
             StartMvGraphConversion(
               nr,
               graph,
-              hvNode,
+              mvSlackNode,
               nodeConversion,
               assetInformation
             )
@@ -99,7 +100,7 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
 
         // converting the graph
         val (subgrid, nodes) =
-          buildGrid(nr, graph, hvNode, nodeConversion, assetInformation)
+          buildGrid(nr, graph, mvSlackNode, nodeConversion, assetInformation)
 
         // sending the finished data back to the coordinator
         coordinator ! WrappedMvResponse(

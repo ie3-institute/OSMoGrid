@@ -63,7 +63,8 @@ object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
         -2,
         2
       )
-    )
+    ),
+    Seq.empty
   )
 
   protected def readOsmModel()

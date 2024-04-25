@@ -22,10 +22,16 @@ class MvGridGeneratorSupportSpec
     "build a mv grid correctly" in {
       val graph: OsmGraph = Solver.solve(transitionPoint, connections)
       val (subgrid, nodeChanges) =
-        buildGrid(2, graph, nodeToHv, nodeConversion, assetInformation)
+        buildGrid(
+          2,
+          graph,
+          Some(nodeToHv.getUuid),
+          nodeConversion,
+          assetInformation
+        )
 
       nodeChanges.size shouldBe 7
-      nodeChanges.foreach(n => n.getSubnet shouldBe 2)
+      nodeChanges.foreach(n => n._2.getSubnet shouldBe 2)
 
       subgrid.getSubnet shouldBe 2
       val nodes = subgrid.getRawGrid.getNodes.asScala
