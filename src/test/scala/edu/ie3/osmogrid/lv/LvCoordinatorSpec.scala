@@ -20,7 +20,8 @@ import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
-  Transformer2WTypeInput
+  Transformer2WTypeInput,
+  Transformer3WTypeInput
 }
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
@@ -299,7 +300,8 @@ class LvCoordinatorSpec
             input.RepAssetTypes(
               AssetInformation(
                 Seq.empty[LineTypeInput],
-                Seq.empty[Transformer2WTypeInput]
+                Seq.empty[Transformer2WTypeInput],
+                Seq.empty[Transformer3WTypeInput]
               )
             )
           )

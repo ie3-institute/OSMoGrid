@@ -77,6 +77,24 @@ trait GridSupport {
     10.0.asKiloVolt
   )
 
+  val trafo_hv_to_10kv = new Transformer2WTypeInput(
+    UUID.fromString("b49db20f-b8b5-4265-8318-f669b9d121e9"),
+    "63 MVA 110/10 kV YNd5",
+    0.6146031746031745.asOhm,
+    34.56596500037509.asOhm,
+    63000.0.asKiloVoltAmpere,
+    110.asKiloVolt,
+    10.asKiloVolt,
+    1818.181818181818.asNanoSiemens,
+    1015.6886939330394.asNanoSiemens,
+    1.5.asPercent,
+    0.0.asDegreeGeom,
+    false,
+    0,
+    -9,
+    9
+  )
+
   val trafo_10kV_to_lv = new Transformer2WTypeInput(
     UUID.fromString("a0cbd90a-4e9f-47db-8dca-041d3a288f77"),
     "0.63 MVA 10/0.4 kV Dyn5 ASEA",
@@ -113,9 +131,9 @@ trait GridSupport {
     2
   )
 
-  val dummyTransformer3WType: Transformer3WTypeInput =
+  val trafo_20kV_10kV_LV: Transformer3WTypeInput =
     new Transformer3WTypeInput(
-      UUID.randomUUID(),
+      UUID.fromString("a3732a04-08f4-44db-b059-16ea04d89363"),
       "dummy transformer3W type",
       mock[ComparableQuantity[Power]],
       mock[ComparableQuantity[Power]],
@@ -138,10 +156,36 @@ trait GridSupport {
       2
     )
 
+  val trafo_HV_10kV_LV: Transformer3WTypeInput =
+    new Transformer3WTypeInput(
+      UUID.fromString("2d4934ac-1d5a-4710-b46b-5bdaba78bcda"),
+      "dummy transformer3W type",
+      mock[ComparableQuantity[Power]],
+      mock[ComparableQuantity[Power]],
+      mock[ComparableQuantity[Power]],
+      110.asKiloVolt,
+      10.asKiloVolt,
+      0.4.asKiloVolt,
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricResistance]],
+      mock[ComparableQuantity[ElectricConductance]],
+      mock[ComparableQuantity[ElectricConductance]],
+      mock[ComparableQuantity[Dimensionless]],
+      mock[ComparableQuantity[Angle]],
+      0,
+      -2,
+      2
+    )
+
   val assetInformation: AssetInformation =
     AssetInformation(
       Seq(defaultLineTypeMv),
-      Seq(trafo_10kV_to_lv, trafo_20kV_to_lv)
+      Seq(trafo_10kV_to_lv, trafo_20kV_to_lv, trafo_hv_to_10kv),
+      Seq(trafo_HV_10kV_LV, trafo_20kV_10kV_LV)
     )
 
   /** Return a mocked test grid with given sub grid number
@@ -216,17 +260,27 @@ trait GridSupport {
     // include at least a single node for voltage level determination
     val dummyNodeA = new NodeInput(
       UUID.randomUUID(),
-      s"Dummy node in $subgridNo",
+      s"Dummy nodeA in $subgridNo",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
-      false,
+      true,
       mock[Point],
       voltLvlA,
       subgridNo
     )
 
-    val dummyNodeB = new NodeInput(
+    val dummyNodeB1 = new NodeInput(
       UUID.randomUUID(),
-      s"Dummy node in $subgridNo",
+      s"Dummy nodeB1 in $subgridNo",
+      Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
+      false,
+      mock[Point],
+      voltLvlB,
+      subgridNo
+    )
+
+    val dummyNodeB2 = new NodeInput(
+      UUID.randomUUID(),
+      s"Dummy nodeB2 in $subgridNo",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       false,
       mock[Point],
@@ -238,7 +292,7 @@ trait GridSupport {
       UUID.randomUUID(),
       s"Dummy transformer",
       dummyNodeA,
-      dummyNodeB,
+      dummyNodeB1,
       1,
       mock[Transformer2WTypeInput],
       0,
@@ -246,7 +300,7 @@ trait GridSupport {
     )
 
     val rawGrid = new RawGridElements(
-      Set(dummyNodeA, dummyNodeB).asJava,
+      Set(dummyNodeA, dummyNodeB1, dummyNodeB2).asJava,
       Set.empty[LineInput].asJava,
       Set(dummyTrafo).asJava,
       Set.empty[Transformer3WInput].asJava,

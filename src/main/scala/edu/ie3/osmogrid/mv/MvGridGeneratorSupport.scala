@@ -18,6 +18,7 @@ import tech.units.indriya.ComparableQuantity
 import utils.GridConversion.{NodeConversion, buildGridContainer, buildLine}
 
 import java.util
+import java.util.UUID
 import javax.measure.quantity.ElectricPotential
 import scala.jdk.CollectionConverters._
 
@@ -30,36 +31,37 @@ object MvGridGeneratorSupport {
     *   subnet number
     * @param graph
     *   grid graph
-    * @param hvNode
-    *   node to the hv grid
+    * @param mvSlackNode
+    *   option for an uuid of a mv slack node
     * @param nodeConversion
-    *   conversion between [[Node]]s and [[NodeInput]]s
+    *   conversion between [[edu.ie3.util.osm.model.OsmEntity.Node]]s and
+    *   [[NodeInput]]s
     * @return
     *   a [[SubGridContainer]] and node changes
     */
   def buildGrid(
       n: Int,
       graph: OsmGraph,
-      hvNode: NodeInput,
+      mvSlackNode: Option[UUID],
       nodeConversion: NodeConversion,
       assetInformation: AssetInformation
-  ): (SubGridContainer, Seq[NodeInput]) = {
+  ): (SubGridContainer, Map[UUID, NodeInput]) = {
     // converting the osm nodes to psdm nodes
-    val nodes: Seq[NodeInput] =
+    val nodes: Map[UUID, NodeInput] =
       graph
         .vertexSet()
         .asScala
         .map { node =>
           val nodeInput = nodeConversion.getPSDMNode(node)
+          val uuid = nodeInput.getUuid
           val copy = nodeInput.copy().subnet(n)
 
-          // only the hv node should be a slack node
-          if (nodeInput.getUuid != hvNode.getUuid) {
-            copy.slack(false)
-          }
-          copy.build()
+          // necessary if a mv node is a slack node
+          val isSlack = mvSlackNode.contains(uuid)
+
+          uuid -> copy.slack(isSlack).build()
         }
-        .toSeq
+        .toMap
 
     val lineTypes
         : Map[ComparableQuantity[ElectricPotential], Seq[LineTypeInput]] =
@@ -71,8 +73,12 @@ object MvGridGeneratorSupport {
       .asScala
       .zipWithIndex
       .map { case (e, index) =>
-        val nodeA = nodeConversion.getPSDMNode(graph.getEdgeSource(e))
-        val nodeB = nodeConversion.getPSDMNode(graph.getEdgeTarget(e))
+        val uuidA = nodeConversion.getPSDMNode(graph.getEdgeSource(e)).getUuid
+        val uuidB = nodeConversion.getPSDMNode(graph.getEdgeTarget(e)).getUuid
+
+        // getting the updated nodes
+        val nodeA = nodes(uuidA)
+        val nodeB = nodes(uuidB)
 
         val lineType =
           lineTypes(nodeA.getVoltLvl.getNominalVoltage).headOption.getOrElse(
@@ -95,7 +101,7 @@ object MvGridGeneratorSupport {
 
     val subGridContainer = buildGridContainer(
       s"Subnet_$n",
-      nodes.toSet.asJava,
+      nodes.values.toSet.asJava,
       lines.asJava,
       new util.HashSet[LoadInput]()
     )(n)

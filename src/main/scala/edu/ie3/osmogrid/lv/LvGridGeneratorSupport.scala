@@ -16,7 +16,10 @@ import edu.ie3.datamodel.models.input.connector.`type`.{
 }
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.datamodel.models.input.system.LoadInput
-import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
+import edu.ie3.datamodel.models.voltagelevels.{
+  GermanVoltageLevelUtils,
+  VoltageLevel
+}
 import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.BuildingGraphConnection
@@ -68,9 +71,9 @@ object LvGridGeneratorSupport extends LazyLogging {
     *   the osm graph to traverse
     * @param buildingGraphConnections
     *   the building connections to the street graph
-    * @param ratedVoltageLv
+    * @param lvVoltage
     *   the rated low voltage of the grid to build
-    * @param ratedVoltageMv
+    * @param mvVoltage
     *   the rated medium voltage of the grid to build
     * @param considerHouseConnectionPoints
     *   whether or not to build distinct lines to houses
@@ -86,8 +89,8 @@ object LvGridGeneratorSupport extends LazyLogging {
   def buildGrid(
       osmGraph: OsmGraph,
       buildingGraphConnections: ParSeq[BuildingGraphConnection],
-      ratedVoltageLv: ComparableQuantity[ElectricPotential],
-      ratedVoltageMv: ComparableQuantity[ElectricPotential],
+      lvVoltage: VoltageLevel,
+      mvVoltage: VoltageLevel,
       considerHouseConnectionPoints: Boolean,
       loadSimultaneousFactor: Double,
       lineType: LineTypeInput,
@@ -97,8 +100,7 @@ object LvGridGeneratorSupport extends LazyLogging {
     val nodesWithBuildings: ParMap[Node, BuildingGraphConnection] =
       buildingGraphConnections.map(bgc => (bgc.graphConnectionNode, bgc)).toMap
 
-    val voltageLevel = new VoltageLevel("lv", ratedVoltageLv)
-    val nodeCreator = buildNode(voltageLevel) _
+    val nodeCreator = buildNode(lvVoltage) _
 
     val gridElements = osmGraph
       .vertexSet()
@@ -192,17 +194,33 @@ object LvGridGeneratorSupport extends LazyLogging {
       lineInputs,
       gridName,
       loadSimultaneousFactor,
-      ratedVoltageMv,
+      mvVoltage,
       transformer2WTypeInput
     )
   }
 
+  /** Method for clustering lv grids.
+    *
+    * @param gridElements
+    *   elements containing [[LoadInput]]s and [[NodeInput]]s
+    * @param lineInputs
+    *   set of [[LineInput]]s
+    * @param gridNameBase
+    *   name of the grid
+    * @param loadSimultaneousFactor
+    *   simultaneous factor for loads
+    * @param mvVoltage
+    *   the rated medium voltage of the grid to build
+    * @param transformer2WTypeInput
+    *   type used for two winding transformers
+    * @return
+    */
   private def clusterLvGrids(
       gridElements: GridElements,
       lineInputs: Set[LineInput],
       gridNameBase: String,
       loadSimultaneousFactor: Double,
-      ratedVoltageMv: ComparableQuantity[ElectricPotential],
+      mvVoltage: VoltageLevel,
       transformer2WTypeInput: Transformer2WTypeInput
   ): List[SubGridContainer] = {
     val cluster: List[Cluster] = Clustering
@@ -224,9 +242,11 @@ object LvGridGeneratorSupport extends LazyLogging {
           nodes.contains(nodeA) && nodes.contains(nodeB)
       }
 
-      val voltageLevel = new VoltageLevel("mv", ratedVoltageMv)
+      val loads = gridElements.loads.filter { load =>
+        nodes.contains(load.getNode)
+      }
 
-      val mvNode = buildNode(voltageLevel)(
+      val mvNode = buildNode(mvVoltage)(
         s"Mv node to lv node ${substation.getId}",
         substation.getGeoPosition,
         isSlack = true
@@ -241,7 +261,7 @@ object LvGridGeneratorSupport extends LazyLogging {
         gridNameBase,
         allNodes.asJava,
         lines.values.toSet.asJava,
-        gridElements.loads.asJava
+        loads.asJava
       )(transformer2Ws = Set(transformer2W).asJava)
     }
   }

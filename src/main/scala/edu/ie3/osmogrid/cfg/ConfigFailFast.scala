@@ -36,13 +36,11 @@ object ConfigFailFast extends LazyLogging {
     generation match {
       case Generation(lv, mv) =>
         /* Check, that at least one config is set */
-        if (Vector(lv).count(_.isDefined) < 1)
+        val defined = Seq(lv, mv).count(_.isDefined)
+
+        if (defined < 1)
           throw IllegalConfigException(
-            "At least one lv voltage level generation config has to be defined."
-          )
-        if (Vector(mv).count(_.isDefined) < 1)
-          throw IllegalConfigException(
-            "At least one mv voltage level generation config has to be defined."
+            "At least one generation config has to be defined."
           )
 
         /* Check single configs */

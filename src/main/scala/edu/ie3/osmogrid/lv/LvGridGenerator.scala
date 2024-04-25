@@ -9,6 +9,7 @@ package edu.ie3.osmogrid.lv
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.datamodel.models.input.container.SubGridContainer
+import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage
 import edu.ie3.osmogrid.exception.IllegalStateException
@@ -54,12 +55,13 @@ object LvGridGenerator extends LazyLogging {
         )
       )
 
-      val lvVoltage = voltages.lv.default.asKiloVolt
-      val mvVoltage = voltages.mv.default.asKiloVolt
+      val lvVoltage = new VoltageLevel("lv", voltages.lv.default.asKiloVolt)
+      val mvVoltage = new VoltageLevel("mv", voltages.mv.default.asKiloVolt)
 
       val transformer2WTypes = assetInformation.transformerTypes
         .find { t =>
-          t.getvRatedA() == mvVoltage && t.getvRatedB() == lvVoltage
+          t.getvRatedA() == mvVoltage.getNominalVoltage && t
+            .getvRatedB() == lvVoltage.getNominalVoltage
         }
         .getOrElse(
           throw IllegalStateException(

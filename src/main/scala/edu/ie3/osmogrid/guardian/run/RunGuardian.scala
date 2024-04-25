@@ -115,49 +115,70 @@ object RunGuardian
     case (
           ctx,
           WrappedLvCoordinatorResponse(
-            RepLvGrids(subGridContainers, streetGraph)
+            RepLvGrids(subGridContainer, streetGraph)
           )
         ) =>
       ctx.log.info(s"Received lv grids.")
 
       // lv coordinator is now allowed to die in peace
       childReferences.lvCoordinator.foreach(ctx.unwatch)
+      val updatedChildReferences = childReferences.copy(lvCoordinator = None)
 
       // if a mv coordinator is present, send the lv results to the mv coordinator
       childReferences.mvCoordinator.foreach { mv =>
         mv ! WrappedMvResponse(
-          ProvidedLvData(subGridContainers, streetGraph)
+          ProvidedLvData(subGridContainer, streetGraph)
         )
       }
 
-      val updated = finishedGridData.copy(lvData = Some(subGridContainers))
+      // store sub grids if they should be put out
+      val option = if (finishedGridData.lvExpected) {
+        Some(subGridContainer)
+      } else None
+
+      val updated = finishedGridData.copy(lvData = option)
 
       // check if all possible data was received
       if (updated.receivedAllData) {
 
         // if all data was received,
         ctx.self ! HandleGridResults
-        Behaviors.same
+        running(runGuardianData, updatedChildReferences, updated)
       } else {
 
         // if some expected data is still missing, keep waiting for missing data
-        running(runGuardianData, childReferences, updated)
+        running(runGuardianData, updatedChildReferences, updated)
       }
 
     case (
           ctx,
           WrappedMvCoordinatorResponse(
-            RepMvGrids(subGridContainer, nodeChanges, assetInformation)
+            RepMvGrids(
+              subGridContainer,
+              dummyHvGrid,
+              nodeChanges,
+              assetInformation
+            )
           )
         ) =>
       ctx.log.info(s"Received mv grids.")
 
       // mv coordinator is now allowed to die in peace
       childReferences.mvCoordinator.foreach(ctx.unwatch)
+      val updatedChildReferences = childReferences.copy(mvCoordinator = None)
+
+      // store sub grids if they should be put out
+      val option = if (finishedGridData.mvExpected) {
+        Some(subGridContainer)
+      } else None
+
+      val nodeUpdates = Option.when(nodeChanges.nonEmpty)(nodeChanges)
 
       val updated = finishedGridData.copy(
-        mvData = Some(subGridContainer),
-        toBeUpdated = Some((nodeChanges, assetInformation))
+        mvData = option,
+        hvData = dummyHvGrid.map(Seq(_)), // converting to sequence
+        mvNodeChanges = nodeUpdates,
+        assetInformation = Some(assetInformation)
       )
 
       // check if all possible data was received
@@ -165,11 +186,11 @@ object RunGuardian
 
         // if all data was received,
         ctx.self ! HandleGridResults
-        Behaviors.same
+        running(runGuardianData, updatedChildReferences, updated)
       } else {
 
         // if some expected data is still missing, keep waiting for missing data
-        running(runGuardianData, childReferences, updated)
+        running(runGuardianData, updatedChildReferences, updated)
       }
 
     case (ctx, HandleGridResults) =>
@@ -178,13 +199,14 @@ object RunGuardian
       handleResults(
         finishedGridData.lvData,
         finishedGridData.mvData,
-        None,
-        finishedGridData.toBeUpdated,
+        finishedGridData.hvData,
+        finishedGridData.mvNodeChanges,
+        finishedGridData.assetInformation,
         childReferences.resultListeners,
         runGuardianData.msgAdapters
       )(ctx.log)
 
-      Behaviors.same
+      stopping(stopChildren(runGuardianData.runId, childReferences, ctx))
     case (ctx, ResultEventListenerDied) =>
       // we wait for exact one listener as we only started one
       /* Start coordinated shutdown */
