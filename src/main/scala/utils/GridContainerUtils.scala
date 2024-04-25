@@ -6,7 +6,7 @@
 
 package utils
 
-import edu.ie3.datamodel.models.input.NodeInput
+import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
 import edu.ie3.datamodel.models.input.container._
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage
@@ -82,6 +82,26 @@ object GridContainerUtils {
         )
         .toList
     })
+  }
+
+  /** Method to create a dummy grid from the given [[AssetInput]]s.
+    * @param assets
+    *   given assets
+    * @param gridName
+    *   name of the grid
+    * @return
+    *   a dummy grid
+    */
+  def from(
+      assets: Seq[AssetInput],
+      gridName: String = "dummy grid"
+  ): JointGridContainer = {
+    new JointGridContainer(
+      gridName,
+      new RawGridElements(assets.asJava),
+      new SystemParticipants(List.empty[SystemParticipants].asJava),
+      new GraphicElements(List.empty[GraphicElements].asJava)
+    )
   }
 
   /** Method for combining two [[JointGridContainer]] into a single one.

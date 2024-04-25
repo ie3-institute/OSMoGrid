@@ -144,12 +144,14 @@ class ConfigFailFastSpec extends UnitSpec {
       "fail" in {
         OsmoGridConfigFactory.parseWithoutFallback {
           // (?m) allows matching against multiline strings so the anchors ^ and $ match individual lines not the whole string
-          viableConfigurationString.replaceAll("(?m)^.*generation.lv.*$", "")
+          viableConfigurationString
+            .replaceAll("(?m)^.*generation.lv.*$", "")
+            .replaceAll("(?m)^.*generation.mv.*$", "")
         } match {
           case Success(cfg) =>
             ConfigFailFast.check(cfg) match {
               case Failure(exception) =>
-                exception.getMessage shouldBe "At least one lv voltage level generation config has to be defined."
+                exception.getMessage shouldBe "At least one generation config has to be defined."
               case Success(_) =>
                 fail("Config check succeeded, but was meant to fail.")
             }
