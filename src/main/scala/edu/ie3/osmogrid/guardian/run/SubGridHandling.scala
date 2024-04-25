@@ -119,7 +119,7 @@ trait SubGridHandling {
   ): Seq[GridContainer] = {
     // assigning unique subgrid numbers to all given grids
     val nodeUpdateMap =
-      assignSubNetNumbers(lvData, mvData, mvNodeChanges, hvData)
+      updateNodeSubNetNumbers(lvData, mvData, mvNodeChanges, hvData)
 
     // updating all grids with the updated nodes
     Seq(lvData, mvData, hvData).flatten.flatten.map(grid =>
@@ -142,7 +142,7 @@ object SubGridHandling {
     * @return
     *   a map: old node to new node
     */
-  private def assignSubNetNumbers(
+  private def updateNodeSubNetNumbers(
       lvGrids: Option[Seq[GridContainer]],
       mvGrids: Option[Seq[GridContainer]],
       mvNodeChanges: Option[Map[UUID, NodeInput]],
