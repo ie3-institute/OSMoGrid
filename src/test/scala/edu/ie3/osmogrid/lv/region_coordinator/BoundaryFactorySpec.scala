@@ -9,10 +9,8 @@ package edu.ie3.osmogrid.lv.region_coordinator
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.test.common.UnitSpec
 
-import scala.collection.parallel.ParSet
 import scala.io.Source
 import scala.util.Using
-import scala.collection.parallel.CollectionConverters._
 
 class BoundaryFactorySpec extends UnitSpec {
 
@@ -32,6 +30,7 @@ class BoundaryFactorySpec extends UnitSpec {
             )
             .values
             .map(_.toString)
+            .seq
             .toSet
 
         actualPolygons shouldBe polygons
@@ -48,6 +47,7 @@ class BoundaryFactorySpec extends UnitSpec {
             )
             .values
             .map(_.toString)
+            .seq
             .toSet
 
         actualPolygons shouldBe polygons
@@ -64,6 +64,7 @@ class BoundaryFactorySpec extends UnitSpec {
             )
             .values
             .map(_.toString)
+            .seq
             .toSet
 
         actualPolygons shouldBe polygons
@@ -71,11 +72,11 @@ class BoundaryFactorySpec extends UnitSpec {
     }
   }
 
-  private def getFileLines(resource: String): ParSet[String] = {
+  private def getFileLines(resource: String): Set[String] = {
     val file = getClass.getResource(resource)
     assert(file != null)
     Using(Source.fromFile(file.toURI)) { source =>
-      source.getLines().toSet.par
+      source.getLines().toSet
     }.success.get
   }
 }

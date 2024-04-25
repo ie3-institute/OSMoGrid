@@ -6,6 +6,7 @@
 
 package edu.ie3.osmogrid.io.input
 
+import edu.ie3.osmogrid.exception.{InputDataException, PbfReadFailedException}
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
@@ -124,7 +125,9 @@ case class ReaderSink(
       case Success(model: OsmoGridModel) =>
         requester ! RepOsm(model)
       case Failure(exception) =>
-        requester ! OsmReadFailed(exception)
+        requester ! OsmReadFailed(
+          PbfReadFailedException(s"Reading failed due to: $exception")
+        )
     }
   }
 

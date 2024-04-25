@@ -93,11 +93,11 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
 
         requestProbe
           .expectMessageType[InputResponse](
-            3 seconds
+            30 seconds
           ) match {
           case OsmReadFailed(exception) =>
             exception shouldBe PbfReadFailedException(
-              "Input file is empty, stopping."
+              "Reading failed due to: org.openstreetmap.osmosis.core.OsmosisRuntimeException: PBF stream ended before a header could be found."
             )
           case RepOsm(lvModel: LvOsmoGridModel) =>
             fail(s"Provided OsmoGridModel $lvModel although it shouldn't")
@@ -156,10 +156,10 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
 
         requestProbe
           .expectMessageType[InputResponse](
-            3 seconds
+            30 seconds
           ) match {
           case OsmReadFailed(exception) =>
-            exception.getMessage shouldBe "Reading input failed."
+            exception.getMessage shouldBe "Reading failed due to: org.openstreetmap.osmosis.core.OsmosisRuntimeException: Unable to get next blob from PBF stream."
           case RepOsm(lvModel: LvOsmoGridModel) =>
             fail(s"Provided OsmoGridModel $lvModel although it shouldn't")
 

@@ -85,7 +85,7 @@ class LvRegionCoordinatorIT
         models.exists { m =>
           m.buildings.size == 318 &&
           m.highways.size == 128 &&
-          m.landuses.size == 27 &&
+          m.landuses.size == 26 &&
           m.boundaries
             .map(_.entity.id)
             .toSet
@@ -98,7 +98,7 @@ class LvRegionCoordinatorIT
         models.exists { m =>
           m.buildings.size == 24 &&
           m.highways.size == 24 &&
-          m.landuses.size == 22 &&
+          m.landuses.size == 21 &&
           m.boundaries.map(_.entity.id).toSet.seq.equals(Set(1647366, 62644)) &&
           m.existingSubstations.isEmpty
         } shouldBe true

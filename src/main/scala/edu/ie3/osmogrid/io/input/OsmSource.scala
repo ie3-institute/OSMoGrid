@@ -8,13 +8,17 @@ package edu.ie3.osmogrid.io.input
 
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Osm
-import edu.ie3.osmogrid.exception.IllegalConfigException
+import edu.ie3.osmogrid.exception.{
+  IllegalConfigException,
+  PbfReadFailedException
+}
 import edu.ie3.osmogrid.model.SourceFilter
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import org.openstreetmap.osmosis.pbf2.v0_6.PbfReader
 
 import java.io.{File, FileInputStream}
+import scala.util.{Failure, Try}
 
 sealed trait OsmSource {
 
@@ -48,7 +52,14 @@ object OsmSource {
           Runtime.getRuntime.availableProcessors()
         )
       reader.setSink(sink)
-      reader.run()
+
+      Try(reader.run()) match {
+        case Failure(exception) =>
+          requester ! OsmReadFailed(
+            PbfReadFailedException(s"Reading failed due to: $exception")
+          )
+        case _ =>
+      }
     }
 
     def close(): Unit = {
