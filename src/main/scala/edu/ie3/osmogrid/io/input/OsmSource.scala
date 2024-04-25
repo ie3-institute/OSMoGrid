@@ -40,7 +40,7 @@ object OsmSource {
     ): Unit = {
       val inputStream = new FileInputStream(new File(filePath))
 
-      val sink = Reader(inputStream, filter, requester, ctx.log)
+      val sink = ReaderSink(inputStream, filter, requester, ctx.log)
 
       val reader =
         new PbfReader(

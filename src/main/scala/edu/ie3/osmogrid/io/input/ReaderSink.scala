@@ -7,7 +7,7 @@
 package edu.ie3.osmogrid.io.input
 
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
-import edu.ie3.osmogrid.model.SourceFilter
+import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
 import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
 import edu.ie3.util.osm.model.{OsmEntity => UtilsEntity}
@@ -21,6 +21,7 @@ import java.io.FileInputStream
 import java.util
 import scala.collection.parallel.CollectionConverters._
 import scala.jdk.CollectionConverters._
+import scala.util.{Failure, Success, Try}
 
 /** A [[Sink]] that will process the read data.
   * @param inputStream
@@ -38,7 +39,7 @@ import scala.jdk.CollectionConverters._
   * @param relations
   *   list of processed relations
   */
-case class Reader(
+case class ReaderSink(
     inputStream: FileInputStream,
     filter: SourceFilter,
     requester: ActorRef[InputDataEvent],
@@ -106,18 +107,25 @@ case class Reader(
 
   override def complete(): Unit = {
 
-    val osmContainer = ParOsmContainer(
-      nodes.asScala.toSeq.par,
-      ways.asScala.toSeq.par,
-      relations.asScala.toSeq.par
-    )
+    val osmoGridModel = Try {
+      val osmContainer = ParOsmContainer(
+        nodes.asScala.toSeq.par,
+        ways.asScala.toSeq.par,
+        relations.asScala.toSeq.par
+      )
 
-    val osmoGridModel = filter match {
-      case lvFilter: SourceFilter.LvFilter =>
-        LvOsmoGridModel(osmContainer, lvFilter, filterNodes = false)
+      filter match {
+        case lvFilter: SourceFilter.LvFilter =>
+          LvOsmoGridModel(osmContainer, lvFilter, filterNodes = false)
+      }
     }
 
-    requester ! RepOsm(osmoGridModel)
+    osmoGridModel match {
+      case Success(model: OsmoGridModel) =>
+        requester ! RepOsm(model)
+      case Failure(exception) =>
+        requester ! OsmReadFailed(exception)
+    }
   }
 
   override def close(): Unit = inputStream.close()
