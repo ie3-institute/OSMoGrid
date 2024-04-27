@@ -45,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed some `ParSeq` in `LvGraphGeneratorSupport` to Seq [#387](https://github.com/ie3-institute/OSMoGrid/issues/387)
 - LV Coordinator dies unexpectedly [#361](https://github.com/ie3-institute/OSMoGrid/issues/361)
 - Some bugs fixed [#405](https://github.com/ie3-institute/OSMoGrid/issues/405)
+- Fixed number of parallel lines from zero to one [#419](https://github.com/ie3-institute/OSMoGrid/issues/419)
 
 ### Removed
 - Legacy Java code
