@@ -12,8 +12,10 @@ import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.{
   buildConnectedGridGraphs
 }
 import edu.ie3.osmogrid.model.OsmTestData
+import edu.ie3.osmogrid.model.OsmoGridModel.EnhancedOsmEntity
 import edu.ie3.test.common.UnitSpec
 import edu.ie3.util.geo.GeoUtils
+import edu.ie3.util.geo.GeoUtils.orthogonalProjection
 import edu.ie3.util.geo.RichGeometries.RichCoordinate
 import edu.ie3.util.osm.model.OsmEntity.Node
 import edu.ie3.util.quantities.QuantityMatchers.equalWithTolerance
@@ -22,13 +24,11 @@ import org.jgrapht.alg.connectivity.ConnectivityInspector
 import org.locationtech.jts.geom.Coordinate
 import org.scalatestplus.mockito.MockitoSugar.mock
 import tech.units.indriya.ComparableQuantity
-import edu.ie3.util.geo.GeoUtils.orthogonalProjection
 import tech.units.indriya.unit.Units
 import utils.OsmoGridUtils.buildStreetGraph
 
-import collection.parallel.CollectionConverters.seqIsParallelizable
 import javax.measure.quantity.Length
-import scala.collection.parallel.ParSeq
+import scala.collection.parallel.CollectionConverters.seqIsParallelizable
 import scala.util.{Failure, Success, Try}
 
 class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
@@ -120,7 +120,8 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
           )
         buildingGraphConnections.size shouldBe 2
         buildingGraphConnections.foreach {
-          case bgc: BuildingGraphConnection if bgc.building == ways.building1 =>
+          case bgc: BuildingGraphConnection
+              if bgc.building.entity == ways.building1 =>
             val highWayCoordinateA = GeoUtils.buildCoordinate(
               nodes.highway1Node1.latitude,
               nodes.highway1Node1.longitude
@@ -139,7 +140,8 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
                 highWayCoordinateB,
                 1e-3
               ) shouldBe true
-          case bgc: BuildingGraphConnection if bgc.building == ways.building2 =>
+          case bgc: BuildingGraphConnection
+              if bgc.building.entity == ways.building2 =>
             bgc.highwayNodeA shouldBe nodes.highway2Node1
             bgc.highwayNodeB shouldBe nodes.highway2Node2
             bgc.graphConnectionNode shouldBe nodes.highway2Node2
@@ -194,7 +196,16 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
           None
         )
         val buildingGraphConnection = BuildingGraphConnection(
-          ways.building1,
+          EnhancedOsmEntity(
+            ways.building1,
+            Seq(
+              nodes.building1Node1,
+              nodes.building1Node2,
+              nodes.building1Node3,
+              nodes.building1Node4,
+              nodes.building1Node1
+            )
+          ),
           mock[Coordinate],
           10.asKiloWatt,
           nodes.highway1Node1,

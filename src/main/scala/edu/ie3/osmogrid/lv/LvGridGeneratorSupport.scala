@@ -125,7 +125,7 @@ object LvGridGeneratorSupport extends LazyLogging {
               false
             )
             val loadCreator = buildLoad(
-              "Load of building: " + buildingGraphConnection.building.id.toString,
+              "Load of building: " + buildingGraphConnection.building.entity.id.toString,
               buildingGraphConnection.buildingPower
             ) _
             if (considerHouseConnectionPoints) {

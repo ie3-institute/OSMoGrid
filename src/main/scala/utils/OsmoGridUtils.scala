@@ -56,12 +56,8 @@ object OsmoGridUtils {
   def isInsideLanduse(
       buildingCenter: Coordinate,
       landuses: ParSeq[Polygon]
-  ): Boolean = {
-    for (landuse <- landuses) {
-      if (landuse.containsCoordinate(buildingCenter)) return true
-    }
-    false
-  }
+  ): Boolean =
+    landuses.exists(_.containsCoordinate(buildingCenter))
 
   def safeBuildPolygon(
       closedWay: ClosedWay,

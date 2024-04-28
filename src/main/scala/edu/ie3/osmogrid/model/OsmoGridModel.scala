@@ -25,17 +25,47 @@ sealed trait OsmoGridModel {
 
 object OsmoGridModel {
 
+  def filterForSubstations(
+      entities: ParSeq[EnhancedOsmEntity]
+  ): (ParSeq[EnhancedOsmEntity], Map[Long, Node]) = {
+    val (matchedEntities, matchedSubentities) = entities.foldLeft(
+      Seq.empty[EnhancedOsmEntity],
+      Map.empty[Long, Node]
+    ) {
+      case (
+            (matchedEntities, matchedSubEntities),
+            curEntity: EnhancedOsmEntity
+          ) =>
+        curEntity.entity match {
+          case _: ClosedWay =>
+            val subEntities = curEntity.subEntities collect {
+              case (id: Long, subEntity: Node) => id -> subEntity
+            }
+            (
+              matchedEntities.appended(curEntity),
+              matchedSubEntities ++ subEntities
+            )
+
+          case entity: Node =>
+            (
+              matchedEntities.appended(curEntity),
+              matchedSubEntities ++ Map(entity.id -> entity)
+            )
+          case _ => (matchedEntities, matchedSubEntities)
+        }
+    }
+    (matchedEntities.par, matchedSubentities)
+  }
+
   def filterForWays(
       entities: ParSeq[EnhancedOsmEntity]
-  ): (ParSeq[Way], Map[Long, Node]) = {
+  ): (ParSeq[Way], Map[Long, Node]) =
     filterForOsmType[Way, Node](entities)
-  }
 
   def filterForClosedWays(
       entities: ParSeq[EnhancedOsmEntity]
-  ): (ParSeq[ClosedWay], Map[Long, Node]) = {
+  ): (ParSeq[ClosedWay], Map[Long, Node]) =
     filterForOsmType[ClosedWay, Node](entities)
-  }
 
   def filterForOsmType[E <: OsmEntity: ClassTag, S <: OsmEntity: ClassTag](
       entities: ParSeq[EnhancedOsmEntity]
