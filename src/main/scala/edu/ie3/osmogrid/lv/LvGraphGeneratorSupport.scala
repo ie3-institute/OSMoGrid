@@ -9,7 +9,8 @@ package edu.ie3.osmogrid.lv
 import edu.ie3.osmogrid.exception.OsmDataException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.model.OsmoGridModel
-import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
+import edu.ie3.osmogrid.model.OsmoGridModel.{EnhancedOsmEntity, LvOsmoGridModel}
+import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.geo.GeoUtils.{buildCoordinate, orthogonalProjection}
 import edu.ie3.util.geo.RichGeometries.{RichCoordinate, RichPolygon}
 import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
@@ -24,6 +25,8 @@ import utils.OsmoGridUtils.{
   isInsideLanduse,
   safeBuildPolygon
 }
+
+import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
 
 import java.util.UUID
 import javax.measure.quantity.{Length, Power}
@@ -56,7 +59,7 @@ object LvGraphGeneratorSupport {
     *   the node that connects the building to the grid
     */
   final case class BuildingGraphConnection(
-      building: ClosedWay,
+      building: EnhancedOsmEntity,
       center: Coordinate,
       buildingPower: ComparableQuantity[Power],
       highwayNodeA: Node,
@@ -83,11 +86,11 @@ object LvGraphGeneratorSupport {
         else if (this.graphConnectionNode == this.highwayNodeA)
           "Highway node: " + highwayNodeA.id
         else "Highway node: " + highwayNodeB.id
-      } else "Building connection: " + this.building.id
+      } else "Building connection: " + this.building.entity.id
     }
 
     def createBuildingNodeName(): String = {
-      "Building connection: " + this.building.id
+      "Building connection: " + this.building.entity.id
     }
   }
 
@@ -116,7 +119,7 @@ object LvGraphGeneratorSupport {
     val (landuses, landUseNodes) =
       OsmoGridModel.filterForClosedWays(osmoGridModel.landuses)
     val (substations, substationNodes) =
-      OsmoGridModel.filterForClosedWays(osmoGridModel.existingSubstations)
+      OsmoGridModel.filterForSubstations(osmoGridModel.existingSubstations)
     val buildingGraphConnections = calcBuildingGraphConnections(
       landuses,
       building,
@@ -162,7 +165,7 @@ object LvGraphGeneratorSupport {
   private def calcBuildingGraphConnections(
       landuses: ParSeq[ClosedWay],
       buildings: ParSeq[ClosedWay],
-      substations: ParSeq[ClosedWay],
+      substations: ParSeq[EnhancedOsmEntity],
       highways: ParSeq[Way],
       nodes: Map[Long, Node],
       powerDensity: ComparableQuantity[Irradiance],
@@ -170,11 +173,31 @@ object LvGraphGeneratorSupport {
   ): Seq[BuildingGraphConnection] = {
     val landusePolygons =
       landuses.map(closedWay => safeBuildPolygon(closedWay, nodes))
-    (buildings ++ substations).flatMap(building => {
-      val buildingPolygon = safeBuildPolygon(building, nodes)
-      val buildingCenter: Coordinate = buildingPolygon.getCentroid.getCoordinate
+
+    val enhancedOsmEntities = buildings.map(entity =>
+      EnhancedOsmEntity(entity, Seq.empty)
+    ) ++ substations
+
+    enhancedOsmEntities.flatMap { enhancedOsmEntity =>
+      val (center, load) = enhancedOsmEntity.entity match {
+        case closedWay: ClosedWay =>
+          val buildingPolygon = safeBuildPolygon(closedWay, nodes)
+
+          // calculate load of house
+          val load =
+            calcHouseholdPower(buildingPolygon.calcAreaOnEarth, powerDensity)
+
+          (buildingPolygon.getCentroid.getCoordinate, load)
+
+        case node: Node =>
+          (
+            GeoUtils.buildCoordinate(node.latitude, node.longitude),
+            0.asKiloWatt
+          )
+      }
+
       // check if building is inside residential area
-      if (isInsideLanduse(buildingCenter, landusePolygons)) {
+      if (isInsideLanduse(center, landusePolygons)) {
 
         val closest = highways.flatMap(highway => {
           // get closest to each highway section
@@ -192,7 +215,7 @@ object LvGraphGeneratorSupport {
                 val (distance, node) = getClosest(
                   nodeA,
                   nodeB,
-                  buildingCenter,
+                  center,
                   minDistance
                 ).getOrElse(
                   throw OsmDataException(
@@ -207,22 +230,19 @@ object LvGraphGeneratorSupport {
         val closestOverall = closest minBy {
           _._1
         }
-        // calculate load of house
-        val load =
-          calcHouseholdPower(buildingPolygon.calcAreaOnEarth, powerDensity)
         Some(
           BuildingGraphConnection(
-            building,
-            buildingCenter,
+            enhancedOsmEntity,
+            center,
             load,
             closestOverall._3,
             closestOverall._4,
             closestOverall._2,
-            substations.toSet.contains(building)
+            substations.toSet.contains(enhancedOsmEntity)
           )
         )
       } else None
-    })
+    }
   }.seq.toSeq
 
   /** Get closest point of the buildings center to the highway section spanning
@@ -306,7 +326,7 @@ object LvGraphGeneratorSupport {
       }
       if (considerBuildingConnections) {
         val buildingNode = Node(
-          bgc.building.id,
+          bgc.building.entity.id,
           bgc.center.y,
           bgc.center.x,
           Map.empty,
