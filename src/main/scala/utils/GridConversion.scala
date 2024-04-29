@@ -165,7 +165,7 @@ object GridConversion {
       id,
       firstNode,
       secondNode,
-      0,
+      1,
       lineType,
       GeoUtils.calcHaversine(geoPosition),
       geoPosition,
