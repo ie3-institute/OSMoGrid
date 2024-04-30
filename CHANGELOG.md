@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `MvCoordinator`
 - Switched from `akka` to `pekko`
 - Adding the clustering of low voltage grids
+- Consider substations as type `Node` [#411](https://github.com/ie3-institute/OSMoGrid/issues/411)
 
 ### Changed
 - Rely on Java 17
@@ -37,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update to PSDM 4.1.0
 - Replaced akka with pekko [#345](https://github.com/ie3-institute/OSMoGrid/issues/345)
 - Improved `SubGridHandling` [#397](https://github.com/ie3-institute/OSMoGrid/issues/397)
+- Switched from `osm4scala` to `openstreetmap.osmosis` [#409](https://github.com/ie3-institute/OSMoGrid/issues/409)
 - Changed transformer input parameter to PSDM requirements [#417](https://github.com/ie3-institute/OSMoGrid/issues/417)
 
 ### Fixed
@@ -45,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed some `ParSeq` in `LvGraphGeneratorSupport` to Seq [#387](https://github.com/ie3-institute/OSMoGrid/issues/387)
 - LV Coordinator dies unexpectedly [#361](https://github.com/ie3-institute/OSMoGrid/issues/361)
 - Some bugs fixed [#405](https://github.com/ie3-institute/OSMoGrid/issues/405)
+- Fixed number of parallel lines from zero to one [#419](https://github.com/ie3-institute/OSMoGrid/issues/419)
 
 ### Removed
 - Legacy Java code

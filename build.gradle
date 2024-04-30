@@ -79,7 +79,9 @@ dependencies {
   implementation "com.github.scopt:scopt_$scalaVersion:4.1.0" // cmd args parser
 
   // osm4scala
-  implementation 'com.acervera.osm4scala:osm4scala-core_2.13:1.0.11'
+  implementation "org.openstreetmap.osmosis:osmosis-core:0.49.2"
+  implementation "org.openstreetmap.osmosis:osmosis-pbf2:0.49.2"
+
 
   // ie³ power system utils
   implementation('com.github.ie3-institute:PowerSystemUtils:2.2.1') {
