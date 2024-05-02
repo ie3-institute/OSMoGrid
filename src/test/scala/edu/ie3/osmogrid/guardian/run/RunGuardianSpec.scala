@@ -114,14 +114,14 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           .expectEffectType[WatchedWith[ResultListenerProtocol, RunWatch]]
 
         idleTestKit.expectEffectPF { case Spawned(_: Behavior[_], name, _) =>
-          name shouldBe s"MvCoordinator_$runId"
-        }
-        idleTestKit.expectEffectType[WatchedWith[MvRequest, RunWatch]]
-
-        idleTestKit.expectEffectPF { case Spawned(_: Behavior[_], name, _) =>
           name shouldBe s"LvCoordinator_$runId"
         }
         idleTestKit.expectEffectType[WatchedWith[LvRequest, RunWatch]]
+
+        idleTestKit.expectEffectPF { case Spawned(_: Behavior[_], name, _) =>
+          name shouldBe s"MvCoordinator_$runId"
+        }
+        idleTestKit.expectEffectType[WatchedWith[MvRequest, RunWatch]]
 
         /* Check for child messages */
         idleTestKit
@@ -162,8 +162,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         Some(lvCoordinator.ref),
         Some(mvCoordinator.ref)
       )
-      val finishedGridData =
-        FinishedGridData.empty(lvExpected = true, mvExpected = true)
+      val finishedGridData = FinishedGridData.empty
 
       val runningTestKit = BehaviorTestKit(
         RunGuardian invokePrivate running(
@@ -324,8 +323,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         Some(lvCoordinator.ref),
         Some(mvCoordinator.ref)
       )
-      val finishedGridData =
-        FinishedGridData.empty(lvExpected = true, mvExpected = true)
+      val finishedGridData = FinishedGridData.empty
 
       val runningTestKit = BehaviorTestKit(
         RunGuardian invokePrivate running(

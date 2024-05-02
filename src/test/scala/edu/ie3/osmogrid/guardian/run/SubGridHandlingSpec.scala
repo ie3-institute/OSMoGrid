@@ -6,42 +6,36 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
-import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
-import edu.ie3.datamodel.models.input.connector.`type`.Transformer3WTypeInput
+import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.input.connector.{
   Transformer2WInput,
   Transformer3WInput
 }
 import edu.ie3.datamodel.models.input.container.{
   GraphicElements,
-  GridContainer,
   RawGridElements,
   SubGridContainer,
   SystemParticipants
 }
 import edu.ie3.datamodel.models.input.graphics.GraphicInput
 import edu.ie3.datamodel.models.input.system.SystemParticipantInput
-import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
+import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils._
-import edu.ie3.datamodel.models.{StandardUnits, UniqueEntity}
-import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
-import edu.ie3.osmogrid.io.output.OutputRequest
-import edu.ie3.osmogrid.lv.LvResponse
+import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
 import edu.ie3.osmogrid.exception.GridException
-import edu.ie3.osmogrid.io.output.ResultListenerProtocol
+import edu.ie3.osmogrid.io.output.{OutputRequest, ResultListenerProtocol}
+import edu.ie3.osmogrid.lv.LvResponse
 import edu.ie3.osmogrid.mv.MvResponse
 import edu.ie3.test.common.{GridSupport, UnitSpec}
+import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
 import org.locationtech.jts.geom.Point
 import org.scalatest.BeforeAndAfterAll
 import org.scalatestplus.mockito.MockitoSugar.mock
 import org.slf4j.{Logger, LoggerFactory}
 import tech.units.indriya.quantity.Quantities
-import utils.GridContainerUtils
 
 import java.util.UUID
 import scala.jdk.CollectionConverters._
-import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
 class SubGridHandlingSpec
@@ -62,10 +56,12 @@ class SubGridHandlingSpec
       mvCoordinator.ref
     )
     val log = testKit.system.log
+    val cfg = OsmoGridConfig.Grids.Output(hv = true, lv = true, mv = true)
 
     "handle empty results correctly" in {
       val empty = Try {
         handleResults(
+          cfg,
           None,
           None,
           None,
@@ -90,6 +86,7 @@ class SubGridHandlingSpec
       val lv = mockSubGrid(1, MV_10KV, LV)
 
       val processed = processResults(
+        cfg,
         Some(Seq(lv)),
         None,
         None,
@@ -134,6 +131,7 @@ class SubGridHandlingSpec
       val expectedUpdatedNode = commonNode.copy().subnet(3).build()
 
       val processed = processResults(
+        cfg,
         Some(Seq(lv)),
         Some(Seq(mv)),
         None,

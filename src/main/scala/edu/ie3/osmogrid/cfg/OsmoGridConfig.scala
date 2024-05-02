@@ -1,5 +1,5 @@
 /*
- * © 2023. TU Dortmund University,
+ * © 2024. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
@@ -8,6 +8,7 @@ package edu.ie3.osmogrid.cfg
 
 final case class OsmoGridConfig(
     generation: OsmoGridConfig.Generation,
+    grids: OsmoGridConfig.Grids,
     input: OsmoGridConfig.Input,
     output: OsmoGridConfig.Output,
     voltage: OsmoGridConfig.Voltage
@@ -184,6 +185,45 @@ object OsmoGridConfig {
     }
   }
 
+  final case class Grids(
+      output: OsmoGridConfig.Grids.Output
+  )
+  object Grids {
+    final case class Output(
+        hv: scala.Boolean,
+        lv: scala.Boolean,
+        mv: scala.Boolean
+    )
+    object Output {
+      def apply(
+          c: com.typesafe.config.Config,
+          parentPath: java.lang.String,
+          $tsCfgValidator: $TsCfgValidator
+      ): OsmoGridConfig.Grids.Output = {
+        OsmoGridConfig.Grids.Output(
+          hv = !c.hasPathOrNull("hv") || c.getBoolean("hv"),
+          lv = !c.hasPathOrNull("lv") || c.getBoolean("lv"),
+          mv = !c.hasPathOrNull("mv") || c.getBoolean("mv")
+        )
+      }
+    }
+
+    def apply(
+        c: com.typesafe.config.Config,
+        parentPath: java.lang.String,
+        $tsCfgValidator: $TsCfgValidator
+    ): OsmoGridConfig.Grids = {
+      OsmoGridConfig.Grids(
+        output = OsmoGridConfig.Grids.Output(
+          if (c.hasPathOrNull("output")) c.getConfig("output")
+          else com.typesafe.config.ConfigFactory.parseString("output{}"),
+          parentPath + "output.",
+          $tsCfgValidator
+        )
+      )
+    }
+  }
+
   final case class Input(
       asset: OsmoGridConfig.Input.Asset,
       osm: OsmoGridConfig.Input.Osm
@@ -344,7 +384,7 @@ object OsmoGridConfig {
           hierarchic =
             c.hasPathOrNull("hierarchic") && c.getBoolean("hierarchic"),
           separator =
-            if (c.hasPathOrNull("separator")) c.getString("separator") else ";"
+            if (c.hasPathOrNull("separator")) c.getString("separator") else ","
         )
       }
       private def $_reqStr(
@@ -516,6 +556,12 @@ object OsmoGridConfig {
         if (c.hasPathOrNull("generation")) c.getConfig("generation")
         else com.typesafe.config.ConfigFactory.parseString("generation{}"),
         parentPath + "generation.",
+        $tsCfgValidator
+      ),
+      grids = OsmoGridConfig.Grids(
+        if (c.hasPathOrNull("grids")) c.getConfig("grids")
+        else com.typesafe.config.ConfigFactory.parseString("grids{}"),
+        parentPath + "grids.",
         $tsCfgValidator
       ),
       input = OsmoGridConfig.Input(

@@ -77,10 +77,7 @@ object RunGuardian
             running(
               runGuardianData,
               childReferences,
-              FinishedGridData.empty(
-                childReferences.lvCoordinator.isDefined,
-                childReferences.mvCoordinator.isDefined
-              )
+              FinishedGridData.empty
             )
           case Failure(exception) =>
             ctx.log.error(
@@ -131,15 +128,10 @@ object RunGuardian
         )
       }
 
-      // store sub grids if they should be put out
-      val option = if (finishedGridData.lvExpected) {
-        Some(subGridContainer)
-      } else None
-
-      val updated = finishedGridData.copy(lvData = option)
+      val updated = finishedGridData.copy(lvData = Some(subGridContainer))
 
       // check if all possible data was received
-      if (updated.receivedAllData) {
+      if (!updatedChildReferences.stillRunning) {
 
         // if all data was received,
         ctx.self ! HandleGridResults
@@ -167,22 +159,15 @@ object RunGuardian
       childReferences.mvCoordinator.foreach(ctx.unwatch)
       val updatedChildReferences = childReferences.copy(mvCoordinator = None)
 
-      // store sub grids if they should be put out
-      val option = if (finishedGridData.mvExpected) {
-        Some(subGridContainer)
-      } else None
-
-      val nodeUpdates = Option.when(nodeChanges.nonEmpty)(nodeChanges)
-
       val updated = finishedGridData.copy(
-        mvData = option,
+        mvData = Some(subGridContainer),
         hvData = dummyHvGrid.map(Seq(_)), // converting to sequence
-        mvNodeChanges = nodeUpdates,
+        mvNodeChanges = Option.when(nodeChanges.nonEmpty)(nodeChanges),
         assetInformation = Some(assetInformation)
       )
 
       // check if all possible data was received
-      if (updated.receivedAllData) {
+      if (!updatedChildReferences.stillRunning) {
 
         // if all data was received,
         ctx.self ! HandleGridResults
@@ -197,6 +182,7 @@ object RunGuardian
       ctx.log.info(s"Starting to handle grid results.")
 
       handleResults(
+        runGuardianData.cfg.grids.output,
         finishedGridData.lvData,
         finishedGridData.mvData,
         finishedGridData.hvData,
