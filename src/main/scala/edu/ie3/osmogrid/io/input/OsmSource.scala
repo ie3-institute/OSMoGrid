@@ -6,28 +6,26 @@
 
 package edu.ie3.osmogrid.io.input
 
-import org.apache.pekko.actor.typed.ActorSystem
-import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Osm
-import edu.ie3.osmogrid.exception.IllegalConfigException
-import edu.ie3.osmogrid.io.input.pbf.{
-  PbfGuardian,
-  PbfReadFailed,
-  PbfReadSuccessful,
-  PbfRun
+import edu.ie3.osmogrid.exception.{
+  IllegalConfigException,
+  PbfReadFailedException
 }
-import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
+import edu.ie3.osmogrid.model.SourceFilter
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.actor.typed.scaladsl.ActorContext
+import org.openstreetmap.osmosis.pbf2.v0_6.PbfReader
 
-import java.io.File
-import java.util.UUID
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import java.io.{File, FileInputStream}
+import scala.util.{Failure, Try}
 
 sealed trait OsmSource {
 
   def read(
-      filter: SourceFilter
-  ): Future[OsmoGridModel]
+      filter: SourceFilter,
+      requester: ActorRef[InputDataEvent]
+  ): Unit
 
   def close(): Unit
 
@@ -41,29 +39,26 @@ object OsmSource {
   ) extends OsmSource {
 
     def read(
-        filter: SourceFilter
-    ): Future[OsmoGridModel] = {
+        filter: SourceFilter,
+        requester: ActorRef[InputDataEvent]
+    ): Unit = {
+      val inputStream = new FileInputStream(new File(filePath))
 
-      val pbfReader = ctx.spawn(
-        PbfGuardian.apply(new File(filePath), filter),
-        name = s"pbf-reader-guardian-${UUID.randomUUID()}"
-      )
+      val sink = ReaderSink(inputStream, filter, requester, ctx.log)
 
-      import org.apache.pekko.actor.typed.scaladsl.AskPattern._
-      import org.apache.pekko.util.Timeout
+      val reader =
+        new PbfReader(
+          () => inputStream,
+          Runtime.getRuntime.availableProcessors()
+        )
+      reader.setSink(sink)
 
-      import concurrent.duration.DurationInt
-
-      // 3 hours should be more than sufficient - even for very large files on small computers
-      implicit val timeout: Timeout = 10800.seconds
-      implicit val system: ActorSystem[_] = ctx.system
-      implicit val ec: ExecutionContextExecutor = system.executionContext
-
-      pbfReader.ask(sender => PbfRun(sender)).flatMap {
-        case PbfReadSuccessful(osmoGridModel) =>
-          Future.successful(osmoGridModel)
-        case PbfReadFailed(exception) =>
-          Future.failed(exception)
+      Try(reader.run()) match {
+        case Failure(exception) =>
+          requester ! OsmReadFailed(
+            PbfReadFailedException(s"Reading failed due to: $exception")
+          )
+        case _ =>
       }
     }
 

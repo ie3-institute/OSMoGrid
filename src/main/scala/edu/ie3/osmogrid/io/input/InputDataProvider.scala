@@ -6,11 +6,10 @@
 
 package edu.ie3.osmogrid.io.input
 
-import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
 import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.model.OsmoGridModel
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success}
@@ -40,17 +39,7 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
       .receive[InputDataEvent] { case (ctx, msg) =>
         msg match {
           case ReqOsm(replyTo, filter) =>
-            ctx.pipeToSelf(
-              providerData.osmSource.read(filter)
-            ) {
-              case Success(osmoGridModel: OsmoGridModel) =>
-                RepOsm(osmoGridModel)
-              case Failure(exception) =>
-                ctx.log.error(
-                  s"Error while reading osm data: $exception"
-                )
-                OsmReadFailed(exception)
-            }
+            providerData.osmSource.read(filter, ctx.self)
             readOsmData(providerData, replyTo)
           case ReqAssetTypes(replyTo) =>
             ctx.pipeToSelf(

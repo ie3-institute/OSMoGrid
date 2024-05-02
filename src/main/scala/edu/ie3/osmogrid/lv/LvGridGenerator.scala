@@ -6,17 +6,15 @@
 
 package edu.ie3.osmogrid.lv
 
-import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import com.typesafe.scalalogging.LazyLogging
-import edu.ie3.datamodel.models.input.container.SubGridContainer
-import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage
 import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.guardian.run.RunGuardian
-import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.buildConnectedGridGraphs
 import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.buildGrid
 import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 
@@ -54,12 +52,13 @@ object LvGridGenerator extends LazyLogging {
         )
       )
 
-      val lvVoltage = voltages.lv.default.asKiloVolt
-      val mvVoltage = voltages.mv.default.asKiloVolt
+      val lvVoltage = new VoltageLevel("lv", voltages.lv.default.asKiloVolt)
+      val mvVoltage = new VoltageLevel("mv", voltages.mv.default.asKiloVolt)
 
       val transformer2WTypes = assetInformation.transformerTypes
         .find { t =>
-          t.getvRatedA() == mvVoltage && t.getvRatedB() == lvVoltage
+          t.getvRatedA() == mvVoltage.getNominalVoltage && t
+            .getvRatedB() == lvVoltage.getNominalVoltage
         }
         .getOrElse(
           throw IllegalStateException(
