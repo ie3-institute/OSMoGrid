@@ -4,7 +4,7 @@ plugins {
   id 'scala'
   id 'pmd' // code check, working on source code
   id 'com.diffplug.spotless' version '6.25.0'//code format
-  id 'com.github.spotbugs' version '6.0.12' // code check, working on byte code
+  id 'com.github.spotbugs' version '6.0.14' // code check, working on byte code
   id 'de.undercouch.download' version '5.6.0'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.32" // run scalatest without specific spec task
@@ -17,11 +17,11 @@ ext {
   javaVersion = JavaVersion.VERSION_17
 
   scalaVersion = '2.13'
-  scalaBinaryVersion = '2.13.13'
+  scalaBinaryVersion = '2.13.14'
   pekkoVersion = '1.0.2'
 
   tscfgVersion = '0.9.995'
-  scapegoatVersion = '2.1.5'
+  scapegoatVersion = '2.1.6'
 
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
   docsDirName = 'docs'
