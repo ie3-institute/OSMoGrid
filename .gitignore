@@ -224,3 +224,6 @@ gradle-app.setting
 # Don't commit the virtual environment of python
 **/venv
 docs/readthedocs/build
+
+# Ignore output files
+/output/
