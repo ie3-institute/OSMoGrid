@@ -36,7 +36,7 @@ object MvCoordinator extends ActorStopSupportStateless {
     *   the idle state
     */
   def apply(
-      cfg: OsmoGridConfig.Generation.Mv,
+      cfg: OsmoGridConfig,
       inputDataProvider: ActorRef[InputDataEvent],
       runGuardian: ActorRef[MvResponse]
   ): Behavior[MvRequest] = Behaviors.setup[MvRequest] { context =>
@@ -56,7 +56,7 @@ object MvCoordinator extends ActorStopSupportStateless {
     *   a new behaviour
     */
   private def idle(
-      cfg: OsmoGridConfig.Generation.Mv,
+      cfg: OsmoGridConfig,
       inputDataProvider: ActorRef[InputDataEvent],
       messageAdapters: MvMessageAdapters,
       runGuardian: ActorRef[MvResponse]
@@ -164,7 +164,9 @@ object MvCoordinator extends ActorStopSupportStateless {
           Some(hv)
         case (Some(hv), false) => Some(hv)
         case (None, false) =>
-          throw new RuntimeException("Hv grids are needed and missing!")
+          if (awaitingInputData.hvGridsRequired) {
+            throw new RuntimeException("Hv grids are needed and missing!")
+          } else None
         case (None, true) =>
           ctx.log.debug(
             "No hv grids are provided! A new hv node will be spawned."

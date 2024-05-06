@@ -104,7 +104,15 @@ trait RunSupport {
         // spin up mv coordinator if a config is given
         val mvCoordinator = mv.map { cfg =>
           ctx.log.info("Starting medium voltage grid coordinator ...")
-          startMvGridGeneration(cfg, msgAdapters.mvCoordinator, id, ctx)
+
+          // updating the mv generation config
+          val updatedConfig = validConfig.copy(generation.copy(mv = Some(cfg)))
+          startMvGridGeneration(
+            updatedConfig,
+            msgAdapters.mvCoordinator,
+            id,
+            ctx
+          )
         }
 
         Success(
@@ -229,7 +237,7 @@ trait RunSupport {
     *   an [[ActorRef]] for a [[MvRequest]]
     */
   private def startMvGridGeneration(
-      mvConfig: OsmoGridConfig.Generation.Mv,
+      mvConfig: OsmoGridConfig,
       mvCoordinatorAdapter: ActorRef[MvResponse],
       runId: UUID,
       ctx: ActorContext[RunRequest]

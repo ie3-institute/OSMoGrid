@@ -74,11 +74,21 @@ object RunGuardian
           ctx
         ) match {
           case Success(childReferences) =>
-            running(
-              runGuardianData,
-              childReferences,
-              FinishedGridData.empty
-            )
+            if (childReferences.canRun) {
+              running(
+                runGuardianData,
+                childReferences,
+                FinishedGridData.empty
+              )
+            } else {
+              // no coordinator alive, stop generation
+              ctx.log.warn(
+                s"No coordinators were spawned. Generation can't run!"
+              )
+              stopping(
+                stopChildren(runGuardianData.runId, childReferences, ctx)
+              )
+            }
           case Failure(exception) =>
             ctx.log.error(
               s"Unable to start run ${runGuardianData.runId}.",

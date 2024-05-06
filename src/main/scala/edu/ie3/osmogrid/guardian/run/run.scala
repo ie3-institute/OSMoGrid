@@ -87,6 +87,12 @@ private[run] final case class ChildReferences(
       .map(Seq(_))
       .getOrElse(Seq.empty) ++ additionalResultListeners
 
+  /** Returns true if at least one coordinator exists.
+    */
+  def canRun: Boolean = lvCoordinator.isDefined || mvCoordinator.isDefined
+
+  /** Returns true if at least one coordinator is still alive and running.
+    */
   def stillRunning: Boolean = lvCoordinator.isDefined || mvCoordinator.isDefined
 }
 

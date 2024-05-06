@@ -13,6 +13,7 @@ import edu.ie3.datamodel.models.input.container.{
 }
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.{
+  IllegalConfigException,
   IllegalStateException,
   RequestFailedException
 }
@@ -184,6 +185,8 @@ private[mv] object MvMessageAdapters {
   *
   * @param cfg
   *   config for mv generation
+  * @param hvGridsRequired
+  *   true if we either need a dummy hv node or actual hv grids
   * @param runGuardian
   *   superior actor
   * @param lvGrids
@@ -197,6 +200,7 @@ private[mv] object MvMessageAdapters {
   */
 private[mv] final case class AwaitingInputData(
     cfg: OsmoGridConfig.Generation.Mv,
+    hvGridsRequired: Boolean,
     runGuardian: ActorRef[MvResponse],
     lvGrids: Option[Seq[SubGridContainer]],
     hvGrids: Option[Seq[SubGridContainer]],
@@ -238,10 +242,14 @@ private[mv] final case class AwaitingInputData(
     val needed =
       lvGrids.isDefined && streetGraph.isDefined && assetInformation.isDefined
 
-    if (cfg.spawnMissingHvNodes) {
-      needed
+    if (hvGridsRequired) {
+      if (cfg.spawnMissingHvNodes) {
+        needed
+      } else {
+        needed && hvGrids.isDefined
+      }
     } else {
-      needed && hvGrids.isDefined
+      needed
     }
   }
 }
@@ -258,10 +266,20 @@ private[mv] object AwaitingInputData {
     *   an empty [[AwaitingInputData]]
     */
   def empty(
-      cfg: OsmoGridConfig.Generation.Mv,
+      cfg: OsmoGridConfig,
       runGuardian: ActorRef[MvResponse]
   ): AwaitingInputData =
-    AwaitingInputData(cfg, runGuardian, None, None, None, None)
+    AwaitingInputData(
+      cfg.generation.mv.getOrElse(
+        throw IllegalConfigException(s"No medium voltage config found in $cfg!")
+      ),
+      cfg.grids.output.hv,
+      runGuardian,
+      None,
+      None,
+      None,
+      None
+    )
 }
 
 /** Class for medium voltage result data.
