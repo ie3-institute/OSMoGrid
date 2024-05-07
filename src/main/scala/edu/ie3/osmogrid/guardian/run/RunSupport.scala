@@ -26,7 +26,7 @@ import scala.util.{Success, Try}
 trait RunSupport {
 
   private val lvFallback: Lv = Lv(
-    averagePowerDensity = 2000, // W/m^2
+    averagePowerDensity = 12.5, // W/m^2
     boundaryAdminLevel = BoundaryAdminLevel(lowest = 8, starting = 2),
     considerHouseConnectionPoints = false,
     loadSimultaneousFactor = 0.2,
