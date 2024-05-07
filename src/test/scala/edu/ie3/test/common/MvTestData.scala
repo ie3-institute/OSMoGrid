@@ -27,7 +27,7 @@ import utils.Connections.Connection
 import utils.GridConversion.NodeConversion
 import utils.OsmoGridUtils.getAllUniqueCombinations
 import utils.Solver.StepResultOption
-import utils.VoronoiUtils.VoronoiPolygon
+import edu.ie3.osmogrid.mv.VoronoiPolygonSupport.VoronoiPolygon
 
 import java.util.UUID
 

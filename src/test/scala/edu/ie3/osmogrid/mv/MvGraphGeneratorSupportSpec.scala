@@ -4,19 +4,19 @@
  * Research group Distribution grid planning and operation
  */
 
-package edu.ie3.osmogrid.utils
+package edu.ie3.osmogrid.mv
 
 import edu.ie3.osmogrid.graph.OsmGraph
+import edu.ie3.osmogrid.mv.MvGraphGeneratorSupport.generateMvGraph
+import edu.ie3.osmogrid.mv.VoronoiPolygonSupport.VoronoiPolygon
 import edu.ie3.test.common.{MvTestData, UnitSpec}
 import edu.ie3.util.osm.model.OsmEntity.Node
+import utils.Connections
 import utils.GridConversion.NodeConversion
-import utils.MvUtils.generateMvGraph
-import utils.VoronoiUtils.VoronoiPolygon
-import utils.{Connections, MvUtils}
 
 import scala.jdk.CollectionConverters._
 
-class MvUtilsSpec extends UnitSpec with MvTestData {
+class MvGraphGeneratorSupportSpec extends UnitSpec with MvTestData {
   "The MvUtils" should {
     def streetGraph: OsmGraph = {
       val streetGraph = new OsmGraph()
@@ -40,7 +40,10 @@ class MvUtilsSpec extends UnitSpec with MvTestData {
       val nodes = List(nodeToHv, nodeInMv1, nodeInMv2)
 
       val (conversion, conn) =
-        MvUtils invokePrivate createDefinitions(nodes, streetGraph)
+        MvGraphGeneratorSupport invokePrivate createDefinitions(
+          nodes,
+          streetGraph
+        )
 
       conversion.conversionToPSDM shouldBe Map(
         transitionPoint -> nodeToHv,

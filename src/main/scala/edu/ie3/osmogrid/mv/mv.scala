@@ -27,7 +27,7 @@ import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
 import org.apache.pekko.actor.typed.ActorRef
 import org.slf4j.Logger
 import utils.GridConversion.NodeConversion
-import utils.VoronoiUtils.VoronoiPolygon
+import VoronoiPolygonSupport.VoronoiPolygon
 
 import java.util.UUID
 import scala.util.{Failure, Success, Try}

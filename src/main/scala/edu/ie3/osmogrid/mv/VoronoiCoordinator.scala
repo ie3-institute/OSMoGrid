@@ -13,8 +13,8 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.mv.MvGridGeneratorSupport.buildGrid
 import utils.GridConversion
-import utils.MvUtils.generateMvGraph
-import utils.VoronoiUtils.VoronoiPolygon
+import MvGraphGeneratorSupport.generateMvGraph
+import VoronoiPolygonSupport.VoronoiPolygon
 
 /** Coordinator for [[VoronoiPolygon]]s. This actor will generate a mv graph
   * structure and convert the structure into a [[SubGridContainer]] and a

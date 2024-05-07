@@ -16,7 +16,7 @@ import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
 import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
 import utils.OsmoGridUtils.spawnDummyHvNode
-import utils.{GridContainerUtils, VoronoiUtils}
+import utils.GridContainerUtils
 
 import scala.util.{Failure, Success}
 
@@ -242,7 +242,7 @@ object MvCoordinator extends ActorStopSupportStateless {
         }
 
         val (polygons, notAssignedNodes) =
-          VoronoiUtils.createVoronoiPolygons(
+          VoronoiPolygonSupport.createVoronoiPolygons(
             transitionNodes.toList,
             mvToLv.toList,
             ctx

@@ -4,21 +4,20 @@
  * Research group Distribution grid planning and operation
  */
 
-package edu.ie3.osmogrid.utils
+package edu.ie3.osmogrid.mv
 
 import edu.ie3.datamodel.models.input.NodeInput
+import edu.ie3.osmogrid.mv.VoronoiPolygonSupport.VoronoiPolygon
 import edu.ie3.test.common.{NodeInputSupport, UnitSpec}
 import org.locationtech.jts.geom.Polygon
 import org.slf4j.{Logger, LoggerFactory}
-import utils.VoronoiUtils
-import utils.VoronoiUtils.VoronoiPolygon
 
-class VoronoiUtilsSpec extends UnitSpec with NodeInputSupport {
+class VoronoiPolygonSupportSpec extends UnitSpec with NodeInputSupport {
   "The VoronoiUtils" should {
     val createPolygons =
       PrivateMethod[List[VoronoiPolygon]](Symbol("createPolygons"))
     val polygon: VoronoiPolygon =
-      (VoronoiUtils invokePrivate createPolygons(List(nodeToHv1)))(0)
+      (VoronoiPolygonSupport invokePrivate createPolygons(List(nodeToHv1)))(0)
 
     "generate polygons correctly" in {
       val useBuilder = PrivateMethod[List[Polygon]](Symbol("useBuilder"))
@@ -34,20 +33,23 @@ class VoronoiUtilsSpec extends UnitSpec with NodeInputSupport {
       )
 
       forAll(cases) { (nodes, expectedNumber) =>
-        val polygons: List[Polygon] = VoronoiUtils invokePrivate useBuilder(
-          nodes.map(n => n.getGeoPosition.getCoordinate).toList
-        )
+        val polygons: List[Polygon] =
+          VoronoiPolygonSupport invokePrivate useBuilder(
+            nodes.map(n => n.getGeoPosition.getCoordinate).toList
+          )
         polygons.size shouldBe expectedNumber
       }
     }
 
     "create no voronoi polygons when an empty list is given" in {
-      val polygons = VoronoiUtils invokePrivate createPolygons(List.empty)
+      val polygons =
+        VoronoiPolygonSupport invokePrivate createPolygons(List.empty)
       polygons.size shouldBe 0
     }
 
     "create a single voronoi polygon correctly" in {
-      val polygons = VoronoiUtils invokePrivate createPolygons(List(nodeToHv1))
+      val polygons =
+        VoronoiPolygonSupport invokePrivate createPolygons(List(nodeToHv1))
       polygons.size shouldBe 1
 
       val polygon: VoronoiPolygon = polygons(0)
@@ -68,7 +70,7 @@ class VoronoiUtilsSpec extends UnitSpec with NodeInputSupport {
       )
 
       forAll(cases) { (nodes, expectedSize) =>
-        val polygons = VoronoiUtils invokePrivate createPolygons(nodes)
+        val polygons = VoronoiPolygonSupport invokePrivate createPolygons(nodes)
         polygons.size shouldBe expectedSize
       }
     }
@@ -77,7 +79,7 @@ class VoronoiUtilsSpec extends UnitSpec with NodeInputSupport {
       val hvToMvNodes = List(nodeToHv1, nodeToHv2, nodeToHv3, nodeToHv4)
 
       val polygons: List[VoronoiPolygon] =
-        VoronoiUtils invokePrivate createPolygons(hvToMvNodes)
+        VoronoiPolygonSupport invokePrivate createPolygons(hvToMvNodes)
 
       polygons.size shouldBe 4
 
@@ -128,12 +130,12 @@ class VoronoiUtilsSpec extends UnitSpec with NodeInputSupport {
         PrivateMethod[(List[VoronoiPolygon], List[NodeInput])](
           Symbol("updatePolygons")
         )
-      val log: Logger = LoggerFactory.getLogger(VoronoiUtils.getClass)
+      val log: Logger = LoggerFactory.getLogger(VoronoiPolygonSupport.getClass)
 
       val polygons: List[VoronoiPolygon] = List(polygon)
       val nodes = List(nodeInMv1, nodeInMv2, nodeInMv3)
       val (updatedPolygon, notAssigned) =
-        VoronoiUtils invokePrivate updatePolygons(polygons, nodes, log)
+        VoronoiPolygonSupport invokePrivate updatePolygons(polygons, nodes, log)
 
       notAssigned shouldBe List()
       updatedPolygon(0).transitionPointsToLowerVoltLvl shouldBe List(
@@ -148,10 +150,10 @@ class VoronoiUtilsSpec extends UnitSpec with NodeInputSupport {
         PrivateMethod[(List[VoronoiPolygon], List[NodeInput])](
           Symbol("updatePolygons")
         )
-      val log: Logger = LoggerFactory.getLogger(VoronoiUtils.getClass)
+      val log: Logger = LoggerFactory.getLogger(VoronoiPolygonSupport.getClass)
 
       val polygons: List[VoronoiPolygon] =
-        VoronoiUtils invokePrivate createPolygons(
+        VoronoiPolygonSupport invokePrivate createPolygons(
           List(nodeToHv1, nodeToHv2, nodeToHv3, nodeToHv4)
         )
 
@@ -194,7 +196,11 @@ class VoronoiUtilsSpec extends UnitSpec with NodeInputSupport {
 
       forAll(cases) { (nodes, expectedNotAssigned, l1, l2, l3, l4) =>
         val (updatedPolygon, notAssigned) =
-          VoronoiUtils invokePrivate updatePolygons(polygons, nodes, log)
+          VoronoiPolygonSupport invokePrivate updatePolygons(
+            polygons,
+            nodes,
+            log
+          )
 
         notAssigned shouldBe expectedNotAssigned
         updatedPolygon(0).transitionPointsToLowerVoltLvl shouldBe l1
