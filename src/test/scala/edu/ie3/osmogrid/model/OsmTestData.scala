@@ -150,7 +150,8 @@ trait OsmTestData {
           nodes.building1Node1.id
         ),
         Map("building" -> "yes"),
-        None
+        None,
+        Some(1)
       )
 
     val building2: ClosedWay =
@@ -164,7 +165,8 @@ trait OsmTestData {
           nodes.building2Node1.id
         ),
         Map("building" -> "yes"),
-        None
+        None,
+        Some(1)
       )
 
     val building3: ClosedWay =
@@ -178,7 +180,8 @@ trait OsmTestData {
           nodes.building3Node1.id
         ),
         Map("building" -> "yes"),
-        None
+        None,
+        Some(1)
       )
 
     val highway1: OpenWay =
@@ -186,7 +189,8 @@ trait OsmTestData {
         111L,
         Seq(nodes.highway1Node1.id, nodes.highway1Node2.id),
         Map("highway" -> "motorway"),
-        None
+        None,
+        Some(1)
       )
 
     val highway2: OpenWay =
@@ -199,7 +203,8 @@ trait OsmTestData {
           nodes.highway2Node4.id
         ),
         Map("highway" -> "motorway"),
-        None
+        None,
+        Some(1)
       )
 
     val landuse1: ClosedWay = ClosedWay(
@@ -212,7 +217,8 @@ trait OsmTestData {
         nodes.landuse1Node1.id
       ),
       Map("landuse" -> "education"),
-      None
+      None,
+      Some(1)
     )
 
     val landuse2: ClosedWay = ClosedWay(
@@ -225,7 +231,8 @@ trait OsmTestData {
         nodes.landuse2Node1.id
       ),
       Map.empty[String, String],
-      None
+      None,
+      Some(1)
     )
 
     val landuse3: ClosedWay = ClosedWay(
@@ -238,7 +245,8 @@ trait OsmTestData {
         nodes.landuse3Node1.id
       ),
       Map("landuse" -> "residential"),
-      None
+      None,
+      Some(1)
     )
 
     val boundaryWay1: OpenWay = OpenWay(
@@ -249,7 +257,8 @@ trait OsmTestData {
         nodes.boundaryNode3.id
       ),
       Map.empty[String, String],
-      None
+      None,
+      Some(1)
     )
     val boundaryWay2: OpenWay = OpenWay(
       132L,
@@ -259,7 +268,8 @@ trait OsmTestData {
         nodes.boundaryNode1.id
       ),
       Map.empty[String, String],
-      None
+      None,
+      Some(1)
     )
   }
 

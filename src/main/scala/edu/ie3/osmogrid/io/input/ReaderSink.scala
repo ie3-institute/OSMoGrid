@@ -6,7 +6,7 @@
 
 package edu.ie3.osmogrid.io.input
 
-import edu.ie3.osmogrid.exception.{InputDataException, PbfReadFailedException}
+import edu.ie3.osmogrid.exception.PbfReadFailedException
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
@@ -94,7 +94,8 @@ case class ReaderSink(
             way.getId,
             way.getWayNodes.asScala.map(_.getNodeId).toSeq,
             tags = tags(way),
-            buildMetaInfo(way)
+            buildMetaInfo(way),
+            Some(way.getVersion)
           )
         )
       case unrecognized =>

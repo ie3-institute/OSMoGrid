@@ -57,50 +57,76 @@ object OsmoGridModel {
     (matchedEntities.par, matchedSubentities)
   }
 
+  def filterForLatestWaysVersion[
+      E <: OsmEntity: ClassTag
+  ](entities: ParSeq[E]): ParSeq[E] = {
 
-  def filterForWays(entities: ParSeq[EnhancedOsmEntity]): (ParSeq[Way], Map[Long, Node]) = {
-    val (latestEntities, latestNodes) = filterForLatestVersions(entities.flatMap(_.allSubEntities), Map.empty)
-
-    val ways = latestEntities.collect { case way: Way => way }.toParArray
-    val nodes = latestNodes.collect { case (_, node: Node) => node }.toMap
-
-    (ways, nodes)
-  }
-
-  def filterForLatestVersions[E <: OsmEntity: ClassTag, S <: OsmEntity: ClassTag](
-    entities: ParSeq[E],
-    nodes: Map[Long, S]
-  ): (ParSeq[E], Map[Long, S]) = {
-    // Group entities by ID
     val groupedEntities = entities.groupBy(_.id)
 
-    // Filter for the latest version of each entity
-    val latestEntities = groupedEntities.values.flatMap { entities =>
-      val maxVersion = entities.map {
-        case entity: Way => entity.version
-        case _ => 0 // Fallback value for non-way entities
-      }.max
-      entities.filter {
-        case entity: Way => entity.version == maxVersion
-        case _ => false
+    val latestWayEntities = groupedEntities.values
+      .flatMap { entities =>
+        val maxVersion = entities.map {
+          case entity: Way => entity.version.getOrElse(0)
+          case _           => 0
+        }.max
+        entities.filter {
+          case entity: Way => entity.version.getOrElse(0) == maxVersion
+          case _           => false
+        }
       }
-    }.toSeq.toParArray // Convert to ParSeq
+      .toSeq
+      .toParArray
 
-    // Collect nodes associated with the latest entities
-    val latestEntityIds = latestEntities.map(_.id).toSet
-    val latestNodes = nodes.view.filterKeys(latestEntityIds.contains)
-
-    (latestEntities, latestNodes)
+    latestWayEntities
   }
 
+  def filterForWays(
+      entities: ParSeq[EnhancedOsmEntity]
+  ): (ParSeq[Way], Map[Long, Node]) = {
+    val (filteredWays, nodeMap) = filterForOsmType[Way, Node](entities)
+    val ways = filterForLatestWaysVersion(
+      filteredWays
+    )
 
-  def filterForClosedWays(entities: ParSeq[EnhancedOsmEntity]): (ParSeq[ClosedWay], Map[Long, Node]) = {
-    val (latestEntities, latestNodes) = filterForLatestVersions(entities.flatMap(_.allSubEntities), Map.empty)
+    (ways, nodeMap)
 
-    val closedWays = latestEntities.collect { case way: ClosedWay => way }.toParArray
-    val nodes = latestNodes.collect { case (_, node: Node) => node.id -> node }.toMap
+  }
+  def filterForClosedWays(
+      entities: ParSeq[EnhancedOsmEntity]
+  ): (ParSeq[ClosedWay], Map[Long, Node]) = {
+    val (filteredWays, nodeMap) =
+      filterForOsmType[ClosedWay, Node](entities)
+    val latestEntities =
+      filterForLatestWaysVersion(filteredWays)
+    val closedWays = latestEntities.collect { case way: ClosedWay => way }
 
-    (closedWays, nodes)
+    (closedWays, nodeMap)
+  }
+
+  def filterForOsmType[E <: OsmEntity: ClassTag, S <: OsmEntity: ClassTag](
+      entities: ParSeq[EnhancedOsmEntity]
+  ): (ParSeq[E], Map[Long, S]) = {
+    val (matchedEntities, matchedSubentities) = entities.foldLeft(
+      Seq.empty[E],
+      Map.empty[Long, S]
+    ) {
+      case (
+            (matchedEntities, matchedSubEntities),
+            curEntity: EnhancedOsmEntity
+          ) =>
+        curEntity.entity match {
+          case entity: E =>
+            val subEntities = curEntity.subEntities collect {
+              case (id: Long, subEntity: S) => id -> subEntity
+            }
+            (
+              matchedEntities.appended(entity),
+              matchedSubEntities ++ subEntities
+            )
+          case _ => (matchedEntities, matchedSubEntities)
+        }
+    }
+    (matchedEntities.par, matchedSubentities)
   }
 
   final case class LvOsmoGridModel(
