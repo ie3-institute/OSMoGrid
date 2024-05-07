@@ -162,8 +162,18 @@ object ConfigFailFast extends LazyLogging {
       "Output directory and separator must be set when using .csv file sink!"
     )
 
-  // TODO: Check if necessary
-  private def checkGridsConfig(grids: Grids): Unit = {}
+  private def checkGridsConfig(grids: Grids): Unit = {
+    grids.output match {
+      case Grids.Output(false, false, false) =>
+        // at least one output must be set
+        throw IllegalConfigException(s"No grid output defined.")
+
+      case Grids.Output(true, false, false) =>
+        logger.warn(s"Only hv output is currently not supported!")
+      case _ =>
+
+    }
+  }
 
   // TODO: Check if necessary
   private def checkVoltageConfig(voltage: Voltage): Unit = {}

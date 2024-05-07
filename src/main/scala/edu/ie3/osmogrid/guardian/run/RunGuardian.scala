@@ -85,9 +85,7 @@ object RunGuardian
               ctx.log.warn(
                 s"No coordinators were spawned. Generation can't run!"
               )
-              stopping(
-                stopChildren(runGuardianData.runId, childReferences, ctx)
-              )
+              Behaviors.stopped
             }
           case Failure(exception) =>
             ctx.log.error(
