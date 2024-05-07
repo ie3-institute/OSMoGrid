@@ -4,12 +4,12 @@
  * Research group Distribution grid planning and operation
  */
 
-package utils
+package edu.ie3.osmogrid.mv
 
-import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.util.exceptions.GeoException
 import edu.ie3.util.geo.GeoUtils
+import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import org.locationtech.jts.geom.{Coordinate, Polygon}
 import org.locationtech.jts.triangulate.VoronoiDiagramBuilder
 import org.slf4j.Logger
@@ -18,7 +18,7 @@ import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParalle
 import scala.jdk.CollectionConverters._
 
 // TODO: Parts of this or maybe all of this could be moved to GeoUtils (PowerSystemUtils).
-object VoronoiUtils {
+object VoronoiPolygonSupport {
 
   /** A voronoi polygons.
     *

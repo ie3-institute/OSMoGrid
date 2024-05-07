@@ -4,26 +4,24 @@
  * Research group Distribution grid planning and operation
  */
 
-package utils
+package edu.ie3.osmogrid.mv
 
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.osmogrid.graph.OsmGraph
+import edu.ie3.osmogrid.mv.VoronoiPolygonSupport.VoronoiPolygon
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.slf4j.{Logger, LoggerFactory}
-import utils.Connections.{
-  buildUndirectedConnections,
-  buildUndirectedShortestPathConnections
-}
+import utils.Connections.buildUndirectedConnections
 import utils.GridConversion.NodeConversion
 import utils.OsmoGridUtils.getAllUniqueCombinations
-import utils.VoronoiUtils.VoronoiPolygon
+import utils.{Connections, Solver}
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 /** Utility object for mv generation.
   */
-object MvUtils {
-  val log: Logger = LoggerFactory.getLogger(MvUtils.getClass)
+object MvGraphGeneratorSupport {
+  val log: Logger = LoggerFactory.getLogger(MvGraphGeneratorSupport.getClass)
 
   /** Utility method for creating [[NodeConversion]] and [[Connections]]
     * utilities. <p> NOTICE: for correct operation -> number of vertexes >=
@@ -80,7 +78,10 @@ object MvUtils {
 
     // creating necessary utility objects
     val (nodeConversion, connections) =
-      MvUtils.createDefinitions(voronoiPolygon.allNodes, reducedStreetGraph)
+      MvGraphGeneratorSupport.createDefinitions(
+        voronoiPolygon.allNodes,
+        reducedStreetGraph
+      )
 
     val transitionNode: Node = nodeConversion.getOsmNode(
       voronoiPolygon.transitionPointToHigherVoltLvl

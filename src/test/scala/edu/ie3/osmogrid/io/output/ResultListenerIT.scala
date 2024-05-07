@@ -115,7 +115,7 @@ class ResultListenerIT
 
         val gridData = CsvJointGridContainerSource.read(
           jointGrid.getGridName,
-          ";",
+          ",",
           tmpDir,
           false
         )

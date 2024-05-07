@@ -166,7 +166,8 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           viableConfigurationString.stripMargin
         } match {
-          case Success(cfg) => ConfigFailFast.check(cfg) shouldBe Success(cfg)
+          case Success(cfg) =>
+            ConfigFailFast.check(cfg) shouldBe Success(cfg)
           case Failure(exception) =>
             fail(s"Config generation failed with an exception: '$exception'")
         }
@@ -183,6 +184,9 @@ object ConfigFailFastSpec {
       |input.asset.file.hierarchic = false
       |output.csv.directory = "output_file_path"
       |output.gridName = "test_grid"
+      |grids.output.lv = true
+      |grids.output.mv = true
+      |grids.output.hv = true
       |voltage.lv.id = "lv"
       |voltage.lv.default = 0.4
       |voltage.mv.id = "mv"

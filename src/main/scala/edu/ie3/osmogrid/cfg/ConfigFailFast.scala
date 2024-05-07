@@ -10,7 +10,13 @@ import org.apache.pekko.actor.typed.ActorRef
 import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.{Lv, Mv}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Generation, Input, Output, Voltage}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.{
+  Generation,
+  Grids,
+  Input,
+  Output,
+  Voltage
+}
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.io.output.OutputRequest
@@ -23,10 +29,11 @@ object ConfigFailFast extends LazyLogging {
       additionalListener: Seq[ActorRef[OutputRequest]] = Seq.empty
   ): Try[OsmoGridConfig] = Try {
     cfg match {
-      case OsmoGridConfig(generation, input, output, voltage) =>
+      case OsmoGridConfig(generation, grids, input, output, voltage) =>
         checkInputConfig(input)
         checkOutputConfig(output, additionalListener)
         checkGenerationConfig(generation)
+        checkGridsConfig(grids)
         checkVoltageConfig(voltage)
     }
     cfg
@@ -154,6 +161,19 @@ object ConfigFailFast extends LazyLogging {
     throw IllegalConfigException(
       "Output directory and separator must be set when using .csv file sink!"
     )
+
+  private def checkGridsConfig(grids: Grids): Unit = {
+    grids.output match {
+      case Grids.Output(false, false, false) =>
+        // at least one output must be set
+        throw IllegalConfigException(s"No grid output defined.")
+
+      case Grids.Output(true, false, false) =>
+        logger.warn(s"Only hv output is currently not supported!")
+      case _ =>
+
+    }
+  }
 
   // TODO: Check if necessary
   private def checkVoltageConfig(voltage: Voltage): Unit = {}
