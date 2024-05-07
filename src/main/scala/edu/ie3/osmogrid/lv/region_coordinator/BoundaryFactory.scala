@@ -144,38 +144,42 @@ object BoundaryFactory {
     val currentNodes = currentWay.nodes
     existingNodes.headOption.zip(existingNodes.lastOption) match {
       case Some((existingFirst, existingLast)) =>
-        currentNodes.headOption
-          .zip(currentNodes.lastOption)
-          .map { case (currentFirst, currentLast) =>
-            // Run through a bunch of cases. In the end, we want [a, b, c, d, e]
-            if (existingLast == currentFirst)
-              // [a, b, c] and [c, d, e]
-              // All in correct order
-              existingNodes ++ currentNodes.drop(1)
-            else if (existingLast == currentLast)
-              // [a, b, c] and [e, d, c]
-              // Additional sequence needs to be flipped
-              existingNodes ++ currentNodes.reverse.drop(1)
-            else if (existingFirst == currentFirst)
-              // [c, b, a] and [c, d, e]
-              // Existing sequence in wrong order:
-              // this should only happen if we have only added one
-              // sequence so far and that sequence was in wrong order
-              existingNodes.reverse ++ currentNodes.drop(1)
-            else if (existingFirst == currentLast)
-              // [c, b, a] and [e, d, c]; a != e since we already covered this with first case
-              // Existing sequence in wrong order, similar to above
-              // but additional sequence has be flipped as well
-              existingNodes.reverse ++ currentNodes.reverse.drop(1)
-            else
-              throw new RuntimeException(
-                s"Last node $existingLast was not found in way ${currentWay.id}"
-              )
-          }
-          .getOrElse(
-            // Current way is empty, carry on with old sequence
-            existingNodes
-          )
+        if (existingFirst == existingLast) {
+          // Polygon was closed by the way before.
+          existingNodes ++ currentNodes
+        } else {
+          currentNodes.headOption
+            .zip(currentNodes.lastOption)
+            .map { case (currentFirst, currentLast) =>
+              if (existingLast == currentFirst)
+                // [a, b, c] and [c, d, e]
+                // All in correct order
+                existingNodes ++ currentNodes.drop(1)
+              else if (existingLast == currentLast)
+                // [a, b, c] and [e, d, c]
+                // Additional sequence needs to be flipped
+                existingNodes ++ currentNodes.reverse.drop(1)
+              else if (existingFirst == currentFirst)
+                // [c, b, a] and [c, d, e]
+                // Existing sequence in wrong order:
+                // this should only happen if we have only added one
+                // sequence so far and that sequence was in wrong order
+                existingNodes.reverse ++ currentNodes.drop(1)
+              else if (existingFirst == currentLast)
+                // [c, b, a] and [e, d, c]; a != e since we already covered this with first case
+                // Existing sequence in wrong order, similar to above
+                // but additional sequence has be flipped as well
+                existingNodes.reverse ++ currentNodes.reverse.drop(1)
+              else
+                throw new RuntimeException(
+                  s"Last node $existingLast was not found in way ${currentWay.id}"
+                )
+            }
+            .getOrElse(
+              // Current way is empty, carry on with old sequence
+              existingNodes
+            )
+        }
       case None =>
         //  No nodes added yet, just put current ones in place
         currentNodes
