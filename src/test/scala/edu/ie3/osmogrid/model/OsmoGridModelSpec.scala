@@ -11,6 +11,8 @@ import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
 import edu.ie3.test.common.UnitSpec
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
 import edu.ie3.util.osm.model.OsmEntity.Relation
+import edu.ie3.util.osm.model.OsmEntity.Way.{ClosedWay, OpenWay}
+
 import scala.collection.parallel.CollectionConverters._
 import scala.collection.parallel.ParSeq
 
@@ -402,6 +404,85 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
         fail("Collection shouldn't be empty")
       ) shouldBe nodes.building1Node1
 
+    }
+
+    "filter for correct version of way" in {
+      val relation = EnhancedOsmEntity(
+        relations.boundary,
+        Map(nodes.boundaryNode1.id -> nodes.boundaryNode1)
+      )
+
+      val building = EnhancedOsmEntity(
+        ways.building1,
+        Map(nodes.building1Node1.id -> nodes.building1Node1)
+      )
+
+      val highway2 = EnhancedOsmEntity(
+        ways.highway2,
+        Map(
+          nodes.highway2Node1.id -> nodes.highway2Node1,
+          nodes.highway2Node2.id -> nodes.highway2Node2,
+          nodes.highway2Node3.id -> nodes.highway2Node3,
+          nodes.highway2Node4.id -> nodes.highway2Node4
+        )
+      )
+      val highway2oldVersion = EnhancedOsmEntity(
+        ways.highway2oldVersion,
+        Map(
+          nodes.highway2Node1.id -> nodes.highway2Node1,
+          nodes.highway2Node2.id -> nodes.highway2Node2,
+          nodes.highway2Node2b.id -> nodes.highway2Node2b,
+          nodes.highway2Node3.id -> nodes.highway2Node3,
+          nodes.highway2Node4.id -> nodes.highway2Node4
+        )
+      )
+
+      val input = ParSeq(
+        relation,
+        building,
+        highway2,
+        highway2oldVersion
+      )
+
+      val (resultWays, resultWayNodes) =
+        OsmoGridModel.filterForWays(input)
+
+      resultWays.size shouldBe 2
+
+      val closedWays = resultWays.collect { case way: ClosedWay => way }
+      val openWays = resultWays.collect { case way: OpenWay => way }
+
+      closedWays.size shouldBe 1
+      openWays.size shouldBe 1
+
+      closedWays.headOption.getOrElse(
+        fail("No closed way found")
+      ) shouldBe ways.building1
+      openWays.headOption.getOrElse(
+        fail("No open way found")
+      ) shouldBe ways.highway2
+
+      resultWayNodes.size shouldBe 5
+      resultWayNodes.getOrElse(
+        nodes.building1Node1.id,
+        fail("Collection shouldn't be empty")
+      ) shouldBe nodes.building1Node1
+
+      val expectedNodes = List(
+        nodes.highway2Node1,
+        nodes.highway2Node2,
+        nodes.highway2Node3,
+        nodes.highway2Node4,
+        nodes.building1Node1
+      )
+
+      expectedNodes.foreach { node =>
+        resultWayNodes.getOrElse(node.id, fail("Node not found")) shouldBe node
+      }
+
+      resultWayNodes.foreach { case (_, node) =>
+        expectedNodes should contain(node)
+      }
     }
   }
 }
