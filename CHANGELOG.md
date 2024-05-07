@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced akka with pekko [#345](https://github.com/ie3-institute/OSMoGrid/issues/345)
 - Improved `SubGridHandling` [#397](https://github.com/ie3-institute/OSMoGrid/issues/397)
 - Switched from `osm4scala` to `openstreetmap.osmosis` [#409](https://github.com/ie3-institute/OSMoGrid/issues/409)
+- Changed transformer input parameter to PSDM requirements [#417](https://github.com/ie3-institute/OSMoGrid/issues/417)
 - Adapted run initialization [#404](https://github.com/ie3-institute/OSMoGrid/issues/404)
 
 ### Fixed
