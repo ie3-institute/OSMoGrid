@@ -86,6 +86,14 @@ private[run] final case class ChildReferences(
     resultListener
       .map(Seq(_))
       .getOrElse(Seq.empty) ++ additionalResultListeners
+
+  /** Returns true if at least one coordinator exists.
+    */
+  def canRun: Boolean = lvCoordinator.isDefined || mvCoordinator.isDefined
+
+  /** Returns true if at least one coordinator is still alive and running.
+    */
+  def stillRunning: Boolean = lvCoordinator.isDefined || mvCoordinator.isDefined
 }
 
 sealed trait StateData
@@ -124,25 +132,16 @@ private[run] final case class StoppingData(
 }
 
 final case class FinishedGridData(
-    lvExpected: Boolean,
-    mvExpected: Boolean,
     lvData: Option[Seq[SubGridContainer]],
     mvData: Option[Seq[SubGridContainer]],
     hvData: Option[Seq[GridContainer]],
     mvNodeChanges: Option[Map[UUID, NodeInput]],
     assetInformation: Option[AssetInformation]
-) extends StateData {
-  def receivedAllData: Boolean = {
-    val lv = lvExpected == lvData.isDefined
-    val mv = mvExpected == mvData.isDefined
-
-    lv && mv
-  }
-}
+) extends StateData
 
 object FinishedGridData {
-  def empty(lvExpected: Boolean, mvExpected: Boolean): FinishedGridData =
-    FinishedGridData(lvExpected, mvExpected, None, None, None, None, None)
+  def empty: FinishedGridData =
+    FinishedGridData(None, None, None, None, None)
 }
 
 /** Message to tell the [[RunGuardian]] to start handling the received results.

@@ -15,6 +15,7 @@ import edu.ie3.datamodel.models.input.connector.`type`.{
 import edu.ie3.datamodel.models.input.container._
 import edu.ie3.datamodel.utils.ContainerNodeUpdateUtil
 import edu.ie3.datamodel.utils.validation.ValidationUtils
+import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.GridException
 import edu.ie3.osmogrid.guardian.run.SubGridHandling._
 import edu.ie3.osmogrid.io.input.AssetInformation
@@ -49,6 +50,7 @@ trait SubGridHandling {
     *   logger
     */
   protected def handleResults(
+      cfg: OsmoGridConfig.Grids.Output,
       lvData: Option[Seq[SubGridContainer]],
       mvData: Option[Seq[SubGridContainer]],
       hvData: Option[Seq[GridContainer]],
@@ -60,7 +62,14 @@ trait SubGridHandling {
     log.info("All requested grids successfully generated.")
 
     val allGrids: Seq[GridContainer] =
-      processResults(lvData, mvData, hvData, mvNodeChanges, assetInformation)
+      processResults(
+        cfg,
+        lvData,
+        mvData,
+        hvData,
+        mvNodeChanges,
+        assetInformation
+      )
 
     val jointGrid = if (allGrids.isEmpty) {
       throw GridException(
@@ -111,6 +120,7 @@ trait SubGridHandling {
     *   a sequence of [[SubGridContainer]]
     */
   protected def processResults(
+      cfg: OsmoGridConfig.Grids.Output,
       lvData: Option[Seq[SubGridContainer]],
       mvData: Option[Seq[SubGridContainer]],
       hvData: Option[Seq[GridContainer]],
@@ -121,8 +131,12 @@ trait SubGridHandling {
     val nodeUpdateMap =
       updateNodeSubNetNumbers(lvData, mvData, mvNodeChanges, hvData)
 
+    val lvGrids = Option.when(cfg.lv)(lvData).flatten
+    val mvGrids = Option.when(cfg.mv)(mvData).flatten
+    val hvGrids = Option.when(cfg.hv)(hvData).flatten
+
     // updating all grids with the updated nodes
-    Seq(lvData, mvData, hvData).flatten.flatten.map(grid =>
+    Seq(lvGrids, mvGrids, hvGrids).flatten.flatten.map(grid =>
       ContainerNodeUpdateUtil.updateGridWithNodes(grid, nodeUpdateMap.asJava)
     )
   }

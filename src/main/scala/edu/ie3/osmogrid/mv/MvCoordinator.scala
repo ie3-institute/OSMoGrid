@@ -16,7 +16,7 @@ import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
 import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
 import utils.OsmoGridUtils.spawnDummyHvNode
-import utils.{GridContainerUtils, VoronoiUtils}
+import utils.GridContainerUtils
 
 import scala.util.{Failure, Success}
 
@@ -36,7 +36,7 @@ object MvCoordinator extends ActorStopSupportStateless {
     *   the idle state
     */
   def apply(
-      cfg: OsmoGridConfig.Generation.Mv,
+      cfg: OsmoGridConfig,
       inputDataProvider: ActorRef[InputDataEvent],
       runGuardian: ActorRef[MvResponse]
   ): Behavior[MvRequest] = Behaviors.setup[MvRequest] { context =>
@@ -56,7 +56,7 @@ object MvCoordinator extends ActorStopSupportStateless {
     *   a new behaviour
     */
   private def idle(
-      cfg: OsmoGridConfig.Generation.Mv,
+      cfg: OsmoGridConfig,
       inputDataProvider: ActorRef[InputDataEvent],
       messageAdapters: MvMessageAdapters,
       runGuardian: ActorRef[MvResponse]
@@ -164,7 +164,9 @@ object MvCoordinator extends ActorStopSupportStateless {
           Some(hv)
         case (Some(hv), false) => Some(hv)
         case (None, false) =>
-          throw new RuntimeException("Hv grids are needed and missing!")
+          if (awaitingInputData.hvGridsRequired) {
+            throw new RuntimeException("Hv grids are needed and missing!")
+          } else None
         case (None, true) =>
           ctx.log.debug(
             "No hv grids are provided! A new hv node will be spawned."
@@ -240,7 +242,7 @@ object MvCoordinator extends ActorStopSupportStateless {
         }
 
         val (polygons, notAssignedNodes) =
-          VoronoiUtils.createVoronoiPolygons(
+          VoronoiPolygonSupport.createVoronoiPolygons(
             transitionNodes.toList,
             mvToLv.toList,
             ctx

@@ -36,9 +36,7 @@ class MvCoordinatorSpec
   private val runGuardian =
     asynchronousTestKit.createTestProbe[MvResponse]("RunGuardian")
   private val cfg =
-    OsmoGridConfigFactory.defaultTestConfig.generation.mv.getOrElse(
-      fail("Test config does not contain config for mv grid generation.")
-    )
+    OsmoGridConfigFactory.defaultTestConfig
 
   "MvCoordinator" should {
     "be applied correctly" in {
