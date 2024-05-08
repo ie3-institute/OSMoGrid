@@ -94,8 +94,7 @@ case class ReaderSink(
             way.getId,
             way.getWayNodes.asScala.map(_.getNodeId).toSeq,
             tags = tags(way),
-            buildMetaInfo(way),
-            Some(way.getVersion)
+            buildMetaInfo(way)
           )
         )
       case unrecognized =>

@@ -152,8 +152,7 @@ trait OsmTestData {
           nodes.building1Node1.id
         ),
         Map("building" -> "yes"),
-        None,
-        Some(1)
+        None
       )
 
     val building2: ClosedWay =
@@ -167,8 +166,7 @@ trait OsmTestData {
           nodes.building2Node1.id
         ),
         Map("building" -> "yes"),
-        None,
-        Some(1)
+        None
       )
 
     val building3: ClosedWay =
@@ -182,8 +180,7 @@ trait OsmTestData {
           nodes.building3Node1.id
         ),
         Map("building" -> "yes"),
-        None,
-        Some(1)
+        None
       )
 
     val highway1: OpenWay =
@@ -191,8 +188,7 @@ trait OsmTestData {
         111L,
         Seq(nodes.highway1Node1.id, nodes.highway1Node2.id),
         Map("highway" -> "motorway"),
-        None,
-        Some(1)
+        None
       )
 
     val highway2: OpenWay =
@@ -205,8 +201,7 @@ trait OsmTestData {
           nodes.highway2Node4.id
         ),
         Map("highway" -> "motorway"),
-        None,
-        Some(2)
+        Some(OsmEntity.MetaInformation(Some(1), None, None, None, None, None))
       )
 
     val highway2oldVersion: OpenWay =
@@ -220,8 +215,7 @@ trait OsmTestData {
           nodes.highway2Node4.id
         ),
         Map("highway" -> "motorway"),
-        None,
-        Some(1)
+        Some(OsmEntity.MetaInformation(Some(0), None, None, None, None, None))
       )
 
     val landuse1: ClosedWay = ClosedWay(
@@ -234,8 +228,7 @@ trait OsmTestData {
         nodes.landuse1Node1.id
       ),
       Map("landuse" -> "education"),
-      None,
-      Some(1)
+      None
     )
 
     val landuse2: ClosedWay = ClosedWay(
@@ -248,8 +241,7 @@ trait OsmTestData {
         nodes.landuse2Node1.id
       ),
       Map.empty[String, String],
-      None,
-      Some(1)
+      None
     )
 
     val landuse3: ClosedWay = ClosedWay(
@@ -262,8 +254,7 @@ trait OsmTestData {
         nodes.landuse3Node1.id
       ),
       Map("landuse" -> "residential"),
-      None,
-      Some(1)
+      None
     )
 
     val boundaryWay1: OpenWay = OpenWay(
@@ -274,8 +265,7 @@ trait OsmTestData {
         nodes.boundaryNode3.id
       ),
       Map.empty[String, String],
-      None,
-      Some(1)
+      None
     )
     val boundaryWay2: OpenWay = OpenWay(
       132L,
@@ -285,8 +275,7 @@ trait OsmTestData {
         nodes.boundaryNode1.id
       ),
       Map.empty[String, String],
-      None,
-      Some(1)
+      None
     )
   }
 

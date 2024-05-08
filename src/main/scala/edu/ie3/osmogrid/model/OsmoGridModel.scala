@@ -109,31 +109,34 @@ object OsmoGridModel {
   def filterForLatestVersions[
       E <: OsmEntity: ClassTag,
       S <: OsmEntity: ClassTag
-  ](
-      entities: ParSeq[E],
-      nodes: Map[Long, S]
-  ): (ParSeq[E], Map[Long, S]) = {
+  ](entities: ParSeq[E], nodes: Map[Long, S]): (ParSeq[E], Map[Long, S]) = {
 
     val groupedEntities = entities.groupBy(_.id)
 
     val latestEntities = groupedEntities.values
       .flatMap { entities =>
-        val maxVersion = entities.map {
-          case entity: Way => entity.version.getOrElse(0)
-          case _           => 0
-        }.max
+        val maxVersion = entities
+          .flatMap {
+            case entity: E if entity.metaInformation.isDefined =>
+              entity.metaInformation.map(_.version.getOrElse(0))
+            case _ => Some(0)
+          }
+          .reduceOption(_ max _)
+          .getOrElse(0)
         entities.filter {
-          case entity: Way => entity.version.getOrElse(0) == maxVersion
-          case _           => false
+          case entity: E if entity.metaInformation.isDefined =>
+            entity.metaInformation.exists(_.version.contains(maxVersion))
+          case _ => true
         }
       }
       .toSeq
-      .toParArray
+      .par
 
     val nodeIds = latestEntities.flatMap {
       case entity: Way => entity.nodes
       case _           => Seq.empty
     }.toSet
+
     val latestNodes = nodes.view.filterKeys(nodeIds).toMap
 
     (latestEntities, latestNodes)
