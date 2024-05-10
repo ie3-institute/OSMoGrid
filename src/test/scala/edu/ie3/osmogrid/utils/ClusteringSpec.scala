@@ -49,7 +49,7 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
       )
 
       clustering.osmSubstations should contain allOf (p2_1, p1_1)
-      clustering.additionalSubstations shouldBe List.empty
+      clustering.additionalSubstations shouldBe Set.empty
       clustering.nodes should contain only (p2_4, p2_2, p1_3, p1_2, p2_3, p1_4)
     }
 
@@ -58,8 +58,8 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
       val clustering = Clustering.setup(elements, lines, trafo_10kV_to_lv, 0.5)
 
       val clusters = clustering invokePrivate createClusters(
-        elements.substations.values.toList,
-        elements.nodes.values.toList
+        elements.substations.values.toSet,
+        elements.nodes.values.toSet
       )
 
       val map = clusters.map { c => c.substation -> c }.toMap
@@ -69,15 +69,15 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
     }
 
     "check for improvements correctly" in {
-      val old: List[Cluster] = List(Cluster(p1_1, List(p1_2), 500))
+      val old: List[Cluster] = List(Cluster(p1_1, Set(p1_2), 500))
 
       Clustering.isImprovement(
         old,
-        List(Cluster(p1_1, List(p1_2), 450))
+        List(Cluster(p1_1, Set(p1_2), 450))
       ) shouldBe true
       Clustering.isImprovement(
         old,
-        List(Cluster(p1_1, List(p1_2), 490))
+        List(Cluster(p1_1, Set(p1_2), 496)) // improvement is less than 1 %
       ) shouldBe false
     }
 
@@ -85,9 +85,9 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
       val totalDistance = PrivateMethod[Double](Symbol("totalDistance"))
 
       val clusters = List(
-        Cluster(p1_1, List(p1_2), 500),
-        Cluster(p2_1, List(p2_2), 200),
-        Cluster(p1_3, List(p1_4), 300)
+        Cluster(p1_1, Set(p1_2), 500),
+        Cluster(p2_1, Set(p2_2), 200),
+        Cluster(p1_3, Set(p1_4), 300)
       )
 
       Clustering invokePrivate totalDistance(clusters) shouldBe 1000
@@ -99,17 +99,18 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
       val connections = Connections(elements, lines.toSeq)
 
       // suboptimal additional substation found
-      val additionalSubstation = List(p1_2)
+      val additionalSubstation = Set(p1_2)
 
       val clustering = Clustering(
         connections,
-        List(p1_1),
+        Set(p1_1),
         additionalSubstation,
-        elements.nodes.values.toList
+        elements.nodes.values.toSet,
+        8
       )
 
       val initialClusters = clustering invokePrivate createClusters(
-        List(p1_1, p1_2),
+        Set(p1_1, p1_2),
         clustering.nodes
       )
       val firstStep = clustering invokePrivate calculateStep(initialClusters)

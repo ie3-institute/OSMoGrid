@@ -11,6 +11,7 @@ import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.connector.LineInput
 import edu.ie3.datamodel.models.input.connector.`type`.Transformer2WTypeInput
 import edu.ie3.datamodel.models.input.system.LoadInput
+import edu.ie3.osmogrid.exception.ClusterException
 import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.GridElements
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
@@ -18,12 +19,14 @@ import utils.Clustering.{Cluster, isImprovement, totalDistance}
 
 import java.util.concurrent.ThreadLocalRandom
 import javax.measure.quantity.Power
+import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
 
 final case class Clustering(
     connections: Connections[NodeInput],
-    osmSubstations: List[NodeInput],
-    additionalSubstations: List[NodeInput],
-    nodes: List[NodeInput]
+    osmSubstations: Set[NodeInput],
+    additionalSubstations: Set[NodeInput],
+    nodes: Set[NodeInput],
+    nodeSize: Int
 ) {
 
   /** Method to run the algorithm. This algorithm is based on PAM (Partitioning
@@ -61,31 +64,31 @@ final case class Clustering(
   }
 
   /** Calculates the best next step.
-    * @param list
+    * @param clusters
     *   last step
     * @return
     *   an option
     */
-  private def calculateStep(list: List[Cluster]): Option[List[Cluster]] = {
-    // list of changeable substations
-    val changeable: List[NodeInput] =
-      list.filter { l => !osmSubstations.contains(l.substation) }.map { c =>
-        c.substation
-      }
-
+  private def calculateStep(clusters: List[Cluster]): Option[List[Cluster]] = {
     // calculates all swaps and returns the best as an option
-    changeable
-      .flatMap { s =>
-        nodes.map { n =>
-          // swaps two nodes
-          val substations = changeable.filter { c => c != s } :+ n
-          val other = nodes.filter { c => c != n } :+ s
+    additionalSubstations.par
+      .flatMap { substation =>
+        nodes.map { node =>
+          val currentSubstation = Set(substation)
+          val currentNode = Set(node)
 
-          val clusters = createClusters(substations :++ osmSubstations, other)
+          // swaps two nodes
+          val updatedSubstations =
+            additionalSubstations -- currentSubstation ++ currentNode
+          val updatedNodes = nodes -- currentNode ++ currentSubstation
+
+          val clusters =
+            createClusters(updatedSubstations ++ osmSubstations, updatedNodes)
 
           (clusters, totalDistance(clusters))
         }
       }
+      .seq
       .minByOption(_._2)
       .map(_._1)
   }
@@ -99,31 +102,41 @@ final case class Clustering(
     *   a list of [[Cluster]]
     */
   private def createClusters(
-      substations: List[NodeInput],
-      nodes: List[NodeInput]
+      substations: Set[NodeInput],
+      nodes: Set[NodeInput]
   ): List[Cluster] = {
-    nodes
-      .map { n =>
-        val closest = substations
-          .map { s => s -> connections.getDistance(n, s) }
-          .sortBy(_._2)
-          .toList(0)
-          ._1
+    if (substations.size + nodes.size != nodeSize) {
+      List.empty
+    } else {
+      nodes
+        .map { n =>
+          val closest = substations
+            .map { s => s -> connections.getDistance(n, s) }
+            .minByOption(_._2)
+            .map(_._1)
+            .getOrElse(
+              throw ClusterException(s"No substation found for node: $n")
+            )
 
-        (n, closest)
-      }
-      .groupMap(_._2)(_._1)
-      .map { case (s, list) =>
-        list
-          .flatMap { n =>
-            connections.getDistance(s, n).map(_.getValue.doubleValue())
-          }
-          .reduceOption { (a, b) => a + b } match {
-          case Some(value) => Cluster(s, list, value)
-          case None        => Cluster(s, list, Double.MaxValue)
+          (n, closest)
         }
-      }
-      .toList
+        .groupMap(_._2)(_._1)
+        .map { case (substation, connectedNodes) =>
+          // calculate all distances
+          val distances = connectedNodes.map(node =>
+            connections
+              .getDistance(substation, node)
+              .map(_.getValue.doubleValue())
+              .getOrElse(Double.MaxValue)
+          )
+
+          distances.reduceOption { (a, b) => a + b } match {
+            case Some(distance) => Cluster(substation, connectedNodes, distance)
+            case None => Cluster(substation, connectedNodes, Double.MaxValue)
+          }
+        }
+        .toList
+    }
   }
 }
 
@@ -142,11 +155,11 @@ object Clustering {
 
     val connections: Connections[NodeInput] =
       Connections(gridElements, lines.toSeq)
-    val osmSubstations = gridElements.substations.values.toList
+    val osmSubstations = gridElements.substations.values.toSet
 
     val additionalSubstationCount = substationCount - osmSubstations.size
 
-    val additionalSubstations: List[NodeInput] =
+    val additionalSubstations: Set[NodeInput] =
       if (additionalSubstationCount > 0) {
         val maxNr = gridElements.nodes.size
         val nodes = gridElements.nodes.values.toList
@@ -155,16 +168,17 @@ object Clustering {
         Range
           .Int(0, additionalSubstationCount, 1)
           .map { _ => nodes(ThreadLocalRandom.current().nextInt(0, maxNr)) }
-          .toList
+          .toSet
       } else {
-        List.empty[NodeInput]
+        Set.empty[NodeInput]
       }
 
     Clustering(
       connections,
       osmSubstations,
       additionalSubstations,
-      gridElements.nodes.values.toList.diff(additionalSubstations)
+      gridElements.nodes.values.toSet.diff(additionalSubstations),
+      gridElements.nodes.size + gridElements.substations.size
     )
   }
 
@@ -208,7 +222,7 @@ object Clustering {
     }
   }
 
-  /** Checks if there are still improvements
+  /** Checks if there are still improvements greater than 1 %.
     *
     * @param old
     *   clusters
@@ -220,7 +234,7 @@ object Clustering {
   def isImprovement(
       old: List[Cluster],
       current: List[Cluster]
-  ): Boolean = totalDistance(current) <= totalDistance(old) * 0.95
+  ): Boolean = totalDistance(current) <= totalDistance(old) * 0.99
 
   /** Calculates the total connection distance of a list of [[Cluster]]s.
     *
@@ -230,15 +244,19 @@ object Clustering {
     *   either the total distance or [[Double.MaxValue]]
     */
   private def totalDistance(list: List[Cluster]): Double = {
-    list.map { l => l.distances }.reduceOption { (a, b) => a + b } match {
-      case Some(value) => value
-      case None        => Double.MaxValue
+    if (list.isEmpty) {
+      Double.MaxValue
+    } else {
+      list.map { l => l.distances }.reduceOption { (a, b) => a + b } match {
+        case Some(value) => value
+        case None        => Double.MaxValue
+      }
     }
   }
 
   final case class Cluster(
       substation: NodeInput,
-      nodes: List[NodeInput],
+      nodes: Set[NodeInput],
       distances: Double
   )
 }

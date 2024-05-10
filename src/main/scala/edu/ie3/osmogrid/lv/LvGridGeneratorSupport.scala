@@ -226,7 +226,7 @@ object LvGridGeneratorSupport extends LazyLogging {
     // converting the cluster into an actual psdm subgrid
     cluster.map { c =>
       val substation = c.substation
-      val nodes = c.nodes.toSet + substation
+      val nodes = c.nodes ++ Set(substation)
       val lines: Map[(NodeInput, NodeInput), LineInput] = lineMap.filter {
         case ((nodeA, nodeB), _) =>
           nodes.contains(nodeA) && nodes.contains(nodeB)
@@ -245,7 +245,7 @@ object LvGridGeneratorSupport extends LazyLogging {
       val transformer2W =
         buildTransformer2W(mvNode, substation, 1, transformer2WTypeInput)
 
-      val allNodes: Set[NodeInput] = nodes + mvNode
+      val allNodes = nodes ++ Set(mvNode)
 
       buildGridContainer(
         gridNameBase,
