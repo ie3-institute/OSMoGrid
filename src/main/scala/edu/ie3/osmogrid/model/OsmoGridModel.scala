@@ -6,6 +6,7 @@
 
 package edu.ie3.osmogrid.model
 
+import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
 import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
@@ -23,7 +24,7 @@ sealed trait OsmoGridModel {
   def +(additional: OsmoGridModel): Option[OsmoGridModel]
 }
 
-object OsmoGridModel {
+object OsmoGridModel extends LazyLogging {
 
   def filterForSubstations(
       entities: ParSeq[EnhancedOsmEntity]
@@ -126,7 +127,9 @@ object OsmoGridModel {
         entities.filter {
           case entity: E if entity.metaInformation.isDefined =>
             entity.metaInformation.exists(_.version.contains(maxVersion))
-          case _ => true
+          case entity: E if !entity.metaInformation.isDefined =>
+            logger.info(s"Warning: ${entity.id} does not contain any meta information to identify the version id of the OsmEntity, so it was filtered out.")
+            false
         }
       }
       .toSeq
