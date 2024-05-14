@@ -139,36 +139,14 @@ object OsmoGridUtils {
     * @return
     *   a list of all unique connections
     */
-  def getAllUniqueCombinations[T](
-      nodes: List[T]
-  ): List[(T, T)] = {
+  def getAllUniqueCombinations[T](nodes: List[T]): List[(T, T)] = {
     if (nodes.size < 2) {
       List.empty
-    } else if (nodes.size == 2) {
-      List((nodes(0), nodes(1)))
     } else {
-      val connections: util.List[(T, T)] =
-        new util.ArrayList[(T, T)]
-
-      // algorithm to find all unique combinations
-      nodes.foreach(nodeA => {
-        nodes.foreach(nodeB => {
-          // it makes no sense to connect a node to itself => nodeA and nodeB cannot be the same
-          if (nodeA != nodeB) {
-            // two combinations possible
-            val t1 = (nodeA, nodeB)
-            val t2 = (nodeB, nodeA)
-
-            // if none of the combinations is already added, the first combination is added
-            if (!connections.contains(t1) && !connections.contains(t2)) {
-              connections.add(t1)
-            }
-          }
-        })
-      })
-
-      // returns all unique connections
-      connections.asScala.toList
+      for {
+        (a, i) <- nodes.zipWithIndex
+        b <- nodes.drop(i + 1)
+      } yield (a, b)
     }
   }
 

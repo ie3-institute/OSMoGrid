@@ -26,6 +26,7 @@ import utils.OsmoGridUtils.getAllUniqueCombinations
 
 import javax.measure.quantity.Length
 import scala.collection.mutable
+import scala.collection.parallel.CollectionConverters._
 import scala.jdk.CollectionConverters._
 
 /** This utility object contains all known [[Connection]]s.
@@ -201,7 +202,7 @@ object Connections {
     val vertexes = graph.vertexSet().asScala
     val paths = vertexes.map { v => v -> shortestPath.getPaths(v) }.toMap
 
-    getAllUniqueCombinations(graph.vertexSet().asScala.toList).map {
+    getAllUniqueCombinations(graph.vertexSet().asScala.toList).par.map {
       case (nodeA, nodeB) =>
         val path = paths(nodeA).getPath(nodeB)
 
@@ -217,7 +218,7 @@ object Connections {
           Quantities.getQuantity(path.getWeight, Units.METRE),
           Some(path)
         )
-    }
+    }.toList
   }
 
   /** Method for creating undirected [[Connection]]s. Excluding connections that
