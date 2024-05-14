@@ -114,7 +114,10 @@ object OsmoGridModel extends LazyLogging {
 
     val groupedEntities = entities.groupBy(_.id)
 
-    val latestEntities = groupedEntities.values
+    val (multipleOccurrenceGroups, singleOccurrenceGroups) =
+      groupedEntities.partition { case (_, group) => group.size > 1 }
+
+    val latestEntitiesFromMultipleOccurrences = multipleOccurrenceGroups.values
       .flatMap { entities =>
         val maxVersion = entities
           .flatMap {
@@ -137,14 +140,20 @@ object OsmoGridModel extends LazyLogging {
       .toSeq
       .par
 
-    val nodeIds = latestEntities.flatMap {
+    val singleOccurrenceEntities = singleOccurrenceGroups.values.flatten.toSeq
+
+    // Combine both sets of entities
+    val combinedEntities =
+      (latestEntitiesFromMultipleOccurrences ++ singleOccurrenceEntities).par
+
+    val nodeIds = combinedEntities.flatMap {
       case entity: Way => entity.nodes
       case _           => Seq.empty
     }.toSet
 
     val latestNodes = nodes.view.filterKeys(nodeIds).toMap
 
-    (latestEntities, latestNodes)
+    (combinedEntities, latestNodes)
   }
 
   final case class LvOsmoGridModel(
