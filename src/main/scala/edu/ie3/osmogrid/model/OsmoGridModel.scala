@@ -128,7 +128,9 @@ object OsmoGridModel extends LazyLogging {
           case entity: E if entity.metaInformation.isDefined =>
             entity.metaInformation.exists(_.version.contains(maxVersion))
           case entity: E if !entity.metaInformation.isDefined =>
-            logger.info(s"Warning: ${entity.id} does not contain any meta information to identify the version id of the OsmEntity, so it was filtered out.")
+            logger.info(
+              s"Warning: ${entity.id} does not contain any meta information to identify the version id of the OsmEntity, so it was filtered out."
+            )
             false
         }
       }
