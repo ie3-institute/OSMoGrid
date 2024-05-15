@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Switched from `akka` to `pekko`
 - Adding the clustering of low voltage grids
 - Consider substations as type `Node` [#411](https://github.com/ie3-institute/OSMoGrid/issues/411)
+- Update maven repository sources [#438](https://github.com/ie3-institute/OSMoGrid/issues/438)
 
 ### Changed
 - Rely on Java 17
