@@ -44,43 +44,36 @@ object OsmoGridModelPartitioner extends LazyLogging {
       osmoGridModel: LvOsmoGridModel,
       areas: ParMap[AreaKey, Polygon]
   ): ParMap[AreaKey, LvOsmoGridModel] = {
-    val buildings = assign(
-      osmoGridModel.buildings,
-      areas,
-      AssignByMax
-    )
-    val highways = assign(
-      osmoGridModel.highways,
-      areas,
-      AssignToAll
-    )
-    val landuses = assign(
-      osmoGridModel.landuses,
-      areas,
-      AssignToAll
-    )
-    val boundaries = assign(
-      osmoGridModel.boundaries,
-      areas,
-      AssignByMax
-    )
-    val existingSubstations = assign(
-      osmoGridModel.existingSubstations,
-      areas,
-      AssignByMax
-    )
+    val buildings = assign(osmoGridModel.buildings, areas, AssignByMax)
+    val existingSubstations =
+      assign(osmoGridModel.existingSubstations, areas, AssignByMax)
 
-    areas.keys.map { areaId =>
-      areaId ->
-        LvOsmoGridModel(
-          buildings.getOrElse(areaId, ParSeq.empty),
-          highways.getOrElse(areaId, ParSeq.empty),
-          landuses.getOrElse(areaId, ParSeq.empty),
-          boundaries.getOrElse(areaId, ParSeq.empty),
-          existingSubstations.getOrElse(areaId, ParSeq.empty),
-          osmoGridModel.filter
+    val data = areas.keys.flatMap { areaId =>
+      val assignedBuildings = buildings.getOrElse(areaId, ParSeq.empty)
+      val assignedSubstations =
+        existingSubstations.getOrElse(areaId, ParSeq.empty)
+
+      if (assignedBuildings.nonEmpty || assignedSubstations.nonEmpty) {
+        Some(
+          areaId ->
+            LvOsmoGridModel(
+              assignedBuildings,
+              assign(osmoGridModel.highways, areas, AssignToAll)
+                .getOrElse(areaId, ParSeq.empty),
+              assign(osmoGridModel.landuses, areas, AssignToAll)
+                .getOrElse(areaId, ParSeq.empty),
+              assign(osmoGridModel.boundaries, areas, AssignByMax)
+                .getOrElse(areaId, ParSeq.empty),
+              assignedSubstations,
+              osmoGridModel.filter
+            )
         )
+      } else {
+        None
+      }
     }.toMap
+
+    data
   }
 
   private def assign(
@@ -88,7 +81,6 @@ object OsmoGridModelPartitioner extends LazyLogging {
       areas: ParMap[AreaKey, Polygon],
       allocationStrategy: EntityAllocationStrategy
   ): ParMap[AreaKey, ParSeq[EnhancedOsmEntity]] = {
-
     enhancedEntities
       .flatMap { entity =>
         assign(entity, areas, allocationStrategy).map(_ -> entity)
@@ -104,7 +96,6 @@ object OsmoGridModelPartitioner extends LazyLogging {
       areas: ParMap[AreaKey, Polygon],
       allocationStrategy: EntityAllocationStrategy
   ): Iterable[AreaKey] = {
-
     val entityVotes = vote(enhancedEntity.entity, enhancedEntity, areas)
 
     allocationStrategy match {
