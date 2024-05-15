@@ -138,12 +138,25 @@ object BoundaryFactory {
 
   }
 
+  /** Split node sequences of polygons into parts. If the sequence can't be
+    * split because it represents only one polygon, the sequence is returned
+    * with the first node added at the end to close the polygon.
+    *
+    * @param seq
+    *   Sequence to split
+    * @tparam A
+    *   type of sequence
+    * @return
+    *   Indexed map with the split sequences
+    */
+
   private def splitByKey[A](seq: Seq[A]): Map[Int, Seq[A]] = {
-    seq
+    val result = seq
       .foldLeft((Map.empty[Int, Seq[A]], Map.empty[A, Int], 0)) {
         case ((acc, indexes, splitIdx), elem) =>
           indexes.get(elem) match {
             case Some(prevIdx) =>
+              // Element has been seen before
               val newSeq = seq.slice(prevIdx, splitIdx + 1)
               (
                 acc + (acc.size + 1 -> newSeq),
@@ -151,10 +164,27 @@ object BoundaryFactory {
                 splitIdx + 1
               )
             case None =>
-              (acc, indexes + (elem -> splitIdx), splitIdx + 1)
+              // Element has not been seen before
+              (
+                acc,
+                indexes + (elem -> splitIdx),
+                splitIdx + 1
+              )
           }
       }
       ._1
+
+    // If the result map is empty, return the whole sequence with the first element appended at the end
+    // (to close the polygon)
+    if (result.isEmpty) {
+      seq.headOption match {
+        case Some(firstElem) => Map(1 -> (seq :+ firstElem))
+        case None =>
+          Map(1 -> seq)
+      }
+    } else {
+      result
+    }
   }
 
   private def addWayNodesToPolygonSequence(
