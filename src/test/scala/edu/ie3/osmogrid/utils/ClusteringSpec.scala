@@ -6,6 +6,7 @@
 
 package edu.ie3.osmogrid.utils
 
+import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.test.common.{ClusterTestData, UnitSpec}
 import utils.{Clustering, Connections}
 import utils.Clustering.Cluster
@@ -13,10 +14,10 @@ import utils.Clustering.Cluster
 class ClusteringSpec extends UnitSpec with ClusterTestData {
   "A Clustering" should {
     val createClusters =
-      PrivateMethod[List[Cluster]](Symbol("createClusters"))
+      PrivateMethod[Set[Cluster]](Symbol("createClusters"))
 
     val calculateStep =
-      PrivateMethod[Option[List[Cluster]]](Symbol("calculateStep"))
+      PrivateMethod[Option[Set[Cluster]]](Symbol("calculateStep"))
 
     "calculate the number of substations correctly" in {
       val getSubstationCount = PrivateMethod[Int](Symbol("getSubstationCount"))
@@ -51,6 +52,8 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
       clustering.osmSubstations should contain allOf (p2_1, p1_1)
       clustering.additionalSubstations shouldBe Set.empty
       clustering.nodes should contain only (p2_4, p2_2, p1_3, p1_2, p2_3, p1_4)
+      clustering.nodeCount shouldBe 8
+      clustering.substationCount shouldBe 2
     }
 
     "create clusters correctly" in {
@@ -69,22 +72,22 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
     }
 
     "check for improvements correctly" in {
-      val old: List[Cluster] = List(Cluster(p1_1, Set(p1_2), 500))
+      val old = Set(Cluster(p1_1, Set(p1_2), 500))
 
       Clustering.isImprovement(
         old,
-        List(Cluster(p1_1, Set(p1_2), 450))
+        Set(Cluster(p1_1, Set(p1_2), 450))
       ) shouldBe true
       Clustering.isImprovement(
         old,
-        List(Cluster(p1_1, Set(p1_2), 496)) // improvement is less than 1 %
+        Set(Cluster(p1_1, Set(p1_2), 496)) // improvement is less than 1 %
       ) shouldBe false
     }
 
     "calculate the total distance of a list of clusters correctly" in {
       val totalDistance = PrivateMethod[Double](Symbol("totalDistance"))
 
-      val clusters = List(
+      val clusters = Set(
         Cluster(p1_1, Set(p1_2), 500),
         Cluster(p2_1, Set(p2_2), 200),
         Cluster(p1_3, Set(p1_4), 300)
@@ -106,24 +109,68 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
         Set(p1_1),
         additionalSubstation,
         elements.nodes.values.toSet,
-        8
+        9,
+        2
       )
 
-      val initialClusters = clustering invokePrivate createClusters(
-        Set(p1_1, p1_2),
-        clustering.nodes
+      val initialSubstations = Set(p1_1, p1_2)
+
+      val swaps = Set(
+        (p1_1, p1_1),
+        (p1_2, p2_3)
       )
-      val firstStep = clustering invokePrivate calculateStep(initialClusters)
+
+      val firstStep =
+        clustering invokePrivate calculateStep(swaps, initialSubstations)
 
       firstStep match {
         case Some(value) =>
           val map = value.map { c => c.substation -> c }.toMap
           map.keySet should contain allOf (p1_1, p2_3)
+
           map(p1_1).nodes should contain allOf (p1_2, p1_3, p1_4)
           map(p2_3).nodes should contain allOf (p2_1, p2_2, p2_4)
         case None =>
           fail("There is no next step!")
       }
+    }
+
+    "find the closest substation correctly" in {
+      // with one osm substation
+      val elements = gridElements(List(p1_1))
+      val connections = Connections(elements, lines.toSeq)
+
+      val clustering = Clustering(
+        connections,
+        Set(p1_1),
+        Set(p2_1),
+        elements.nodes.values.toSet,
+        9,
+        2
+      )
+
+      val findClosestSubstation =
+        PrivateMethod[Set[(NodeInput, NodeInput)]](
+          Symbol("findClosestSubstation")
+        )
+
+      val cases = Table(
+        ("substations", "node", "expectedSubstation"),
+        (Set(p1_1, p2_1), p1_2, Set((p1_2, p1_1))),
+        (Set(p1_1, p2_1), p1_3, Set((p1_3, p1_1))),
+        (Set(p1_1, p2_1), p2_4, Set((p2_4, p2_1))),
+        (Set(p1_1, p2_3), p2_4, Set((p2_4, p2_3)))
+      )
+
+      forAll(cases) { (substations, node, expectedSubstation) =>
+        val actual = clustering invokePrivate findClosestSubstation(
+          substations,
+          Set(node)
+        )
+
+        actual shouldBe expectedSubstation
+      }
+
     }
 
     "run the calculation correctly" in {
