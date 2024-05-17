@@ -73,7 +73,10 @@ object GridConversion {
       if (id.isEmpty) {
         val coordinatesString = coordinate.getCoordinates.mkString
         val cleanedString =
-          coordinatesString.replace(",", "").replace("NaN", "").trim
+          coordinatesString
+            .replace(",", "")
+            .replace("NaN", "")
+            .replace(" )", ")")
         "Node " + cleanedString
       } else id
 
