@@ -190,7 +190,7 @@ object BoundaryFactory {
   private def addWayNodesToPolygonSequence(
       existingNodes: Seq[AreaKey],
       currentWay: OsmEntity.Way
-  ): Try[(Seq[AreaKey])] = Try {
+  ): Try[Seq[AreaKey]] = Try {
     // Construct one single sequence of nodes by joining the ways.
     // Each way can be ordered in correct or in reverse order
     val currentNodes: Seq[AreaKey] = currentWay.nodes
