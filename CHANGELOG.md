@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - LV Coordinator dies unexpectedly [#361](https://github.com/ie3-institute/OSMoGrid/issues/361)
 - Some bugs fixed [#405](https://github.com/ie3-institute/OSMoGrid/issues/405)
 - Fixed number of parallel lines from zero to one [#419](https://github.com/ie3-institute/OSMoGrid/issues/419)
+- Fix cases of empty id for nodes [#433](https://github.com/ie3-institute/OSMoGrid/issues/433)
 
 ### Removed
 - Legacy Java code
