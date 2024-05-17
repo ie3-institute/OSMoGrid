@@ -11,8 +11,6 @@ import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
 import edu.ie3.test.common.UnitSpec
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
 import edu.ie3.util.osm.model.OsmEntity.Relation
-import edu.ie3.util.osm.model.OsmEntity.Way.{ClosedWay, OpenWay}
-
 import scala.collection.parallel.CollectionConverters._
 import scala.collection.parallel.ParSeq
 
@@ -406,7 +404,7 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
 
     }
 
-    "filter for correct version of way" in {
+    "throw exception for OsmEntities that occur multiple times" in {
       val relation = EnhancedOsmEntity(
         relations.boundary,
         Map(nodes.boundaryNode1.id -> nodes.boundaryNode1)
@@ -431,7 +429,6 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
         Map(
           nodes.highway2Node1.id -> nodes.highway2Node1,
           nodes.highway2Node2.id -> nodes.highway2Node2,
-          nodes.highway2Node2b.id -> nodes.highway2Node2b,
           nodes.highway2Node3.id -> nodes.highway2Node3,
           nodes.highway2Node4.id -> nodes.highway2Node4
         )
@@ -444,45 +441,21 @@ class OsmoGridModelSpec extends UnitSpec with OsmTestData {
         highway2oldVersion
       )
 
-      val (resultWays, resultWayNodes) =
+      intercept[RuntimeException] {
         OsmoGridModel.filterForWays(input)
+      }.getMessage shouldBe "Osm data does contain OsmEntity that occur multiple times with the same id: " +
+        "ParIterable(ParArray(" +
+        "EnhancedOsmEntity(OpenWay(112,List(22, 23, 24, 21),Map(highway -> motorway),None)," +
+        "Map(22 -> Node(22,51.498,7.4255,Map(),None), " +
+        "23 -> Node(23,50.538,7.4065,Map(),None), " +
+        "24 -> Node(24,50.578,7.4265,Map(),None), " +
+        "21 -> Node(21,51.4955,7.4063,Map(),None))), " +
+        "EnhancedOsmEntity(OpenWay(112,List(22, 23, 24, 21),Map(highway -> motorway),None)," +
+        "Map(22 -> Node(22,51.498,7.4255,Map(),None), " +
+        "23 -> Node(23,50.538,7.4065,Map(),None), " +
+        "24 -> Node(24,50.578,7.4265,Map(),None), " +
+        "21 -> Node(21,51.4955,7.4063,Map(),None)))))"
 
-      resultWays.size shouldBe 2
-
-      val closedWays = resultWays.collect { case way: ClosedWay => way }
-      val openWays = resultWays.collect { case way: OpenWay => way }
-
-      closedWays.size shouldBe 1
-      openWays.size shouldBe 1
-
-      closedWays.headOption.getOrElse(
-        fail("No closed way found")
-      ) shouldBe ways.building1
-      openWays.headOption.getOrElse(
-        fail("No open way found")
-      ) shouldBe ways.highway2
-
-      resultWayNodes.size shouldBe 5
-      resultWayNodes.getOrElse(
-        nodes.building1Node1.id,
-        fail("Collection shouldn't be empty")
-      ) shouldBe nodes.building1Node1
-
-      val expectedNodes = List(
-        nodes.highway2Node1,
-        nodes.highway2Node2,
-        nodes.highway2Node3,
-        nodes.highway2Node4,
-        nodes.building1Node1
-      )
-
-      expectedNodes.foreach { node =>
-        resultWayNodes.getOrElse(node.id, fail("Node not found")) shouldBe node
-      }
-
-      resultWayNodes.foreach { case (_, node) =>
-        expectedNodes should contain(node)
-      }
     }
   }
 }

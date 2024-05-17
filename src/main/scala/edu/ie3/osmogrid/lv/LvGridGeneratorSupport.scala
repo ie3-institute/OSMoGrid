@@ -16,15 +16,20 @@ import edu.ie3.datamodel.models.input.connector.`type`.{
 }
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.datamodel.models.input.system.LoadInput
-import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
+import edu.ie3.datamodel.models.voltagelevels.{
+  GermanVoltageLevelUtils,
+  VoltageLevel
+}
 import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.BuildingGraphConnection
 import edu.ie3.util.osm.model.OsmEntity.Node
+import tech.units.indriya.ComparableQuantity
 import utils.Clustering
 import utils.Clustering.Cluster
 import utils.GridConversion._
 
+import javax.measure.quantity.ElectricPotential
 import scala.annotation.tailrec
 import scala.collection.Set
 import scala.collection.parallel.{ParMap, ParSeq}

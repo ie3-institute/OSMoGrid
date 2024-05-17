@@ -57,8 +57,6 @@ trait OsmTestData {
     val highway2Node1: Node = highway1Node2
     val highway2Node2: Node =
       Node(23L, 50.538d, 7.4065d, Map.empty[String, String], None)
-    val highway2Node2b: Node =
-      Node(123L, 50.5382d, 7.40652d, Map.empty[String, String], None)
     val highway2Node3: Node =
       Node(24L, 50.578d, 7.4265d, Map.empty[String, String], None)
     val highway2Node4: Node = highway1Node1
@@ -152,7 +150,7 @@ trait OsmTestData {
           nodes.building1Node1.id
         ),
         Map("building" -> "yes"),
-        Some(OsmEntity.MetaInformation(Some(0), None, None, None, None, None))
+        None
       )
 
     val building2: ClosedWay =
@@ -166,7 +164,7 @@ trait OsmTestData {
           nodes.building2Node1.id
         ),
         Map("building" -> "yes"),
-        Some(OsmEntity.MetaInformation(Some(0), None, None, None, None, None))
+        None
       )
 
     val building3: ClosedWay =
@@ -180,7 +178,7 @@ trait OsmTestData {
           nodes.building3Node1.id
         ),
         Map("building" -> "yes"),
-        Some(OsmEntity.MetaInformation(Some(0), None, None, None, None, None))
+        None
       )
 
     val highway1: OpenWay =
@@ -188,7 +186,7 @@ trait OsmTestData {
         111L,
         Seq(nodes.highway1Node1.id, nodes.highway1Node2.id),
         Map("highway" -> "motorway"),
-        Some(OsmEntity.MetaInformation(Some(0), None, None, None, None, None))
+        None
       )
 
     val highway2: OpenWay =
@@ -201,7 +199,7 @@ trait OsmTestData {
           nodes.highway2Node4.id
         ),
         Map("highway" -> "motorway"),
-        Some(OsmEntity.MetaInformation(Some(1), None, None, None, None, None))
+        None
       )
 
     val highway2oldVersion: OpenWay =
@@ -210,18 +208,9 @@ trait OsmTestData {
         Seq(
           nodes.highway2Node1.id,
           nodes.highway2Node2.id,
-          nodes.highway2Node2b.id,
           nodes.highway2Node3.id,
           nodes.highway2Node4.id
         ),
-        Map("highway" -> "motorway"),
-        Some(OsmEntity.MetaInformation(Some(0), None, None, None, None, None))
-      )
-
-    val highway4: OpenWay =
-      OpenWay(
-        114L,
-        Seq(nodes.highway1Node1.id, nodes.highway1Node2.id),
         Map("highway" -> "motorway"),
         None
       )
@@ -236,7 +225,7 @@ trait OsmTestData {
         nodes.landuse1Node1.id
       ),
       Map("landuse" -> "education"),
-      Some(OsmEntity.MetaInformation(Some(0), None, None, None, None, None))
+      None
     )
 
     val landuse2: ClosedWay = ClosedWay(
@@ -249,7 +238,7 @@ trait OsmTestData {
         nodes.landuse2Node1.id
       ),
       Map.empty[String, String],
-      Some(OsmEntity.MetaInformation(Some(0), None, None, None, None, None))
+      None
     )
 
     val landuse3: ClosedWay = ClosedWay(
@@ -262,7 +251,7 @@ trait OsmTestData {
         nodes.landuse3Node1.id
       ),
       Map("landuse" -> "residential"),
-      Some(OsmEntity.MetaInformation(Some(0), None, None, None, None, None))
+      None
     )
 
     val boundaryWay1: OpenWay = OpenWay(

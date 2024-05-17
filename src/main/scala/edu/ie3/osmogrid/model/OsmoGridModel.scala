@@ -6,7 +6,6 @@
 
 package edu.ie3.osmogrid.model
 
-import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.osmogrid.model.SourceFilter.{Filter, LvFilter}
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
 import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
@@ -24,7 +23,7 @@ sealed trait OsmoGridModel {
   def +(additional: OsmoGridModel): Option[OsmoGridModel]
 }
 
-object OsmoGridModel extends LazyLogging {
+object OsmoGridModel {
 
   def filterForSubstations(
       entities: ParSeq[EnhancedOsmEntity]
@@ -57,13 +56,14 @@ object OsmoGridModel extends LazyLogging {
     }
     (matchedEntities.par, matchedSubentities)
   }
+
   def filterForWays(
       entities: ParSeq[EnhancedOsmEntity]
   ): (ParSeq[Way], Map[Long, Node]) = {
-    val (matchedEntities, matchedSubentities) =
-      filterForOsmType[Way, Node](entities)
+    // sanity check if there multiple editions of single osm entities
+    sanityCheckForMultipleOsmEntities(entities)
     val (latestEntities, latestNodes) =
-      filterForLatestVersions(matchedEntities, matchedSubentities)
+      filterForOsmType[Way, Node](entities)
 
     val ways = latestEntities.collect { case way: Way => way }
     (ways, latestNodes)
@@ -72,10 +72,8 @@ object OsmoGridModel extends LazyLogging {
   def filterForClosedWays(
       entities: ParSeq[EnhancedOsmEntity]
   ): (ParSeq[ClosedWay], Map[Long, Node]) = {
-    val (matchedEntities, matchedSubentities) =
-      filterForOsmType[ClosedWay, Node](entities)
     val (latestEntities, latestNodes) =
-      filterForLatestVersions(matchedEntities, matchedSubentities)
+      filterForOsmType[ClosedWay, Node](entities)
 
     val closedWays = latestEntities.collect { case way: ClosedWay => way }
     (closedWays, latestNodes)
@@ -107,53 +105,17 @@ object OsmoGridModel extends LazyLogging {
     (matchedEntities.par, matchedSubentities)
   }
 
-  def filterForLatestVersions[
-      E <: OsmEntity: ClassTag,
-      S <: OsmEntity: ClassTag
-  ](entities: ParSeq[E], nodes: Map[Long, S]): (ParSeq[E], Map[Long, S]) = {
+  def sanityCheckForMultipleOsmEntities(entities: ParSeq[EnhancedOsmEntity]) = {
 
-    val groupedEntities = entities.groupBy(_.id)
+    val groupedEntities = entities.groupBy(_.entity.id)
 
     val (multipleOccurrenceGroups, singleOccurrenceGroups) =
       groupedEntities.partition { case (_, group) => group.size > 1 }
 
-    val latestEntitiesFromMultipleOccurrences = multipleOccurrenceGroups.values
-      .flatMap { entities =>
-        val maxVersion = entities
-          .flatMap {
-            case entity: E if entity.metaInformation.isDefined =>
-              entity.metaInformation.map(_.version.getOrElse(0))
-            case _ => Some(0)
-          }
-          .reduceOption(_ max _)
-          .getOrElse(0)
-        entities.filter {
-          case entity: E if entity.metaInformation.isDefined =>
-            entity.metaInformation.exists(_.version.contains(maxVersion))
-          case entity: E if !entity.metaInformation.isDefined =>
-            logger.info(
-              s"Warning: ${entity.id} does not contain any meta information to identify the version id of the OsmEntity, so it was filtered out."
-            )
-            false
-        }
-      }
-      .toSeq
-      .par
-
-    val singleOccurrenceEntities = singleOccurrenceGroups.values.flatten.toSeq
-
-    // Combine both sets of entities
-    val combinedEntities =
-      (latestEntitiesFromMultipleOccurrences ++ singleOccurrenceEntities).par
-
-    val nodeIds = combinedEntities.flatMap {
-      case entity: Way => entity.nodes
-      case _           => Seq.empty
-    }.toSet
-
-    val latestNodes = nodes.view.filterKeys(nodeIds).toMap
-
-    (combinedEntities, latestNodes)
+    if (multipleOccurrenceGroups.nonEmpty)
+      throw new RuntimeException(
+        s"Osm data does contain OsmEntity that occur multiple times with the same id: ${multipleOccurrenceGroups.values}"
+      )
   }
 
   final case class LvOsmoGridModel(

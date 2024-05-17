@@ -6,7 +6,6 @@
 
 package edu.ie3.test.common
 
-import edu.ie3.util.osm.model.OsmEntity
 import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
 
 trait OsmTestData {
@@ -42,7 +41,7 @@ trait OsmTestData {
       id,
       Seq(nodeA.id, nodeB.id),
       Map.empty,
-      Some(OsmEntity.MetaInformation(Some(0)))
+      None
     )
   }
 }

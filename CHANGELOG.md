@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Switched from `akka` to `pekko`
 - Adding the clustering of low voltage grids
 - Consider substations as type `Node` [#411](https://github.com/ie3-institute/OSMoGrid/issues/411)
+- Added sanity check for multiple OsmEntities [#422](https://github.com/ie3-institute/OSMoGrid/issues/422)
 
 ### Changed
 - Rely on Java 17
@@ -41,7 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Switched from `osm4scala` to `openstreetmap.osmosis` [#409](https://github.com/ie3-institute/OSMoGrid/issues/409)
 - Changed transformer input parameter to PSDM requirements [#417](https://github.com/ie3-institute/OSMoGrid/issues/417)
 - Adapted run initialization [#404](https://github.com/ie3-institute/OSMoGrid/issues/404)
-- Only consider newest version of `Ways` [#422](https://github.com/ie3-institute/OSMoGrid/issues/422)
 
 ### Fixed
 - Fixed bug in `LvGridGeneratorSupport` [#388](https://github.com/ie3-institute/OSMoGrid/issues/388)
