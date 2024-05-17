@@ -69,7 +69,7 @@ object GridConversion {
       subnet: Int = 1,
       vTarget: ComparableQuantity[Dimensionless] = 1d.asPu
   ): NodeInput = {
-    val id_string =
+    val idString =
       if (id.isEmpty) {
         val coordinatesString = coordinate.getCoordinates.mkString
         val cleanedString =
@@ -79,7 +79,7 @@ object GridConversion {
 
     new NodeInput(
       UUID.randomUUID(),
-      id_string,
+      idString,
       vTarget,
       isSlack,
       coordinate,
