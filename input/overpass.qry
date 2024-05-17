@@ -24,12 +24,12 @@
   relation["power"="substation"];
 );
 // print results
-out meta;
+out;
 >;
-out meta;
+out;
 >;
-out meta;
+out;
 >;
-out meta;
+out;
 >;
 out skel qt;
