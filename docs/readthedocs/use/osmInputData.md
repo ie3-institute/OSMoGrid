@@ -27,7 +27,7 @@ This example will return the osm data for the area within given coordinates. The
 
   node["boundary"];
   way["boundary"];
-  relation["boundary"];
+  relation["boundary"="administrative"]["admin_level"~"^(6|7|8|9)$"]({{searcharea}});
 
 
   node["building"];
@@ -71,7 +71,7 @@ This example will return the osm data for the area of [TU Dortmund University](h
 (  
     node["boundary"]({{searcharea}}); 
   way["boundary"]({{searcharea}}); 
-  relation["boundary"]({{searcharea}}); 
+  relation["boundary"="administrative"]["admin_level"~"^(6|7|8|9)$"]({{searcharea}});
 
 
   node["building"]({{searcharea}}); 
