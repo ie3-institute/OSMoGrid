@@ -140,7 +140,7 @@ final case class Clustering(
 
           val unusedIds = newNodes.map(_.getId)
           logger.info(
-            s"More substations than uses. Convert unused substations to normal nodes. Unused substations: $unusedIds"
+            s"Unused substations exists. Converted these substations to normal nodes. Unused substations: $unusedIds"
           )
 
           findClosestSubstation(updatedSubstations, others ++ newNodes)
