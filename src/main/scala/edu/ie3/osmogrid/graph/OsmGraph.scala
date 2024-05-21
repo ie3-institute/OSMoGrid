@@ -119,6 +119,23 @@ class OsmGraph(
     }
   }
 
+  /** Returns the other node of an edge.
+    *
+    * @param source
+    *   the source node
+    * @param edge
+    *   the considered edge
+    * @return
+    *   the node on the other side of the edge
+    */
+  def getOtherEdgeNode(
+      source: Node,
+      edge: DistanceWeightedEdge
+  ): Node = {
+    if (getEdgeSource(edge) == source) getEdgeTarget(edge)
+    else getEdgeSource(edge)
+  }
+
   /** Returns true if at least two edges of this graph intersects each other.
     */
   def containsEdgeIntersection(): Boolean = {
