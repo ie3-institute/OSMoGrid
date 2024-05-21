@@ -7,7 +7,6 @@
 package edu.ie3.osmogrid.lv
 
 import com.typesafe.scalalogging.LazyLogging
-import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.connector.LineInput
 import edu.ie3.datamodel.models.input.connector.`type`.{
@@ -16,21 +15,16 @@ import edu.ie3.datamodel.models.input.connector.`type`.{
 }
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.datamodel.models.input.system.LoadInput
-import edu.ie3.datamodel.models.voltagelevels.{
-  GermanVoltageLevelUtils,
-  VoltageLevel
-}
+import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.BuildingGraphConnection
 import edu.ie3.util.osm.model.OsmEntity.Node
-import tech.units.indriya.ComparableQuantity
+import edu.ie3.util.quantities.QuantityUtils._
 import utils.Clustering
 import utils.Clustering.Cluster
 import utils.GridConversion._
 
-import javax.measure.quantity.ElectricPotential
-import scala.annotation.tailrec
 import scala.collection.Set
 import scala.collection.parallel.{ParMap, ParSeq}
 import scala.jdk.CollectionConverters._
@@ -165,27 +159,23 @@ object LvGridGeneratorSupport extends LazyLogging {
     if (gridElements.loads.isEmpty) {
       return List.empty
     }
-    val (startNode, startNodeInput) = gridElements.nodes.headOption.getOrElse(
-      throw new IllegalArgumentException(
-        "We have no electrical nodes to convert."
-      )
-    )
-    val (visitedNodes, lineInputs) = traverseGraph(
-      startNode,
-      startNodeInput,
-      osmGraph,
-      Set.empty,
-      Set.empty,
-      gridElements.nodes ++ gridElements.substations,
-      lineType
-    )
 
-    val unvisitedNodes = osmGraph.vertexSet().asScala.diff(visitedNodes)
+    val nodeToNodeInput = gridElements.nodes ++ gridElements.substations
+    val reducedGraph = reduceGraph(osmGraph, nodeToNodeInput.keySet)
 
-    // todo: happens with connected graphs with size of 1
-    if (unvisitedNodes.nonEmpty) {
-      logger.error(
-        "We did not visit all nodes while traversing the graph. Unvisited Nodes: " + unvisitedNodes
+    val lineInputs = reducedGraph.edgeSet().asScala.map { edge =>
+      val source = reducedGraph.getEdgeSource(edge)
+      val target = reducedGraph.getEdgeTarget(edge)
+      val nodeA = nodeToNodeInput(source)
+      val nodeB = nodeToNodeInput(target)
+
+      buildLine(
+        s"Line between: ${nodeA.getId}-${nodeB.getId}",
+        nodeA,
+        nodeB,
+        1,
+        lineType,
+        edge.getDistance
       )
     }
 
@@ -236,7 +226,7 @@ object LvGridGeneratorSupport extends LazyLogging {
     // converting the cluster into an actual psdm subgrid
     cluster.map { c =>
       val substation = c.substation
-      val nodes = c.nodes.toSet + substation
+      val nodes = c.nodes ++ Set(substation)
       val lines: Map[(NodeInput, NodeInput), LineInput] = lineMap.filter {
         case ((nodeA, nodeB), _) =>
           nodes.contains(nodeA) && nodes.contains(nodeB)
@@ -255,7 +245,7 @@ object LvGridGeneratorSupport extends LazyLogging {
       val transformer2W =
         buildTransformer2W(mvNode, substation, 1, transformer2WTypeInput)
 
-      val allNodes: Set[NodeInput] = nodes + mvNode
+      val allNodes = nodes ++ Set(mvNode)
 
       buildGridContainer(
         gridNameBase,
@@ -266,166 +256,50 @@ object LvGridGeneratorSupport extends LazyLogging {
     }
   }
 
-  /** Recursively traverses the graph by starting at a given node and follows
-    * all connected edges sequentially, building all lines between nodes in the
-    * process.
+  /** This method will reduce the graph by removing some vertices. A vertex is
+    * removed if its degree is <= 2 and it is not defined to be kept.
     *
-    * @param currentNode
-    *   the osm node at which we start
-    * @param currentNodeInput
-    *   the node input associated with the osm node at which we start
     * @param osmGraph
-    *   the osm graph wich we traverse
-    * @param alreadyVisited
-    *   nodes we have already visited
-    * @param lines
-    *   lines we have already built
-    * @param nodeToNodeInput
-    *   a mapping from osm node to node input
-    * @param lineTypeInput
-    *   the line type we use for building lines
+    *   graph to reduce
+    * @param keep
+    *   all [[Node]]s that should be kept
     * @return
-    *   a tuple of the set of already visited nodes and lines we have built
     */
-  private def traverseGraph(
-      currentNode: Node,
-      currentNodeInput: NodeInput,
+  private def reduceGraph(
       osmGraph: OsmGraph,
-      alreadyVisited: Set[Node],
-      lines: Set[LineInput],
-      nodeToNodeInput: Map[Node, NodeInput],
-      lineTypeInput: LineTypeInput
-  ): (Set[Node], Set[LineInput]) = {
-    if (alreadyVisited.contains(currentNode)) return (alreadyVisited, lines)
-    val connectedEdges = osmGraph.edgesOf(currentNode).asScala
-    // traverse through every edge of the current node to build lines
-    connectedEdges.foldLeft((alreadyVisited ++ Seq(currentNode), lines)) {
-      case ((updatedAlreadyVisited, updatedLines), edge) =>
-        val nextNode = getOtherEdgeNode(osmGraph, currentNode, edge)
-        if (!alreadyVisited.contains(nextNode)) {
-          // follow the edge along until the next node input is found if there is any
-          val (maybeNextNodeInput, maybeNextNode, passedStreetNodes) =
-            findNextNodeInput(
-              osmGraph,
-              nextNode,
-              edge,
-              updatedAlreadyVisited ++ Seq(currentNode),
-              nodeToNodeInput
-            )
-          maybeNextNodeInput.zip(maybeNextNode) match {
-            // if a node input is found along the edge we build a line
-            case Some((nextNodeInput, nextNode)) =>
-              val newLine =
-                buildLine(
-                  currentNodeInput,
-                  nextNodeInput,
-                  // for building the line we want to consider the whole street section we went along
-                  currentNode +: passedStreetNodes :+ nextNode,
-                  lineTypeInput
-                )
-              val (visitedNodes, builtLines) = traverseGraph(
-                nextNode,
-                nextNodeInput,
-                osmGraph,
-                alreadyVisited ++ passedStreetNodes ++ Seq(currentNode),
-                lines ++ Seq(newLine),
-                nodeToNodeInput,
-                lineTypeInput
-              )
-              (
-                updatedAlreadyVisited ++ visitedNodes,
-                updatedLines ++ builtLines
-              )
-            // if there is no more node input along the edge we are done with this branch of the graph
-            case None =>
-              (
-                updatedAlreadyVisited ++ passedStreetNodes ++ Seq(currentNode),
-                updatedLines
-              )
+      keep: Set[Node]
+  ): OsmGraph = {
+    osmGraph
+      .vertexSet()
+      .asScala
+      .diff(keep)
+      .foldLeft(osmGraph) { case (graph, currentNode) =>
+        if (graph.degreeOf(currentNode) <= 2) {
+          // the current node can be removed
+          val edges = graph.edgesOf(currentNode).asScala
+
+          if (edges.size != 1) {
+            edges.headOption.zip(edges.lastOption).foreach {
+              case (edgeA, edgeB) =>
+                val source = graph.getOtherEdgeNode(currentNode, edgeA)
+                val target = graph.getOtherEdgeNode(currentNode, edgeB)
+
+                if (source != target) {
+                  val distance = edgeA.getDistance
+                    .add(edgeB.getDistance)
+                    .getValue
+                    .doubleValue()
+                    .asMetre
+
+                  graph.addWeightedEdge(source, target, distance)
+                }
+            }
           }
-        } else {
-          // we've already been at this node before so we are done on this branch of the graph
-          (updatedAlreadyVisited, updatedLines)
-        }
-    }
-  }
 
-  /** Looks for the next [[Node]] that has an associated [[NodeInput]]. Returns
-    * all passed [[Node]]s we passed during the search. Includes the node at
-    * which we found a [[NodeInput]].
-    *
-    * @param graph
-    *   graph we traverse
-    * @param currentNode
-    *   node at which we start
-    * @param lastEdge
-    *   edge from where we came
-    * @param alreadyVisited
-    *   nodes we already visited
-    * @param nodeToNodeInput
-    *   map of all created [[NodeInput]]s
-    * @param passedNodes
-    *   nodes we passed while traversing
-    * @return
-    *   An optional of the found [[NodeInput]], an optional of the associated
-    *   [[Node]] and all [[Node]]s we looked at while traversin
-    */
-  @tailrec
-  private def findNextNodeInput(
-      graph: OsmGraph,
-      currentNode: Node,
-      lastEdge: DistanceWeightedEdge,
-      alreadyVisited: Set[Node],
-      nodeToNodeInput: Map[Node, NodeInput],
-      passedNodes: Seq[Node] = Seq.empty
-  ): (Option[NodeInput], Option[Node], Seq[Node]) = {
-    if (alreadyVisited.contains(currentNode))
-      return (None, None, passedNodes)
-    nodeToNodeInput.get(currentNode) match {
-      case Some(nodeInput) =>
-        (Some(nodeInput), Some(currentNode), passedNodes)
-      case None =>
-        graph.edgesOf(currentNode).asScala.filter(_ != lastEdge).toSeq match {
-          case Seq(nextEdge) =>
-            val nextNode = getOtherEdgeNode(graph, currentNode, nextEdge)
-            findNextNodeInput(
-              graph,
-              nextNode,
-              nextEdge,
-              alreadyVisited ++ Seq(currentNode),
-              nodeToNodeInput,
-              passedNodes :+ currentNode
-            )
-          case Nil =>
-            // this means we arrived at a dead end at which no node is connected
-            (None, None, passedNodes :+ currentNode)
-          case seq =>
-            throw IllegalStateException(
-              s"Node: $currentNode has no associated node input but more than two associated edges. Edges: $seq"
-            )
+          graph.removeVertex(currentNode)
         }
 
-    }
+        graph
+      }
   }
-
-  /** Returns the other node of an edge.
-    *
-    * @param graph
-    *   the graph
-    * @param source
-    *   the source node
-    * @param edge
-    *   the considered edge
-    * @return
-    *   the node on the other side of the edge
-    */
-  private def getOtherEdgeNode(
-      graph: OsmGraph,
-      source: Node,
-      edge: DistanceWeightedEdge
-  ): Node = {
-    if (graph.getEdgeSource(edge) == source) graph.getEdgeTarget(edge)
-    else graph.getEdgeSource(edge)
-  }
-
 }
