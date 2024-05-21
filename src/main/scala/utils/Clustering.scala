@@ -290,7 +290,8 @@ object Clustering {
   def isImprovement(
       old: Set[Cluster],
       current: Set[Cluster]
-  ): Boolean = totalDistance(current) <= totalDistance(old) * 0.99
+  ): Boolean =
+    calculateTotalLineLength(current) <= calculateTotalLineLength(old) * 0.99
 
   /** Calculates the total connection distance of a list of [[Cluster]]s.
     *
@@ -299,7 +300,7 @@ object Clustering {
     * @return
     *   either the total distance or [[Double.MaxValue]]
     */
-  private def totalDistance(list: Set[Cluster]): Double = {
+  def calculateTotalLineLength(list: Set[Cluster]): Double = {
     if (list.isEmpty) {
       Double.MaxValue
     } else {

@@ -8,8 +8,8 @@ package edu.ie3.osmogrid.utils
 
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.test.common.{ClusterTestData, UnitSpec}
-import utils.{Clustering, Connections}
 import utils.Clustering.Cluster
+import utils.{Clustering, Connections}
 
 class ClusteringSpec extends UnitSpec with ClusterTestData {
   "A Clustering" should {
@@ -84,16 +84,14 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
       ) shouldBe false
     }
 
-    "calculate the total distance of a list of clusters correctly" in {
-      val totalDistance = PrivateMethod[Double](Symbol("totalDistance"))
-
+    "calculate the total line length of a list of clusters correctly" in {
       val clusters = Set(
         Cluster(p1_1, Set(p1_2), 500),
         Cluster(p2_1, Set(p2_2), 200),
         Cluster(p1_3, Set(p1_4), 300)
       )
 
-      Clustering invokePrivate totalDistance(clusters) shouldBe 1000
+      Clustering.calculateTotalLineLength(clusters) shouldBe 1000
     }
 
     "calculate the next step correctly" in {
