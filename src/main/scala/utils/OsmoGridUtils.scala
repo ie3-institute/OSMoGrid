@@ -8,12 +8,7 @@ package utils
 
 import edu.ie3.datamodel.models.OperationTime
 import edu.ie3.datamodel.models.input.connector.Transformer2WInput
-import edu.ie3.datamodel.models.input.container.{
-  GraphicElements,
-  JointGridContainer,
-  RawGridElements,
-  SystemParticipants
-}
+import edu.ie3.datamodel.models.input.container.JointGridContainer
 import edu.ie3.datamodel.models.input.{NodeInput, OperatorInput}
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage
@@ -34,7 +29,6 @@ import org.locationtech.jts.geom.{Coordinate, Polygon}
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.unit.Units
 
-import java.util
 import java.util.UUID
 import javax.measure.quantity.{Area, Power}
 import scala.collection.parallel.ParSeq
@@ -144,6 +138,9 @@ object OsmoGridUtils {
       List.empty
     } else {
       for {
+        // Loops through all nodes as a and combines each node a with each b
+        // of the same nodes list. Nodes as b are restricted to those that
+        // occur later in the list than each node a respectively.
         (a, i) <- nodes.zipWithIndex
         b <- nodes.drop(i + 1)
       } yield (a, b)
