@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Switched from `osm4scala` to `openstreetmap.osmosis` [#409](https://github.com/ie3-institute/OSMoGrid/issues/409)
 - Changed transformer input parameter to PSDM requirements [#417](https://github.com/ie3-institute/OSMoGrid/issues/417)
 - Adapted run initialization [#404](https://github.com/ie3-institute/OSMoGrid/issues/404)
+- Refactoring of 'getAllUniqueCombinations' to avoid nested loops [#431](https://github.com/ie3-institute/OSMoGrid/issues/431)
 
 ### Fixed
 - Fixed bug in `LvGridGeneratorSupport` [#388](https://github.com/ie3-institute/OSMoGrid/issues/388)
