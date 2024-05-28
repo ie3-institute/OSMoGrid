@@ -129,8 +129,8 @@ object Connections {
     val graph: DistanceWeightedGraph = new DistanceWeightedGraph()
 
     // adding all nodes to the graph
-    val nodes: List[NodeInput] =
-      (elements.nodes.values ++ elements.substations.values).toList
+    val nodes: Set[NodeInput] =
+      (elements.nodes.values ++ elements.substations.values).toSet
     nodes.foreach { n => graph.addVertex(n) }
 
     lines.foreach { line =>
@@ -143,7 +143,7 @@ object Connections {
 
     val connectionList: List[Connection[NodeInput]] =
       buildUndirectedShortestPathConnections(graph, shortestPath)
-    Connections(nodes, connectionList)
+    Connections(nodes.toList, connectionList)
   }
 
   def apply[T](
