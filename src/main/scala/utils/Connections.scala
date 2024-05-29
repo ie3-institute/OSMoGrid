@@ -6,6 +6,7 @@
 
 package utils
 
+import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.datamodel.graph.{DistanceWeightedEdge, DistanceWeightedGraph}
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.connector.LineInput
@@ -26,6 +27,7 @@ import utils.OsmoGridUtils.getAllUniqueCombinations
 
 import javax.measure.quantity.Length
 import scala.collection.mutable
+import scala.collection.parallel.CollectionConverters._
 import scala.jdk.CollectionConverters._
 
 /** This utility object contains all known [[Connection]]s.
@@ -101,7 +103,7 @@ case class Connections[T](
   }
 }
 
-object Connections {
+object Connections extends LazyLogging {
   val log: Logger = LoggerFactory.getLogger(Connections.getClass)
 
   /** Utility object for connections.
@@ -201,23 +203,34 @@ object Connections {
     val vertexes = graph.vertexSet().asScala
     val paths = vertexes.map { v => v -> shortestPath.getPaths(v) }.toMap
 
-    getAllUniqueCombinations(graph.vertexSet().asScala.toList).map {
-      case (nodeA, nodeB) =>
-        val path = paths(nodeA).getPath(nodeB)
+    if (vertexes.size > 1000)
+      logger.info(
+        s"Needs to find shortest path connections for ${vertexes.size} vertices. This may take a while."
+      )
+    val connections =
+      getAllUniqueCombinations(graph.vertexSet().asScala.toList).par.map {
+        case (nodeA, nodeB) =>
+          val path = paths(nodeA).getPath(nodeB)
 
-        if (path == null) {
-          throw GridException(
-            s"No path could be found between $nodeA and $nodeB, because either node is not connected to the graph."
+          if (path == null) {
+            throw GridException(
+              s"No path could be found between $nodeA and $nodeB, because either node is not connected to the graph."
+            )
+          }
+
+          Connection(
+            nodeA,
+            nodeB,
+            Quantities.getQuantity(path.getWeight, Units.METRE),
+            Some(path)
           )
-        }
 
-        Connection(
-          nodeA,
-          nodeB,
-          Quantities.getQuantity(path.getWeight, Units.METRE),
-          Some(path)
-        )
-    }
+      }.toList
+    if (vertexes.size > 1000)
+      logger.info(
+        s"Finished search for shortest path connections for ${vertexes.size} vertices."
+      )
+    connections
   }
 
   /** Method for creating undirected [[Connection]]s. Excluding connections that
