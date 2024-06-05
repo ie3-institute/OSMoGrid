@@ -48,7 +48,7 @@ object OsmoGridModelPartitioner extends LazyLogging {
     val existingSubstations =
       assign(osmoGridModel.existingSubstations, areas, AssignByMax)
 
-    val data = areas.keys.flatMap { areaId =>
+    areas.keys.flatMap { areaId =>
       val assignedBuildings = buildings.getOrElse(areaId, ParSeq.empty)
       val assignedSubstations =
         existingSubstations.getOrElse(areaId, ParSeq.empty)
@@ -72,8 +72,6 @@ object OsmoGridModelPartitioner extends LazyLogging {
         None
       }
     }.toMap
-
-    data
   }
 
   private def assign(
