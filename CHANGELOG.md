@@ -42,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Switched from `osm4scala` to `openstreetmap.osmosis` [#409](https://github.com/ie3-institute/OSMoGrid/issues/409)
 - Changed transformer input parameter to PSDM requirements [#417](https://github.com/ie3-institute/OSMoGrid/issues/417)
 - Adapted run initialization [#404](https://github.com/ie3-institute/OSMoGrid/issues/404)
+- Refactoring of 'getAllUniqueCombinations' to avoid nested loops [#431](https://github.com/ie3-institute/OSMoGrid/issues/431)
+- Handling of boundaries that do not contain buildings [#434](https://github.com/ie3-institute/OSMoGrid/issues/434)
 
 ### Fixed
 - Fixed bug in `LvGridGeneratorSupport` [#388](https://github.com/ie3-institute/OSMoGrid/issues/388)
@@ -51,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Some bugs fixed [#405](https://github.com/ie3-institute/OSMoGrid/issues/405)
 - Fixed number of parallel lines from zero to one [#419](https://github.com/ie3-institute/OSMoGrid/issues/419)
 - Preventing unconnected nodes or subgrids [#415](https://github.com/ie3-institute/OSMoGrid/issues/415)
+- Fix cases of empty id for nodes [#433](https://github.com/ie3-institute/OSMoGrid/issues/433)
 
 ### Removed
 - Legacy Java code
