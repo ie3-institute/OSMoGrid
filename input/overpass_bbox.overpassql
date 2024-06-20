@@ -4,8 +4,7 @@
 
   node["boundary"];
   way["boundary"];
-  relation["boundary"="administrative"]["admin_level"~"^(6|7|8|9)$"]({{searcharea}});
-
+  relation["boundary"="administrative"]["admin_level"~"^(6|7|8|9)$"]({{bbox}});
 
   node["building"];
   way["building"];

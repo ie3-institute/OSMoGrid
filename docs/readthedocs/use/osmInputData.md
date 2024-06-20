@@ -26,8 +26,8 @@ This example will return the OSM data for the area within given coordinates. The
 (
 
   node["boundary"];
-  way["boundary"];
-  relation["boundary"="administrative"]["admin_level"~"^(6|7|8|9)$"]({{searcharea}});
+  way["boundary"];  
+  relation["boundary"="administrative"]["admin_level"~"^(6|7|8|9)$"]({{bbox}});
 
 
   node["building"];
