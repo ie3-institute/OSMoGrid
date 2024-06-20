@@ -1,6 +1,6 @@
-# Openstreetmap Input Data
+# OpenStreetMap (OSM) Input Data
 
-## How to get Osm Input Data
+## How to get OSM Input Data
 ### Overpass
 OSM data can be easily collected by using [overpass](https://overpass-turbo.eu/) but needs to be converted into .pbf format before using OsmoGrid.
 
@@ -18,7 +18,7 @@ Since even small areas can result in huge grid data, we encourage to limit the e
 
 #### Example query based on bounding box 
 
-This example will return the osm data for the area within given coordinates. They usually follow the standard format of: min longitude, min latitude, max longitude, max latitude. 
+This example will return the OSM data for the area within given coordinates. They usually follow the standard format of: min longitude, min latitude, max longitude, max latitude. 
 
 ```
 [out:xml][timeout:10][bbox:52.0262,7.3008,52.03672,7.31806];
@@ -59,9 +59,9 @@ out skel qt;
 
 ```
 
-#### Example query based on osm relation
+#### Example query based on OSM relation
 
-This example will return the osm data for the area of [TU Dortmund University](https://www.tu-dortmund.de/)
+This example will return the OSM data for the area of [TU Dortmund University](https://www.tu-dortmund.de/)
 
 ```
 [out:xml][timeout:30];
