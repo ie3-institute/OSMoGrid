@@ -37,13 +37,16 @@ object LvRegionCoordinator {
             if (areas.isEmpty)
               // if no containers have been found at this level, we continue with container of previous level
               Iterable.single(osmoGridModel)
-            else
-              OsmoGridModelPartitioner
+            else {
+              val partitionedAreas = OsmoGridModelPartitioner
                 .partition(
                   osmoGridModel,
                   areas
                 )
-                .values
+              if (partitionedAreas.isEmpty)
+                Iterable.single(osmoGridModel)
+              else partitionedAreas.values
+            }
 
           val levels = BoundaryAdminLevel
             .get(cfg.boundaryAdminLevel.lowest)
@@ -52,20 +55,27 @@ object LvRegionCoordinator {
               lowest >= next
             }
 
-          newOsmoGridModels.iterator.foreach { osmoGridModel =>
+          newOsmoGridModels.foreach { osmoGridModel =>
             levels match {
               case Some((_, nextLevel)) =>
-                val newRegionCoordinator = ctx.spawnAnonymous(
-                  LvRegionCoordinator()
-                )
-                newRegionCoordinator ! Partition(
-                  osmoGridModel,
-                  assetInformation,
-                  nextLevel,
-                  cfg,
-                  lvCoordinatorRegionCoordinatorAdapter,
-                  lvCoordinatorGridGeneratorAdapter
-                )
+                // Check if buildings or existing substations are empty
+                val buildingsEmpty = osmoGridModel.buildings.isEmpty
+                val substationsEmpty = osmoGridModel.existingSubstations.isEmpty
+
+                // Skip spawning LvRegionCoordinator if both buildings and substations are empty
+                if (!buildingsEmpty || !substationsEmpty) {
+                  val newRegionCoordinator = ctx.spawnAnonymous(
+                    LvRegionCoordinator()
+                  )
+                  newRegionCoordinator ! Partition(
+                    osmoGridModel,
+                    assetInformation,
+                    nextLevel,
+                    cfg,
+                    lvCoordinatorRegionCoordinatorAdapter,
+                    lvCoordinatorGridGeneratorAdapter
+                  )
+                }
               case None =>
                 val gridGenerator = ctx.spawnAnonymous(LvGridGenerator())
                 val gridUuid = UUID.randomUUID()
