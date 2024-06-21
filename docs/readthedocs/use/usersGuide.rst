@@ -6,3 +6,4 @@ Users Guide
    :caption: Contents:
 
    config.md
+   osmInputData.md
