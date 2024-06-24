@@ -36,7 +36,7 @@ object RunOsmoGridStandalone {
     val grid = cfg.output match {
       case Output(_, Some(csv), gridName) =>
         val newestOutput =
-          Path.of(csv.directory).getParent.toFile.listFiles().toSeq.lastOption
+          Path.of(csv.directory).toFile.listFiles().toSeq.lastOption
 
         newestOutput match {
           case Some(directory) =>

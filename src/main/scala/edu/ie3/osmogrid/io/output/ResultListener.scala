@@ -112,14 +112,14 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
       new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new java.util.Date())
 
     cfg match {
-      case Output(addTimestampToOutputDir, Some(csv), _) =>
+      case Output(addTimestampToOutputDir, Some(csv), gridName) =>
         val optionalSuffix =
           if (addTimestampToOutputDir) s"_$runStartTimeUTC" else ""
 
         Future(
           ResultCsvSink(
             runId,
-            Path.of(csv.directory + optionalSuffix),
+            Path.of(csv.directory, gridName + optionalSuffix),
             csv.separator,
             csv.hierarchic
           )
