@@ -364,6 +364,7 @@ object OsmoGridConfig {
   }
 
   final case class Output(
+      addTimestampToOutputDir: scala.Boolean,
       csv: scala.Option[OsmoGridConfig.Output.Csv],
       gridName: java.lang.String
   )
@@ -411,6 +412,9 @@ object OsmoGridConfig {
         $tsCfgValidator: $TsCfgValidator
     ): OsmoGridConfig.Output = {
       OsmoGridConfig.Output(
+        addTimestampToOutputDir = !c.hasPathOrNull(
+          "addTimestampToOutputDir"
+        ) || c.getBoolean("addTimestampToOutputDir"),
         csv =
           if (c.hasPathOrNull("csv"))
             scala.Some(

@@ -92,7 +92,10 @@ class ResultListenerIT
       "write the grid data correctly into csv files" in {
 
         val parsedCfg = ConfigFactory.parseMap(
-          Map("csv.directory" -> tmpDir.toFile.getAbsolutePath).asJava
+          Map(
+            "csv.directory" -> tmpDir.toFile.getAbsolutePath,
+            "addTimestampToOutputDir" -> false
+          ).asJava
         )
         val config =
           OsmoGridConfig.Output(parsedCfg, "output", new $TsCfgValidator())

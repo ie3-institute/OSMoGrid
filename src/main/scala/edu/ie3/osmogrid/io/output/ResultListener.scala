@@ -23,6 +23,9 @@ import edu.ie3.osmogrid.io.output.PersistenceListenerEvent.{
   ResultHandlingSucceeded
 }
 
+import java.nio.file.Path
+import java.text.SimpleDateFormat
+import java.time.ZonedDateTime
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -104,11 +107,22 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
   private def initSinks(
       runId: UUID,
       cfg: OsmoGridConfig.Output
-  ): Future[ResultSink] =
+  ): Future[ResultSink] = {
+    val runStartTimeUTC: String =
+      new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new java.util.Date())
+
     cfg match {
-      case Output(Some(csv), _) =>
+      case Output(addTimestampToOutputDir, Some(csv), _) =>
+        val optionalSuffix =
+          if (addTimestampToOutputDir) s"_$runStartTimeUTC" else ""
+
         Future(
-          ResultCsvSink(runId, csv.directory, csv.separator, csv.hierarchic)
+          ResultCsvSink(
+            runId,
+            Path.of(csv.directory + optionalSuffix),
+            csv.separator,
+            csv.hierarchic
+          )
         )
       case unsupported =>
         Future.failed(
@@ -117,6 +131,7 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
           )
         )
     }
+  }
 
   override protected def cleanUp(stateData: ListenerStateData): Unit = {
     stateData.sink.close()
