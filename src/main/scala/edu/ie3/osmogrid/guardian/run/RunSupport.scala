@@ -170,7 +170,7 @@ trait RunSupport {
       ctx: ActorContext[RunRequest]
   ): Option[ActorRef[ResultListenerProtocol]] = {
     val resultListener = outputConfig match {
-      case Output(Some(_), _) =>
+      case Output(_, Some(_), _) =>
         ctx.log.info("Starting output data listener ...")
         Some(
           ctx.spawn(
@@ -178,7 +178,7 @@ trait RunSupport {
             s"PersistenceResultListener_${runId.toString}"
           )
         )
-      case Output(None, _) =>
+      case Output(_, None, _) =>
         ctx.log.warn(s"No result listener configured for run $runId.")
         None
     }
