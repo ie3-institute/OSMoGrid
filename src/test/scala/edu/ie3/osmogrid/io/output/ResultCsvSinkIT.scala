@@ -32,7 +32,7 @@ class ResultCsvSinkIT extends UnitSpec with ThreeWindingTestData {
 
       val resultSink = ResultCsvSink(
         runId,
-        tmpDirectory.toFile.getPath,
+        tmpDirectory.toFile.toPath,
         csvSeparator,
         hierarchic
       )

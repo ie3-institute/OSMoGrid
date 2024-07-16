@@ -143,13 +143,13 @@ object ConfigFailFast extends LazyLogging {
       additionalListener: Seq[ActorRef[OutputRequest]]
   ): Unit =
     output match {
-      case Output(Some(file), _) =>
+      case Output(_, Some(file), _) =>
         checkOutputFile(file)
-      case Output(None, _) if additionalListener.nonEmpty =>
+      case Output(_, None, _) if additionalListener.nonEmpty =>
         logger.info(
           "No output data type defined, but other listener provided. Will use them accordingly!"
         )
-      case Output(None, _) =>
+      case Output(_, None, _) =>
         throw IllegalConfigException(
           "You have to provide at least one output data sink, e.g. to .csv-files!"
         )

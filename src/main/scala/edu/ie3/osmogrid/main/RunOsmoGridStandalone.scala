@@ -34,18 +34,27 @@ object RunOsmoGridStandalone {
     println(" ")
 
     val grid = cfg.output match {
-      case Output(Some(csv), gridName) =>
-        CsvJointGridContainerSource.read(
-          gridName,
-          csv.separator,
-          Path.of(csv.directory),
-          csv.hierarchic
-        )
-      case Output(None, _) =>
+      case Output(_, Some(csv), gridName) =>
+        val newestOutput =
+          Path.of(csv.directory).toFile.listFiles().toSeq.lastOption
+
+        newestOutput match {
+          case Some(directory) =>
+            CsvJointGridContainerSource.read(
+              gridName,
+              csv.separator,
+              directory.toPath,
+              csv.hierarchic
+            )
+          case None =>
+            throw IllegalConfigException("No output given.")
+        }
+      case Output(_, None, _) =>
         throw IllegalConfigException("No output given.")
     }
 
     println(" ")
+    println(s"Summarization of grid \"${cfg.output.gridName}\":")
 
     // get nodes
     val nodes = grid.getRawGrid.getNodes.asScala

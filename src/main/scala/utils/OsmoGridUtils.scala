@@ -8,12 +8,7 @@ package utils
 
 import edu.ie3.datamodel.models.OperationTime
 import edu.ie3.datamodel.models.input.connector.Transformer2WInput
-import edu.ie3.datamodel.models.input.container.{
-  GraphicElements,
-  JointGridContainer,
-  RawGridElements,
-  SystemParticipants
-}
+import edu.ie3.datamodel.models.input.container.JointGridContainer
 import edu.ie3.datamodel.models.input.{NodeInput, OperatorInput}
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage
@@ -34,7 +29,6 @@ import org.locationtech.jts.geom.{Coordinate, Polygon}
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.unit.Units
 
-import java.util
 import java.util.UUID
 import javax.measure.quantity.{Area, Power}
 import scala.collection.parallel.ParSeq
@@ -139,36 +133,17 @@ object OsmoGridUtils {
     * @return
     *   a list of all unique connections
     */
-  def getAllUniqueCombinations[T](
-      nodes: List[T]
-  ): List[(T, T)] = {
+  def getAllUniqueCombinations[T](nodes: List[T]): List[(T, T)] = {
     if (nodes.size < 2) {
       List.empty
-    } else if (nodes.size == 2) {
-      List((nodes(0), nodes(1)))
     } else {
-      val connections: util.List[(T, T)] =
-        new util.ArrayList[(T, T)]
-
-      // algorithm to find all unique combinations
-      nodes.foreach(nodeA => {
-        nodes.foreach(nodeB => {
-          // it makes no sense to connect a node to itself => nodeA and nodeB cannot be the same
-          if (nodeA != nodeB) {
-            // two combinations possible
-            val t1 = (nodeA, nodeB)
-            val t2 = (nodeB, nodeA)
-
-            // if none of the combinations is already added, the first combination is added
-            if (!connections.contains(t1) && !connections.contains(t2)) {
-              connections.add(t1)
-            }
-          }
-        })
-      })
-
-      // returns all unique connections
-      connections.asScala.toList
+      for {
+        // Loops through all nodes as a and combines each node a with each b
+        // of the same nodes list. Nodes as b are restricted to those that
+        // occur later in the list than each node a respectively.
+        (a, i) <- nodes.zipWithIndex
+        b <- nodes.drop(i + 1)
+      } yield (a, b)
     }
   }
 

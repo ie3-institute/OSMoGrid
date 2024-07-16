@@ -12,27 +12,26 @@ import edu.ie3.datamodel.io.naming.{
   FileNamingStrategy,
   FlatDirectoryHierarchy
 }
-import edu.ie3.datamodel.io.processor.ProcessorProvider
 import edu.ie3.datamodel.io.sink.CsvFileSink
 
-import java.nio.file.Paths
+import java.nio.file.Path
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 final case class ResultCsvSink(
     runId: UUID,
-    saveFolderPath: String,
+    saveFolderPath: Path,
     csvSeparator: String,
     hierarchic: Boolean
 ) extends ResultSink {
 
   private val csvFileSink = new CsvFileSink(
-    Paths.get(saveFolderPath),
+    saveFolderPath,
     new FileNamingStrategy(
       new EntityPersistenceNamingStrategy(),
       if (hierarchic)
-        new DefaultDirectoryHierarchy(Paths.get(saveFolderPath), "grid")
+        new DefaultDirectoryHierarchy(saveFolderPath, "grid")
       else
         new FlatDirectoryHierarchy()
     ),
