@@ -6,10 +6,8 @@
 
 package edu.ie3.osmogrid.io.output
 
-import com.typesafe.config.ConfigFactory
 import edu.ie3.datamodel.io.source.csv.CsvJointGridContainerSource
 import edu.ie3.osmogrid.cfg.ConfigFailFastSpec.viableConfigurationString
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.$TsCfgValidator
 import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.output.PersistenceListenerEvent.{
@@ -26,7 +24,6 @@ import java.nio.file.{Files, Path}
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
-import scala.jdk.CollectionConverters._
 
 class ResultListenerIT
     extends ScalaTestWithActorTestKit
@@ -90,12 +87,19 @@ class ResultListenerIT
 
     "handling a grid result" should {
       "write the grid data correctly into csv files" in {
+        val jointGrid = threeWindingTestGrid
 
-        val parsedCfg = ConfigFactory.parseMap(
-          Map("csv.directory" -> tmpDir.toFile.getAbsolutePath).asJava
+        val config = OsmoGridConfig.Output(
+          addTimestampToOutputDir = false,
+          Some(
+            OsmoGridConfig.Output.Csv(
+              tmpDir.toFile.getAbsolutePath,
+              hierarchic = false,
+              ","
+            )
+          ),
+          jointGrid.getGridName
         )
-        val config =
-          OsmoGridConfig.Output(parsedCfg, "output", new $TsCfgValidator())
 
         val testActor = testKit.spawn(
           Behaviors.monitor(
@@ -106,7 +110,6 @@ class ResultListenerIT
 
         testProbe.expectMessageType[InitComplete]
 
-        val jointGrid = threeWindingTestGrid
         testActor ! GridResult(jointGrid)
 
         testProbe.expectMessageType[GridResult]
@@ -116,7 +119,7 @@ class ResultListenerIT
         val gridData = CsvJointGridContainerSource.read(
           jointGrid.getGridName,
           ",",
-          tmpDir,
+          tmpDir.resolve(jointGrid.getGridName),
           false
         )
 

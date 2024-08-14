@@ -9,10 +9,17 @@ updates:
   target-branch: dev
   reviewers:
   - t-ober
-  - sensarmad
   - sebastian-peter
   - danielfeismann
+  - jo-bao
   ignore:
     - dependency-name: org.scalatest:scalatest_2.13
       versions:
         - 3.3.0-SNAP+
+- package-ecosystem: pip
+  directory: "/docs/readthedocs"
+  schedule:
+    interval: daily
+    time: "04:00"
+  open-pull-requests-limit: 8
+  target-branch: dev
