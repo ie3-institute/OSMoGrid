@@ -21,7 +21,7 @@ ext {
   pekkoVersion = '1.0.3'
 
   tscfgVersion = '0.9.995'
-  scapegoatVersion = '2.1.6'
+  scapegoatVersion = '3.0.0'
 
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
   docsDirName = 'docs'
