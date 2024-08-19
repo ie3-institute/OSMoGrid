@@ -21,7 +21,7 @@ ext {
   pekkoVersion = '1.0.3'
 
   tscfgVersion = '0.9.995'
-  scapegoatVersion = '2.1.6'
+  scapegoatVersion = '3.0.0'
 
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
   docsDirName = 'docs'
@@ -53,8 +53,7 @@ configurations {
 
 repositories {
   mavenCentral() //searches in bintray's repository 'jCenter', which contains Maven Central
-  maven { url 'https://www.jitpack.io' } // allows github repos as dependencies// sonatype snapshot repo
-  maven { url 'https://oss.sonatype.org/content/repositories/snapshots' } // Snapshot-Repository
+  maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' } // sonatype snapshot repo
 }
 
 dependencies {
@@ -72,7 +71,7 @@ dependencies {
 
   // logging
   implementation "com.typesafe.scala-logging:scala-logging_${scalaVersion}:3.9.5"
-  implementation 'ch.qos.logback:logback-classic:1.5.6'
+  implementation 'ch.qos.logback:logback-classic:1.5.7'
 
   // config
   implementation 'com.typesafe:config:1.4.3'

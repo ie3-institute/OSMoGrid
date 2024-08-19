@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Provide documentation and query example for overpass export of OSM data [#436](https://github.com/ie3-institute/OSMoGrid/issues/436)
 - Enhancing output folder with timestamp [#440](https://github.com/ie3-institute/OSMoGrid/issues/440)
 - Readthedocs dependencies to dependabot [#454](https://github.com/ie3-institute/OSMoGrid/issues/454)
+- Update maven repository sources [#438](https://github.com/ie3-institute/OSMoGrid/issues/438)
 
 ### Changed
 - Rely on Java 17
