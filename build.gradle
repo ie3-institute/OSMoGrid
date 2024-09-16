@@ -18,7 +18,7 @@ ext {
 
   scalaVersion = '2.13'
   scalaBinaryVersion = '2.13.14'
-  pekkoVersion = '1.1.0'
+  pekkoVersion = '1.1.1'
 
   tscfgVersion = '0.9.995'
   scapegoatVersion = '3.0.0'
