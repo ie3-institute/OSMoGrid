@@ -24,6 +24,16 @@ sealed trait OsmoGridModel {
 }
 
 object OsmoGridModel {
+  def filterNodes(entities: Seq[EnhancedOsmEntity]): Map[Long, Node] = {
+    entities.foldLeft(Map.empty[Long, Node]) {
+      (matchedSubEntities, curEntity) =>
+        curEntity.entity match {
+          case entity: Node =>
+            matchedSubEntities + (entity.id -> entity)
+          case _ => matchedSubEntities
+        }
+    }
+  }
 
   def filterForSubstations(
       entities: ParSeq[EnhancedOsmEntity]
