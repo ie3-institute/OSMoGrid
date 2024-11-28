@@ -112,7 +112,7 @@ out skel qt;
 Once the OSM data has been downloaded (e.g. as raw OSM data), it needs to be converted into a .pbf file. This can be done using the osmium package. Please note that these commands are intended to work on Ubuntu and may vary depending on your operating system.
 
 ```
-sudo apt install osmium
+sudo apt install osmium-tool
 ```
 
 
