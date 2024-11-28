@@ -57,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed number of parallel lines from zero to one [#419](https://github.com/ie3-institute/OSMoGrid/issues/419)
 - Preventing unconnected nodes or subgrids [#415](https://github.com/ie3-institute/OSMoGrid/issues/415)
 - Fix cases of empty id for nodes [#433](https://github.com/ie3-institute/OSMoGrid/issues/433)
+- Fix osmium installation command [#498](https://github.com/ie3-institute/OSMoGrid/issues/498)
 
 ### Removed
 - Legacy Java code
