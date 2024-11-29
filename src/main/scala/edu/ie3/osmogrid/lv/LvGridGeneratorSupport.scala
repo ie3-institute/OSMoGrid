@@ -39,21 +39,20 @@ object LvGridGeneratorSupport extends LazyLogging {
     *   the built loads
     */
   final case class GridElements(
-      nodes: Map[Node, NodeInput],
-      substations: Map[Node, NodeInput],
-      loads: Set[LoadInput]
+      nodes: Map[Node, NodeInput] = Map.empty,
+      substations: Map[Node, NodeInput] = Map.empty,
+      loads: Set[LoadInput] = Set.empty
   ) {
-    def +(load: LoadInput): GridElements = {
-      GridElements(this.nodes, this.substations, this.loads ++ Seq(load))
-    }
 
-    def ++(nodes: Map[Node, NodeInput], substations: Boolean): GridElements = {
-      if (substations) {
-        GridElements(this.nodes, this.substations ++ nodes, this.loads)
-      } else {
-        GridElements(this.nodes ++ nodes, this.substations, this.loads)
-      }
-    }
+    def withSubstation(node: Node, nodeInput: NodeInput): GridElements =
+      copy(substations = substations.updated(node, nodeInput))
+
+    def withNode(node: Node, nodeInput: NodeInput): GridElements =
+      copy(nodes = nodes.updated(node, nodeInput))
+
+    def withLoad(load: LoadInput): GridElements =
+      copy(loads = loads ++ Seq(load))
+
   }
 
   /** Builds a [[SubGridContainer]] from an OSM street graph by traversing the
@@ -99,7 +98,7 @@ object LvGridGeneratorSupport extends LazyLogging {
     val gridElements = osmGraph
       .vertexSet()
       .asScala
-      .foldLeft(GridElements(Map(), Map(), Set()))((gridElements, osmNode) => {
+      .foldLeft(GridElements())((gridElements, osmNode) => {
         nodesWithBuildings.get(osmNode) match {
           case Some(buildingGraphConnection: BuildingGraphConnection)
               if buildingGraphConnection.isSubstation =>
@@ -108,7 +107,7 @@ object LvGridGeneratorSupport extends LazyLogging {
               osmNode.coordinate,
               false
             )
-            gridElements ++ (Map(osmNode -> substationNode), true)
+            gridElements.withSubstation(osmNode, substationNode)
           case Some(buildingGraphConnection: BuildingGraphConnection) =>
             val highwayNode = nodeCreator(
               buildingGraphConnection
@@ -135,14 +134,14 @@ object LvGridGeneratorSupport extends LazyLogging {
                 false
               )
               val load = loadCreator(buildingConnectionNode)
-              gridElements ++ (Map(
-                osmNode -> highwayNode,
-                osmBuildingConnectionNode -> buildingConnectionNode
-              ), false) + load
+              gridElements
+                .withNode(osmNode, highwayNode)
+                .withNode(osmBuildingConnectionNode, buildingConnectionNode)
+                .withLoad(load)
 
             } else {
               val load = loadCreator(highwayNode)
-              gridElements ++ (Map(osmNode -> highwayNode), false) + load
+              gridElements.withNode(osmNode, highwayNode).withLoad(load)
             }
 
           case None if osmGraph.degreeOf(osmNode) > 2 =>
@@ -151,7 +150,7 @@ object LvGridGeneratorSupport extends LazyLogging {
               osmNode.coordinate,
               false
             )
-            gridElements ++ (Map(osmNode -> node), false)
+            gridElements.withNode(osmNode, node)
           case None =>
             gridElements
         }
