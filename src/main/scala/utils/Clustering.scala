@@ -16,17 +16,17 @@ import edu.ie3.osmogrid.exception.ClusterException
 import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.GridElements
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
-import utils.Clustering.{Cluster, isImprovement}
+import utils.Clustering.{Cluster, NodeWrapper, isImprovement}
 
 import java.util.concurrent.ThreadLocalRandom
 import javax.measure.quantity.Power
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
 
 final case class Clustering(
-    connections: Connections[NodeInput],
-    osmSubstations: Set[NodeInput],
-    additionalSubstations: Set[NodeInput],
-    nodes: Set[NodeInput],
+    connections: Connections[NodeWrapper],
+    osmSubstations: Set[NodeWrapper],
+    additionalSubstations: Set[NodeWrapper],
+    nodes: Set[NodeWrapper],
     nodeCount: Int,
     substationCount: Int,
 ) extends LazyLogging {
@@ -65,7 +65,7 @@ final case class Clustering(
               if (isImprovement(currentClusters, maybeUpdate)) {
                 val substations = Set(maybeUpdate.map(_.substation))
 
-                val updatedFoundCombinations: Set[Set[NodeInput]] =
+                val updatedFoundCombinations =
                   substationCombinations ++ substations
 
                 (maybeUpdate, updatedFoundCombinations)
@@ -88,8 +88,8 @@ final case class Clustering(
     *   an option
     */
   private def calculateStep(
-      swaps: Set[(NodeInput, NodeInput)],
-      substationCombinations: Set[Set[NodeInput]],
+      swaps: Set[(NodeWrapper, NodeWrapper)],
+      substationCombinations: Set[Set[NodeWrapper]],
   ): Option[Set[Cluster]] = {
     val (updatedSubstations, updatedNodes) =
       swaps.foldLeft((osmSubstations ++ additionalSubstations, nodes)) {
@@ -122,8 +122,8 @@ final case class Clustering(
     *   a set of [[Cluster]]
     */
   private def createClusters(
-      substations: Set[NodeInput],
-      others: Set[NodeInput],
+      substations: Set[NodeWrapper],
+      others: Set[NodeWrapper],
   ): Set[Cluster] = {
     if (substations.size + nodes.size != nodeCount) {
       logger.debug(
@@ -138,7 +138,7 @@ final case class Clustering(
         if (updatedSubstations.size != substationCount) {
           val newNodes = substations.diff(updatedSubstations)
 
-          val unusedIds = newNodes.map(_.getId)
+          val unusedIds = newNodes.map(_.input.getId)
           logger.info(
             s"Unused substations exists. Converted these substations to normal nodes. Unused substations: $unusedIds"
           )
@@ -146,7 +146,7 @@ final case class Clustering(
           findClosestSubstation(updatedSubstations, others ++ newNodes)
         } else nodeToSubstation
 
-      val groupedNodes: Map[NodeInput, Set[NodeInput]] =
+      val groupedNodes: Map[NodeWrapper, Set[NodeWrapper]] =
         updatedNodeToSubstation.groupMap(_._2)(_._1)
 
       groupedNodes.par
@@ -179,9 +179,9 @@ final case class Clustering(
     *   a set of nodes to closest substation
     */
   private def findClosestSubstation(
-      substations: Set[NodeInput],
-      others: Set[NodeInput],
-  ): Set[(NodeInput, NodeInput)] =
+      substations: Set[NodeWrapper],
+      others: Set[NodeWrapper],
+  ): Set[(NodeWrapper, NodeWrapper)] =
     others.map { n =>
       val closest = substations
         .map { s => s -> connections.getDistance(n, s) }
@@ -212,16 +212,16 @@ object Clustering {
       transformer2WTypeInput,
     )
 
-    val connections: Connections[NodeInput] =
-      Connections(gridElements, lines.toSeq)
-    val osmSubstations = gridElements.substations.values.toSet
+    val nodes = gridElements.nodes.values.map(NodeWrapper).toIndexedSeq
+
+    val connections = Connections(gridElements, lines.toSeq)
+    val osmSubstations = gridElements.substations.values.map(NodeWrapper).toSet
 
     val additionalSubstationCount = substationCount - osmSubstations.size
 
-    val additionalSubstations: Set[NodeInput] =
+    val additionalSubstations =
       if (additionalSubstationCount > 0) {
-        val maxNr = gridElements.nodes.size
-        val nodes = gridElements.nodes.values.toIndexedSeq
+        val maxNr = nodes.size
 
         // finds random nodes
         Range
@@ -229,15 +229,15 @@ object Clustering {
           .map { _ => nodes(ThreadLocalRandom.current().nextInt(0, maxNr)) }
           .toSet
       } else {
-        Set.empty[NodeInput]
+        Set.empty[NodeWrapper]
       }
 
     Clustering(
       connections,
       osmSubstations,
       additionalSubstations,
-      gridElements.nodes.values.toSet.diff(additionalSubstations),
-      gridElements.nodes.size + gridElements.substations.size,
+      nodes.toSet.diff(additionalSubstations),
+      nodes.size + gridElements.substations.size,
       osmSubstations.size + additionalSubstations.size,
     )
   }
@@ -316,8 +316,25 @@ object Clustering {
   }
 
   final case class Cluster(
-      substation: NodeInput,
-      nodes: Set[NodeInput],
+      substation: NodeWrapper,
+      nodes: Set[NodeWrapper],
       distances: Double,
   )
+
+  /** Wrapper class that avoids expensive calls to the original [[NodeInput]]
+    * hashcode method.
+    * @param input
+    *   The [[NodeInput]] to wrap
+    */
+  final case class NodeWrapper(input: NodeInput) {
+
+    override def hashCode(): Int = input.getUuid.hashCode()
+
+    override def equals(obj: Any): Boolean =
+      obj match {
+        case that: NodeWrapper => input.getUuid.equals(that.input.getUuid)
+        case _                 => false
+      }
+
+  }
 }
