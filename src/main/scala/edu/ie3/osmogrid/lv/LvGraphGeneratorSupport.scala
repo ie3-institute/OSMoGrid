@@ -383,7 +383,10 @@ object LvGraphGeneratorSupport extends LazyLogging {
           subgraph.vertexSet().asScala.flatMap(node => bgcMap.get(node)).toSeq
 
         if (buildingGraphConnections.isEmpty) {
-          logger.debug(s"Skipping component ({} OSM nodes) without connected buildings!", connectedSet.size)
+          logger.debug(
+            s"Skipping component ({} OSM nodes) without connected buildings!",
+            connectedSet.size
+          )
           graphSeq
         } else
           graphSeq :+ (subgraph, buildingGraphConnections)
