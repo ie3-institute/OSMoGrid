@@ -10,7 +10,6 @@ import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
 import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input.{
   BoundaryAdminLevel,
@@ -27,12 +26,10 @@ import edu.ie3.osmogrid.lv.region_coordinator.{
   LvRegionCoordinator,
   Partition
 }
-import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import utils.OsmoGridUtils.buildStreetGraph
 
-import java.util.UUID
 import scala.util.{Failure, Success}
 
 /** Actor to take care of the overall generation process for low voltage grids
@@ -93,7 +90,6 @@ object LvCoordinator extends ActorStopSupportStateless {
           ctx.log.debug("Request input data")
 
           /* Ask for OSM data */
-          val run = UUID.randomUUID()
           val filter = stateData.cfg.osm.filter
             .map(cfg =>
               LvFilter(

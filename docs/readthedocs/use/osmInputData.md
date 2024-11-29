@@ -24,11 +24,8 @@ This example will return the OSM data for the area within given coordinates. The
 [out:xml][timeout:10][bbox:52.0262,7.3008,52.03672,7.31806];
 // gather results
 (
-
-  node["boundary"];
-  way["boundary"];  
-  relation["boundary"="administrative"]["admin_level"~"^(6|7|8|9)$"]({{bbox}});
-
+  relation["boundary"="administrative"]["admin_level"~"^(6|7|8|9|10|11|12)$"]({{bbox}});
+  relation["boundary"="census"]["admin_level"~"^(11|12)$"]({{bbox}});
 
   node["building"];
   way["building"];
@@ -69,10 +66,8 @@ This example will return the OSM data for the area of [TU Dortmund University](h
 // relation: add 3600000000
 {{searcharea=area:3606188406}}
 (  
-    node["boundary"]({{searcharea}}); 
-  way["boundary"]({{searcharea}}); 
-  relation["boundary"="administrative"]["admin_level"~"^(6|7|8|9)$"]({{searcharea}});
-
+  relation["boundary"="administrative"]["admin_level"~"^(6|7|8|9|10|11|12)$"]({{searcharea}});
+  relation["boundary"="census"]["admin_level"~"^(11|12)$"]({{searcharea}});
 
   node["building"]({{searcharea}}); 
   way["building"]({{searcharea}}); 
