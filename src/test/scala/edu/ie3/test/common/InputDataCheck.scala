@@ -25,7 +25,7 @@ trait InputDataCheck extends Matchers {
     model.buildings should have length 2512
     model.buildings.map(_.allSubEntities.size).sum shouldBe 16367
 
-    model.boundaries should have length 7
+    model.boundaries should have length 9
     model.boundaries.map(_.allSubEntities.size).sum shouldBe 0
 
     model.existingSubstations should have length 10

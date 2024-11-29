@@ -14,7 +14,7 @@ sealed trait SourceFilter
 object SourceFilter {
 
   val standardBoundaryFilter: Filter =
-    Filter("boundary", Set("administrative"))
+    Filter("boundary", Set("administrative", "census"))
 
   val substationFilter: Set[Filter] =
     Set(
