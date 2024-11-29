@@ -89,7 +89,7 @@ object LvGridGeneratorSupport extends LazyLogging {
       lineType: LineTypeInput,
       transformer2WTypeInput: Transformer2WTypeInput,
       gridName: String
-  ): List[SubGridContainer] = {
+  ): Seq[SubGridContainer] = {
     val nodesWithBuildings: ParMap[Node, BuildingGraphConnection] =
       buildingGraphConnections.map(bgc => (bgc.graphConnectionNode, bgc)).toMap
 
@@ -156,7 +156,11 @@ object LvGridGeneratorSupport extends LazyLogging {
         }
       })
     if (gridElements.loads.isEmpty) {
-      return List.empty
+      logger.debug("Skipping grid with no loads!")
+      return Seq.empty
+    } else if (gridElements.substations.size + gridElements.nodes.size < 2) {
+      logger.debug("Skipping grid with less than two nodes in total!")
+      return Seq.empty
     }
 
     val nodeToNodeInput = gridElements.nodes ++ gridElements.substations

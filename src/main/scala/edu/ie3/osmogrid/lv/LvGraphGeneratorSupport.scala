@@ -6,6 +6,7 @@
 
 package edu.ie3.osmogrid.lv
 
+import com.typesafe.scalalogging.LazyLogging
 import edu.ie3.osmogrid.exception.OsmDataException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.model.OsmoGridModel
@@ -31,10 +32,10 @@ import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
 import java.util.UUID
 import javax.measure.quantity.{Length, Power}
 import scala.collection.parallel.ParSeq
-import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.jdk.CollectionConverters._
 import scala.util.{Success, Try}
 
-object LvGraphGeneratorSupport {
+object LvGraphGeneratorSupport extends LazyLogging {
 
   /** Resembles a calculated connection between a building and a grid. Every
     * building gets connected on the nearest point at the nearest highway
@@ -114,7 +115,7 @@ object LvGraphGeneratorSupport {
   ): Seq[(OsmGraph, Seq[BuildingGraphConnection])] = {
     val (highways, highwayNodes) =
       OsmoGridModel.filterForWays(osmoGridModel.highways)
-    val (building, buildingNodes) =
+    val (buildings, buildingNodes) =
       OsmoGridModel.filterForClosedWays(osmoGridModel.buildings)
     val (landuses, landUseNodes) =
       OsmoGridModel.filterForClosedWays(osmoGridModel.landuses)
@@ -122,7 +123,7 @@ object LvGraphGeneratorSupport {
       OsmoGridModel.filterForSubstations(osmoGridModel.existingSubstations)
     val buildingGraphConnections = calcBuildingGraphConnections(
       landuses,
-      building,
+      buildings,
       substations,
       highways,
       highwayNodes ++ buildingNodes ++ landUseNodes ++ substationNodes,
@@ -380,7 +381,12 @@ object LvGraphGeneratorSupport {
         }
         val buildingGraphConnections =
           subgraph.vertexSet().asScala.flatMap(node => bgcMap.get(node)).toSeq
-        graphSeq :+ (subgraph, buildingGraphConnections)
+
+        if (buildingGraphConnections.isEmpty) {
+          logger.debug(s"Skipping component ({} OSM nodes) without connected buildings!", connectedSet.size)
+          graphSeq
+        } else
+          graphSeq :+ (subgraph, buildingGraphConnections)
       })
 
     } else Seq((graph, buildingGraphConnections))

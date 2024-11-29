@@ -1,6 +1,6 @@
 # Concept
 
-... of OSMoGrid and it's implementation.
+... of OSMoGrid and its implementation.
 Here, we want to focus on the overall structure of the tool and which part does serve which purpose.
 
 The computational heaviest part is connecting households / loads to the street graph as well as clustering the loads based on the distances following the street graph.
