@@ -202,6 +202,10 @@ object Clustering {
       transformer2WTypeInput: Transformer2WTypeInput,
       loadSimultaneousFactor: Double
   ): Clustering = {
+    if (gridElements.nodes.size + gridElements.substations.size < 2) {
+      throw ClusterException("Cannot cluster a grid with less than two nodes.")
+    }
+
     val substationCount = getSubstationCount(
       gridElements.loads.toSet,
       loadSimultaneousFactor,
@@ -217,7 +221,7 @@ object Clustering {
     val additionalSubstations: Set[NodeInput] =
       if (additionalSubstationCount > 0) {
         val maxNr = gridElements.nodes.size
-        val nodes = gridElements.nodes.values.toList
+        val nodes = gridElements.nodes.values.toIndexedSeq
 
         // finds random nodes
         Range

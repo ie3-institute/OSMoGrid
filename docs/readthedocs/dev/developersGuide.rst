@@ -7,3 +7,4 @@ Developers guide
 
    legacy/legacy.md
    concept.md
+   osmIntricacies.md

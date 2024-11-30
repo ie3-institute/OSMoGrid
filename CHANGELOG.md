@@ -60,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preventing unconnected nodes or subgrids [#415](https://github.com/ie3-institute/OSMoGrid/issues/415)
 - Fix cases of empty id for nodes [#433](https://github.com/ie3-institute/OSMoGrid/issues/433)
 - Fix osmium installation command [#498](https://github.com/ie3-institute/OSMoGrid/issues/498)
+- Clustering crashes with less than two nodes [#506](https://github.com/ie3-institute/OSMoGrid/issues/506)
 
 ### Removed
 - Legacy Java code
