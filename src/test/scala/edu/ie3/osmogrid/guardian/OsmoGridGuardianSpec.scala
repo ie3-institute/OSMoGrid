@@ -44,7 +44,7 @@ class OsmoGridGuardianSpec extends UnitSpec {
 
         idleTestKit.logEntries() should contain only CapturedLogEvent(
           Level.INFO,
-          s"Run $runId terminated."
+          s"Run $runId terminated.",
         )
       }
     }

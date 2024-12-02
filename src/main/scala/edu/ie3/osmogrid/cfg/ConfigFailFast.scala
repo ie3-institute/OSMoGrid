@@ -15,7 +15,7 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig.{
   Grids,
   Input,
   Output,
-  Voltage
+  Voltage,
 }
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
@@ -26,7 +26,7 @@ import scala.util.Try
 object ConfigFailFast extends LazyLogging {
   def check(
       cfg: OsmoGridConfig,
-      additionalListener: Seq[ActorRef[OutputRequest]] = Seq.empty
+      additionalListener: Seq[ActorRef[OutputRequest]] = Seq.empty,
   ): Try[OsmoGridConfig] = Try {
     cfg match {
       case OsmoGridConfig(generation, grids, input, output, voltage) =>
@@ -61,12 +61,12 @@ object ConfigFailFast extends LazyLogging {
           _,
           Lv.BoundaryAdminLevel(
             lowest,
-            starting
+            starting,
           ),
           _,
           loadSimultaneousFactor,
           _,
-          _
+          _,
         ) =>
       (BoundaryAdminLevel.get(lowest), BoundaryAdminLevel.get(starting)) match {
         case (None, _) =>
@@ -140,7 +140,7 @@ object ConfigFailFast extends LazyLogging {
 
   private def checkOutputConfig(
       output: OsmoGridConfig.Output,
-      additionalListener: Seq[ActorRef[OutputRequest]]
+      additionalListener: Seq[ActorRef[OutputRequest]],
   ): Unit =
     output match {
       case Output(_, Some(file), _) =>

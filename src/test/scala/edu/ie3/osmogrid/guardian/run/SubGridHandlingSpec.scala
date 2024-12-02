@@ -9,13 +9,13 @@ package edu.ie3.osmogrid.guardian.run
 import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.input.connector.{
   Transformer2WInput,
-  Transformer3WInput
+  Transformer3WInput,
 }
 import edu.ie3.datamodel.models.input.container.{
   GraphicElements,
   RawGridElements,
   SubGridContainer,
-  SystemParticipants
+  SystemParticipants,
 }
 import edu.ie3.datamodel.models.input.graphics.GraphicInput
 import edu.ie3.datamodel.models.input.system.SystemParticipantInput
@@ -53,7 +53,7 @@ class SubGridHandlingSpec
     val listener = Seq(resultListener.ref)
     val msgAdapters: MessageAdapters = MessageAdapters(
       lvCoordinator.ref,
-      mvCoordinator.ref
+      mvCoordinator.ref,
     )
     val log = testKit.system.log
     val cfg = OsmoGridConfig.Grids.Output(hv = true, lv = true, mv = true)
@@ -68,7 +68,7 @@ class SubGridHandlingSpec
           None,
           None,
           listener,
-          msgAdapters
+          msgAdapters,
         )(log)
       }
 
@@ -91,7 +91,7 @@ class SubGridHandlingSpec
         None,
         None,
         None,
-        Some(assetInformation)
+        Some(assetInformation),
       )
 
       processed.size shouldBe 1
@@ -125,7 +125,7 @@ class SubGridHandlingSpec
         3,
         new RawGridElements(List[AssetInput](commonNode).asJava),
         new SystemParticipants(List.empty[SystemParticipantInput].asJava),
-        new GraphicElements(List.empty[GraphicInput].asJava)
+        new GraphicElements(List.empty[GraphicInput].asJava),
       )
 
       val expectedUpdatedNode = commonNode.copy().subnet(3).build()
@@ -136,7 +136,7 @@ class SubGridHandlingSpec
         Some(Seq(mv)),
         None,
         None,
-        Some(assetInformation)
+        Some(assetInformation),
       )
 
       processed.size shouldBe 2
@@ -167,7 +167,7 @@ class SubGridHandlingSpec
         false,
         mock[Point],
         MV_20KV,
-        10
+        10,
       )
       val dummyNodeB = new NodeInput(
         UUID.randomUUID(),
@@ -176,7 +176,7 @@ class SubGridHandlingSpec
         false,
         mock[Point],
         LV,
-        1
+        1,
       )
 
       val dummyTrafo = new Transformer2WInput(
@@ -187,13 +187,13 @@ class SubGridHandlingSpec
         1,
         trafo_10kV_to_lv,
         0,
-        false
+        false,
       )
 
       val updated: Try[Seq[Transformer2WInput]] =
         SubGridHandling invokePrivate updateTransformer2Ws(
           Seq(dummyTrafo),
-          assetInformation.transformerTypes
+          assetInformation.transformerTypes,
         )
 
       updated.getOrElse(fail("This test should pass!")).headOption match {
@@ -221,7 +221,7 @@ class SubGridHandlingSpec
         true,
         mock[Point],
         MV_20KV,
-        20
+        20,
       )
       val dummyNodeB = new NodeInput(
         UUID.randomUUID(),
@@ -230,7 +230,7 @@ class SubGridHandlingSpec
         false,
         mock[Point],
         MV_10KV,
-        10
+        10,
       )
       val dummyNodeC = new NodeInput(
         UUID.randomUUID(),
@@ -239,7 +239,7 @@ class SubGridHandlingSpec
         false,
         mock[Point],
         LV,
-        1
+        1,
       )
 
       val dummyTrafo = new Transformer3WInput(
@@ -251,13 +251,13 @@ class SubGridHandlingSpec
         1,
         trafo_HV_10kV_LV,
         0,
-        false
+        false,
       )
 
       val updated: Try[Seq[Transformer3WInput]] =
         SubGridHandling invokePrivate updateTransformer3Ws(
           Seq(dummyTrafo),
-          Seq(trafo_20kV_10kV_LV)
+          Seq(trafo_20kV_10kV_LV),
         )
 
       updated.getOrElse(fail("This test should pass!")).headOption match {
@@ -289,7 +289,7 @@ class SubGridHandlingSpec
         When("assigning a different subgrid number")
         val actual = SubGridHandling invokePrivate assignSubNetNumbers(
           Seq(givenContainer),
-          newSubnet
+          newSubnet,
         )
 
         Then(
@@ -319,7 +319,7 @@ class SubGridHandlingSpec
 
         val actual = SubGridHandling invokePrivate assignSubNetNumbers(
           givenContainers,
-          42
+          42,
         )
 
         actual._1.values.size shouldBe givenContainers.size * 5
@@ -352,7 +352,7 @@ class SubGridHandlingSpec
       val grids = Range.inclusive(11, 20).map(mockSubGrid)
       val messageAdapters = new MessageAdapters(
         lvCoordinatorAdapter.ref,
-        mvCoordinatorAdapter.ref
+        mvCoordinatorAdapter.ref,
       )
       val cfg = OsmoGridConfigFactory
         .parse {

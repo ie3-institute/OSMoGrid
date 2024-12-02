@@ -24,7 +24,7 @@ class GridConversionSpec extends UnitSpec with MvTestData with GridSupport {
     "build a mv line input correctly" in {
       val cases = Table(
         ("id", "nodeA", "nodeB", "parallel", "lineType", "length"),
-        ("1", nodeInMv1, nodeInMv2, 1, defaultLineTypeMv, 500)
+        ("1", nodeInMv1, nodeInMv2, 1, defaultLineTypeMv, 500),
       )
 
       forAll(cases) { (id, nodeA, nodeB, parallel, lineType, length) =>
@@ -34,7 +34,7 @@ class GridConversionSpec extends UnitSpec with MvTestData with GridSupport {
           nodeB,
           parallel,
           lineType,
-          Quantities.getQuantity(length, Units.METRE)
+          Quantities.getQuantity(length, Units.METRE),
         )
 
         line.getId shouldBe id
@@ -61,7 +61,7 @@ class GridConversionSpec extends UnitSpec with MvTestData with GridSupport {
         osmNode3,
         osmNode4,
         osmNode5,
-        osmNode6
+        osmNode6,
       )
 
       val nodeConversion = NodeConversion(nodes, osmNodes)
@@ -71,14 +71,14 @@ class GridConversionSpec extends UnitSpec with MvTestData with GridSupport {
         transitionPoint,
         osmNode2,
         osmNode3,
-        osmNode6
+        osmNode6,
       )
 
       nodeConversion.conversionToOsm shouldBe Map(
         nodeToHv -> transitionPoint,
         nodeInMv2 -> osmNode2,
         nodeInMv3 -> osmNode3,
-        nodeInMv6 -> osmNode6
+        nodeInMv6 -> osmNode6,
       )
     }
 
@@ -94,7 +94,7 @@ class GridConversionSpec extends UnitSpec with MvTestData with GridSupport {
           nodeInMv3,
           nodeInMv4,
           nodeInMv5,
-          nodeInMv6
+          nodeInMv6,
         )
       ) shouldBe List.empty
     }
@@ -111,7 +111,7 @@ class GridConversionSpec extends UnitSpec with MvTestData with GridSupport {
           osmNode3,
           osmNode4,
           osmNode5,
-          osmNode6
+          osmNode6,
         )
       ) shouldBe List.empty
     }
@@ -125,7 +125,7 @@ class GridConversionSpec extends UnitSpec with MvTestData with GridSupport {
         (nodeInMv3, osmNode3),
         (nodeInMv4, osmNode4),
         (nodeInMv5, osmNode5),
-        (nodeInMv6, osmNode6)
+        (nodeInMv6, osmNode6),
       )
 
       forAll(cases) { (psdmNode, osmNode) =>
@@ -141,7 +141,7 @@ class GridConversionSpec extends UnitSpec with MvTestData with GridSupport {
         nodeInMv3,
         nodeInMv4,
         nodeInMv5,
-        nodeInMv6
+        nodeInMv6,
       )
       nodeConversion.getOsmNodes(psdmNodes) shouldBe List(
         transitionPoint,
@@ -150,7 +150,7 @@ class GridConversionSpec extends UnitSpec with MvTestData with GridSupport {
         osmNode3,
         osmNode4,
         osmNode5,
-        osmNode6
+        osmNode6,
       )
     }
 
@@ -163,7 +163,7 @@ class GridConversionSpec extends UnitSpec with MvTestData with GridSupport {
         (osmNode3, nodeInMv3),
         (osmNode4, nodeInMv4),
         (osmNode5, nodeInMv5),
-        (osmNode6, nodeInMv6)
+        (osmNode6, nodeInMv6),
       )
 
       forAll(cases) { (osmNode, psdmNode) =>
@@ -179,7 +179,7 @@ class GridConversionSpec extends UnitSpec with MvTestData with GridSupport {
         osmNode3,
         osmNode4,
         osmNode5,
-        osmNode6
+        osmNode6,
       )
       nodeConversion.getPSDMNodes(osmNodes) shouldBe List(
         nodeToHv,
@@ -188,7 +188,7 @@ class GridConversionSpec extends UnitSpec with MvTestData with GridSupport {
         nodeInMv3,
         nodeInMv4,
         nodeInMv5,
-        nodeInMv6
+        nodeInMv6,
       )
     }
 
@@ -200,7 +200,7 @@ class GridConversionSpec extends UnitSpec with MvTestData with GridSupport {
             latitude = 0.0,
             longitude = 0.0,
             tags = Map.empty,
-            metaInformation = None
+            metaInformation = None,
           )
         )
       ) match {

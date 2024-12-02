@@ -10,34 +10,34 @@ import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
   Transformer2WTypeInput,
-  Transformer3WTypeInput
+  Transformer3WTypeInput,
 }
 import edu.ie3.datamodel.models.input.connector.{
   LineInput,
   SwitchInput,
   Transformer2WInput,
-  Transformer3WInput
+  Transformer3WInput,
 }
 import edu.ie3.datamodel.models.input.container.{
   GraphicElements,
   RawGridElements,
   SubGridContainer,
-  SystemParticipants
+  SystemParticipants,
 }
 import edu.ie3.datamodel.models.input.graphics.{
   LineGraphicInput,
-  NodeGraphicInput
+  NodeGraphicInput,
 }
 import edu.ie3.datamodel.models.input.system._
 import edu.ie3.datamodel.models.input.system.characteristic.{
   OlmCharacteristicInput,
-  ReactivePowerCharacteristic
+  ReactivePowerCharacteristic,
 }
 import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
 import edu.ie3.datamodel.models.profile.BdewStandardLoadProfile
 import edu.ie3.datamodel.models.voltagelevels.{
   CommonVoltageLevel,
-  GermanVoltageLevelUtils
+  GermanVoltageLevelUtils,
 }
 import edu.ie3.datamodel.utils.GridAndGeoUtils
 import edu.ie3.osmogrid.io.input.AssetInformation
@@ -63,7 +63,7 @@ trait GridSupport {
     0.32.asOhmPerKilometre,
     0.07.asOhmPerKilometre,
     235.0.asAmpere,
-    0.4.asKiloVolt
+    0.4.asKiloVolt,
   )
 
   val defaultLineTypeMv = new LineTypeInput(
@@ -74,7 +74,7 @@ trait GridSupport {
     0.078.asOhmPerKilometre,
     0.0942.asOhmPerKilometre,
     535.0.asAmpere,
-    10.0.asKiloVolt
+    10.0.asKiloVolt,
   )
 
   val trafo_hv_to_10kv = new Transformer2WTypeInput(
@@ -92,7 +92,7 @@ trait GridSupport {
     false,
     0,
     -9,
-    9
+    9,
   )
 
   val trafo_10kV_to_lv = new Transformer2WTypeInput(
@@ -110,7 +110,7 @@ trait GridSupport {
     false,
     0,
     -2,
-    2
+    2,
   )
 
   val trafo_20kV_to_lv = new Transformer2WTypeInput(
@@ -128,7 +128,7 @@ trait GridSupport {
     false,
     0,
     -2,
-    2
+    2,
   )
 
   val trafo_20kV_10kV_LV: Transformer3WTypeInput =
@@ -153,7 +153,7 @@ trait GridSupport {
       mock[ComparableQuantity[Angle]],
       0,
       -2,
-      2
+      2,
     )
 
   val trafo_HV_10kV_LV: Transformer3WTypeInput =
@@ -178,14 +178,14 @@ trait GridSupport {
       mock[ComparableQuantity[Angle]],
       0,
       -2,
-      2
+      2,
     )
 
   val assetInformation: AssetInformation =
     AssetInformation(
       Seq(defaultLineTypeMv),
       Seq(trafo_10kV_to_lv, trafo_20kV_to_lv, trafo_hv_to_10kv),
-      Seq(trafo_HV_10kV_LV, trafo_20kV_10kV_LV)
+      Seq(trafo_HV_10kV_LV, trafo_20kV_10kV_LV),
     )
 
   /** Return a mocked test grid with given sub grid number
@@ -203,7 +203,7 @@ trait GridSupport {
       false,
       mock[Point],
       GermanVoltageLevelUtils.LV,
-      subgridNo
+      subgridNo,
     )
 
     val rawGrid = new RawGridElements(
@@ -212,7 +212,7 @@ trait GridSupport {
       Set.empty[Transformer2WInput].asJava,
       Set.empty[Transformer3WInput].asJava,
       Set.empty[SwitchInput].asJava,
-      Set.empty[MeasurementUnitInput].asJava
+      Set.empty[MeasurementUnitInput].asJava,
     )
 
     val mockedParticipants = new SystemParticipants(
@@ -225,12 +225,12 @@ trait GridSupport {
       Set.empty[LoadInput].asJava,
       Set.empty[PvInput].asJava,
       Set.empty[StorageInput].asJava,
-      Set.empty[WecInput].asJava
+      Set.empty[WecInput].asJava,
     )
 
     val mockedGraphics = new GraphicElements(
       Set.empty[NodeGraphicInput].asJava,
-      Set.empty[LineGraphicInput].asJava
+      Set.empty[LineGraphicInput].asJava,
     )
 
     new SubGridContainer(
@@ -238,7 +238,7 @@ trait GridSupport {
       subgridNo,
       rawGrid,
       mockedParticipants,
-      mockedGraphics
+      mockedGraphics,
     )
   }
 
@@ -255,7 +255,7 @@ trait GridSupport {
   protected def mockSubGrid(
       subgridNo: Int,
       voltLvlA: CommonVoltageLevel,
-      voltLvlB: CommonVoltageLevel
+      voltLvlB: CommonVoltageLevel,
   ): SubGridContainer = {
     // include at least a single node for voltage level determination
     val dummyNodeA = new NodeInput(
@@ -265,7 +265,7 @@ trait GridSupport {
       true,
       mock[Point],
       voltLvlA,
-      subgridNo
+      subgridNo,
     )
 
     val dummyNodeB1 = new NodeInput(
@@ -275,7 +275,7 @@ trait GridSupport {
       false,
       mock[Point],
       voltLvlB,
-      subgridNo
+      subgridNo,
     )
 
     val dummyNodeB2 = new NodeInput(
@@ -285,7 +285,7 @@ trait GridSupport {
       false,
       mock[Point],
       voltLvlB,
-      subgridNo
+      subgridNo,
     )
 
     val dummyTrafo = new Transformer2WInput(
@@ -296,7 +296,7 @@ trait GridSupport {
       1,
       mock[Transformer2WTypeInput],
       0,
-      false
+      false,
     )
 
     val rawGrid = new RawGridElements(
@@ -305,7 +305,7 @@ trait GridSupport {
       Set(dummyTrafo).asJava,
       Set.empty[Transformer3WInput].asJava,
       Set.empty[SwitchInput].asJava,
-      Set.empty[MeasurementUnitInput].asJava
+      Set.empty[MeasurementUnitInput].asJava,
     )
 
     val mockedParticipants = new SystemParticipants(
@@ -318,12 +318,12 @@ trait GridSupport {
       Set.empty[LoadInput].asJava,
       Set.empty[PvInput].asJava,
       Set.empty[StorageInput].asJava,
-      Set.empty[WecInput].asJava
+      Set.empty[WecInput].asJava,
     )
 
     val mockedGraphics = new GraphicElements(
       Set.empty[NodeGraphicInput].asJava,
-      Set.empty[LineGraphicInput].asJava
+      Set.empty[LineGraphicInput].asJava,
     )
 
     new SubGridContainer(
@@ -331,7 +331,7 @@ trait GridSupport {
       subgridNo,
       rawGrid,
       mockedParticipants,
-      mockedGraphics
+      mockedGraphics,
     )
   }
 
@@ -352,7 +352,7 @@ trait GridSupport {
       false,
       buildPoint(51.49249, 7.41105),
       GermanVoltageLevelUtils.LV,
-      subgridNo
+      subgridNo,
     )
     val nodeB = new NodeInput(
       UUID.randomUUID(),
@@ -361,7 +361,7 @@ trait GridSupport {
       false,
       buildPoint(51.49276, 7.41657),
       GermanVoltageLevelUtils.LV,
-      subgridNo
+      subgridNo,
     )
     val nodeC = new NodeInput(
       UUID.randomUUID(),
@@ -370,7 +370,7 @@ trait GridSupport {
       false,
       buildPoint(51.49350, 7.41605),
       GermanVoltageLevelUtils.LV,
-      subgridNo
+      subgridNo,
     )
 
     val topNode1 = new NodeInput(
@@ -380,7 +380,7 @@ trait GridSupport {
       false,
       mock[Point],
       GermanVoltageLevelUtils.MV_10KV,
-      subgridNo
+      subgridNo,
     )
     val topNode2 = new NodeInput(
       UUID.randomUUID(),
@@ -389,7 +389,7 @@ trait GridSupport {
       false,
       mock[Point],
       GermanVoltageLevelUtils.MV_20KV,
-      subgridNo
+      subgridNo,
     )
 
     val lineInput = new LineInput(
@@ -401,7 +401,7 @@ trait GridSupport {
       mock[LineTypeInput],
       Quantities.getQuantity(0.01d, KILOMETRE),
       GridAndGeoUtils.buildSafeLineStringBetweenNodes(nodeA, nodeB),
-      OlmCharacteristicInput.CONSTANT_CHARACTERISTIC
+      OlmCharacteristicInput.CONSTANT_CHARACTERISTIC,
     )
 
     val transformer2W = new Transformer2WInput(
@@ -412,7 +412,7 @@ trait GridSupport {
       1,
       mock[Transformer2WTypeInput],
       0,
-      false
+      false,
     )
 
     val transformer3W = new Transformer3WInput(
@@ -424,7 +424,7 @@ trait GridSupport {
       1,
       mock[Transformer3WTypeInput],
       0,
-      false
+      false,
     )
 
     val switchInput = new SwitchInput(
@@ -432,7 +432,7 @@ trait GridSupport {
       s"Switch in $subgridNo",
       nodeB,
       nodeC,
-      false
+      false,
     )
 
     val measurementUnitInput = new MeasurementUnitInput(
@@ -442,7 +442,7 @@ trait GridSupport {
       true,
       true,
       false,
-      false
+      false,
     )
 
     val rawGrid = new RawGridElements(
@@ -451,7 +451,7 @@ trait GridSupport {
       Set(transformer2W).asJava,
       Set(transformer3W).asJava,
       Set(switchInput).asJava,
-      Set(measurementUnitInput).asJava
+      Set(measurementUnitInput).asJava,
     )
 
     // PARTICIPANTS //
@@ -465,7 +465,7 @@ trait GridSupport {
       false,
       Quantities.getQuantity(3000d, KILOWATTHOUR),
       Quantities.getQuantity(10d, KILOWATT),
-      0.95d
+      0.95d,
     )
 
     val pvInput = new PvInput(
@@ -482,7 +482,7 @@ trait GridSupport {
       1d,
       false,
       Quantities.getQuantity(1, KILOWATT),
-      0.9d
+      0.9d,
     )
 
     val participants = new SystemParticipants(
@@ -495,13 +495,13 @@ trait GridSupport {
       Set(loadInput).asJava,
       Set(pvInput).asJava,
       Set.empty[StorageInput].asJava,
-      Set.empty[WecInput].asJava
+      Set.empty[WecInput].asJava,
     )
 
     // GRAPHICS (just mocked) //
     val mockedGraphics = new GraphicElements(
       Set.empty[NodeGraphicInput].asJava,
-      Set.empty[LineGraphicInput].asJava
+      Set.empty[LineGraphicInput].asJava,
     )
 
     new SubGridContainer(
@@ -509,7 +509,7 @@ trait GridSupport {
       subgridNo,
       rawGrid,
       participants,
-      mockedGraphics
+      mockedGraphics,
     )
   }
 }

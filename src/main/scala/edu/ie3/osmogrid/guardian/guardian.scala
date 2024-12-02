@@ -26,7 +26,7 @@ sealed trait GuardianRequest
 final case class Run(
     cfg: OsmoGridConfig,
     additionalListener: Seq[ActorRef[ResultListenerProtocol]] = Seq.empty,
-    runId: UUID = UUID.randomUUID()
+    runId: UUID = UUID.randomUUID(),
 ) extends GuardianRequest
 
 /* dead watch events */

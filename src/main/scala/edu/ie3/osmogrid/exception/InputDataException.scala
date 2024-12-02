@@ -8,5 +8,5 @@ package edu.ie3.osmogrid.exception
 
 case class InputDataException(
     msg: String = "",
-    cause: Throwable = None.orNull
+    cause: Throwable = None.orNull,
 ) extends Exception(msg, cause)

@@ -11,7 +11,7 @@ import org.scalatest.{
   GivenWhenThen,
   OptionValues,
   PrivateMethodTester,
-  TryValues
+  TryValues,
 }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks

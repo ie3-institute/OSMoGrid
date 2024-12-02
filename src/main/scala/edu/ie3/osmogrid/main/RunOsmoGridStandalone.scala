@@ -44,7 +44,7 @@ object RunOsmoGridStandalone {
               gridName,
               csv.separator,
               directory.toPath,
-              csv.hierarchic
+              csv.hierarchic,
             )
           case None =>
             throw IllegalConfigException("No output given.")

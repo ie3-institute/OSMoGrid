@@ -9,7 +9,7 @@ package edu.ie3.osmogrid.guardian.run
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container.{
   GridContainer,
-  SubGridContainer
+  SubGridContainer,
 }
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.{AssetInformation, InputDataEvent}
@@ -36,7 +36,7 @@ object Run extends RunRequest
   */
 private[run] final case class MessageAdapters(
     lvCoordinator: ActorRef[LvResponse],
-    mvCoordinator: ActorRef[MvResponse]
+    mvCoordinator: ActorRef[MvResponse],
 )
 
 private[run] object MessageAdapters {
@@ -80,7 +80,7 @@ private[run] final case class ChildReferences(
     resultListener: Option[ActorRef[ResultListenerProtocol]],
     additionalResultListeners: Seq[ActorRef[ResultListenerProtocol]],
     lvCoordinator: Option[ActorRef[LvRequest]],
-    mvCoordinator: Option[ActorRef[MvRequest]]
+    mvCoordinator: Option[ActorRef[MvRequest]],
 ) {
   def resultListeners: Seq[ActorRef[ResultListenerProtocol]] =
     resultListener
@@ -102,7 +102,7 @@ private[run] final case class RunGuardianData(
     runId: UUID,
     cfg: OsmoGridConfig,
     additionalListener: Seq[ActorRef[ResultListenerProtocol]],
-    msgAdapters: MessageAdapters
+    msgAdapters: MessageAdapters,
 ) extends StateData
 
 /** Meta data to keep track of which children already terminated during the
@@ -122,7 +122,7 @@ private[run] final case class StoppingData(
     inputDataProviderTerminated: Boolean,
     resultListenerTerminated: Boolean,
     lvCoordinatorTerminated: Option[Boolean],
-    mvCoordinatorTerminated: Option[Boolean]
+    mvCoordinatorTerminated: Option[Boolean],
 ) extends StateData {
   def allChildrenTerminated: Boolean =
     inputDataProviderTerminated && resultListenerTerminated && lvCoordinatorTerminated
@@ -136,7 +136,7 @@ final case class FinishedGridData(
     mvData: Option[Seq[SubGridContainer]],
     hvData: Option[Seq[GridContainer]],
     mvNodeChanges: Option[Map[UUID, NodeInput]],
-    assetInformation: Option[AssetInformation]
+    assetInformation: Option[AssetInformation],
 ) extends StateData
 
 object FinishedGridData {

@@ -40,7 +40,7 @@ final case class Partition(
     administrativeLevel: BoundaryAdminLevelValue,
     lvConfig: OsmoGridConfig.Generation.Lv,
     lvCoordinatorRegionCoordinatorAdapter: ActorRef[LvRegionResponse],
-    lvCoordinatorGridGeneratorAdapter: ActorRef[LvGridResponse]
+    lvCoordinatorGridGeneratorAdapter: ActorRef[LvGridResponse],
 ) extends LvRegionRequest
 
 sealed trait LvRegionResponse

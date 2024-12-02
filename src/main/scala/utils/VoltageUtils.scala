@@ -72,7 +72,7 @@ object VoltageUtils {
   def toVoltLvl(
       id: String,
       vNom: Option[List[Double]],
-      default: Double
+      default: Double,
   ): List[VoltageLevel] = {
     toQuantities(vNom, default).map { quantity =>
       new VoltageLevel(id, quantity)
@@ -90,7 +90,7 @@ object VoltageUtils {
     */
   def toQuantities(
       vNom: Option[List[Double]],
-      default: Double
+      default: Double,
   ): List[ComparableQuantity[ElectricPotential]] = {
     vNom match {
       case Some(voltages) =>

@@ -35,16 +35,16 @@ class VoltageUtilsSpec extends UnitSpec {
           Lv(0.4, "lv", None),
           List(
             Quantities.getQuantity(0.4, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
-          )
+          ),
         ),
         (
           Lv(0.4, "lv", Some(List(1d, 0.32, 0.7))),
           List(
             Quantities.getQuantity(1d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
             Quantities.getQuantity(0.32, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
-            Quantities.getQuantity(0.7, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
-          )
-        )
+            Quantities.getQuantity(0.7, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
+          ),
+        ),
       )
 
       forAll(cases) { (cfg, expected) =>
@@ -59,16 +59,16 @@ class VoltageUtilsSpec extends UnitSpec {
           Mv(10.0, "mv", None),
           List(
             Quantities.getQuantity(10d, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
-          )
+          ),
         ),
         (
           Mv(10.0, "mv", Some(List(10d, 20d, 30d))),
           List(
             Quantities.getQuantity(10d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
             Quantities.getQuantity(20d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
-            Quantities.getQuantity(30d, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
-          )
-        )
+            Quantities.getQuantity(30d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
+          ),
+        ),
       )
 
       forAll(cases) { (cfg, expected) =>
@@ -83,16 +83,16 @@ class VoltageUtilsSpec extends UnitSpec {
           Hv(110.0, "hvh", None),
           List(
             Quantities.getQuantity(110d, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
-          )
+          ),
         ),
         (
           Hv(110.0, "hv", Some(List(100d, 120d, 60d))),
           List(
             Quantities.getQuantity(100d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
             Quantities.getQuantity(120d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
-            Quantities.getQuantity(60d, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
-          )
-        )
+            Quantities.getQuantity(60d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
+          ),
+        ),
       )
 
       forAll(cases) { (cfg, expected) =>
@@ -104,7 +104,7 @@ class VoltageUtilsSpec extends UnitSpec {
       val cases = Table(
         ("id", "voltages", "default", "expectedVoltLvl"),
         ("lv", Some(List(0.23, 1.0)), 0.4, List(lv230, lv1000)),
-        ("lv", None, 0.4, List(lv400))
+        ("lv", None, 0.4, List(lv400)),
       )
 
       forAll(cases) { (id, voltages, default, expectedVoltLvl) =>
@@ -120,7 +120,7 @@ class VoltageUtilsSpec extends UnitSpec {
       val cases = Table(
         ("voltages", "default", "expectedVoltLvl"),
         (Some(List(0.23, 1.0)), 0.4, List(q230, q1000)),
-        (None, 0.4, List(q400))
+        (None, 0.4, List(q400)),
       )
 
       forAll(cases) { (voltages, default, expectedVoltLvl) =>
@@ -135,7 +135,7 @@ class VoltageUtilsSpec extends UnitSpec {
       val cases = Table(
         ("voltage", "expectedVoltLvl"),
         (0.4, q400),
-        (1.0, q1000)
+        (1.0, q1000),
       )
 
       forAll(cases) { (voltage, expectedVoltLvl) =>

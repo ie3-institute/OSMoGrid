@@ -42,7 +42,7 @@ class OsmGraphSpec extends UnitSpec with MvTestData {
       graph.edgeSet().asScala shouldBe Set(
         graph.getEdge(transitionPoint, osmNode1),
         graph.getEdge(transitionPoint, osmNode2),
-        graph.getEdge(osmNode1, osmNode3)
+        graph.getEdge(osmNode1, osmNode3),
       )
     }
 
@@ -55,11 +55,11 @@ class OsmGraphSpec extends UnitSpec with MvTestData {
       copiedGraph.vertexSet().asScala shouldBe Set(
         transitionPoint,
         osmNode1,
-        osmNode2
+        osmNode2,
       )
       copiedGraph.edgeSet().asScala shouldBe Set(
         copiedGraph.getEdge(transitionPoint, osmNode1),
-        copiedGraph.getEdge(transitionPoint, osmNode2)
+        copiedGraph.getEdge(transitionPoint, osmNode2),
       )
 
       graph.vertexSet().asScala shouldBe Set(osmNode1, osmNode2)
@@ -71,7 +71,7 @@ class OsmGraphSpec extends UnitSpec with MvTestData {
         osmNode1,
         osmNode2,
         Quantities.getQuantity(1d, Units.METRE),
-        None
+        None,
       )
 
       val cases = Table(
@@ -82,8 +82,8 @@ class OsmGraphSpec extends UnitSpec with MvTestData {
           List.empty,
           Set(
             (transitionPoint, osmNode1),
-            (osmNode1, osmNode2)
-          )
+            (osmNode1, osmNode2),
+          ),
         ),
         (
           List((transitionPoint, osmNode1), (transitionPoint, osmNode2)),
@@ -91,9 +91,9 @@ class OsmGraphSpec extends UnitSpec with MvTestData {
           Set(
             (transitionPoint, osmNode1),
             (transitionPoint, osmNode2),
-            (osmNode1, osmNode2)
-          )
-        )
+            (osmNode1, osmNode2),
+          ),
+        ),
       )
 
       forAll(cases) { (doubleEdges, expectedDoubleEdges, expectedEdgeSet) =>
@@ -114,7 +114,7 @@ class OsmGraphSpec extends UnitSpec with MvTestData {
         graph.vertexSet().asScala shouldBe Set(
           transitionPoint,
           osmNode1,
-          osmNode2
+          osmNode2,
         )
       }
     }
@@ -132,7 +132,7 @@ class OsmGraphSpec extends UnitSpec with MvTestData {
         (osmNode3, osmNode4, false),
         (osmNode3, osmNode6, true),
         (osmNode2, osmNode3, true),
-        (osmNode4, osmNode5, false)
+        (osmNode4, osmNode5, false),
       )
 
       forAll(cases) { (source, target, result) =>
@@ -152,7 +152,7 @@ class OsmGraphSpec extends UnitSpec with MvTestData {
         osmNode3,
         osmNode4,
         osmNode5,
-        osmNode6
+        osmNode6,
       )
         .foreach(n => graph.addVertex(n))
       connections.connectionMap.values.foreach(c => graph.addConnection(c))
@@ -162,7 +162,7 @@ class OsmGraphSpec extends UnitSpec with MvTestData {
         toCoordinate(osmNode1),
         toCoordinate(osmNode2),
         toCoordinate(osmNode3),
-        toCoordinate(transitionPoint)
+        toCoordinate(transitionPoint),
       )
 
       val polygon: Polygon = GeoUtils.buildPolygon(coords.toArray)
@@ -178,7 +178,7 @@ class OsmGraphSpec extends UnitSpec with MvTestData {
         subgraph.getEdge(transitionPoint, osmNode3),
         subgraph.getEdge(osmNode1, osmNode2),
         subgraph.getEdge(osmNode1, osmNode3),
-        subgraph.getEdge(osmNode2, osmNode3)
+        subgraph.getEdge(osmNode2, osmNode3),
       )
     }
   }
