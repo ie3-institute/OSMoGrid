@@ -73,6 +73,10 @@ object BoundaryAdminLevel extends Enumeration {
     */
   val SUBURB_3_LEVEL: BoundaryAdminLevelValue = BoundaryAdminLevelValue(11)
 
+  /** Statistical level (census)
+    */
+  val SUBURB_4_LEVEL: BoundaryAdminLevelValue = BoundaryAdminLevelValue(12)
+
   def get(osmLevel: Int): Option[BoundaryAdminLevelValue] = {
     BoundaryAdminLevel.values.find(_.osmLevel == osmLevel)
   }

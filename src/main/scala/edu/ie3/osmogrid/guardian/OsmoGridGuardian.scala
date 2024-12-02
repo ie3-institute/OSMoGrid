@@ -21,7 +21,7 @@ object OsmoGridGuardian {
       case (ctx, Run(cfg, additionalListener, runId)) =>
         val runGuardian = ctx.spawn(
           RunGuardian(cfg, additionalListener, runId),
-          s"RunGuardian_$runId"
+          s"RunGuardian_$runId",
         )
         ctx.watchWith(runGuardian, RunGuardianDied(runId))
         runGuardian ! run.Run

@@ -29,14 +29,14 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
         ("loadSimultaneousFactor", "expectedNumber"),
         (1d, 3),
         (0.5, 2),
-        (0.3, 1)
+        (0.3, 1),
       )
 
       forAll(cases) { (loadSimultaneousFactor, expectedNumber) =>
         Clustering invokePrivate getSubstationCount(
           loads,
           loadSimultaneousFactor,
-          transformer2WTypeInput
+          transformer2WTypeInput,
         ) shouldBe expectedNumber
       }
     }
@@ -46,7 +46,7 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
         gridElements(List(p1_1, p2_1)),
         lines,
         trafo_10kV_to_lv,
-        0.5
+        0.5,
       )
 
       clustering.osmSubstations should contain allOf (p2_1, p1_1)
@@ -62,7 +62,7 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
 
       val clusters = clustering invokePrivate createClusters(
         elements.substations.values.toSet,
-        elements.nodes.values.toSet
+        elements.nodes.values.toSet,
       )
 
       val map = clusters.map { c => c.substation -> c }.toMap
@@ -76,11 +76,11 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
 
       Clustering.isImprovement(
         old,
-        Set(Cluster(p1_1, Set(p1_2), 450))
+        Set(Cluster(p1_1, Set(p1_2), 450)),
       ) shouldBe true
       Clustering.isImprovement(
         old,
-        Set(Cluster(p1_1, Set(p1_2), 496)) // improvement is less than 1 %
+        Set(Cluster(p1_1, Set(p1_2), 496)), // improvement is less than 1 %
       ) shouldBe false
     }
 
@@ -88,7 +88,7 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
       val clusters = Set(
         Cluster(p1_1, Set(p1_2), 500),
         Cluster(p2_1, Set(p2_2), 200),
-        Cluster(p1_3, Set(p1_4), 300)
+        Cluster(p1_3, Set(p1_4), 300),
       )
 
       Clustering.calculateTotalLineLength(clusters) shouldBe 1000
@@ -108,14 +108,14 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
         additionalSubstation,
         elements.nodes.values.toSet,
         9,
-        2
+        2,
       )
 
       val initialSubstations = Set(p1_1, p1_2)
 
       val swaps = Set(
         (p1_1, p1_1),
-        (p1_2, p2_3)
+        (p1_2, p2_3),
       )
 
       val firstStep =
@@ -144,7 +144,7 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
         Set(p2_1),
         elements.nodes.values.toSet,
         9,
-        2
+        2,
       )
 
       val findClosestSubstation =
@@ -157,13 +157,13 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
         (Set(p1_1, p2_1), p1_2, Set((p1_2, p1_1))),
         (Set(p1_1, p2_1), p1_3, Set((p1_3, p1_1))),
         (Set(p1_1, p2_1), p2_4, Set((p2_4, p2_1))),
-        (Set(p1_1, p2_3), p2_4, Set((p2_4, p2_3)))
+        (Set(p1_1, p2_3), p2_4, Set((p2_4, p2_3))),
       )
 
       forAll(cases) { (substations, node, expectedSubstation) =>
         val actual = clustering invokePrivate findClosestSubstation(
           substations,
-          Set(node)
+          Set(node),
         )
 
         actual shouldBe expectedSubstation
@@ -176,7 +176,7 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
         gridElements(List(p1_1, p2_1)),
         lines,
         trafo_10kV_to_lv,
-        0.5
+        0.5,
       )
 
       val clusters = clustering.run

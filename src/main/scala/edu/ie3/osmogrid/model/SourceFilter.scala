@@ -14,12 +14,12 @@ sealed trait SourceFilter
 object SourceFilter {
 
   val standardBoundaryFilter: Filter =
-    Filter("boundary", Set("administrative"))
+    Filter("boundary", Set("administrative", "census"))
 
   val substationFilter: Set[Filter] =
     Set(
       Filter(Building.toString, Set("transformer_tower")),
-      Filter("power", Set("substation"))
+      Filter("power", Set("substation")),
     )
 
   final case class Filter(key: String, tagValues: Set[String]) {
@@ -32,7 +32,7 @@ object SourceFilter {
       highwayFilter: Filter,
       landuseFilter: Filter,
       boundaryFilter: Filter,
-      existingSubstationFilter: Set[Filter]
+      existingSubstationFilter: Set[Filter],
   ) extends SourceFilter
 
   object LvFilter {
@@ -50,14 +50,14 @@ object SourceFilter {
     def apply(
         buildings: Set[String],
         highways: Set[String],
-        landuses: Set[String]
+        landuses: Set[String],
     ): LvFilter =
       LvFilter(
         Filter("building", buildings),
         Filter("highway", highways),
         Filter("landuse", landuses),
         standardBoundaryFilter,
-        substationFilter
+        substationFilter,
       )
 
     /** Standard constructor using empty value sets for buildings, highways and
@@ -71,7 +71,7 @@ object SourceFilter {
         Filter("highway", Set.empty),
         Filter("landuse", Set.empty),
         standardBoundaryFilter,
-        substationFilter
+        substationFilter,
       )
   }
 }

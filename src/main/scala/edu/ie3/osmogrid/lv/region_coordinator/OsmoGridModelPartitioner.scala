@@ -14,7 +14,7 @@ import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
 import org.locationtech.jts.geom.Polygon
 import edu.ie3.osmogrid.lv.region_coordinator.EntityAllocationStrategy.{
   AssignByMax,
-  AssignToAll
+  AssignToAll,
 }
 
 import scala.collection.parallel.{ParMap, ParSeq}
@@ -42,7 +42,7 @@ object OsmoGridModelPartitioner extends LazyLogging {
     */
   def partition(
       osmoGridModel: LvOsmoGridModel,
-      areas: ParMap[AreaKey, Seq[Polygon]]
+      areas: ParMap[AreaKey, Seq[Polygon]],
   ): ParMap[AreaKey, LvOsmoGridModel] = {
 
     val buildings = assign(osmoGridModel.buildings, areas, AssignByMax)
@@ -65,7 +65,7 @@ object OsmoGridModelPartitioner extends LazyLogging {
             landuses.getOrElse(areaId, ParSeq.empty),
             boundaries.getOrElse(areaId, ParSeq.empty),
             assignedSubstations,
-            osmoGridModel.filter
+            osmoGridModel.filter,
           )
         )
       } else {
@@ -77,7 +77,7 @@ object OsmoGridModelPartitioner extends LazyLogging {
   private def assign(
       enhancedEntities: ParSeq[EnhancedOsmEntity],
       areas: ParMap[AreaKey, Seq[Polygon]],
-      allocationStrategy: EntityAllocationStrategy
+      allocationStrategy: EntityAllocationStrategy,
   ): ParMap[AreaKey, ParSeq[EnhancedOsmEntity]] = {
     enhancedEntities
       .flatMap { entity =>
@@ -92,7 +92,7 @@ object OsmoGridModelPartitioner extends LazyLogging {
   private def assign(
       enhancedEntity: EnhancedOsmEntity,
       areas: ParMap[AreaKey, Seq[Polygon]],
-      allocationStrategy: EntityAllocationStrategy
+      allocationStrategy: EntityAllocationStrategy,
   ): Iterable[AreaKey] = {
     val entityVotes = vote(enhancedEntity.entity, enhancedEntity, areas)
 
@@ -117,7 +117,7 @@ object OsmoGridModelPartitioner extends LazyLogging {
   private def vote(
       entity: OsmEntity,
       enhancedEntity: EnhancedOsmEntity,
-      areas: ParMap[AreaKey, Seq[Polygon]]
+      areas: ParMap[AreaKey, Seq[Polygon]],
   ): Map[AreaKey, Int] =
     entity match {
       case node: OsmEntity.Node =>
@@ -131,7 +131,7 @@ object OsmoGridModelPartitioner extends LazyLogging {
   private def vote(
       relation: OsmEntity.Relation,
       enhancedEntity: EnhancedOsmEntity,
-      areas: ParMap[AreaKey, Seq[Polygon]]
+      areas: ParMap[AreaKey, Seq[Polygon]],
   ): Map[AreaKey, Int] =
     relation.members
       .flatMap { member =>
@@ -157,7 +157,7 @@ object OsmoGridModelPartitioner extends LazyLogging {
   private def vote(
       way: OsmEntity.Way,
       enhancedEntity: EnhancedOsmEntity,
-      areas: ParMap[AreaKey, Seq[Polygon]]
+      areas: ParMap[AreaKey, Seq[Polygon]],
   ): Map[AreaKey, Int] =
     way.nodes
       .flatMap(enhancedEntity.node)
@@ -171,7 +171,7 @@ object OsmoGridModelPartitioner extends LazyLogging {
 
   private def vote(
       node: OsmEntity.Node,
-      areas: ParMap[AreaKey, Seq[Polygon]]
+      areas: ParMap[AreaKey, Seq[Polygon]],
   ): Map[AreaKey, Int] = {
     val point = GeoUtils.buildPoint(node.latitude, node.longitude)
     areas.iterator.collect {

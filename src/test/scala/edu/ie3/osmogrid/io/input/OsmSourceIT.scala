@@ -29,7 +29,7 @@ class OsmSourceIT extends UnitSpec with InputDataCheck {
           InputDataProvider(
             OsmoGridConfig.Input(
               Asset(Some(Asset.File("", hierarchic = false, ","))),
-              Osm(Some(Osm.Pbf(resourcePath)))
+              Osm(Some(Osm.Pbf(resourcePath))),
             )
           )
         )

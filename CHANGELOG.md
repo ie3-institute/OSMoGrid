@@ -35,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhancing output folder with timestamp [#440](https://github.com/ie3-institute/OSMoGrid/issues/440)
 - Readthedocs dependencies to dependabot [#454](https://github.com/ie3-institute/OSMoGrid/issues/454)
 - Update maven repository sources [#438](https://github.com/ie3-institute/OSMoGrid/issues/438)
+- Include census boundaries and `admin_level=12` for finer partitioning of osm data [#502](https://github.com/ie3-institute/OSMoGrid/issues/502)
+- Scalafmt should always add trailing commas [#508](https://github.com/ie3-institute/OSMoGrid/issues/508)
 
 ### Changed
 - Rely on Java 17
@@ -47,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adapted run initialization [#404](https://github.com/ie3-institute/OSMoGrid/issues/404)
 - Refactoring of 'getAllUniqueCombinations' to avoid nested loops [#431](https://github.com/ie3-institute/OSMoGrid/issues/431)
 - Handling of boundaries that do not contain buildings [#434](https://github.com/ie3-institute/OSMoGrid/issues/434)
+- Simplify `GridElements` creation [#504](https://github.com/ie3-institute/OSMoGrid/issues/504)
 
 ### Fixed
 - Fixed bug in `LvGridGeneratorSupport` [#388](https://github.com/ie3-institute/OSMoGrid/issues/388)
@@ -58,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preventing unconnected nodes or subgrids [#415](https://github.com/ie3-institute/OSMoGrid/issues/415)
 - Fix cases of empty id for nodes [#433](https://github.com/ie3-institute/OSMoGrid/issues/433)
 - Fix osmium installation command [#498](https://github.com/ie3-institute/OSMoGrid/issues/498)
+- Clustering crashes with less than two nodes [#506](https://github.com/ie3-institute/OSMoGrid/issues/506)
 - Handle additional case when building a polygon from ways [#427](https://github.com/ie3-institute/OSMoGrid/issues/427)
 
 ### Removed

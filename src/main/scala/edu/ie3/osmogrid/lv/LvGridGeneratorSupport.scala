@@ -11,7 +11,7 @@ import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.connector.LineInput
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
-  Transformer2WTypeInput
+  Transformer2WTypeInput,
 }
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.datamodel.models.input.system.LoadInput
@@ -39,21 +39,20 @@ object LvGridGeneratorSupport extends LazyLogging {
     *   the built loads
     */
   final case class GridElements(
-      nodes: Map[Node, NodeInput],
-      substations: Map[Node, NodeInput],
-      loads: Set[LoadInput]
+      nodes: Map[Node, NodeInput] = Map.empty,
+      substations: Map[Node, NodeInput] = Map.empty,
+      loads: Set[LoadInput] = Set.empty,
   ) {
-    def +(load: LoadInput): GridElements = {
-      GridElements(this.nodes, this.substations, this.loads ++ Seq(load))
-    }
 
-    def ++(nodes: Map[Node, NodeInput], substations: Boolean): GridElements = {
-      if (substations) {
-        GridElements(this.nodes, this.substations ++ nodes, this.loads)
-      } else {
-        GridElements(this.nodes ++ nodes, this.substations, this.loads)
-      }
-    }
+    def withSubstation(node: Node, nodeInput: NodeInput): GridElements =
+      copy(substations = substations.updated(node, nodeInput))
+
+    def withNode(node: Node, nodeInput: NodeInput): GridElements =
+      copy(nodes = nodes.updated(node, nodeInput))
+
+    def withLoad(load: LoadInput): GridElements =
+      copy(loads = loads ++ Seq(load))
+
   }
 
   /** Builds a [[SubGridContainer]] from an OSM street graph by traversing the
@@ -89,8 +88,8 @@ object LvGridGeneratorSupport extends LazyLogging {
       loadSimultaneousFactor: Double,
       lineType: LineTypeInput,
       transformer2WTypeInput: Transformer2WTypeInput,
-      gridName: String
-  ): List[SubGridContainer] = {
+      gridName: String,
+  ): Seq[SubGridContainer] = {
     val nodesWithBuildings: ParMap[Node, BuildingGraphConnection] =
       buildingGraphConnections.map(bgc => (bgc.graphConnectionNode, bgc)).toMap
 
@@ -99,16 +98,16 @@ object LvGridGeneratorSupport extends LazyLogging {
     val gridElements = osmGraph
       .vertexSet()
       .asScala
-      .foldLeft(GridElements(Map(), Map(), Set()))((gridElements, osmNode) => {
+      .foldLeft(GridElements())((gridElements, osmNode) => {
         nodesWithBuildings.get(osmNode) match {
           case Some(buildingGraphConnection: BuildingGraphConnection)
               if buildingGraphConnection.isSubstation =>
             val substationNode = nodeCreator(
               "",
               osmNode.coordinate,
-              false
+              false,
             )
-            gridElements ++ (Map(osmNode -> substationNode), true)
+            gridElements.withSubstation(osmNode, substationNode)
           case Some(buildingGraphConnection: BuildingGraphConnection) =>
             val highwayNode = nodeCreator(
               buildingGraphConnection
@@ -116,11 +115,11 @@ object LvGridGeneratorSupport extends LazyLogging {
                   considerHouseConnectionPoints
                 ),
               osmNode.coordinate,
-              false
+              false,
             )
             val loadCreator = buildLoad(
               "Load of building: " + buildingGraphConnection.building.entity.id.toString,
-              buildingGraphConnection.buildingPower
+              buildingGraphConnection.buildingPower,
             ) _
             if (considerHouseConnectionPoints) {
               val osmBuildingConnectionNode =
@@ -132,32 +131,36 @@ object LvGridGeneratorSupport extends LazyLogging {
               val buildingConnectionNode: NodeInput = nodeCreator(
                 buildingGraphConnection.createBuildingNodeName(),
                 osmBuildingConnectionNode.coordinate,
-                false
+                false,
               )
               val load = loadCreator(buildingConnectionNode)
-              gridElements ++ (Map(
-                osmNode -> highwayNode,
-                osmBuildingConnectionNode -> buildingConnectionNode
-              ), false) + load
+              gridElements
+                .withNode(osmNode, highwayNode)
+                .withNode(osmBuildingConnectionNode, buildingConnectionNode)
+                .withLoad(load)
 
             } else {
               val load = loadCreator(highwayNode)
-              gridElements ++ (Map(osmNode -> highwayNode), false) + load
+              gridElements.withNode(osmNode, highwayNode).withLoad(load)
             }
 
           case None if osmGraph.degreeOf(osmNode) > 2 =>
             val node = nodeCreator(
               s"Highway node: ${osmNode.id}",
               osmNode.coordinate,
-              false
+              false,
             )
-            gridElements ++ (Map(osmNode -> node), false)
+            gridElements.withNode(osmNode, node)
           case None =>
             gridElements
         }
       })
     if (gridElements.loads.isEmpty) {
-      return List.empty
+      logger.debug("Skipping grid with no loads!")
+      return Seq.empty
+    } else if (gridElements.substations.size + gridElements.nodes.size < 2) {
+      logger.debug("Skipping grid with less than two nodes in total!")
+      return Seq.empty
     }
 
     val nodeToNodeInput = gridElements.nodes ++ gridElements.substations
@@ -175,7 +178,7 @@ object LvGridGeneratorSupport extends LazyLogging {
         nodeB,
         1,
         lineType,
-        edge.getDistance
+        edge.getDistance,
       )
     }
 
@@ -185,7 +188,7 @@ object LvGridGeneratorSupport extends LazyLogging {
       gridName,
       loadSimultaneousFactor,
       mvVoltage,
-      transformer2WTypeInput
+      transformer2WTypeInput,
     )
   }
 
@@ -211,14 +214,14 @@ object LvGridGeneratorSupport extends LazyLogging {
       gridNameBase: String,
       loadSimultaneousFactor: Double,
       mvVoltage: VoltageLevel,
-      transformer2WTypeInput: Transformer2WTypeInput
+      transformer2WTypeInput: Transformer2WTypeInput,
   ): List[SubGridContainer] = {
     val cluster: List[Cluster] = Clustering
       .setup(
         gridElements,
         lineInputs.toSet,
         transformer2WTypeInput,
-        loadSimultaneousFactor
+        loadSimultaneousFactor,
       )
       .run
     val lineMap = lineInputs.map { l => (l.getNodeA, l.getNodeB) -> l }.toMap
@@ -239,7 +242,7 @@ object LvGridGeneratorSupport extends LazyLogging {
       val mvNode = buildNode(mvVoltage)(
         s"Mv node to lv node ${substation.getId}",
         substation.getGeoPosition,
-        isSlack = true
+        isSlack = true,
       )(subnet = 100)
 
       val transformer2W =
@@ -251,7 +254,7 @@ object LvGridGeneratorSupport extends LazyLogging {
         gridNameBase,
         allNodes.asJava,
         lines.values.toSet.asJava,
-        loads.asJava
+        loads.asJava,
       )(transformer2Ws = Set(transformer2W).asJava)
     }
   }
@@ -267,7 +270,7 @@ object LvGridGeneratorSupport extends LazyLogging {
     */
   private def reduceGraph(
       osmGraph: OsmGraph,
-      keep: Set[Node]
+      keep: Set[Node],
   ): OsmGraph = {
     osmGraph
       .vertexSet()

@@ -22,7 +22,7 @@ trait NodeInputSupport {
     false,
     GeoUtils.buildPoint(51.49, 7.49),
     GermanVoltageLevelUtils.MV_10KV,
-    1
+    1,
   )
   val nodeInMv2 = new NodeInput(
     UUID.randomUUID(),
@@ -31,7 +31,7 @@ trait NodeInputSupport {
     false,
     GeoUtils.buildPoint(51.51, 7.49),
     GermanVoltageLevelUtils.MV_10KV,
-    1
+    1,
   )
   val nodeInMv3 = new NodeInput(
     UUID.randomUUID(),
@@ -40,7 +40,7 @@ trait NodeInputSupport {
     false,
     GeoUtils.buildPoint(51.49, 7.51),
     GermanVoltageLevelUtils.MV_10KV,
-    1
+    1,
   )
 
   val nodeInMv4 = new NodeInput(
@@ -50,7 +50,7 @@ trait NodeInputSupport {
     false,
     GeoUtils.buildPoint(51.51, 7.51),
     GermanVoltageLevelUtils.MV_10KV,
-    1
+    1,
   )
 
   val nodeToHv1 = new NodeInput(
@@ -60,7 +60,7 @@ trait NodeInputSupport {
     false,
     GeoUtils.buildPoint(51.0, 7.0),
     GermanVoltageLevelUtils.MV_10KV,
-    1
+    1,
   )
 
   val nodeToHv2 = new NodeInput(
@@ -70,7 +70,7 @@ trait NodeInputSupport {
     false,
     GeoUtils.buildPoint(52.0, 7.0),
     GermanVoltageLevelUtils.MV_10KV,
-    1
+    1,
   )
 
   val nodeToHv3 = new NodeInput(
@@ -80,7 +80,7 @@ trait NodeInputSupport {
     false,
     GeoUtils.buildPoint(51.0, 8.0),
     GermanVoltageLevelUtils.MV_10KV,
-    1
+    1,
   )
 
   val nodeToHv4 = new NodeInput(
@@ -90,7 +90,7 @@ trait NodeInputSupport {
     false,
     GeoUtils.buildPoint(52.0, 8.0),
     GermanVoltageLevelUtils.MV_10KV,
-    1
+    1,
   )
 
   val nodeOutside = new NodeInput(
@@ -100,6 +100,6 @@ trait NodeInputSupport {
     false,
     GeoUtils.buildPoint(0.0, 0.0),
     GermanVoltageLevelUtils.MV_10KV,
-    20
+    20,
   )
 }

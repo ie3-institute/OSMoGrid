@@ -35,13 +35,13 @@ object BoundaryFactory {
     */
   def buildBoundaryPolygons(
       osmoGridModel: LvOsmoGridModel,
-      administrativeLevel: BoundaryAdminLevelValue
+      administrativeLevel: BoundaryAdminLevelValue,
   ): ParMap[AreaKey, Seq[Polygon]] = {
     osmoGridModel.boundaries
       .filter {
         case EnhancedOsmEntity(
               entity: OsmEntity,
-              _
+              _,
             ) =>
           entity match {
             case relation: OsmEntity.Relation =>
@@ -95,7 +95,7 @@ object BoundaryFactory {
               Failure(
                 new RuntimeException(
                   s"Could not create Polygon from relation ${relation.id}",
-                  exc
+                  exc,
                 )
               )
             }
@@ -189,7 +189,7 @@ object BoundaryFactory {
 
   private def addWayNodesToPolygonSequence(
       existingNodes: Seq[AreaKey],
-      currentWay: OsmEntity.Way
+      currentWay: OsmEntity.Way,
   ): Try[Seq[AreaKey]] = Try {
     // Construct one single sequence of nodes by joining the ways.
     // Each way can be ordered in correct or in reverse order

@@ -8,7 +8,7 @@ package edu.ie3.osmogrid.guardian.run
 
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv.{
   BoundaryAdminLevel,
-  Osm
+  Osm,
 }
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.{Lv, Mv}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Output
@@ -31,7 +31,7 @@ trait RunSupport {
     considerHouseConnectionPoints = false,
     loadSimultaneousFactor = 0.2,
     minDistance = 10,
-    osm = Osm(None)
+    osm = Osm(None),
   )
 
   /** Initiate a generation run and return the updated run meta data
@@ -45,13 +45,13 @@ trait RunSupport {
     */
   protected def initRun(
       runGuardianData: RunGuardianData,
-      ctx: ActorContext[RunRequest]
+      ctx: ActorContext[RunRequest],
   ): Try[ChildReferences] = {
     val log = ctx.log
     ConfigFailFast
       .check(
         runGuardianData.cfg,
-        runGuardianData.additionalListener
+        runGuardianData.additionalListener,
       )
       .flatMap { validConfig =>
         log.info(
@@ -111,7 +111,7 @@ trait RunSupport {
             updatedConfig,
             msgAdapters.mvCoordinator,
             id,
-            ctx
+            ctx,
           )
         }
 
@@ -121,7 +121,7 @@ trait RunSupport {
             resultListener,
             runGuardianData.additionalListener,
             lvCoordinator,
-            mvCoordinator
+            mvCoordinator,
           )
         )
       }
@@ -141,13 +141,13 @@ trait RunSupport {
   private def spawnInputDataProvider(
       runId: UUID,
       inputConfig: OsmoGridConfig.Input,
-      ctx: ActorContext[RunRequest]
+      ctx: ActorContext[RunRequest],
   ): ActorRef[InputDataEvent] = {
     ctx.log.info("Starting input data provider ...")
     val inputProvider =
       ctx.spawn(
         InputDataProvider(inputConfig),
-        s"InputDataProvider_${runId.toString}"
+        s"InputDataProvider_${runId.toString}",
       )
     ctx.watchWith(inputProvider, InputDataProviderDied)
     inputProvider
@@ -167,7 +167,7 @@ trait RunSupport {
   private def spawnResultListener(
       runId: UUID,
       outputConfig: OsmoGridConfig.Output,
-      ctx: ActorContext[RunRequest]
+      ctx: ActorContext[RunRequest],
   ): Option[ActorRef[ResultListenerProtocol]] = {
     val resultListener = outputConfig match {
       case Output(_, Some(_), _) =>
@@ -175,7 +175,7 @@ trait RunSupport {
         Some(
           ctx.spawn(
             ResultListener(runId, outputConfig),
-            s"PersistenceResultListener_${runId.toString}"
+            s"PersistenceResultListener_${runId.toString}",
           )
         )
       case Output(_, None, _) =>
@@ -206,14 +206,14 @@ trait RunSupport {
       lvConfig: OsmoGridConfig.Generation.Lv,
       lvCoordinatorAdapter: ActorRef[LvResponse],
       runId: UUID,
-      ctx: ActorContext[RunRequest]
+      ctx: ActorContext[RunRequest],
   )(implicit
       inputDataProvider: ActorRef[InputDataEvent]
   ): ActorRef[LvRequest] = {
     val lvCoordinator =
       ctx.spawn(
         LvCoordinator(lvConfig, inputDataProvider, lvCoordinatorAdapter),
-        s"LvCoordinator_${runId.toString}"
+        s"LvCoordinator_${runId.toString}",
       )
     ctx.watchWith(lvCoordinator, LvCoordinatorDied)
 
@@ -240,14 +240,14 @@ trait RunSupport {
       mvConfig: OsmoGridConfig,
       mvCoordinatorAdapter: ActorRef[MvResponse],
       runId: UUID,
-      ctx: ActorContext[RunRequest]
+      ctx: ActorContext[RunRequest],
   )(implicit
       inputDataProvider: ActorRef[InputDataEvent]
   ): ActorRef[MvRequest] = {
     val mvCoordinator =
       ctx.spawn(
         MvCoordinator(mvConfig, inputDataProvider, mvCoordinatorAdapter),
-        s"MvCoordinator_${runId.toString}"
+        s"MvCoordinator_${runId.toString}",
       )
     ctx.watchWith(mvCoordinator, MvCoordinatorDied)
 

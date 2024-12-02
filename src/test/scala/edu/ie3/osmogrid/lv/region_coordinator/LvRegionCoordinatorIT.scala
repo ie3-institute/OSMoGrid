@@ -10,7 +10,7 @@ import org.apache.pekko.actor.testkit.typed.Effect.SpawnedAnonymous
 import org.apache.pekko.actor.testkit.typed.scaladsl.{
   BehaviorTestKit,
   ScalaTestWithActorTestKit,
-  TestProbe
+  TestProbe,
 }
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.lv.{LvGridRequest, LvGridResponse}
@@ -44,7 +44,7 @@ class LvRegionCoordinatorIT
             lvConfig = lvConfig,
             lvCoordinatorGridGeneratorAdapter = gridGeneratorReply.ref,
             lvCoordinatorRegionCoordinatorAdapter = regionCoordinatorReply.ref,
-            assetInformation = assetInformation
+            assetInformation = assetInformation,
           )
         )
 
@@ -128,7 +128,7 @@ class LvRegionCoordinatorIT
               lvCoordinatorGridGeneratorAdapter.ref,
             lvCoordinatorRegionCoordinatorAdapter =
               lvCoordinatorRegionCoordinatorAdapter.ref,
-            assetInformation = assetInformation
+            assetInformation = assetInformation,
           )
         )
 

@@ -8,5 +8,5 @@ package edu.ie3.osmogrid.exception
 
 final case class GraphCopyException(
     msg: String = "Error during copying of graph.",
-    cause: Throwable = None.orNull
+    cause: Throwable = None.orNull,
 ) extends Exception(msg, cause)

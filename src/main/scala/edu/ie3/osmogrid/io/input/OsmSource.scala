@@ -10,7 +10,7 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Osm
 import edu.ie3.osmogrid.exception.{
   IllegalConfigException,
-  PbfReadFailedException
+  PbfReadFailedException,
 }
 import edu.ie3.osmogrid.model.SourceFilter
 import org.apache.pekko.actor.typed.ActorRef
@@ -24,7 +24,7 @@ sealed trait OsmSource {
 
   def read(
       filter: SourceFilter,
-      requester: ActorRef[InputDataEvent]
+      requester: ActorRef[InputDataEvent],
   ): Unit
 
   def close(): Unit
@@ -35,12 +35,12 @@ object OsmSource {
 
   final case class PbfFileSource(
       filePath: String,
-      ctx: ActorContext[_]
+      ctx: ActorContext[_],
   ) extends OsmSource {
 
     def read(
         filter: SourceFilter,
-        requester: ActorRef[InputDataEvent]
+        requester: ActorRef[InputDataEvent],
     ): Unit = {
       val inputStream = new FileInputStream(new File(filePath))
 
@@ -49,7 +49,7 @@ object OsmSource {
       val reader =
         new PbfReader(
           () => inputStream,
-          Runtime.getRuntime.availableProcessors()
+          Runtime.getRuntime.availableProcessors(),
         )
       reader.setSink(sink)
 
@@ -69,7 +69,7 @@ object OsmSource {
 
   def apply(
       osmCfg: OsmoGridConfig.Input.Osm,
-      actorContext: ActorContext[InputDataEvent]
+      actorContext: ActorContext[InputDataEvent],
   ): OsmSource =
     getOsmSource(osmCfg).apply(actorContext)
 

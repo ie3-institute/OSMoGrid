@@ -6,9 +6,14 @@
 
 package edu.ie3.osmogrid.lv.region_coordinator
 
+import org.apache.pekko.actor.testkit.typed.scaladsl.{
+  ActorTestKit,
+  ScalaTestWithActorTestKit,
+  TestProbe,
+}
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
-  Transformer2WTypeInput
+  Transformer2WTypeInput,
 }
 import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
 import edu.ie3.osmogrid.io.input._
@@ -41,7 +46,7 @@ object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
         0.32.asOhmPerKilometre,
         0.07.asOhmPerKilometre,
         235.0.asAmpere,
-        0.4.asKiloVolt
+        0.4.asKiloVolt,
       )
     ),
     Seq(
@@ -60,10 +65,10 @@ object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
         false,
         0,
         -2,
-        2
+        2,
       )
     ),
-    Seq.empty
+    Seq.empty,
   )
 
   lazy val (lvConfigThreeCounties, osmoGridModelHelgoland) =
@@ -156,7 +161,7 @@ object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
 
     inputActor ! ReqOsm(
       inputReply.ref,
-      filter = LvFilter()
+      filter = LvFilter(),
     )
 
     inputReply

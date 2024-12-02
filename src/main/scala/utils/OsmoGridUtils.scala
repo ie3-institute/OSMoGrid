@@ -49,20 +49,20 @@ object OsmoGridUtils {
     */
   def isInsideLanduse(
       buildingCenter: Coordinate,
-      landuses: ParSeq[Polygon]
+      landuses: ParSeq[Polygon],
   ): Boolean =
     landuses.exists(_.containsCoordinate(buildingCenter))
 
   def safeBuildPolygon(
       closedWay: ClosedWay,
-      nodes: Map[Long, Node]
+      nodes: Map[Long, Node],
   ): Polygon = {
     buildPolygon(closedWay, nodes) match {
       case Success(polygon) => polygon
       case Failure(exception) =>
         throw OsmDataException(
           s"Could not build polygon from closed way: $closedWay. Exception: ",
-          exception
+          exception,
         )
     }
   }
@@ -78,7 +78,7 @@ object OsmoGridUtils {
     */
   def calcHouseholdPower(
       area: ComparableQuantity[Area],
-      powerDensity: ComparableQuantity[Irradiance]
+      powerDensity: ComparableQuantity[Irradiance],
   ): ComparableQuantity[Power] = {
     val power = area
       .to(Units.SQUARE_METRE)
@@ -99,7 +99,7 @@ object OsmoGridUtils {
     */
   def buildStreetGraph(
       ways: Seq[Way],
-      nodes: Map[Long, Node]
+      nodes: Map[Long, Node],
   ): OsmGraph = {
     val graph = new OsmGraph()
     ways.foreach(way => {
@@ -156,7 +156,7 @@ object OsmoGridUtils {
     */
   def spawnDummyHvNode(
       mvNodes: Seq[NodeInput],
-      assetInformation: AssetInformation
+      assetInformation: AssetInformation,
   ): (JointGridContainer, NodeInput) = {
     if (mvNodes.isEmpty) {
       throw new IllegalArgumentException(
@@ -179,8 +179,8 @@ object OsmoGridUtils {
                 node,
                 GeoUtils.calcHaversine(
                   coordinate,
-                  node.getGeoPosition.getCoordinate
-                )
+                  node.getGeoPosition.getCoordinate,
+                ),
               )
             }
             .sortBy(_._2)
@@ -201,7 +201,7 @@ object OsmoGridUtils {
       true,
       node.getGeoPosition,
       hvVoltage,
-      node.getSubnet + 1000
+      node.getSubnet + 1000,
     )
 
     val transformerType = assetInformation.transformerTypes
@@ -226,12 +226,12 @@ object OsmoGridUtils {
       2,
       transformerType,
       0,
-      true
+      true,
     )
 
     (
       GridContainerUtils.from(List(hvNode, transformer, node), "dummyHvGrid"),
-      node
+      node,
     )
   }
 }

@@ -42,5 +42,5 @@ private[output] final case class ListenerStateData(
     runId: UUID,
     ctx: ActorContext[ResultListenerProtocol],
     buffer: StashBuffer[ResultListenerProtocol],
-    sink: ResultSink
+    sink: ResultSink,
 )

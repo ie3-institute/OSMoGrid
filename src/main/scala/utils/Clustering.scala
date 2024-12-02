@@ -28,7 +28,7 @@ final case class Clustering(
     additionalSubstations: Set[NodeInput],
     nodes: Set[NodeInput],
     nodeCount: Int,
-    substationCount: Int
+    substationCount: Int,
 ) extends LazyLogging {
 
   /** Method to run the algorithm. This algorithm is based on PAM (Partitioning
@@ -43,7 +43,7 @@ final case class Clustering(
     // creates the initial clusters
     val initialClusters: Set[Cluster] = createClusters(
       osmSubstations ++ additionalSubstations,
-      nodes
+      nodes,
     )
     val initialSubstations = Set(initialClusters.map(_.substation))
 
@@ -89,7 +89,7 @@ final case class Clustering(
     */
   private def calculateStep(
       swaps: Set[(NodeInput, NodeInput)],
-      substationCombinations: Set[Set[NodeInput]]
+      substationCombinations: Set[Set[NodeInput]],
   ): Option[Set[Cluster]] = {
     val (updatedSubstations, updatedNodes) =
       swaps.foldLeft((osmSubstations ++ additionalSubstations, nodes)) {
@@ -123,7 +123,7 @@ final case class Clustering(
     */
   private def createClusters(
       substations: Set[NodeInput],
-      others: Set[NodeInput]
+      others: Set[NodeInput],
   ): Set[Cluster] = {
     if (substations.size + nodes.size != nodeCount) {
       logger.debug(
@@ -180,7 +180,7 @@ final case class Clustering(
     */
   private def findClosestSubstation(
       substations: Set[NodeInput],
-      others: Set[NodeInput]
+      others: Set[NodeInput],
   ): Set[(NodeInput, NodeInput)] =
     others.map { n =>
       val closest = substations
@@ -200,12 +200,16 @@ object Clustering {
       gridElements: GridElements,
       lines: Set[LineInput],
       transformer2WTypeInput: Transformer2WTypeInput,
-      loadSimultaneousFactor: Double
+      loadSimultaneousFactor: Double,
   ): Clustering = {
+    if (gridElements.nodes.size + gridElements.substations.size < 2) {
+      throw ClusterException("Cannot cluster a grid with less than two nodes.")
+    }
+
     val substationCount = getSubstationCount(
       gridElements.loads.toSet,
       loadSimultaneousFactor,
-      transformer2WTypeInput
+      transformer2WTypeInput,
     )
 
     val connections: Connections[NodeInput] =
@@ -217,7 +221,7 @@ object Clustering {
     val additionalSubstations: Set[NodeInput] =
       if (additionalSubstationCount > 0) {
         val maxNr = gridElements.nodes.size
-        val nodes = gridElements.nodes.values.toList
+        val nodes = gridElements.nodes.values.toIndexedSeq
 
         // finds random nodes
         Range
@@ -234,7 +238,7 @@ object Clustering {
       additionalSubstations,
       gridElements.nodes.values.toSet.diff(additionalSubstations),
       gridElements.nodes.size + gridElements.substations.size,
-      osmSubstations.size + additionalSubstations.size
+      osmSubstations.size + additionalSubstations.size,
     )
   }
 
@@ -251,7 +255,7 @@ object Clustering {
   private def getSubstationCount(
       loads: Set[LoadInput],
       loadSimultaneousFactor: Double,
-      transformer2WTypeInput: Transformer2WTypeInput
+      transformer2WTypeInput: Transformer2WTypeInput,
   ): Int = {
     // calculates the maximum power
     val maxPower: ComparableQuantity[Power] =
@@ -289,7 +293,7 @@ object Clustering {
     */
   def isImprovement(
       old: Set[Cluster],
-      current: Set[Cluster]
+      current: Set[Cluster],
   ): Boolean =
     calculateTotalLineLength(current) <= calculateTotalLineLength(old) * 0.99
 
@@ -314,6 +318,6 @@ object Clustering {
   final case class Cluster(
       substation: NodeInput,
       nodes: Set[NodeInput],
-      distances: Double
+      distances: Double,
   )
 }

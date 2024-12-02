@@ -10,29 +10,26 @@ import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
 import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input.{
   BoundaryAdminLevel,
   InputDataEvent,
   ReqAssetTypes,
-  ReqOsm
+  ReqOsm,
 }
 import edu.ie3.osmogrid.lv.LvMessageAdapters.{
   WrappedGridGeneratorResponse,
-  WrappedRegionResponse
+  WrappedRegionResponse,
 }
 import edu.ie3.osmogrid.lv.region_coordinator.{
   GridToExpect,
   LvRegionCoordinator,
-  Partition
+  Partition,
 }
-import edu.ie3.osmogrid.lv.region_coordinator.LvRegionCoordinator
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import utils.OsmoGridUtils.buildStreetGraph
 
-import java.util.UUID
 import scala.util.{Failure, Success}
 
 /** Actor to take care of the overall generation process for low voltage grids
@@ -54,7 +51,7 @@ object LvCoordinator extends ActorStopSupportStateless {
   def apply(
       cfg: OsmoGridConfig.Generation.Lv,
       inputDataProvider: ActorRef[InputDataEvent],
-      runGuardian: ActorRef[LvResponse]
+      runGuardian: ActorRef[LvResponse],
   ): Behavior[LvRequest] = Behaviors.setup[LvRequest] { context =>
     /* Define message adapters */
     val messageAdapters =
@@ -67,7 +64,7 @@ object LvCoordinator extends ActorStopSupportStateless {
         ),
         context.messageAdapter(msg =>
           LvMessageAdapters.WrappedGridGeneratorResponse(msg)
-        )
+        ),
       )
 
     idle(
@@ -87,26 +84,25 @@ object LvCoordinator extends ActorStopSupportStateless {
       .receive[LvRequest] {
         case (
               ctx,
-              ReqLvGrids
+              ReqLvGrids,
             ) =>
           ctx.log.info("Starting generation of low voltage grids!")
           ctx.log.debug("Request input data")
 
           /* Ask for OSM data */
-          val run = UUID.randomUUID()
           val filter = stateData.cfg.osm.filter
             .map(cfg =>
               LvFilter(
                 cfg.building.toSet,
                 cfg.highway.toSet,
-                cfg.landuse.toSet
+                cfg.landuse.toSet,
               )
             )
             .getOrElse(LvFilter())
 
           stateData.inputDataProvider ! ReqOsm(
             replyTo = stateData.msgAdapters.inputDataProvider,
-            filter = filter
+            filter = filter,
           )
           /* Ask for grid asset data */
           stateData.inputDataProvider ! ReqAssetTypes(
@@ -149,7 +145,7 @@ object LvCoordinator extends ActorStopSupportStateless {
             case Failure(exception) =>
               ctx.log.error(
                 "Request of needed input data failed. Stop low voltage grid generation.",
-                exception
+                exception,
               )
               stopBehavior
           }
@@ -178,7 +174,7 @@ object LvCoordinator extends ActorStopSupportStateless {
     */
   private def handleUpdatedAwaitingData(
       awaitingData: AwaitingData,
-      ctx: ActorContext[LvRequest]
+      ctx: ActorContext[LvRequest],
   ): Behavior[LvRequest] = {
     /* Check, if everything is in place */
     if (awaitingData.isComprehensive) {
@@ -201,14 +197,14 @@ object LvCoordinator extends ActorStopSupportStateless {
           LvRegionCoordinator()
         ),
         osmoGridModel,
-        assetInformation
+        assetInformation,
       )
 
       /* Wait for results to come up */
       awaitResults(
         awaitingData.guardian,
         awaitingData.msgAdapters,
-        ResultData.empty
+        ResultData.empty,
       )
     } else awaitInputData(awaitingData) // Wait for missing data
   }
@@ -225,7 +221,7 @@ object LvCoordinator extends ActorStopSupportStateless {
   private def awaitResults(
       guardian: ActorRef[LvResponse],
       msgAdapters: LvMessageAdapters,
-      resultData: ResultData
+      resultData: ResultData,
   ): Behavior[LvRequest] =
     Behaviors
       .receive[LvRequest] {
@@ -235,8 +231,8 @@ object LvCoordinator extends ActorStopSupportStateless {
                 cfg,
                 regionCoordinator,
                 osmoGridModel,
-                assetInformation
-              )
+                assetInformation,
+              ),
             ) =>
           // building a complete street graph
           val (highways, highwayNodes) =
@@ -252,7 +248,7 @@ object LvCoordinator extends ActorStopSupportStateless {
                 startingLevel,
                 cfg,
                 msgAdapters.lvRegionCoordinator,
-                msgAdapters.lvGridGenerator
+                msgAdapters.lvGridGenerator,
               )
               Behaviors.same
             case None =>
@@ -271,7 +267,7 @@ object LvCoordinator extends ActorStopSupportStateless {
               awaitResults(
                 guardian,
                 msgAdapters,
-                resultData.update(gridUuid)
+                resultData.update(gridUuid),
               )
           }
         case (ctx, WrappedGridGeneratorResponse(response)) =>
@@ -291,7 +287,7 @@ object LvCoordinator extends ActorStopSupportStateless {
                 /* Report back the collected grids */
                 guardian ! RepLvGrids(
                   updatedResultData.subGridContainers,
-                  streetGraph
+                  streetGraph,
                 )
 
                 stopBehavior
