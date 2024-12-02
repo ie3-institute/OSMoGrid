@@ -24,7 +24,7 @@ import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
 import org.apache.pekko.actor.testkit.typed.scaladsl.{
   ActorTestKit,
   ScalaTestWithActorTestKit,
-  TestProbe
+  TestProbe,
 }
 
 import java.util.UUID
@@ -112,7 +112,7 @@ object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
 
     inputActor ! ReqOsm(
       inputReply.ref,
-      filter = LvFilter()
+      filter = LvFilter(),
     )
 
     inputReply

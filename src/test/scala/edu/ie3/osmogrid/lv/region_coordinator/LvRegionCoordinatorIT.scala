@@ -75,7 +75,7 @@ class LvRegionCoordinatorIT
         val testCases = Seq(
           (Set(1829065, 10035847), 318, 128, 26, 2),
           (Set(62644, 1647366), 24, 25, 21, 0),
-          (Set(56664, 62770), 88, 20, 17, 0)
+          (Set(56664, 62770), 88, 20, 17, 0),
         )
 
         testCases.zip(models).foreach {
@@ -85,9 +85,9 @@ class LvRegionCoordinatorIT
                   expectedBuildings,
                   expectedHighways,
                   expectedLanduses,
-                  expectedSubstations
+                  expectedSubstations,
                 ),
-                model
+                model,
               ) =>
             val actualBoundaryIds = model.boundaries.map(_.entity.id).toSet
 

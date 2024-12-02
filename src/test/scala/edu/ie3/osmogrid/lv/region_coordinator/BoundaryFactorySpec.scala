@@ -29,7 +29,7 @@ class BoundaryFactorySpec extends UnitSpec {
           BoundaryFactory
             .buildBoundaryPolygons(
               osmoGridModelHelgoland,
-              BoundaryAdminLevel.MUNICIPALITY_LEVEL
+              BoundaryAdminLevel.MUNICIPALITY_LEVEL,
             )
             .values
             .flatMap(_.toList)
@@ -107,7 +107,7 @@ class BoundaryFactorySpec extends UnitSpec {
           .toString() + " " +
           BigDecimal(m.group(2))
             .setScale(precision, RoundingMode.DOWN)
-            .toString()
+            .toString(),
     )
   }
 

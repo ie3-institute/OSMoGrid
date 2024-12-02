@@ -161,14 +161,14 @@ object BoundaryFactory {
               (
                 acc + (acc.size + 1 -> newSeq),
                 indexes + (elem -> splitIdx),
-                splitIdx + 1
+                splitIdx + 1,
               )
             case None =>
               // Element has not been seen before
               (
                 acc,
                 indexes + (elem -> splitIdx),
-                splitIdx + 1
+                splitIdx + 1,
               )
           }
       }
