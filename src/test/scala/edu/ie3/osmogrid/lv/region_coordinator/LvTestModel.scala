@@ -6,11 +6,6 @@
 
 package edu.ie3.osmogrid.lv.region_coordinator
 
-import org.apache.pekko.actor.testkit.typed.scaladsl.{
-  ActorTestKit,
-  ScalaTestWithActorTestKit,
-  TestProbe,
-}
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
   Transformer2WTypeInput,

@@ -180,7 +180,7 @@ object BoundaryFactory {
       seq.headOption match {
         case Some(firstElem) => Map(1 -> (seq :+ firstElem))
         case None =>
-          Map(1 -> seq)
+          Map.empty
       }
     } else {
       result
