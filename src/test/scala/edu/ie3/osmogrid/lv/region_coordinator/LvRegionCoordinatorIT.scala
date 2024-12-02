@@ -72,36 +72,33 @@ class LvRegionCoordinatorIT
           _.lvCoordinatorGridGeneratorAdapter shouldBe gridGeneratorReply.ref
         )
 
-        // Recklinghausen
-        models.exists { m =>
-          m.buildings.size == 88 &&
-          m.highways.size == 19 &&
-          m.landuses.size == 17 &&
-          m.boundaries.map(_.entity.id).toSet.seq.equals(Set(62770, 56664)) &&
-          m.existingSubstations.isEmpty
-        } shouldBe true
+        val testCases = Seq(
+          (Set(1829065, 10035847), 318, 128, 26, 2),
+          (Set(62644, 1647366), 24, 25, 21, 0),
+          (Set(56664, 62770), 88, 20, 17, 0),
+        )
 
-        // Dortmund
-        models.exists { m =>
-          m.buildings.size == 318 &&
-          m.highways.size == 128 &&
-          m.landuses.size == 26 &&
-          m.boundaries
-            .map(_.entity.id)
-            .toSet
-            .seq
-            .equals(Set(10035847, 1829065)) &&
-          m.existingSubstations.size == 2
-        } shouldBe true
+        testCases.zip(models).foreach {
+          case (
+                (
+                  expectedBoundaryIds,
+                  expectedBuildings,
+                  expectedHighways,
+                  expectedLanduses,
+                  expectedSubstations,
+                ),
+                model,
+              ) =>
+            val actualBoundaryIds = model.boundaries.map(_.entity.id).toSet
 
-        // Bochum
-        models.exists { m =>
-          m.buildings.size == 24 &&
-          m.highways.size == 24 &&
-          m.landuses.size == 21 &&
-          m.boundaries.map(_.entity.id).toSet.seq.equals(Set(1647366, 62644)) &&
-          m.existingSubstations.isEmpty
-        } shouldBe true
+            model.buildings.size shouldBe expectedBuildings
+            model.highways.size shouldBe expectedHighways
+            model.landuses.size shouldBe expectedLanduses
+            actualBoundaryIds.mkString(", ") shouldBe expectedBoundaryIds
+              .mkString(", ")
+            model.existingSubstations.size shouldBe expectedSubstations
+        }
+
       }
     }
 

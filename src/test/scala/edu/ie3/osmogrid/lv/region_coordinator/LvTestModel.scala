@@ -6,11 +6,6 @@
 
 package edu.ie3.osmogrid.lv.region_coordinator
 
-import org.apache.pekko.actor.testkit.typed.scaladsl.{
-  ActorTestKit,
-  ScalaTestWithActorTestKit,
-  TestProbe,
-}
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
   Transformer2WTypeInput,
@@ -21,7 +16,11 @@ import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.UnitSpec
 import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
-import org.scalatestplus.mockito.MockitoSugar.mock
+import org.apache.pekko.actor.testkit.typed.scaladsl.{
+  ActorTestKit,
+  ScalaTestWithActorTestKit,
+  TestProbe,
+}
 
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
@@ -67,6 +66,8 @@ object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
     Seq.empty,
   )
 
+  lazy val (lvConfigThreeCounties, osmoGridModelHelgoland) =
+    readOsmModelHelgoland()
   protected def readOsmModel()
       : (OsmoGridConfig.Generation.Lv, LvOsmoGridModel) = {
     val inputResource = getClass.getResource("DoBoCas.pbf")
@@ -94,6 +95,55 @@ object LvTestModel extends ScalaTestWithActorTestKit with UnitSpec {
            |generation.mv.voltageLevel.id = mv
            |generation.mv.voltageLevel.default = 10.0
            |""".stripMargin
+      )
+      .success
+      .value
+
+    val inputActor = actorTestKit.spawn(
+      InputDataProvider(cfg.input)
+    )
+
+    val inputReply = TestProbe[InputResponse]()
+
+    inputActor ! ReqOsm(
+      inputReply.ref,
+      filter = LvFilter(),
+    )
+
+    inputReply
+      .expectMessageType[RepOsm](30 seconds)
+      .osmModel match {
+      case lvModel: LvOsmoGridModel => (cfg.generation.lv.value, lvModel)
+    }
+  }
+
+  protected def readOsmModelHelgoland()
+      : (OsmoGridConfig.Generation.Lv, LvOsmoGridModel) = {
+    val inputResource = getClass.getResource("helgoland.pbf")
+    assert(inputResource != null)
+    val resourcePath = getResourcePath("helgoland.pbf")
+
+    val cfg = OsmoGridConfigFactory
+      .parseWithoutFallback(
+        s"""input.osm.pbf.file = "${resourcePath.replace("\\", "\\\\")}"
+         |input.asset.file.directory = "${getResourcePath("/lv_assets")
+            .replace("\\", "\\\\")}"
+         |input.asset.file.separator = ","
+         |input.asset.file.hierarchic = false
+         |output.gridName = "test_grid"
+         |output.csv.directory = "output_file_path"
+         |generation.lv.averagePowerDensity = 12.5
+         |generation.lv.ratedVoltage = 0.4
+         |generation.lv.gridName = "testLvGrid"
+         |generation.lv.considerHouseConnectionPoints = false
+         |generation.lv.loadSimultaneousFactor = 0.15
+         |generation.lv.boundaryAdminLevel.starting = 2
+         |generation.lv.boundaryAdminLevel.lowest = 8
+         |generation.lv.minDistance = 10
+         |generation.mv.spawnMissingHvNodes = false
+         |generation.mv.voltageLevel.id = mv
+         |generation.mv.voltageLevel.default = 10.0
+         |""".stripMargin
       )
       .success
       .value

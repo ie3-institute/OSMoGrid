@@ -62,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix cases of empty id for nodes [#433](https://github.com/ie3-institute/OSMoGrid/issues/433)
 - Fix osmium installation command [#498](https://github.com/ie3-institute/OSMoGrid/issues/498)
 - Clustering crashes with less than two nodes [#506](https://github.com/ie3-institute/OSMoGrid/issues/506)
+- Handle additional case when building a polygon from ways [#427](https://github.com/ie3-institute/OSMoGrid/issues/427)
 
 ### Removed
 - Legacy Java code
