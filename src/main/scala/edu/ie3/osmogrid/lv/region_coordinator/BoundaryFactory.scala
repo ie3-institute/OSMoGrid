@@ -179,8 +179,7 @@ object BoundaryFactory {
     if (result.isEmpty) {
       seq.headOption match {
         case Some(firstElem) => Map(1 -> (seq :+ firstElem))
-        case None =>
-          Map.empty
+        case None            => Map.empty
       }
     } else {
       result
