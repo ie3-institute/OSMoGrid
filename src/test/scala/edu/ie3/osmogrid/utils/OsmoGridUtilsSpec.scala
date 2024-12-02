@@ -16,7 +16,7 @@ import utils.OsmoGridUtils.{
   buildStreetGraph,
   calcHouseholdPower,
   getAllUniqueCombinations,
-  spawnDummyHvNode
+  spawnDummyHvNode,
 }
 
 import scala.jdk.CollectionConverters._
@@ -34,18 +34,18 @@ class OsmoGridUtilsSpec
         (
           Quantities.getQuantity(10, Units.SQUARE_METRE),
           Quantities.getQuantity(5, PowerSystemUnits.WATT_PER_SQUAREMETRE),
-          0.05.asKiloWatt
+          0.05.asKiloWatt,
         ),
         (
           Quantities.getQuantity(10, Units.SQUARE_METRE),
           Quantities.getQuantity(10, PowerSystemUnits.WATT_PER_SQUAREMETRE),
-          0.1.asKiloWatt
+          0.1.asKiloWatt,
         ),
         (
           Quantities.getQuantity(20, Units.SQUARE_METRE),
           Quantities.getQuantity(10, PowerSystemUnits.WATT_PER_SQUAREMETRE),
-          0.2.asKiloWatt
-        )
+          0.2.asKiloWatt,
+        ),
       )
 
       forAll(cases) { (area, powerDensity, expectedPower) =>
@@ -69,7 +69,7 @@ class OsmoGridUtilsSpec
         streetGraph.getEdge(node3, node4),
         streetGraph.getEdge(node4, node5),
         streetGraph.getEdge(node5, node6),
-        streetGraph.getEdge(node6, node1)
+        streetGraph.getEdge(node6, node1),
       )
     }
 
@@ -80,8 +80,12 @@ class OsmoGridUtilsSpec
         (List(osmNode1, osmNode2), List((osmNode1, osmNode2))),
         (
           List(osmNode1, osmNode2, osmNode3),
-          List((osmNode1, osmNode2), (osmNode1, osmNode3), (osmNode2, osmNode3))
-        )
+          List(
+            (osmNode1, osmNode2),
+            (osmNode1, osmNode3),
+            (osmNode2, osmNode3),
+          ),
+        ),
       )
 
       forAll(cases) { (nodes, combinations) =>
@@ -92,7 +96,7 @@ class OsmoGridUtilsSpec
     "spawn a dummy hv node correctly" in {
       val (dummyGrid1, mvNode1) = spawnDummyHvNode(
         List(nodeInMv1, nodeInMv2, nodeInMv3, nodeInMv4, nodeInMv5, nodeInMv6),
-        assetInformation
+        assetInformation,
       )
 
       val hvNode1 = dummyGrid1.getRawGrid.getNodes.asScala

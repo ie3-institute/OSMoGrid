@@ -33,8 +33,8 @@ object LvGridGenerator extends LazyLogging {
             gridUuid,
             osmData,
             assetInformation,
-            config
-          )
+            config,
+          ),
         ) =>
       ctx.log.info(s"Received request to generate grid: $gridUuid")
       val powerDensity = config.averagePowerDensity.asWattPerSquareMetre
@@ -44,7 +44,7 @@ object LvGridGenerator extends LazyLogging {
           osmData,
           powerDensity,
           minDistance,
-          config.considerHouseConnectionPoints
+          config.considerHouseConnectionPoints,
         )
       val lineType = assetInformation.lineTypes.headOption.getOrElse(
         throw IllegalStateException(
@@ -80,7 +80,7 @@ object LvGridGenerator extends LazyLogging {
             config.loadSimultaneousFactor,
             lineType,
             transformer2WTypes,
-            gridUuid.toString
+            gridUuid.toString,
           )
       }
 

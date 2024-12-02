@@ -10,7 +10,7 @@ import edu.ie3.datamodel.models.input.container.{
   GraphicElements,
   JointGridContainer,
   RawGridElements,
-  SystemParticipants
+  SystemParticipants,
 }
 import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils._
@@ -61,7 +61,7 @@ class GridContainerUtilsSpec extends UnitSpec with GridSupport with MvTestData {
 
       val nodes = GridContainerUtils invokePrivate getNodes(
         voltLevels,
-        Seq(lvGrid1, lvGrid2, lvGrid3, hvGrid1, hvGrid2, hvGrid3)
+        Seq(lvGrid1, lvGrid2, lvGrid3, hvGrid1, hvGrid2, hvGrid3),
       )
 
       nodes.size shouldBe 4
@@ -72,7 +72,7 @@ class GridContainerUtilsSpec extends UnitSpec with GridSupport with MvTestData {
         "containerA",
         new RawGridElements(List[AssetInput](nodeInMv1, nodeInMv2).asJava),
         new SystemParticipants(Set.empty[SystemParticipants].asJava),
-        new GraphicElements(Set.empty[GraphicElements].asJava)
+        new GraphicElements(Set.empty[GraphicElements].asJava),
       )
 
       val containerB = new JointGridContainer(
@@ -81,7 +81,7 @@ class GridContainerUtilsSpec extends UnitSpec with GridSupport with MvTestData {
           List[AssetInput](nodeInMv3, nodeInMv4, nodeInMv5).asJava
         ),
         new SystemParticipants(Set.empty[SystemParticipants].asJava),
-        new GraphicElements(Set.empty[GraphicElements].asJava)
+        new GraphicElements(Set.empty[GraphicElements].asJava),
       )
 
       val jointGridContainer = combine(containerA, containerB)

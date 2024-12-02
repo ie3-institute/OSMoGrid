@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Readthedocs dependencies to dependabot [#454](https://github.com/ie3-institute/OSMoGrid/issues/454)
 - Update maven repository sources [#438](https://github.com/ie3-institute/OSMoGrid/issues/438)
 - Include census boundaries and `admin_level=12` for finer partitioning of osm data [#502](https://github.com/ie3-institute/OSMoGrid/issues/502)
+- Scalafmt should always add trailing commas [#508](https://github.com/ie3-institute/OSMoGrid/issues/508)
 
 ### Changed
 - Rely on Java 17

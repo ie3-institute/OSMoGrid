@@ -26,7 +26,7 @@ class BoundaryFactorySpec extends UnitSpec {
           BoundaryFactory
             .buildBoundaryPolygons(
               osmoGridModel,
-              BoundaryAdminLevel.COUNTY_LEVEL
+              BoundaryAdminLevel.COUNTY_LEVEL,
             )
             .values
             .map(_.toString)
@@ -43,7 +43,7 @@ class BoundaryFactorySpec extends UnitSpec {
           BoundaryFactory
             .buildBoundaryPolygons(
               osmoGridModel,
-              BoundaryAdminLevel.MUNICIPALITY_LEVEL
+              BoundaryAdminLevel.MUNICIPALITY_LEVEL,
             )
             .values
             .map(_.toString)
@@ -60,7 +60,7 @@ class BoundaryFactorySpec extends UnitSpec {
           BoundaryFactory
             .buildBoundaryPolygons(
               osmoGridModel,
-              BoundaryAdminLevel.SUBURB_1_LEVEL
+              BoundaryAdminLevel.SUBURB_1_LEVEL,
             )
             .values
             .map(_.toString)

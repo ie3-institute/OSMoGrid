@@ -34,7 +34,7 @@ class ResultCsvSinkIT extends UnitSpec with ThreeWindingTestData {
         runId,
         tmpDirectory.toFile.toPath,
         csvSeparator,
-        hierarchic
+        hierarchic,
       )
 
       val jointGrid = threeWindingTestGrid
@@ -48,7 +48,7 @@ class ResultCsvSinkIT extends UnitSpec with ThreeWindingTestData {
         jointGrid.getGridName,
         csvSeparator,
         tmpDirectory,
-        hierarchic
+        hierarchic,
       )
 
       gridData shouldBe jointGrid

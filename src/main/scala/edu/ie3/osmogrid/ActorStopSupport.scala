@@ -35,7 +35,7 @@ trait ActorStopSupport[S] {
 
   final protected def postStopCleanUp[T](
       log: Logger,
-      stateData: S
+      stateData: S,
   ): Behavior[T] = {
     log.info("Got terminated by ActorSystem.")
     stopBehavior(stateData)

@@ -41,7 +41,7 @@ trait OsmTestData {
       id,
       Seq(nodeA.id, nodeB.id),
       Map.empty,
-      None
+      None,
     )
   }
 }

@@ -27,7 +27,7 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
             ctx,
             buffer,
             OsmSource(osmConfig.osm, ctx),
-            AssetSource(ec, osmConfig.asset)
+            AssetSource(ec, osmConfig.asset),
           )
         )
       }
@@ -69,7 +69,7 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
 
   private def readOsmData(
       providerData: ProviderData,
-      replyTo: ActorRef[InputResponse]
+      replyTo: ActorRef[InputResponse],
   ): Behaviors.Receive[InputDataEvent] =
     Behaviors.receiveMessage {
       case osmResponse: RepOsm =>
@@ -85,7 +85,7 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
 
   private def readAssetData(
       providerData: ProviderData,
-      replyTo: ActorRef[InputResponse]
+      replyTo: ActorRef[InputResponse],
   ): Behaviors.Receive[InputDataEvent] = {
     Behaviors.receiveMessage {
       case repAssetTypes: RepAssetTypes =>

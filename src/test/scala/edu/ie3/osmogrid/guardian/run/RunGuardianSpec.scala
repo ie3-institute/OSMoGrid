@@ -10,11 +10,11 @@ import org.apache.pekko.actor.testkit.typed.CapturedLogEvent
 import org.apache.pekko.actor.testkit.typed.Effect.{
   MessageAdapter,
   Spawned,
-  WatchedWith
+  WatchedWith,
 }
 import org.apache.pekko.actor.testkit.typed.scaladsl.{
   BehaviorTestKit,
-  ScalaTestWithActorTestKit
+  ScalaTestWithActorTestKit,
 }
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import edu.ie3.datamodel.models.input.container.SubGridContainer
@@ -42,7 +42,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         RunGuardian(
           validConfig,
           Seq.empty[ActorRef[ResultListenerProtocol]],
-          runId
+          runId,
         )
       )
 
@@ -51,7 +51,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
 
         idleTestKit.logEntries() should contain only CapturedLogEvent(
           Level.ERROR,
-          s"Received a message, that I don't understand during idle phase of run $runId.\n\tMessage: $ResultEventListenerDied"
+          s"Received a message, that I don't understand during idle phase of run $runId.\n\tMessage: $ResultEventListenerDied",
         )
       }
 
@@ -65,7 +65,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           RunGuardian(
             maliciousConfig,
             Seq.empty[ActorRef[ResultListenerProtocol]],
-            runId
+            runId,
           )
         )
 
@@ -78,7 +78,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
               "You have to provide at least one input data type for asset information!"
             )
           ),
-          None
+          None,
         )
       }
 
@@ -96,7 +96,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           case Spawned(
                 _: Behavior[_],
                 name,
-                _
+                _,
               ) =>
             name shouldBe s"InputDataProvider_$runId"
         }
@@ -106,7 +106,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           case Spawned(
                 _: Behavior[_],
                 name,
-                _
+                _,
               ) =>
             name shouldBe s"PersistenceResultListener_$runId"
         }
@@ -153,14 +153,14 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         runId,
         validConfig,
         Seq.empty[ActorRef[ResultListenerProtocol]],
-        MessageAdapters(lvCoordinatorAdapter.ref, mvCoordinatorAdapter.ref)
+        MessageAdapters(lvCoordinatorAdapter.ref, mvCoordinatorAdapter.ref),
       )
       val childReferences = ChildReferences(
         inputDataProvider.ref,
         Some(resultListener.ref),
         Seq.empty,
         Some(lvCoordinator.ref),
-        Some(mvCoordinator.ref)
+        Some(mvCoordinator.ref),
       )
       val finishedGridData = FinishedGridData.empty
 
@@ -168,7 +168,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         RunGuardian invokePrivate running(
           runGuardianData,
           childReferences,
-          finishedGridData
+          finishedGridData,
         )
       )
 
@@ -177,7 +177,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
 
         runningTestKit.logEntries() should contain only CapturedLogEvent(
           Level.ERROR,
-          s"Received a message, that I don't understand during active run $runId.\n\tMessage: $Run"
+          s"Received a message, that I don't understand during active run $runId.\n\tMessage: $Run",
         )
       }
 
@@ -195,7 +195,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         runningTestKit.logEntries() should contain(
           CapturedLogEvent(
             Level.INFO,
-            s"Received lv grids."
+            s"Received lv grids.",
           )
         )
 
@@ -215,7 +215,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         runningTestKit.logEntries() should contain(
           CapturedLogEvent(
             Level.INFO,
-            s"Received mv grids."
+            s"Received mv grids.",
           )
         )
       }
@@ -235,7 +235,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           inputDataProviderTerminated = false,
           resultListenerTerminated = false,
           lvCoordinatorTerminated = None,
-          mvCoordinatorTerminated = None
+          mvCoordinatorTerminated = None,
         )
 
         val stoppingTestKit = BehaviorTestKit(
@@ -247,7 +247,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
 
           stoppingTestKit.logEntries() should contain only CapturedLogEvent(
             Level.ERROR,
-            s"Received a message, that I don't understand during coordinated shutdown phase of run $runId.\n\tMessage: $Run"
+            s"Received a message, that I don't understand during coordinated shutdown phase of run $runId.\n\tMessage: $Run",
           )
         }
 
@@ -270,7 +270,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           inputDataProviderTerminated = false,
           resultListenerTerminated = false,
           lvCoordinatorTerminated = Some(false),
-          mvCoordinatorTerminated = Some(false)
+          mvCoordinatorTerminated = Some(false),
         )
 
         val stoppingTestKit = BehaviorTestKit(
@@ -314,14 +314,14 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         runId,
         validConfig,
         Seq.empty[ActorRef[ResultListenerProtocol]],
-        MessageAdapters(lvCoordinatorAdapter.ref, mvCoordinatorAdapter.ref)
+        MessageAdapters(lvCoordinatorAdapter.ref, mvCoordinatorAdapter.ref),
       )
       val childReferences = ChildReferences(
         inputDataProvider.ref,
         Some(resultListener.ref),
         Seq.empty,
         Some(lvCoordinator.ref),
-        Some(mvCoordinator.ref)
+        Some(mvCoordinator.ref),
       )
       val finishedGridData = FinishedGridData.empty
 
@@ -329,7 +329,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         RunGuardian invokePrivate running(
           runGuardianData,
           childReferences,
-          finishedGridData
+          finishedGridData,
         )
       )
 
@@ -339,7 +339,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
       runningTestKit.logEntries() should contain(
         CapturedLogEvent(
           Level.WARN,
-          s"Lv coordinator for run $runId unexpectedly died. Start coordinated shut down phase for this run."
+          s"Lv coordinator for run $runId unexpectedly died. Start coordinated shut down phase for this run.",
         )
       )
       /* All children are sent a termination request */

@@ -103,7 +103,7 @@ object GraphUtils {
       nodeA.longitude,
       nodeA.latitude,
       nodeB.longitude,
-      nodeB.latitude
+      nodeB.latitude,
     )
   }
 

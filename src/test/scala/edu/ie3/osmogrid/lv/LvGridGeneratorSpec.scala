@@ -9,7 +9,7 @@ package edu.ie3.osmogrid.lv
 import org.apache.pekko.actor.testkit.typed.scaladsl.{
   ActorTestKit,
   BehaviorTestKit,
-  ScalaTestWithActorTestKit
+  ScalaTestWithActorTestKit,
 }
 import edu.ie3.osmogrid.lv.region_coordinator.LvTestModel
 import edu.ie3.osmogrid.model.OsmTestData
@@ -42,7 +42,7 @@ class LvGridGeneratorSpec
         gridUuid,
         osmData,
         assetInformation,
-        config
+        config,
       )
 
       idleTestKit.run(generateGrid)

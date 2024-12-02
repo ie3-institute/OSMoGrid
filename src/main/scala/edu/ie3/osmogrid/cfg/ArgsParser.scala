@@ -68,6 +68,6 @@ object ArgsParser extends LazyLogging {
 
   final case class CliArguments(
       rawArgs: Array[String],
-      configLocation: Option[String] = None
+      configLocation: Option[String] = None,
   )
 }

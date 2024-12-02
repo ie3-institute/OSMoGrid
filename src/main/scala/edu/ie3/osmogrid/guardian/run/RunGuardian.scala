@@ -11,7 +11,7 @@ import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.MessageAdapters.{
   WrappedLvCoordinatorResponse,
-  WrappedMvCoordinatorResponse
+  WrappedMvCoordinatorResponse,
 }
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.RepLvGrids
@@ -40,7 +40,7 @@ object RunGuardian
   def apply(
       cfg: OsmoGridConfig,
       additionalListener: Seq[ActorRef[ResultListenerProtocol]] = Seq.empty,
-      runId: UUID
+      runId: UUID,
   ): Behavior[RunRequest] = Behaviors.setup { ctx =>
     // overwriting the default voltage config
     setVoltageConfig(cfg.voltage)
@@ -52,8 +52,8 @@ object RunGuardian
         additionalListener,
         MessageAdapters(
           ctx.messageAdapter(msg => WrappedLvCoordinatorResponse(msg)),
-          ctx.messageAdapter(msg => WrappedMvCoordinatorResponse(msg))
-        )
+          ctx.messageAdapter(msg => WrappedMvCoordinatorResponse(msg)),
+        ),
       )
     )
   }
@@ -71,14 +71,14 @@ object RunGuardian
         /* Start a run */
         initRun(
           runGuardianData,
-          ctx
+          ctx,
         ) match {
           case Success(childReferences) =>
             if (childReferences.canRun) {
               running(
                 runGuardianData,
                 childReferences,
-                FinishedGridData.empty
+                FinishedGridData.empty,
               )
             } else {
               // no coordinator alive, stop generation
@@ -90,7 +90,7 @@ object RunGuardian
           case Failure(exception) =>
             ctx.log.error(
               s"Unable to start run ${runGuardianData.runId}.",
-              exception
+              exception,
             )
             Behaviors.stopped
         }
@@ -115,13 +115,13 @@ object RunGuardian
   private def running(
       runGuardianData: RunGuardianData,
       childReferences: ChildReferences,
-      finishedGridData: FinishedGridData
+      finishedGridData: FinishedGridData,
   ): Behavior[RunRequest] = Behaviors.receive {
     case (
           ctx,
           WrappedLvCoordinatorResponse(
             RepLvGrids(subGridContainer, streetGraph)
-          )
+          ),
         ) =>
       ctx.log.info(s"Received lv grids.")
 
@@ -157,9 +157,9 @@ object RunGuardian
               subGridContainer,
               dummyHvGrid,
               nodeChanges,
-              assetInformation
+              assetInformation,
             )
-          )
+          ),
         ) =>
       ctx.log.info(s"Received mv grids.")
 
@@ -171,7 +171,7 @@ object RunGuardian
         mvData = Some(subGridContainer),
         hvData = dummyHvGrid.map(Seq(_)), // converting to sequence
         mvNodeChanges = Option.when(nodeChanges.nonEmpty)(nodeChanges),
-        assetInformation = Some(assetInformation)
+        assetInformation = Some(assetInformation),
       )
 
       // check if all possible data was received
@@ -197,7 +197,7 @@ object RunGuardian
         finishedGridData.mvNodeChanges,
         finishedGridData.assetInformation,
         childReferences.resultListeners,
-        runGuardianData.msgAdapters
+        runGuardianData.msgAdapters,
       )(ctx.log)
 
       stopping(stopChildren(runGuardianData.runId, childReferences, ctx))
@@ -215,7 +215,7 @@ object RunGuardian
           runGuardianData.runId,
           childReferences,
           watch,
-          ctx
+          ctx,
         )
       )
     case (ctx, notUnderstood) =>

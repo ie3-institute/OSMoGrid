@@ -32,7 +32,7 @@ object VoronoiPolygonSupport {
   final case class VoronoiPolygon(
       transitionPointToHigherVoltLvl: NodeInput,
       transitionPointsToLowerVoltLvl: List[NodeInput],
-      polygon: Option[Polygon]
+      polygon: Option[Polygon],
   ) {
 
     /** Returns all nodes of this polygon.
@@ -89,7 +89,7 @@ object VoronoiPolygonSupport {
   def createVoronoiPolygons[T](
       transitionPoints: List[NodeInput],
       additionalPoints: List[NodeInput],
-      ctx: ActorContext[T]
+      ctx: ActorContext[T],
   ): (List[VoronoiPolygon], List[NodeInput]) = {
     val polygons = createPolygons(transitionPoints)
 
@@ -110,7 +110,7 @@ object VoronoiPolygonSupport {
   private def updatePolygons(
       polygons: List[VoronoiPolygon],
       nodes: List[NodeInput],
-      log: Logger
+      log: Logger,
   ): (List[VoronoiPolygon], List[NodeInput]) = {
     /* list of nodes that are not assigned yet */
     var notAssignedNodes: List[NodeInput] = nodes
