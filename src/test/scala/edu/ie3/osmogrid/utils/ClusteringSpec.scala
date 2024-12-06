@@ -8,7 +8,7 @@ package edu.ie3.osmogrid.utils
 
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.test.common.{ClusterTestData, UnitSpec}
-import utils.Clustering.Cluster
+import utils.Clustering.{Cluster, NodeWrapper}
 import utils.{Clustering, Connections}
 
 class ClusteringSpec extends UnitSpec with ClusterTestData {
@@ -43,7 +43,7 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
 
     "be set up correctly" in {
       val clustering = Clustering.setup(
-        gridElements(List(p1_1, p2_1)),
+        gridElements(List(p1_1.input, p2_1.input)),
         lines,
         trafo_10kV_to_lv,
         0.5,
@@ -57,12 +57,12 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
     }
 
     "create clusters correctly" in {
-      val elements = gridElements(List(p1_1, p2_1))
+      val elements = gridElements(List(p1_1.input, p2_1.input))
       val clustering = Clustering.setup(elements, lines, trafo_10kV_to_lv, 0.5)
 
       val clusters = clustering invokePrivate createClusters(
-        elements.substations.values.toSet,
-        elements.nodes.values.toSet,
+        elements.substations.values.map(NodeWrapper).toSet,
+        elements.nodes.values.map(NodeWrapper).toSet,
       )
 
       val map = clusters.map { c => c.substation -> c }.toMap
@@ -96,7 +96,7 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
 
     "calculate the next step correctly" in {
       // with one osm substation
-      val elements = gridElements(List(p1_1))
+      val elements = gridElements(List(p1_1.input))
       val connections = Connections(elements, lines.toSeq)
 
       // suboptimal additional substation found
@@ -106,7 +106,7 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
         connections,
         Set(p1_1),
         additionalSubstation,
-        elements.nodes.values.toSet,
+        elements.nodes.values.map(NodeWrapper).toSet,
         9,
         2,
       )
@@ -135,14 +135,14 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
 
     "find the closest substation correctly" in {
       // with one osm substation
-      val elements = gridElements(List(p1_1))
+      val elements = gridElements(List(p1_1.input))
       val connections = Connections(elements, lines.toSeq)
 
       val clustering = Clustering(
         connections,
         Set(p1_1),
         Set(p2_1),
-        elements.nodes.values.toSet,
+        elements.nodes.values.map(NodeWrapper).toSet,
         9,
         2,
       )
@@ -173,7 +173,7 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
 
     "run the calculation correctly" in {
       val clustering = Clustering.setup(
-        gridElements(List(p1_1, p2_1)),
+        gridElements(List(p1_1.input, p2_1.input)),
         lines,
         trafo_10kV_to_lv,
         0.5,

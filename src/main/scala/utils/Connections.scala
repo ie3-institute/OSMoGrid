@@ -7,8 +7,7 @@
 package utils
 
 import com.typesafe.scalalogging.LazyLogging
-import edu.ie3.datamodel.graph.{DistanceWeightedEdge, DistanceWeightedGraph}
-import edu.ie3.datamodel.models.input.NodeInput
+import edu.ie3.datamodel.graph.DistanceWeightedEdge
 import edu.ie3.datamodel.models.input.connector.LineInput
 import edu.ie3.osmogrid.exception.GridException
 import edu.ie3.osmogrid.graph.OsmGraph
@@ -17,11 +16,13 @@ import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath
+import org.jgrapht.graph.SimpleWeightedGraph
 import org.jgrapht.{Graph, GraphPath}
 import org.slf4j.{Logger, LoggerFactory}
 import tech.units.indriya.ComparableQuantity
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
+import utils.Clustering.NodeWrapper
 import utils.Connections.Connection
 import utils.OsmoGridUtils.getAllUniqueCombinations
 
@@ -127,23 +128,31 @@ object Connections extends LazyLogging {
   def apply(
       elements: GridElements,
       lines: Seq[LineInput],
-  ): Connections[NodeInput] = {
-    val graph: DistanceWeightedGraph = new DistanceWeightedGraph()
+  ): Connections[NodeWrapper] = {
+    val graph: SimpleWeightedGraph[NodeWrapper, DistanceWeightedEdge] =
+      new SimpleWeightedGraph[NodeWrapper, DistanceWeightedEdge](
+        classOf[DistanceWeightedEdge]
+      )
 
     // adding all nodes to the graph
-    val nodes: Set[NodeInput] =
-      (elements.nodes.values ++ elements.substations.values).toSet
+    val nodes: Set[NodeWrapper] =
+      (elements.nodes.values.map(NodeWrapper) ++ elements.substations.values
+        .map(NodeWrapper)).toSet
     nodes.foreach { n => graph.addVertex(n) }
 
     lines.foreach { line =>
-      val edge = graph.addEdge(line.getNodeA, line.getNodeB)
-      graph.setEdgeWeight(edge, line.getLength)
+      val edge =
+        graph.addEdge(NodeWrapper(line.getNodeA), NodeWrapper(line.getNodeB))
+      graph.setEdgeWeight(
+        edge,
+        line.getLength.to(Units.METRE).getValue.doubleValue,
+      )
     }
 
     val shortestPath =
-      new DijkstraShortestPath[NodeInput, DistanceWeightedEdge](graph)
+      new DijkstraShortestPath[NodeWrapper, DistanceWeightedEdge](graph)
 
-    val connectionList: List[Connection[NodeInput]] =
+    val connectionList =
       buildUndirectedShortestPathConnections(graph, shortestPath)
     Connections(nodes.toList, connectionList)
   }

@@ -18,24 +18,13 @@ import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.geo.GeoUtils.calcHaversine
 import edu.ie3.util.osm.model.OsmEntity.Node
 import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
+import utils.Clustering.NodeWrapper
 import utils.GridConversion.{buildLine, buildLoad}
 
 import java.util.UUID
 
 trait ClusterTestData extends GridSupport {
   protected val voltageLevel: CommonVoltageLevel = GermanVoltageLevelUtils.LV
-  protected def lineBuilder(nodeA: NodeInput, nodeB: NodeInput): LineInput =
-    buildLine(
-      s"${nodeA.getId} -> ${nodeB.getId}",
-      nodeA,
-      nodeB,
-      1,
-      defaultLineTypeLv,
-      calcHaversine(
-        nodeA.getGeoPosition.getCoordinate,
-        nodeB.getGeoPosition.getCoordinate,
-      ),
-    )
 
   // test points
   protected val (osm1_1, p1_1) = buildPoint(11L, 50d, 7d)
@@ -48,7 +37,7 @@ trait ClusterTestData extends GridSupport {
   protected val (osm2_3, p2_3) = buildPoint(23L, 50.303, 7.1)
   protected val (osm2_4, p2_4) = buildPoint(24L, 50.302, 7.103)
 
-  protected val nodeMap: Map[Node, NodeInput] = List(
+  protected val nodeMap: Map[Node, NodeWrapper] = List(
     osm1_1 -> p1_1,
     osm1_2 -> p1_2,
     osm1_3 -> p1_3,
@@ -60,21 +49,21 @@ trait ClusterTestData extends GridSupport {
   ).toMap
 
   protected val l1_1: LoadInput =
-    buildLoad("load for node 1_1", 200.asKiloVoltAmpere)(p1_1)
+    buildLoad("load for node 1_1", 200.asKiloVoltAmpere)(p1_1.input)
   protected val l1_2: LoadInput =
-    buildLoad("load for node 1_2", 200.asKiloVoltAmpere)(p1_2)
+    buildLoad("load for node 1_2", 200.asKiloVoltAmpere)(p1_2.input)
   protected val l1_3: LoadInput =
-    buildLoad("load for node 1_3", 200.asKiloVoltAmpere)(p1_3)
+    buildLoad("load for node 1_3", 200.asKiloVoltAmpere)(p1_3.input)
   protected val l1_4: LoadInput =
-    buildLoad("load for node 1_4", 100.asKiloVoltAmpere)(p1_4)
+    buildLoad("load for node 1_4", 100.asKiloVoltAmpere)(p1_4.input)
   protected val l2_1: LoadInput =
-    buildLoad("load for node 2_1", 200.asKiloVoltAmpere)(p2_1)
+    buildLoad("load for node 2_1", 200.asKiloVoltAmpere)(p2_1.input)
   protected val l2_2: LoadInput =
-    buildLoad("load for node 2_2", 100.asKiloVoltAmpere)(p2_2)
+    buildLoad("load for node 2_2", 100.asKiloVoltAmpere)(p2_2.input)
   protected val l2_3: LoadInput =
-    buildLoad("load for node 2_3", 200.asKiloVoltAmpere)(p2_3)
+    buildLoad("load for node 2_3", 200.asKiloVoltAmpere)(p2_3.input)
   protected val l2_4: LoadInput =
-    buildLoad("load for node 2_4", 100.asKiloVoltAmpere)(p2_4)
+    buildLoad("load for node 2_4", 100.asKiloVoltAmpere)(p2_4.input)
 
   protected val lines: Set[LineInput] = List(
     lineBuilder(p1_1, p1_2),
@@ -89,22 +78,41 @@ trait ClusterTestData extends GridSupport {
 
   protected def gridElements(substations: List[NodeInput]): GridElements =
     GridElements(
-      nodeMap.filter { case (_, input) => !substations.contains(input) },
-      nodeMap.filter { case (_, input) => substations.contains(input) },
+      nodeMap
+        .map { case (node, nodeWrapper) => (node, nodeWrapper.input) }
+        .filter { case (_, input) => !substations.contains(input) },
+      nodeMap
+        .map { case (node, nodeWrapper) => (node, nodeWrapper.input) }
+        .filter { case (_, input) => substations.contains(input) },
       Set(l1_1, l1_2, l1_3, l1_4, l2_1, l2_2, l2_3, l2_4),
     )
 
-  def buildPoint(i: Long, lat: Double, lon: Double): (Node, NodeInput) = {
+  def buildPoint(i: Long, lat: Double, lon: Double): (Node, NodeWrapper) = {
     val node = Node(i, lat, lon, Map.empty, None)
-    val nodeInput = new NodeInput(
-      UUID.randomUUID(),
-      s"Node $i",
-      1.asPu,
-      false,
-      GeoUtils.buildPoint(lat, lon),
-      GermanVoltageLevelUtils.LV,
-      1,
+    val nodeWrapper = NodeWrapper(
+      new NodeInput(
+        UUID.randomUUID(),
+        s"Node $i",
+        1.asPu,
+        false,
+        GeoUtils.buildPoint(lat, lon),
+        GermanVoltageLevelUtils.LV,
+        1,
+      )
     )
-    (node, nodeInput)
+    (node, nodeWrapper)
   }
+
+  protected def lineBuilder(nodeA: NodeWrapper, nodeB: NodeWrapper): LineInput =
+    buildLine(
+      s"${nodeA.input.getId} -> ${nodeB.input.getId}",
+      nodeA.input,
+      nodeB.input,
+      1,
+      defaultLineTypeLv,
+      calcHaversine(
+        nodeA.input.getGeoPosition.getCoordinate,
+        nodeB.input.getGeoPosition.getCoordinate,
+      ),
+    )
 }

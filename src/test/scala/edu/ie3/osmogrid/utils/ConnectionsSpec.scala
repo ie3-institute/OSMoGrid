@@ -89,8 +89,11 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
 
       val connections = Connections(gridElements, lines)
 
-      connections.elements shouldBe List(nodeInMv1, nodeInMv2, nodeToHv)
-      connections.connectionMap.keySet shouldBe Set(
+      connections.elements
+        .map(_.input) shouldBe List(nodeInMv1, nodeInMv2, nodeToHv)
+      connections.connectionMap.keySet.map { case (wrapper1, wrapper2) =>
+        (wrapper1.input, wrapper2.input)
+      } shouldBe Set(
         (nodeToHv, nodeInMv1),
         (nodeInMv1, nodeToHv),
         (nodeToHv, nodeInMv2),

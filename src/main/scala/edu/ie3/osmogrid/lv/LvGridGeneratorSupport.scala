@@ -22,7 +22,7 @@ import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.BuildingGraphConnection
 import edu.ie3.util.osm.model.OsmEntity.Node
 import edu.ie3.util.quantities.QuantityUtils._
 import utils.Clustering
-import utils.Clustering.Cluster
+import utils.Clustering.{Cluster, NodeWrapper}
 import utils.GridConversion._
 
 import scala.collection.Set
@@ -224,35 +224,36 @@ object LvGridGeneratorSupport extends LazyLogging {
         loadSimultaneousFactor,
       )
       .run
-    val lineMap = lineInputs.map { l => (l.getNodeA, l.getNodeB) -> l }.toMap
+    val lineMap = lineInputs.map { l =>
+      (NodeWrapper(l.getNodeA), NodeWrapper(l.getNodeB)) -> l
+    }.toMap
 
     // converting the cluster into an actual psdm subgrid
     cluster.map { c =>
       val substation = c.substation
       val nodes = c.nodes ++ Set(substation)
-      val lines: Map[(NodeInput, NodeInput), LineInput] = lineMap.filter {
-        case ((nodeA, nodeB), _) =>
-          nodes.contains(nodeA) && nodes.contains(nodeB)
+      val lines = lineMap.filter { case ((nodeA, nodeB), _) =>
+        nodes.contains(nodeA) && nodes.contains(nodeB)
       }
 
       val loads = gridElements.loads.filter { load =>
-        nodes.contains(load.getNode)
+        nodes.contains(NodeWrapper(load.getNode))
       }
 
       val mvNode = buildNode(mvVoltage)(
-        s"Mv node to lv node ${substation.getId}",
-        substation.getGeoPosition,
+        s"Mv node to lv node ${substation.input.getId}",
+        substation.input.getGeoPosition,
         isSlack = true,
       )(subnet = 100)
 
       val transformer2W =
-        buildTransformer2W(mvNode, substation, 1, transformer2WTypeInput)
+        buildTransformer2W(mvNode, substation.input, 1, transformer2WTypeInput)
 
-      val allNodes = nodes ++ Set(mvNode)
+      val allNodes = nodes ++ Set(NodeWrapper(mvNode))
 
       buildGridContainer(
         gridNameBase,
-        allNodes.asJava,
+        allNodes.map(_.input).asJava,
         lines.values.toSet.asJava,
         loads.asJava,
       )(transformer2Ws = Set(transformer2W).asJava)
