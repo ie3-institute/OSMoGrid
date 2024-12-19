@@ -63,7 +63,7 @@ dependencies {
 
   // scala core
   implementation "org.scala-lang:scala-library:${scalaBinaryVersion}"
-  implementation group: 'org.scala-lang.modules', name: "scala-parallel-collections_${scalaVersion}", version: '1.0.4'
+  implementation group: 'org.scala-lang.modules', name: "scala-parallel-collections_${scalaVersion}", version: '1.1.0'
 
   // pekko
   implementation "org.apache.pekko:pekko-actor-typed_${scalaVersion}:${pekkoVersion}"
