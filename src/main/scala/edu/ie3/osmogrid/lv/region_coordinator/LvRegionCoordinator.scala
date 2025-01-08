@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.lv.region_coordinator
 
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
@@ -25,12 +24,12 @@ object LvRegionCoordinator {
               administrativeLevel,
               cfg,
               lvCoordinatorRegionCoordinatorAdapter,
-              lvCoordinatorGridGeneratorAdapter,
+              lvCoordinatorGridGeneratorAdapter
             ) =>
           val areas =
             BoundaryFactory.buildBoundaryPolygons(
               osmoGridModel,
-              administrativeLevel,
+              administrativeLevel
             )
 
           val newOsmoGridModels =
@@ -41,7 +40,7 @@ object LvRegionCoordinator {
               val partitionedAreas = OsmoGridModelPartitioner
                 .partition(
                   osmoGridModel,
-                  areas,
+                  areas
                 )
               if (partitionedAreas.isEmpty)
                 Iterable.single(osmoGridModel)
@@ -73,7 +72,7 @@ object LvRegionCoordinator {
                     nextLevel,
                     cfg,
                     lvCoordinatorRegionCoordinatorAdapter,
-                    lvCoordinatorGridGeneratorAdapter,
+                    lvCoordinatorGridGeneratorAdapter
                   )
                 }
               case None =>
@@ -85,7 +84,7 @@ object LvRegionCoordinator {
                   gridUuid,
                   osmoGridModel,
                   assetInformation,
-                  cfg,
+                  cfg
                 )
             }
           }

@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package utils
 
 import edu.ie3.osmogrid.graph.OsmGraph
@@ -103,7 +102,7 @@ object GraphUtils {
       nodeA.longitude,
       nodeA.latitude,
       nodeB.longitude,
-      nodeB.latitude,
+      nodeB.latitude
     )
   }
 

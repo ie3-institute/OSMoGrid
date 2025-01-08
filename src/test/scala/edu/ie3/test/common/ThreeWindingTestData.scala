@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.test.common
 
 import edu.ie3.datamodel.models.OperationTime
@@ -12,16 +11,16 @@ import edu.ie3.datamodel.models.input.connector.{
   LineInput,
   SwitchInput,
   Transformer2WInput,
-  Transformer3WInput,
+  Transformer3WInput
 }
 import edu.ie3.datamodel.models.input.container.{
   JointGridContainer,
-  RawGridElements,
+  RawGridElements
 }
 import edu.ie3.datamodel.models.input.{
   MeasurementUnitInput,
   NodeInput,
-  OperatorInput,
+  OperatorInput
 }
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
 import edu.ie3.osmogrid.utils.TestGridFactory
@@ -44,7 +43,7 @@ trait ThreeWindingTestData {
     true,
     NodeInput.DEFAULT_GEO_POSITION,
     GermanVoltageLevelUtils.EHV_380KV,
-    1,
+    1
   )
   private val nodeB = new NodeInput(
     UUID.fromString("3d4c66a3-dc11-4ec8-857a-53d77beb15ee"),
@@ -55,7 +54,7 @@ trait ThreeWindingTestData {
     false,
     NodeInput.DEFAULT_GEO_POSITION,
     GermanVoltageLevelUtils.HV,
-    2,
+    2
   )
   private val nodeC = new NodeInput(
     UUID.fromString("a865a429-615e-44be-9d00-d384298986f6"),
@@ -66,7 +65,7 @@ trait ThreeWindingTestData {
     false,
     NodeInput.DEFAULT_GEO_POSITION,
     GermanVoltageLevelUtils.MV_10KV,
-    3,
+    3
   )
 
   private val transformerType = new Transformer3WTypeInput(
@@ -90,7 +89,7 @@ trait ThreeWindingTestData {
     Quantities.getQuantity(0d, DEGREE_GEOM),
     0,
     -10,
-    10,
+    10
   )
 
   private val transformer = new Transformer3WInput(
@@ -104,7 +103,7 @@ trait ThreeWindingTestData {
     1,
     transformerType,
     0,
-    true,
+    true
   )
 
   protected val threeWindingTestGrid: JointGridContainer = {
@@ -114,11 +113,11 @@ trait ThreeWindingTestData {
       Set.empty[Transformer2WInput].asJava,
       Set(transformer).asJava,
       Set.empty[SwitchInput].asJava,
-      Set.empty[MeasurementUnitInput].asJava,
+      Set.empty[MeasurementUnitInput].asJava
     )
     TestGridFactory.createJointGrid(
       gridName = "threeWindingTestGrid",
-      rawGridElements = rawGridElements,
+      rawGridElements = rawGridElements
     )
   }
 }

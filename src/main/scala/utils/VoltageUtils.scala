@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package utils
 
 import edu.ie3.datamodel.models.StandardUnits
@@ -72,7 +71,7 @@ object VoltageUtils {
   def toVoltLvl(
       id: String,
       vNom: Option[List[Double]],
-      default: Double,
+      default: Double
   ): List[VoltageLevel] = {
     toQuantities(vNom, default).map { quantity =>
       new VoltageLevel(id, quantity)
@@ -90,7 +89,7 @@ object VoltageUtils {
     */
   def toQuantities(
       vNom: Option[List[Double]],
-      default: Double,
+      default: Double
   ): List[ComparableQuantity[ElectricPotential]] = {
     vNom match {
       case Some(voltages) =>

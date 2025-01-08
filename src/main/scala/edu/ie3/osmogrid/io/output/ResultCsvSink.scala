@@ -3,14 +3,13 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.io.output
 
 import edu.ie3.datamodel.io.naming.{
   DefaultDirectoryHierarchy,
   EntityPersistenceNamingStrategy,
   FileNamingStrategy,
-  FlatDirectoryHierarchy,
+  FlatDirectoryHierarchy
 }
 import edu.ie3.datamodel.io.sink.CsvFileSink
 
@@ -23,7 +22,7 @@ final case class ResultCsvSink(
     runId: UUID,
     saveFolderPath: Path,
     csvSeparator: String,
-    hierarchic: Boolean,
+    hierarchic: Boolean
 ) extends ResultSink {
 
   private val csvFileSink = new CsvFileSink(
@@ -33,9 +32,9 @@ final case class ResultCsvSink(
       if (hierarchic)
         new DefaultDirectoryHierarchy(saveFolderPath, "grid")
       else
-        new FlatDirectoryHierarchy(),
+        new FlatDirectoryHierarchy()
     ),
-    csvSeparator,
+    csvSeparator
   )
 
   def handleResult(

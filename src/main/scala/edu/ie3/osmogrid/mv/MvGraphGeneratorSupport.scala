@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.mv
 
 import edu.ie3.datamodel.models.input.NodeInput
@@ -35,7 +34,7 @@ object MvGraphGeneratorSupport {
     */
   private def createDefinitions(
       nodes: List[NodeInput],
-      streetGraph: OsmGraph,
+      streetGraph: OsmGraph
   ): (NodeConversion, Connections[Node]) = {
     val allOsmNodes: List[Node] = streetGraph.vertexSet().asScala.toList
 
@@ -47,7 +46,7 @@ object MvGraphGeneratorSupport {
     val uniqueConnections = getAllUniqueCombinations(osmNodes)
     val connections: Connections[Node] = Connections(
       osmNodes,
-      buildUndirectedConnections(uniqueConnections, streetGraph),
+      buildUndirectedConnections(uniqueConnections, streetGraph)
     )
 
     (nodeConversion, connections)
@@ -67,7 +66,7 @@ object MvGraphGeneratorSupport {
   def generateMvGraph(
       nr: Int,
       voronoiPolygon: VoronoiPolygon,
-      streetGraph: OsmGraph,
+      streetGraph: OsmGraph
   ): (OsmGraph, NodeConversion) = {
     log.debug(s"Start graph generation for grid $nr.")
 
@@ -80,7 +79,7 @@ object MvGraphGeneratorSupport {
     val (nodeConversion, connections) =
       MvGraphGeneratorSupport.createDefinitions(
         voronoiPolygon.allNodes,
-        reducedStreetGraph,
+        reducedStreetGraph
       )
 
     val transitionNode: Node = nodeConversion.getOsmNode(
@@ -90,7 +89,7 @@ object MvGraphGeneratorSupport {
     // using the solver to solve the routing problem
     val graph: OsmGraph = Solver.solve(
       transitionNode,
-      connections,
+      connections
     )
 
     (graph, nodeConversion)

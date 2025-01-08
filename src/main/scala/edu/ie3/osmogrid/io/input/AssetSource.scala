@@ -3,13 +3,12 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.io.input
 
 import edu.ie3.datamodel.io.naming.{
   DefaultDirectoryHierarchy,
   EntityPersistenceNamingStrategy,
-  FileNamingStrategy,
+  FileNamingStrategy
 }
 import edu.ie3.datamodel.io.source.TypeSource
 import edu.ie3.datamodel.io.source.csv.CsvDataSource
@@ -34,7 +33,7 @@ object AssetSource {
         val namingStrategy = if (hierarchic) {
           new FileNamingStrategy(
             new EntityPersistenceNamingStrategy(),
-            new DefaultDirectoryHierarchy(Paths.get(directory), "osm"),
+            new DefaultDirectoryHierarchy(Paths.get(directory), "osm")
           )
         } else
           new FileNamingStrategy()
@@ -50,7 +49,7 @@ object AssetSource {
       executionContextExecutor: ExecutionContextExecutor,
       csvSep: String,
       directoryPath: String,
-      namingStrategy: FileNamingStrategy,
+      namingStrategy: FileNamingStrategy
   ) extends AssetSource {
 
     override def read(): Future[AssetInformation] = {

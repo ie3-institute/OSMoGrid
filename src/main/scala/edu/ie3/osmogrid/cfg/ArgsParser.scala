@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.cfg
 
 import java.io.File
@@ -68,6 +67,6 @@ object ArgsParser extends LazyLogging {
 
   final case class CliArguments(
       rawArgs: Array[String],
-      configLocation: Option[String] = None,
+      configLocation: Option[String] = None
   )
 }

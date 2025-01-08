@@ -3,25 +3,24 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.lv
 
 import org.apache.pekko.actor.testkit.typed.CapturedLogEvent
 import org.apache.pekko.actor.testkit.typed.Effect.{
   MessageAdapter,
-  SpawnedAnonymous,
+  SpawnedAnonymous
 }
 import org.apache.pekko.actor.testkit.typed.scaladsl.{
   ActorTestKit,
   BehaviorTestKit,
-  ScalaTestWithActorTestKit,
+  ScalaTestWithActorTestKit
 }
 import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
   Transformer2WTypeInput,
-  Transformer3WTypeInput,
+  Transformer3WTypeInput
 }
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
@@ -30,20 +29,20 @@ import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.input.{
   AssetInformation,
   BoundaryAdminLevel,
-  InputResponse,
+  InputResponse
 }
 import edu.ie3.osmogrid.lv
 import edu.ie3.osmogrid.lv.LvMessageAdapters.{
   WrappedGridGeneratorResponse,
   WrappedInputDataResponse,
-  WrappedRegionResponse,
+  WrappedRegionResponse
 }
 import edu.ie3.osmogrid.lv.region_coordinator.LvTestModel.assetInformation
 import edu.ie3.osmogrid.lv.region_coordinator.{
   GridToExpect,
   LvRegionRequest,
   LvRegionResponse,
-  Partition,
+  Partition
 }
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
@@ -88,7 +87,7 @@ class LvCoordinatorSpec
     val msgAdapters = LvMessageAdapters(
       inputDataProviderAdapter.ref,
       regionCoordinatorAdapter.ref,
-      gridGeneratorAdapter.ref,
+      gridGeneratorAdapter.ref
     )
 
     "being initialized" should {
@@ -98,7 +97,7 @@ class LvCoordinatorSpec
           LvCoordinator(
             cfg,
             inputDataProvider.ref,
-            lvCoordinatorAdapter.ref,
+            lvCoordinatorAdapter.ref
           )
         )
 
@@ -117,14 +116,14 @@ class LvCoordinatorSpec
           lv.LvCoordinator(
             cfg,
             inputDataProvider.ref,
-            lvCoordinatorAdapter.ref,
+            lvCoordinatorAdapter.ref
           )
         )
         idleTestKit.run(LvTerminate)
 
         idleTestKit.logEntries() should contain only CapturedLogEvent(
           Level.INFO,
-          "Got request to terminate.",
+          "Got request to terminate."
         )
         idleTestKit.isAlive shouldBe false
       }
@@ -134,7 +133,7 @@ class LvCoordinatorSpec
           lv.LvCoordinator(
             cfg,
             inputDataProvider.ref,
-            lvCoordinatorAdapter.ref,
+            lvCoordinatorAdapter.ref
           )
         )
         idleTestKit.run(ReqLvGrids)
@@ -163,7 +162,7 @@ class LvCoordinatorSpec
                 cfg,
                 inputDataProvider.ref,
                 lvCoordinatorAdapter.ref,
-                msgAdapters,
+                msgAdapters
               )
             )
           )
@@ -173,7 +172,7 @@ class LvCoordinatorSpec
 
         awaitingTestKit.logEntries() should contain only CapturedLogEvent(
           Level.INFO,
-          "Got request to terminate.",
+          "Got request to terminate."
         )
         awaitingTestKit.isAlive shouldBe false
       }
@@ -190,7 +189,7 @@ class LvCoordinatorSpec
                 cfg,
                 inputDataProvider.ref,
                 lvCoordinatorAdapter.ref,
-                msgAdapters,
+                msgAdapters
               )
             )
           )
@@ -212,10 +211,10 @@ class LvCoordinatorSpec
           Some(
             RequestFailedException(
               "The requested OSM data cannot be read. Stop generation. Exception:",
-              exc,
+              exc
             )
           ),
-          None,
+          None
         )
         awaitingTestKit.isAlive shouldBe false
       }
@@ -232,7 +231,7 @@ class LvCoordinatorSpec
                 cfg,
                 inputDataProvider.ref,
                 lvCoordinatorAdapter.ref,
-                msgAdapters,
+                msgAdapters
               )
             )
           )
@@ -254,10 +253,10 @@ class LvCoordinatorSpec
           Some(
             RequestFailedException(
               "The requested asset data cannot be read. Stop generation. Exception:",
-              exc,
+              exc
             )
           ),
-          None,
+          None
         )
         awaitingTestKit.isAlive shouldBe false
       }
@@ -269,7 +268,7 @@ class LvCoordinatorSpec
             cfg,
             inputDataProvider.ref,
             lvCoordinatorAdapter.ref,
-            msgAdapters,
+            msgAdapters
           )
         )
 
@@ -288,7 +287,7 @@ class LvCoordinatorSpec
             ParSeq.empty,
             ParSeq.empty,
             ParSeq.empty,
-            LvFilter(),
+            LvFilter()
           )
         )
 
@@ -301,7 +300,7 @@ class LvCoordinatorSpec
               AssetInformation(
                 Seq.empty[LineTypeInput],
                 Seq.empty[Transformer2WTypeInput],
-                Seq.empty[Transformer3WTypeInput],
+                Seq.empty[Transformer3WTypeInput]
               )
             )
           )
@@ -328,7 +327,7 @@ class LvCoordinatorSpec
           )(
             lvCoordinatorAdapter.ref,
             msgAdapters,
-            ResultData.empty,
+            ResultData.empty
           )
         )
 
@@ -336,7 +335,7 @@ class LvCoordinatorSpec
 
         awaitingTestKit.logEntries() should contain only CapturedLogEvent(
           Level.INFO,
-          "Got request to terminate.",
+          "Got request to terminate."
         )
         awaitingTestKit.isAlive shouldBe false
       }
@@ -348,7 +347,7 @@ class LvCoordinatorSpec
           )(
             lvCoordinatorAdapter.ref,
             msgAdapters,
-            ResultData.empty,
+            ResultData.empty
           )
         )
         /* Mocking the lv region generator */
@@ -380,7 +379,7 @@ class LvCoordinatorSpec
           ParSeq.empty,
           ParSeq.empty,
           ParSeq.empty,
-          LvFilter(),
+          LvFilter()
         )
 
         /* Ask the coordinator to start the process */
@@ -389,7 +388,7 @@ class LvCoordinatorSpec
             cfg,
             mockedLvRegionCoordinator,
             lvOsmoGridModel,
-            assetInformation,
+            assetInformation
           )
         )
         regionCoordinatorProbe
@@ -400,7 +399,7 @@ class LvCoordinatorSpec
                 administrativeLevel,
                 config,
                 _,
-                _,
+                _
               ) =>
             osmoGridModel shouldBe lvOsmoGridModel
             administrativeLevel shouldBe BoundaryAdminLevel.NATION_LEVEL

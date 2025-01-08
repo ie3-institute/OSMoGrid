@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.guardian
 
 import org.apache.pekko.actor.testkit.typed.CapturedLogEvent
@@ -44,7 +43,7 @@ class OsmoGridGuardianSpec extends UnitSpec {
 
         idleTestKit.logEntries() should contain only CapturedLogEvent(
           Level.INFO,
-          s"Run $runId terminated.",
+          s"Run $runId terminated."
         )
       }
     }

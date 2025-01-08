@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package utils
 
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
@@ -26,7 +25,7 @@ object Solver {
   final case class StepResult(
       graph: OsmGraph,
       nextNode: Node,
-      notConnectedNodes: List[Node],
+      notConnectedNodes: List[Node]
   )
 
   final case class StepResultOption(
@@ -34,7 +33,7 @@ object Solver {
       nextNode: Node,
       usedConnections: List[Connection[Node]],
       removedEdge: DistanceWeightedEdge,
-      addedWeight: Quantity[Length],
+      addedWeight: Quantity[Length]
   )
 
   /** Method to solve the routing problem.
@@ -49,7 +48,7 @@ object Solver {
     */
   def solve(
       nodeToHv: Node,
-      connections: Connections[Node],
+      connections: Connections[Node]
   )(implicit neighborCount: Int = 5): OsmGraph = {
     val graph = new OsmGraph()
     connections.elements.foreach(n => graph.addVertex(n))
@@ -61,7 +60,7 @@ object Solver {
       graph.addWeightedEdge(
         nodeToHv,
         node,
-        connections.connectionMap((nodeToHv, node)).distance,
+        connections.connectionMap((nodeToHv, node)).distance
       )
       graph
     } else {
@@ -75,7 +74,7 @@ object Solver {
           nodeToHv,
           stepResult,
           connections,
-          neighborCount,
+          neighborCount
         ) match {
           case Some(value) => stepResult = value
           case None        =>
@@ -108,7 +107,7 @@ object Solver {
       nodeToHv: Node,
       stepResult: StepResult,
       connections: Connections[Node],
-      neighborCount: Int,
+      neighborCount: Int
   ): Option[StepResult] = {
     // extracting some information from the previous step
     val current = stepResult.nextNode
@@ -132,14 +131,14 @@ object Solver {
           neighbor,
           graph,
           edges,
-          connections,
+          connections
         )
       }
 
     // evaluating the options and returning an option for a StepResult
     evaluateStepResultOptions(
       stepResultOptions,
-      notConnectedNodes,
+      notConnectedNodes
     )
   }
 
@@ -158,7 +157,7 @@ object Solver {
     */
   private def evaluateStepResultOptions(
       options: List[StepResultOption],
-      notConnectedNodes: List[Node],
+      notConnectedNodes: List[Node]
   ): Option[StepResult] = {
     val filtered = options
       .filter(option => !option.graph.containsEdgeIntersection())
@@ -171,7 +170,7 @@ object Solver {
           StepResult(
             stepResultOption.graph,
             stepResultOption.nextNode,
-            notConnectedNodes.diff(Seq(stepResultOption.nextNode)),
+            notConnectedNodes.diff(Seq(stepResultOption.nextNode))
           )
         )
       case None =>
@@ -205,7 +204,7 @@ object Solver {
       neighbor: Node,
       osmGraph: OsmGraph,
       edges: Set[DistanceWeightedEdge],
-      connections: Connections[Node],
+      connections: Connections[Node]
   ): List[StepResultOption] = {
     if (neighbor == nodeToHv || osmGraph.getEdge(current, neighbor) != null) {
       // if neighbor is transition point or the neighbor is already connected to the current node
@@ -239,7 +238,7 @@ object Solver {
                 neighbor,
                 List(connectionA, connectionB),
                 removedEdge,
-                addedWeight,
+                addedWeight
               )
             }
         }
@@ -260,7 +259,7 @@ object Solver {
     */
   private def firstStep(
       nodeToHv: Node,
-      connections: Connections[Node],
+      connections: Connections[Node]
   ): StepResult = {
     val graph = new OsmGraph()
     val nodes: List[Node] = connections.elements
@@ -277,12 +276,12 @@ object Solver {
     graph.addWeightedEdge(
       nodeToHv,
       nodeA,
-      connections.connectionMap((nodeToHv, nodeA)).distance,
+      connections.connectionMap((nodeToHv, nodeA)).distance
     )
     graph.addWeightedEdge(
       nodeToHv,
       nodeB,
-      connections.connectionMap((nodeToHv, nodeB)).distance,
+      connections.connectionMap((nodeToHv, nodeB)).distance
     )
 
     // connecting nodeA and nodeB

@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.test.common
 
 import org.apache.pekko.actor.testkit.typed.scaladsl.LogCapturing
@@ -11,7 +10,7 @@ import org.scalatest.{
   GivenWhenThen,
   OptionValues,
   PrivateMethodTester,
-  TryValues,
+  TryValues
 }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks

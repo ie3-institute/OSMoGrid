@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.mv
 
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
@@ -13,7 +12,7 @@ import org.apache.pekko.actor.testkit.typed.CapturedLogEvent
 import org.apache.pekko.actor.testkit.typed.scaladsl.{
   ActorTestKit,
   BehaviorTestKit,
-  ScalaTestWithActorTestKit,
+  ScalaTestWithActorTestKit
 }
 import org.scalatest.BeforeAndAfterAll
 import org.slf4j.event.Level
@@ -45,7 +44,7 @@ class VoronoiCoordinatorSpec
 
       idleTestKit.logEntries() should contain only CapturedLogEvent(
         Level.INFO,
-        "Got request to terminate.",
+        "Got request to terminate."
       )
     }
 
@@ -59,7 +58,7 @@ class VoronoiCoordinatorSpec
           new OsmGraph(),
           Some(nodeToHv.getUuid),
           new NodeConversion(Map.empty, Map.empty),
-          assetInformation,
+          assetInformation
         )
       )
 
@@ -101,7 +100,7 @@ class VoronoiCoordinatorSpec
           graph,
           Some(nodeToHv.getUuid),
           nodeConversion,
-          assetInformation,
+          assetInformation
         )
       )
 
@@ -110,7 +109,7 @@ class VoronoiCoordinatorSpec
         .contains(
           CapturedLogEvent(
             Level.DEBUG,
-            "Starting conversion for the graph of the grid 1.",
+            "Starting conversion for the graph of the grid 1."
           )
         ) shouldBe true
 
@@ -143,7 +142,7 @@ class VoronoiCoordinatorSpec
           nodeChanges.values should contain allElementsOf Seq(
             nodeToHv,
             nodeInMv1,
-            nodeInMv2,
+            nodeInMv2
           ).map { n => n.copy().subnet(1).build() }
         case other => fail(s"$other is not expected as a message!")
       }

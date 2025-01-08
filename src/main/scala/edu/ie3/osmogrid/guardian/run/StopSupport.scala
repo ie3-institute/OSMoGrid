@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.guardian.run
 
 import org.apache.pekko.actor.typed.scaladsl.ActorContext
@@ -28,7 +27,7 @@ trait StopSupport {
   protected def stopChildren(
       runId: UUID,
       childReferences: ChildReferences,
-      ctx: ActorContext[RunRequest],
+      ctx: ActorContext[RunRequest]
   ): StoppingData = {
     childReferences.lvCoordinator.foreach(_ ! LvTerminate)
     childReferences.mvCoordinator.foreach(_ ! MvTerminate)
@@ -39,7 +38,7 @@ trait StopSupport {
       inputDataProviderTerminated = false,
       resultListenerTerminated = false,
       childReferences.lvCoordinator.map(_ => false),
-      childReferences.mvCoordinator.map(_ => false),
+      childReferences.mvCoordinator.map(_ => false)
     )
   }
 
@@ -55,7 +54,7 @@ trait StopSupport {
     */
   protected def registerCoordinatedShutDown(
       watchMsg: RunWatch,
-      stoppingData: StoppingData,
+      stoppingData: StoppingData
   ): StoppingData = watchMsg match {
     case InputDataProviderDied =>
       stoppingData.copy(inputDataProviderTerminated = true)
@@ -89,7 +88,7 @@ trait StopSupport {
       runId: UUID,
       childReferences: ChildReferences,
       watchMsg: RunWatch,
-      ctx: ActorContext[RunRequest],
+      ctx: ActorContext[RunRequest]
   ): StoppingData = {
     (stopChildren(runId, childReferences, ctx), watchMsg) match {
       case (stoppingData, InputDataProviderDied) =>

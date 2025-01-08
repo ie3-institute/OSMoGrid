@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.guardian.run
 
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage
@@ -19,7 +18,7 @@ trait VoltageSupport {
   val DEFAULT: Voltage = Voltage(
     Hv(110.0, "hv", None),
     Lv(0.4, "lv", None),
-    Mv(10.0, "mv", None),
+    Mv(10.0, "mv", None)
   )
 
   private var cfg: Option[Voltage] = None

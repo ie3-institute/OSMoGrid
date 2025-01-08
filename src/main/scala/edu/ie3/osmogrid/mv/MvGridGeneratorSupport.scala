@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.mv
 
 import edu.ie3.datamodel.models.input.NodeInput
@@ -44,7 +43,7 @@ object MvGridGeneratorSupport {
       graph: OsmGraph,
       mvSlackNode: Option[UUID],
       nodeConversion: NodeConversion,
-      assetInformation: AssetInformation,
+      assetInformation: AssetInformation
   ): (SubGridContainer, Map[UUID, NodeInput]) = {
     // converting the osm nodes to psdm nodes
     val nodes: Map[UUID, NodeInput] =
@@ -94,7 +93,7 @@ object MvGridGeneratorSupport {
           nodeB,
           1,
           lineType,
-          e.getDistance,
+          e.getDistance
         )
       }
       .toSet
@@ -103,7 +102,7 @@ object MvGridGeneratorSupport {
       s"Subnet_$n",
       nodes.values.toSet.asJava,
       lines.asJava,
-      new util.HashSet[LoadInput](),
+      new util.HashSet[LoadInput]()
     )(n)
 
     // returning the finished data

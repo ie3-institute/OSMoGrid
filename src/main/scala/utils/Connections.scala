@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package utils
 
 import com.typesafe.scalalogging.LazyLogging
@@ -43,7 +42,7 @@ import scala.jdk.CollectionConverters._
 case class Connections[T](
     elements: List[T],
     connections: Map[T, List[T]],
-    connectionMap: Map[(T, T), Connection[T]],
+    connectionMap: Map[(T, T), Connection[T]]
 ) {
 
   /** @param node
@@ -122,12 +121,12 @@ object Connections extends LazyLogging {
       nodeA: T,
       nodeB: T,
       distance: ComparableQuantity[Length],
-      path: Option[GraphPath[T, DistanceWeightedEdge]],
+      path: Option[GraphPath[T, DistanceWeightedEdge]]
   )
 
   def apply(
       elements: GridElements,
-      lines: Seq[LineInput],
+      lines: Seq[LineInput]
   ): Connections[NodeWrapper] = {
     val graph: SimpleWeightedGraph[NodeWrapper, DistanceWeightedEdge] =
       new SimpleWeightedGraph[NodeWrapper, DistanceWeightedEdge](
@@ -145,7 +144,7 @@ object Connections extends LazyLogging {
         graph.addEdge(NodeWrapper(line.getNodeA), NodeWrapper(line.getNodeB))
       graph.setEdgeWeight(
         edge,
-        line.getLength.to(Units.METRE).getValue.doubleValue,
+        line.getLength.to(Units.METRE).getValue.doubleValue
       )
     }
 
@@ -159,7 +158,7 @@ object Connections extends LazyLogging {
 
   def apply[T](
       elements: List[T],
-      connections: List[Connection[T]],
+      connections: List[Connection[T]]
   ): Connections[T] = {
     val connectionMap: mutable.Map[T, List[T]] =
       new mutable.HashMap[T, List[T]]
@@ -207,7 +206,7 @@ object Connections extends LazyLogging {
     */
   def buildUndirectedShortestPathConnections[T](
       graph: Graph[T, DistanceWeightedEdge],
-      shortestPath: ShortestPathAlgorithm[T, DistanceWeightedEdge],
+      shortestPath: ShortestPathAlgorithm[T, DistanceWeightedEdge]
   ): List[Connection[T]] = {
     val vertexes = graph.vertexSet().asScala
     val paths = vertexes.map { v => v -> shortestPath.getPaths(v) }.toMap
@@ -231,7 +230,7 @@ object Connections extends LazyLogging {
             nodeA,
             nodeB,
             Quantities.getQuantity(path.getWeight, Units.METRE),
-            Some(path),
+            Some(path)
           )
 
       }.toList
@@ -254,12 +253,12 @@ object Connections extends LazyLogging {
     */
   def buildUndirectedConnections(
       uniqueCombinations: List[(Node, Node)],
-      streetGraph: OsmGraph,
+      streetGraph: OsmGraph
   ): List[Connection[Node]] = {
     uniqueCombinations.map { case (nodeA, nodeB) =>
       val distance = GeoUtils.calcHaversine(
         nodeA.coordinate.getCoordinate,
-        nodeB.coordinate.getCoordinate,
+        nodeB.coordinate.getCoordinate
       )
       Connection(nodeA, nodeB, distance, None)
     }

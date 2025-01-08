@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.test.common
 
 import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
@@ -41,7 +40,7 @@ trait OsmTestData {
       id,
       Seq(nodeA.id, nodeB.id),
       Map.empty,
-      None,
+      None
     )
   }
 }

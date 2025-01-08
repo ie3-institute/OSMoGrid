@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.io.input
 
 import edu.ie3.osmogrid.exception.PbfReadFailedException
@@ -48,7 +47,7 @@ case class ReaderSink(
     private var nodes: util.List[UtilsEntity.Node] = new util.ArrayList(),
     private var ways: util.List[UtilsEntity.Way] = new util.ArrayList(),
     private var relations: util.List[UtilsEntity.Relation] =
-      new util.ArrayList(),
+      new util.ArrayList()
 ) extends Sink {
   override def process(entityContainer: EntityContainer): Unit = {
 
@@ -60,7 +59,7 @@ case class ReaderSink(
             node.getLatitude,
             node.getLongitude,
             tags(node),
-            buildMetaInfo(node),
+            buildMetaInfo(node)
           )
         )
       case relation: Relation =>
@@ -76,7 +75,7 @@ case class ReaderSink(
             UtilsEntity.Relation.RelationMember(
               member.getMemberId,
               memberType,
-              member.getMemberRole,
+              member.getMemberRole
             )
           }
 
@@ -85,7 +84,7 @@ case class ReaderSink(
             relation.getId,
             members.toSeq,
             tags(relation),
-            buildMetaInfo(relation),
+            buildMetaInfo(relation)
           )
         )
       case way: Way =>
@@ -94,7 +93,7 @@ case class ReaderSink(
             way.getId,
             way.getWayNodes.asScala.map(_.getNodeId).toSeq,
             tags = tags(way),
-            buildMetaInfo(way),
+            buildMetaInfo(way)
           )
         )
       case unrecognized =>
@@ -112,7 +111,7 @@ case class ReaderSink(
       val osmContainer = ParOsmContainer(
         nodes.asScala.toSeq.par,
         ways.asScala.toSeq.par,
-        relations.asScala.toSeq.par,
+        relations.asScala.toSeq.par
       )
 
       filter match {
@@ -147,7 +146,7 @@ case class ReaderSink(
         Option(entity.getChangesetId),
         Option(entity.getUser.getId),
         Option(entity.getUser.getName),
-        None,
+        None
       )
     )
   }

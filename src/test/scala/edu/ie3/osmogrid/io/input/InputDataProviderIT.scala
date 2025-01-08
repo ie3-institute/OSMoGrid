@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.io.input
 
 import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
@@ -88,7 +87,7 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
 
         testActor ! ReqOsm(
           requestProbe.ref,
-          filter = LvFilter(),
+          filter = LvFilter()
         )
 
         requestProbe
@@ -151,7 +150,7 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
 
         testActor ! ReqOsm(
           requestProbe.ref,
-          filter = LvFilter(),
+          filter = LvFilter()
         )
 
         requestProbe
@@ -206,14 +205,14 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
       pbfFilePath: String,
       assetDirPath: String,
       assetSep: String = ",",
-      assetHierarchic: Boolean = false,
+      assetHierarchic: Boolean = false
   ) = {
     val parsedCfg = ConfigFactory.parseMap(
       Map(
         "osm.pbf.file" -> getResourcePath(pbfFilePath),
         "asset.file.directory" -> getResourcePath(assetDirPath),
         "asset.file.separator" -> assetSep,
-        "asset.file.hierarchic" -> assetHierarchic,
+        "asset.file.hierarchic" -> assetHierarchic
       ).asJava
     )
     val config =

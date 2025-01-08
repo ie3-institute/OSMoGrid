@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.lv.region_coordinator
 
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
@@ -29,7 +28,7 @@ class BoundaryFactorySpec extends UnitSpec {
           BoundaryFactory
             .buildBoundaryPolygons(
               osmoGridModelHelgoland,
-              BoundaryAdminLevel.MUNICIPALITY_LEVEL,
+              BoundaryAdminLevel.MUNICIPALITY_LEVEL
             )
             .values
             .flatMap(_.toList)
@@ -47,7 +46,7 @@ class BoundaryFactorySpec extends UnitSpec {
           BoundaryFactory
             .buildBoundaryPolygons(
               osmoGridModel,
-              BoundaryAdminLevel.COUNTY_LEVEL,
+              BoundaryAdminLevel.COUNTY_LEVEL
             )
             .values
             .flatMap(_.toList) // Flatten the lists of polygons
@@ -68,7 +67,7 @@ class BoundaryFactorySpec extends UnitSpec {
           BoundaryFactory
             .buildBoundaryPolygons(
               osmoGridModel,
-              BoundaryAdminLevel.MUNICIPALITY_LEVEL,
+              BoundaryAdminLevel.MUNICIPALITY_LEVEL
             )
             .values
             .map(_.toString)
@@ -85,7 +84,7 @@ class BoundaryFactorySpec extends UnitSpec {
           BoundaryFactory
             .buildBoundaryPolygons(
               osmoGridModel,
-              BoundaryAdminLevel.SUBURB_1_LEVEL,
+              BoundaryAdminLevel.SUBURB_1_LEVEL
             )
             .values
             .map(_.toString)
@@ -107,7 +106,7 @@ class BoundaryFactorySpec extends UnitSpec {
           .toString() + " " +
           BigDecimal(m.group(2))
             .setScale(precision, RoundingMode.DOWN)
-            .toString(),
+            .toString()
     )
   }
 

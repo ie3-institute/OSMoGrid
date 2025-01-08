@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.io.input
 
 import edu.ie3.osmogrid.ActorStopSupport
@@ -27,7 +26,7 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
             ctx,
             buffer,
             OsmSource(osmConfig.osm, ctx),
-            AssetSource(ec, osmConfig.asset),
+            AssetSource(ec, osmConfig.asset)
           )
         )
       }
@@ -69,7 +68,7 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
 
   private def readOsmData(
       providerData: ProviderData,
-      replyTo: ActorRef[InputResponse],
+      replyTo: ActorRef[InputResponse]
   ): Behaviors.Receive[InputDataEvent] =
     Behaviors.receiveMessage {
       case osmResponse: RepOsm =>
@@ -85,7 +84,7 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
 
   private def readAssetData(
       providerData: ProviderData,
-      replyTo: ActorRef[InputResponse],
+      replyTo: ActorRef[InputResponse]
   ): Behaviors.Receive[InputDataEvent] = {
     Behaviors.receiveMessage {
       case repAssetTypes: RepAssetTypes =>

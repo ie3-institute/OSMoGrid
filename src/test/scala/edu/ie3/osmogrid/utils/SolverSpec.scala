@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.utils
 
 import edu.ie3.osmogrid.graph.OsmGraph
@@ -40,14 +39,14 @@ class SolverSpec extends UnitSpec with MvTestData {
         osmNode3,
         osmNode4,
         osmNode5,
-        osmNode6,
+        osmNode6
       )
 
       // the graph should contain all edges
       graph.edgeSet().asScala shouldBe Set(
         graph.getEdge(transitionPoint, osmNode1),
         graph.getEdge(transitionPoint, osmNode2),
-        graph.getEdge(osmNode1, osmNode2),
+        graph.getEdge(osmNode1, osmNode2)
       )
 
       // there should be some double edges
@@ -55,7 +54,7 @@ class SolverSpec extends UnitSpec with MvTestData {
         osmNode3,
         osmNode4,
         osmNode5,
-        osmNode6,
+        osmNode6
       )
     }
 
@@ -68,7 +67,7 @@ class SolverSpec extends UnitSpec with MvTestData {
       val cases = Table(
         ("neighbor", "options"),
         (transitionPoint, List()),
-        (osmNode2, List()),
+        (osmNode2, List())
       )
 
       forAll(cases) { (neighbor, options) =>
@@ -79,7 +78,7 @@ class SolverSpec extends UnitSpec with MvTestData {
             neighbor,
             graph,
             edges,
-            connections,
+            connections
           ) shouldBe options
         }
       }
@@ -101,7 +100,7 @@ class SolverSpec extends UnitSpec with MvTestData {
           "connectionB",
           "connectionC",
           "weightA",
-          "weightB",
+          "weightB"
         ),
         (
           osmNode3,
@@ -109,7 +108,7 @@ class SolverSpec extends UnitSpec with MvTestData {
           connections.getConnection(osmNode2, osmNode3),
           connections.getConnection(transitionPoint, osmNode3),
           196992.47141155004,
-          231691.124434181291374125,
+          231691.124434181291374125
         ),
         (
           osmNode4,
@@ -117,7 +116,7 @@ class SolverSpec extends UnitSpec with MvTestData {
           connections.getConnection(osmNode2, osmNode4),
           connections.getConnection(transitionPoint, osmNode4),
           233370.01575725118,
-          295002.37070387924864776,
+          295002.37070387924864776
         ),
         (
           osmNode5,
@@ -125,7 +124,7 @@ class SolverSpec extends UnitSpec with MvTestData {
           connections.getConnection(osmNode2, osmNode5),
           connections.getConnection(transitionPoint, osmNode5),
           193026.02665479417,
-          275916.254133759888548824,
+          275916.254133759888548824
         ),
         (
           osmNode6,
@@ -133,8 +132,8 @@ class SolverSpec extends UnitSpec with MvTestData {
           connections.getConnection(osmNode2, osmNode6),
           connections.getConnection(transitionPoint, osmNode6),
           81917.37382966773,
-          170956.771658949236933978,
-        ),
+          170956.771658949236933978
+        )
       )
 
       forAll(cases) {
@@ -146,7 +145,7 @@ class SolverSpec extends UnitSpec with MvTestData {
               neighbor,
               graph,
               edges,
-              connections,
+              connections
             )
 
             list.size shouldBe 2
@@ -157,7 +156,7 @@ class SolverSpec extends UnitSpec with MvTestData {
                     nextNode,
                     usedConnections,
                     removedEdge,
-                    addedWeight,
+                    addedWeight
                   ) =>
                 graph.edgeSet().size() shouldBe 4
                 nextNode shouldBe neighbor
@@ -173,7 +172,7 @@ class SolverSpec extends UnitSpec with MvTestData {
                     nextNode,
                     usedConnections,
                     removedEdge,
-                    addedWeight,
+                    addedWeight
                   ) =>
                 graph.edgeSet().size() shouldBe 4
                 nextNode shouldBe neighbor
@@ -197,7 +196,7 @@ class SolverSpec extends UnitSpec with MvTestData {
           osmNode4,
           osmGraph,
           osmGraph.getSortedEdges(osmNode3),
-          connections,
+          connections
         )
 
       stepResultOptions.size shouldBe 2
@@ -208,7 +207,7 @@ class SolverSpec extends UnitSpec with MvTestData {
               nextNode,
               usedConnections,
               removedEdge,
-              addedWeight,
+              addedWeight
             ) =>
           graph.edgeSet().size() shouldBe 5
           nextNode shouldBe stepResultOptionsForThirdStep(0).nextNode
@@ -228,7 +227,7 @@ class SolverSpec extends UnitSpec with MvTestData {
               nextNode,
               usedConnections,
               removedEdge,
-              addedWeight,
+              addedWeight
             ) =>
           graph.edgeSet().size() shouldBe 5
           nextNode shouldBe stepResultOptionsForThirdStep(1).nextNode
@@ -254,21 +253,21 @@ class SolverSpec extends UnitSpec with MvTestData {
         osmNode1,
         List.empty,
         null,
-        Quantities.getQuantity(3, Units.METRE),
+        Quantities.getQuantity(3, Units.METRE)
       )
       val res2 = StepResultOption(
         new OsmGraph(),
         osmNode2,
         List.empty,
         null,
-        Quantities.getQuantity(6, Units.METRE),
+        Quantities.getQuantity(6, Units.METRE)
       )
       val res3 = StepResultOption(
         new OsmGraph(),
         osmNode3,
         List.empty,
         null,
-        Quantities.getQuantity(1, Units.METRE),
+        Quantities.getQuantity(1, Units.METRE)
       )
 
       val cases = Table(
@@ -279,9 +278,9 @@ class SolverSpec extends UnitSpec with MvTestData {
             StepResult(
               new OsmGraph(),
               osmNode1,
-              List(osmNode2, osmNode3, osmNode5, osmNode6),
+              List(osmNode2, osmNode3, osmNode5, osmNode6)
             )
-          ),
+          )
         ),
         (
           List(res2),
@@ -289,9 +288,9 @@ class SolverSpec extends UnitSpec with MvTestData {
             StepResult(
               new OsmGraph(),
               osmNode2,
-              List(osmNode1, osmNode3, osmNode5, osmNode6),
+              List(osmNode1, osmNode3, osmNode5, osmNode6)
             )
-          ),
+          )
         ),
         (
           List(res1, res2),
@@ -299,9 +298,9 @@ class SolverSpec extends UnitSpec with MvTestData {
             StepResult(
               new OsmGraph(),
               osmNode1,
-              List(osmNode2, osmNode3, osmNode5, osmNode6),
+              List(osmNode2, osmNode3, osmNode5, osmNode6)
             )
-          ),
+          )
         ),
         (
           List(res1, res3),
@@ -309,9 +308,9 @@ class SolverSpec extends UnitSpec with MvTestData {
             StepResult(
               new OsmGraph(),
               osmNode3,
-              List(osmNode1, osmNode2, osmNode5, osmNode6),
+              List(osmNode1, osmNode2, osmNode5, osmNode6)
             )
-          ),
+          )
         ),
         (
           List(res1, res2, res3),
@@ -319,18 +318,18 @@ class SolverSpec extends UnitSpec with MvTestData {
             StepResult(
               new OsmGraph(),
               osmNode3,
-              List(osmNode1, osmNode2, osmNode5, osmNode6),
+              List(osmNode1, osmNode2, osmNode5, osmNode6)
             )
-          ),
+          )
         ),
-        (List(), None),
+        (List(), None)
       )
 
       forAll(cases) { (options, result) =>
         val option: Option[StepResult] =
           Solver invokePrivate evaluateStepResultOptions(
             options,
-            notConnectedNodes,
+            notConnectedNodes
           )
 
         option shouldBe result

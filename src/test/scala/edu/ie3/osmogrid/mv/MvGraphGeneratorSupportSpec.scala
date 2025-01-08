@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.mv
 
 import edu.ie3.osmogrid.graph.OsmGraph
@@ -42,26 +41,26 @@ class MvGraphGeneratorSupportSpec extends UnitSpec with MvTestData {
       val (conversion, conn) =
         MvGraphGeneratorSupport invokePrivate createDefinitions(
           nodes,
-          streetGraph,
+          streetGraph
         )
 
       conversion.conversionToPSDM shouldBe Map(
         transitionPoint -> nodeToHv,
         osmNode1 -> nodeInMv1,
-        osmNode2 -> nodeInMv2,
+        osmNode2 -> nodeInMv2
       )
 
       conversion.conversionToOsm shouldBe Map(
         nodeToHv -> transitionPoint,
         nodeInMv1 -> osmNode1,
-        nodeInMv2 -> osmNode2,
+        nodeInMv2 -> osmNode2
       )
 
       conn.elements shouldBe List(transitionPoint, osmNode1, osmNode2)
       conn.connections shouldBe Map(
         transitionPoint -> List(osmNode1, osmNode2),
         osmNode1 -> List(transitionPoint, osmNode2),
-        osmNode2 -> List(transitionPoint, osmNode1),
+        osmNode2 -> List(transitionPoint, osmNode1)
       )
 
       conn.connectionMap.contains((transitionPoint, osmNode1)) shouldBe true
@@ -82,24 +81,24 @@ class MvGraphGeneratorSupportSpec extends UnitSpec with MvTestData {
       mvGraph.vertexSet().asScala shouldBe Set(
         transitionPoint,
         osmNode1,
-        osmNode2,
+        osmNode2
       )
       mvGraph.edgeSet().asScala shouldBe Set(
         mvGraph.getEdge(transitionPoint, osmNode1),
         mvGraph.getEdge(transitionPoint, osmNode2),
-        mvGraph.getEdge(osmNode1, osmNode2),
+        mvGraph.getEdge(osmNode1, osmNode2)
       )
 
       conversion.conversionToPSDM shouldBe Map(
         transitionPoint -> nodeToHv,
         osmNode1 -> nodeInMv1,
-        osmNode2 -> nodeInMv2,
+        osmNode2 -> nodeInMv2
       )
 
       conversion.conversionToOsm shouldBe Map(
         nodeToHv -> transitionPoint,
         nodeInMv1 -> osmNode1,
-        nodeInMv2 -> osmNode2,
+        nodeInMv2 -> osmNode2
       )
     }
   }

@@ -3,7 +3,6 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.test.common
 
 import edu.ie3.datamodel.models.input.NodeInput
@@ -11,7 +10,7 @@ import edu.ie3.datamodel.models.input.connector.LineInput
 import edu.ie3.datamodel.models.input.system.LoadInput
 import edu.ie3.datamodel.models.voltagelevels.{
   CommonVoltageLevel,
-  GermanVoltageLevelUtils,
+  GermanVoltageLevelUtils
 }
 import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.GridElements
 import edu.ie3.util.geo.GeoUtils
@@ -45,7 +44,7 @@ trait ClusterTestData extends GridSupport {
     osm2_1 -> p2_1,
     osm2_2 -> p2_2,
     osm2_3 -> p2_3,
-    osm2_4 -> p2_4,
+    osm2_4 -> p2_4
   ).toMap
 
   protected val l1_1: LoadInput =
@@ -73,7 +72,7 @@ trait ClusterTestData extends GridSupport {
     lineBuilder(p2_2, p1_2),
     lineBuilder(p2_1, p2_2),
     lineBuilder(p2_2, p2_3),
-    lineBuilder(p2_3, p2_4),
+    lineBuilder(p2_3, p2_4)
   ).toSet
 
   protected def gridElements(substations: List[NodeInput]): GridElements =
@@ -84,7 +83,7 @@ trait ClusterTestData extends GridSupport {
       nodeMap
         .map { case (node, nodeWrapper) => (node, nodeWrapper.input) }
         .filter { case (_, input) => substations.contains(input) },
-      Set(l1_1, l1_2, l1_3, l1_4, l2_1, l2_2, l2_3, l2_4),
+      Set(l1_1, l1_2, l1_3, l1_4, l2_1, l2_2, l2_3, l2_4)
     )
 
   def buildPoint(i: Long, lat: Double, lon: Double): (Node, NodeWrapper) = {
@@ -97,7 +96,7 @@ trait ClusterTestData extends GridSupport {
         false,
         GeoUtils.buildPoint(lat, lon),
         GermanVoltageLevelUtils.LV,
-        1,
+        1
       )
     )
     (node, nodeWrapper)
@@ -112,7 +111,7 @@ trait ClusterTestData extends GridSupport {
       defaultLineTypeLv,
       calcHaversine(
         nodeA.input.getGeoPosition.getCoordinate,
-        nodeB.input.getGeoPosition.getCoordinate,
-      ),
+        nodeB.input.getGeoPosition.getCoordinate
+      )
     )
 }

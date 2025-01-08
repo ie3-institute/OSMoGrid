@@ -3,14 +3,13 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.lv.region_coordinator
 
 import org.apache.pekko.actor.testkit.typed.Effect.SpawnedAnonymous
 import org.apache.pekko.actor.testkit.typed.scaladsl.{
   BehaviorTestKit,
   ScalaTestWithActorTestKit,
-  TestProbe,
+  TestProbe
 }
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.lv.{LvGridRequest, LvGridResponse}
@@ -44,7 +43,7 @@ class LvRegionCoordinatorIT
             lvConfig = lvConfig,
             lvCoordinatorGridGeneratorAdapter = gridGeneratorReply.ref,
             lvCoordinatorRegionCoordinatorAdapter = regionCoordinatorReply.ref,
-            assetInformation = assetInformation,
+            assetInformation = assetInformation
           )
         )
 
@@ -75,7 +74,7 @@ class LvRegionCoordinatorIT
         val testCases = Seq(
           (Set(1829065, 10035847), 318, 128, 26, 2),
           (Set(62644, 1647366), 24, 25, 21, 0),
-          (Set(56664, 62770), 88, 20, 17, 0),
+          (Set(56664, 62770), 88, 20, 17, 0)
         )
 
         testCases.zip(models).foreach {
@@ -85,9 +84,9 @@ class LvRegionCoordinatorIT
                   expectedBuildings,
                   expectedHighways,
                   expectedLanduses,
-                  expectedSubstations,
+                  expectedSubstations
                 ),
-                model,
+                model
               ) =>
             val actualBoundaryIds = model.boundaries.map(_.entity.id).toSet
 
@@ -128,7 +127,7 @@ class LvRegionCoordinatorIT
               lvCoordinatorGridGeneratorAdapter.ref,
             lvCoordinatorRegionCoordinatorAdapter =
               lvCoordinatorRegionCoordinatorAdapter.ref,
-            assetInformation = assetInformation,
+            assetInformation = assetInformation
           )
         )
 

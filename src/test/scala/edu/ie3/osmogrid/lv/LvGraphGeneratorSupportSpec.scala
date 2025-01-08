@@ -3,13 +3,12 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
-
 package edu.ie3.osmogrid.lv
 
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.{
   BuildingGraphConnection,
-  buildConnectedGridGraphs,
+  buildConnectedGridGraphs
 }
 import edu.ie3.osmogrid.model.OsmTestData
 import edu.ie3.osmogrid.model.OsmoGridModel.EnhancedOsmEntity
@@ -47,7 +46,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
           osmoGridModel,
           powerDensity,
           minDistance,
-          considerBuildingConnections,
+          considerBuildingConnections
         ).unzip match {
           case (Seq(osmGraph), Seq(buildingGraphConnections)) =>
             (osmGraph, buildingGraphConnections)
@@ -70,7 +69,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
       val wayNodes = ways.highway1.nodes ++ ways.highway2.nodes
       val actual: OsmGraph = buildStreetGraph(
         waySeq,
-        nodes.nodesMap,
+        nodes.nodesMap
       )
 
       "build a graph with all nodes and edges" in {
@@ -90,7 +89,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
           nodeA.latitude,
           nodeA.longitude,
           nodeB.latitude,
-          nodeB.longitude,
+          nodeB.longitude
         )
         actual.getEdge(nodeA, nodeB).getDistance should equalWithTolerance(
           distance.to(Units.METRE)
@@ -116,7 +115,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
             highways,
             nodes.nodesMap,
             500.asWattPerSquareMetre,
-            0.0001.asKilometre,
+            0.0001.asKilometre
           )
         buildingGraphConnections.size shouldBe 2
         buildingGraphConnections.foreach {
@@ -124,21 +123,21 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
               if bgc.building.entity == ways.building1 =>
             val highWayCoordinateA = GeoUtils.buildCoordinate(
               nodes.highway1Node1.latitude,
-              nodes.highway1Node1.longitude,
+              nodes.highway1Node1.longitude
             )
             val highWayCoordinateB = GeoUtils.buildCoordinate(
               nodes.highway1Node2.latitude,
-              nodes.highway1Node2.longitude,
+              nodes.highway1Node2.longitude
             )
             GeoUtils
               .buildCoordinate(
                 bgc.graphConnectionNode.latitude,
-                bgc.graphConnectionNode.longitude,
+                bgc.graphConnectionNode.longitude
               )
               .isBetween(
                 highWayCoordinateA,
                 highWayCoordinateB,
-                1e-3,
+                1e-3
               ) shouldBe true
           case bgc: BuildingGraphConnection
               if bgc.building.entity == ways.building2 =>
@@ -162,7 +161,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
           lineNodeA,
           lineNodeB,
           buildingCenter,
-          minDistance,
+          minDistance
         ) match {
           case Success(distanceAndNode) =>
             distanceAndNode._1 should equalWithTolerance(
@@ -181,7 +180,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
         val actual = orthogonalProjection(
           coordinateA,
           coordinateB,
-          point,
+          point
         )
         actual.x shouldBe (7.5 +- 1e-9)
         actual.y shouldBe (50d +- 1e-9)
@@ -193,7 +192,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
           (nodes.highway1Node1.latitude + nodes.highway1Node2.latitude) / 2,
           (nodes.highway1Node1.longitude + nodes.highway1Node2.longitude) / 2,
           Map.empty,
-          None,
+          None
         )
         val buildingGraphConnection = BuildingGraphConnection(
           EnhancedOsmEntity(
@@ -203,15 +202,15 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
               nodes.building1Node2,
               nodes.building1Node3,
               nodes.building1Node4,
-              nodes.building1Node1,
-            ),
+              nodes.building1Node1
+            )
           ),
           mock[Coordinate],
           10.asKiloWatt,
           nodes.highway1Node1,
           nodes.highway1Node2,
           connectingNode,
-          isSubstation = false,
+          isSubstation = false
         )
         val updateGraphWithBuildingConnections =
           PrivateMethod[(OsmGraph, Seq[BuildingGraphConnection])](
@@ -227,13 +226,13 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
             LvGraphGeneratorSupport invokePrivate updateGraphWithBuildingConnections(
               osmGraph,
               Seq(buildingGraphConnection),
-              true,
+              true
             )
           graph.vertexSet().size() shouldBe 4
           graph.containsVertex(connectingNode) shouldBe true
           graph.containsEdge(
             nodes.highway1Node1,
-            nodes.highway1Node2,
+            nodes.highway1Node2
           ) shouldBe false
           graph.containsEdge(nodes.highway1Node1, connectingNode) shouldBe true
           graph.containsEdge(connectingNode, nodes.highway1Node2) shouldBe true
@@ -244,7 +243,7 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
                 connectingNode,
                 bgc.buildingConnectionNode.getOrElse(
                   fail("Building node is not set")
-                ),
+                )
               ) shouldBe true
             case _ => fail("More than one building graph connection")
           }
@@ -259,13 +258,13 @@ class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
             LvGraphGeneratorSupport invokePrivate updateGraphWithBuildingConnections(
               osmGraph,
               Seq(buildingGraphConnection),
-              false,
+              false
             )
           graph.vertexSet().size() shouldBe 3
           graph.containsVertex(connectingNode) shouldBe true
           graph.containsEdge(
             nodes.highway1Node1,
-            nodes.highway1Node2,
+            nodes.highway1Node2
           ) shouldBe false
           graph.containsEdge(nodes.highway1Node1, connectingNode) shouldBe true
           graph.containsEdge(connectingNode, nodes.highway1Node2) shouldBe true
