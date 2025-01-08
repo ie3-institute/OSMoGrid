@@ -16,7 +16,8 @@ spotless {
 
   //sets a license header, removes unused imports and formats conforming to the scala fmt formatter
   scala {
-    scalafmt()
+    scalafmt().configFile(".scalafmt.conf")
+    licenseHeader ie3LicHead, "package.*\\n"
   }
 
   // removes unnecessary whitespace, indents with tabs and ends on new line for gradle, md and gitignore files and config-XMLs
