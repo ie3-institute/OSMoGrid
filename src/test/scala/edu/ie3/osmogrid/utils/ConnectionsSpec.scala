@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.utils
 
 import edu.ie3.datamodel.graph.DistanceWeightedEdge
@@ -18,7 +19,7 @@ import utils.Connections
 import utils.Connections.{
   Connection,
   buildUndirectedConnections,
-  buildUndirectedShortestPathConnections
+  buildUndirectedShortestPathConnections,
 }
 import utils.OsmoGridUtils.getAllUniqueCombinations
 
@@ -31,30 +32,30 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
       transitionPoint,
       osmNode1,
       Quantities.getQuantity(0d, Units.METRE),
-      None
+      None,
     )
     val connection2 = Connection(
       transitionPoint,
       osmNode2,
       Quantities.getQuantity(0d, Units.METRE),
-      None
+      None,
     )
     val connection3 = Connection(
       osmNode1,
       osmNode3,
       Quantities.getQuantity(0d, Units.METRE),
-      None
+      None,
     )
     val connection4 = Connection(
       osmNode3,
       osmNode2,
       Quantities.getQuantity(0d, Units.METRE),
-      None
+      None,
     )
 
     val connections: Connections[Node] = Connections(
       nodes,
-      List(connection1, connection2, connection3, connection4)
+      List(connection1, connection2, connection3, connection4),
     )
 
     "be created correctly" in {
@@ -63,7 +64,7 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
         transitionPoint -> List(osmNode1, osmNode2),
         osmNode1 -> List(transitionPoint, osmNode3),
         osmNode2 -> List(transitionPoint, osmNode3),
-        osmNode3 -> List(osmNode1, osmNode2)
+        osmNode3 -> List(osmNode1, osmNode2),
       )
 
       connections.connectionMap shouldBe Map(
@@ -74,7 +75,7 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
         (osmNode2, transitionPoint) -> connection2,
         (osmNode2, osmNode3) -> connection4,
         (osmNode3, osmNode1) -> connection3,
-        (osmNode3, osmNode2) -> connection4
+        (osmNode3, osmNode2) -> connection4,
       )
     }
 
@@ -82,7 +83,7 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
       val gridElements = GridElements(
         Map(osmNode1 -> nodeInMv1, osmNode2 -> nodeInMv2),
         Map(transitionPoint -> nodeToHv),
-        Set.empty
+        Set.empty,
       )
       val lines = Seq(lineHvto1, lineHvto2, line1to2)
 
@@ -98,7 +99,7 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
         (nodeToHv, nodeInMv2),
         (nodeInMv2, nodeToHv),
         (nodeInMv1, nodeInMv2),
-        (nodeInMv2, nodeInMv1)
+        (nodeInMv2, nodeInMv1),
       )
 
       connections.connectionMap.values.toSet.size shouldBe 3
@@ -110,7 +111,7 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
         (transitionPoint, List(connection1, connection2)),
         (osmNode1, List(connection1, connection3)),
         (osmNode2, List(connection2, connection4)),
-        (osmNode3, List(connection3, connection4))
+        (osmNode3, List(connection3, connection4)),
       )
 
       forAll(cases) { (node, expectedConnection) =>
@@ -131,7 +132,7 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
         ("nodeA", "nodeB", "connection"),
         (transitionPoint, osmNode1, connection1),
         (osmNode1, transitionPoint, connection1),
-        (transitionPoint, osmNode2, connection2)
+        (transitionPoint, osmNode2, connection2),
       )
 
       forAll(cases) { (nodeA, nodeB, connection) =>
@@ -148,7 +149,7 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
         ("nodeA", "nodeB", "distance"),
         (transitionPoint, osmNode1, connection1.distance),
         (osmNode1, transitionPoint, connection1.distance),
-        (transitionPoint, osmNode2, connection2.distance)
+        (transitionPoint, osmNode2, connection2.distance),
       )
 
       forAll(cases) { (nodeA, nodeB, distance) =>
@@ -166,7 +167,7 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
         (transitionPoint, List(osmNode1, osmNode2)),
         (osmNode1, List(transitionPoint, osmNode3)),
         (osmNode2, List(transitionPoint, osmNode3)),
-        (osmNode3, List(osmNode1, osmNode2))
+        (osmNode3, List(osmNode1, osmNode2)),
       )
 
       forAll(cases) { (node, nearestNeighbours) =>
@@ -180,7 +181,7 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
         (transitionPoint, 1, List(osmNode1)),
         (osmNode1, 2, List(transitionPoint, osmNode3)),
         (osmNode2, 1, List(transitionPoint)),
-        (osmNode3, 2, List(osmNode1, osmNode2))
+        (osmNode3, 2, List(osmNode1, osmNode2)),
       )
 
       forAll(cases) { (node, n, nearestNeighbours) =>
@@ -196,24 +197,24 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
         osmNode2,
         calcHaversine(
           osmNode1.coordinate.getCoordinate,
-          osmNode2.coordinate.getCoordinate
-        )
+          osmNode2.coordinate.getCoordinate,
+        ),
       )
       graph.addWeightedEdge(
         osmNode2,
         osmNode3,
         calcHaversine(
           osmNode2.coordinate.getCoordinate,
-          osmNode3.coordinate.getCoordinate
-        )
+          osmNode3.coordinate.getCoordinate,
+        ),
       )
       graph.addWeightedEdge(
         osmNode3,
         osmNode1,
         calcHaversine(
           osmNode3.coordinate.getCoordinate,
-          osmNode1.coordinate.getCoordinate
-        )
+          osmNode1.coordinate.getCoordinate,
+        ),
       )
 
       val shortestPath =
@@ -250,8 +251,8 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
         osmNode2,
         calcHaversine(
           osmNode1.coordinate.getCoordinate,
-          osmNode2.coordinate.getCoordinate
-        )
+          osmNode2.coordinate.getCoordinate,
+        ),
       )
 
       val shortestPath =
@@ -271,7 +272,7 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
         List((osmNode1, osmNode2), (osmNode1, osmNode3), (osmNode2, osmNode3))
       val connections = buildUndirectedConnections(
         uniqueCombinations,
-        streetGraph
+        streetGraph,
       )
 
       connections.size shouldBe 3
@@ -305,8 +306,8 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
           List(
             (transitionPoint, osmNode1),
             (transitionPoint, osmNode2),
-            (osmNode1, osmNode2)
-          )
+            (osmNode1, osmNode2),
+          ),
         ),
         (
           List(
@@ -316,7 +317,7 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
             osmNode3,
             osmNode4,
             osmNode5,
-            osmNode6
+            osmNode6,
           ),
           List(
             (transitionPoint, osmNode1),
@@ -339,9 +340,9 @@ class ConnectionsSpec extends UnitSpec with MvTestData {
             (osmNode3, osmNode6),
             (osmNode4, osmNode5),
             (osmNode4, osmNode6),
-            (osmNode5, osmNode6)
-          )
-        )
+            (osmNode5, osmNode6),
+          ),
+        ),
       )
 
       forAll(cases) { (nodes, combinations) =>

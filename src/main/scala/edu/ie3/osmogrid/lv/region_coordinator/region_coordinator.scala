@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.lv.region_coordinator
 
 import org.apache.pekko.actor.typed.ActorRef
@@ -39,7 +40,7 @@ final case class Partition(
     administrativeLevel: BoundaryAdminLevelValue,
     lvConfig: OsmoGridConfig.Generation.Lv,
     lvCoordinatorRegionCoordinatorAdapter: ActorRef[LvRegionResponse],
-    lvCoordinatorGridGeneratorAdapter: ActorRef[LvGridResponse]
+    lvCoordinatorGridGeneratorAdapter: ActorRef[LvGridResponse],
 ) extends LvRegionRequest
 
 sealed trait LvRegionResponse

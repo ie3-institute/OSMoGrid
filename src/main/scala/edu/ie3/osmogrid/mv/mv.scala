@@ -3,24 +3,25 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.mv
 
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container.{
   JointGridContainer,
-  SubGridContainer
+  SubGridContainer,
 }
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.{
   IllegalConfigException,
   IllegalStateException,
-  RequestFailedException
+  RequestFailedException,
 }
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input.{
   AssetInformation,
   InputResponse,
-  RepAssetTypes
+  RepAssetTypes,
 }
 import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
 import org.apache.pekko.actor.typed.ActorRef
@@ -72,7 +73,7 @@ final case class StartMvGraphGeneration(
     polygon: VoronoiPolygon,
     mvSlackNode: Option[UUID],
     streetGraph: OsmGraph,
-    assetInformation: AssetInformation
+    assetInformation: AssetInformation,
 ) extends MvRequest
 
 /** Request for mv graph conversion.
@@ -91,7 +92,7 @@ final case class StartMvGraphConversion(
     graph: OsmGraph,
     hvNode: Option[UUID],
     nodeConversion: NodeConversion,
-    assetInformation: AssetInformation
+    assetInformation: AssetInformation,
 ) extends MvRequest
 
 /** Response for a mv coordinator that contains the converted grid structure as
@@ -104,7 +105,7 @@ final case class StartMvGraphConversion(
   */
 private[mv] final case class FinishedMvGridData(
     subGridContainer: SubGridContainer,
-    nodeChanges: Map[UUID, NodeInput]
+    nodeChanges: Map[UUID, NodeInput],
 ) extends MvResponse
 
 /** Request for a mv coordinator to start the generation of medium voltage
@@ -123,7 +124,7 @@ final case class StartMvGeneration(
     lvGrids: Seq[SubGridContainer],
     hvGrids: Option[Seq[SubGridContainer]],
     streetGraph: OsmGraph,
-    assetInformation: AssetInformation
+    assetInformation: AssetInformation,
 ) extends MvRequest
 
 /** Replying the generated medium voltage grids
@@ -141,7 +142,7 @@ final case class RepMvGrids(
     grids: Seq[SubGridContainer],
     dummyHvGrid: Option[JointGridContainer],
     nodeChanges: Map[UUID, NodeInput],
-    assetInformation: AssetInformation
+    assetInformation: AssetInformation,
 ) extends MvResponse
 
 /** Message for providing some low voltage data to the mv coordinator.
@@ -153,7 +154,7 @@ final case class RepMvGrids(
   */
 final case class ProvidedLvData(
     lvGrids: Seq[SubGridContainer],
-    streetGraph: OsmGraph
+    streetGraph: OsmGraph,
 ) extends MvResponse
 
 /** Message for providing some high voltage data to the mv coordinator.
@@ -204,7 +205,7 @@ private[mv] final case class AwaitingInputData(
     lvGrids: Option[Seq[SubGridContainer]],
     hvGrids: Option[Seq[SubGridContainer]],
     streetGraph: Option[OsmGraph],
-    assetInformation: Option[AssetInformation]
+    assetInformation: Option[AssetInformation],
 ) {
 
   /** Method for registering responses.
@@ -218,7 +219,7 @@ private[mv] final case class AwaitingInputData(
     */
   def registerResponse(
       response: MvRequest,
-      log: Logger
+      log: Logger,
   ): Try[AwaitingInputData] = response match {
     case WrappedInputResponse(RepAssetTypes(assetInformation)) =>
       log.debug(s"Received asset type data.")
@@ -266,7 +267,7 @@ private[mv] object AwaitingInputData {
     */
   def empty(
       cfg: OsmoGridConfig,
-      runGuardian: ActorRef[MvResponse]
+      runGuardian: ActorRef[MvResponse],
   ): AwaitingInputData =
     AwaitingInputData(
       cfg.generation.mv.getOrElse(
@@ -277,7 +278,7 @@ private[mv] object AwaitingInputData {
       None,
       None,
       None,
-      None
+      None,
     )
 }
 
@@ -299,7 +300,7 @@ private[mv] final case class MvResultData(
     dummyHvGrid: Option[JointGridContainer],
     subGridContainer: Seq[SubGridContainer],
     nodes: Map[UUID, NodeInput],
-    assetInformation: AssetInformation
+    assetInformation: AssetInformation,
 ) extends MvRequest {
 
   /** Method for updating the [[MvResultData]].
@@ -313,7 +314,7 @@ private[mv] final case class MvResultData(
     */
   def update(
       subgrid: SubGridContainer,
-      nodeChanges: Map[UUID, NodeInput]
+      nodeChanges: Map[UUID, NodeInput],
   ): MvResultData = {
     if (subnets.contains(subgrid.getSubnet)) {
       MvResultData(
@@ -321,7 +322,7 @@ private[mv] final case class MvResultData(
         dummyHvGrid,
         subGridContainer :+ subgrid,
         nodes ++ nodeChanges,
-        assetInformation
+        assetInformation,
       )
     } else {
       throw IllegalStateException(
@@ -347,7 +348,7 @@ private[mv] object MvResultData {
   def empty(
       subnets: Set[Int],
       dummyHvGrid: Option[JointGridContainer],
-      assetInformation: AssetInformation
+      assetInformation: AssetInformation,
   ): MvResultData = {
     MvResultData(subnets, dummyHvGrid, Seq.empty, Map.empty, assetInformation)
   }

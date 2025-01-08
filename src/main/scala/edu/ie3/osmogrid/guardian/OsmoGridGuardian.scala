@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.guardian
 
 import org.apache.pekko.actor.typed.Behavior
@@ -20,7 +21,7 @@ object OsmoGridGuardian {
       case (ctx, Run(cfg, additionalListener, runId)) =>
         val runGuardian = ctx.spawn(
           RunGuardian(cfg, additionalListener, runId),
-          s"RunGuardian_$runId"
+          s"RunGuardian_$runId",
         )
         ctx.watchWith(runGuardian, RunGuardianDied(runId))
         runGuardian ! run.Run

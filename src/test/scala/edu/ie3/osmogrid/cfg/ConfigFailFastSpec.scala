@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.cfg
 
 import edu.ie3.osmogrid.cfg.ConfigFailFastSpec.viableConfigurationString
@@ -17,7 +18,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           viableConfigurationString.replace(
             "input.osm.pbf.file = \"pbf_file\"",
-            ""
+            "",
           )
         } match {
           case Success(cfg) =>
@@ -84,7 +85,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           viableConfigurationString.replace(
             "boundaryAdminLevel.lowest = 8",
-            "boundaryAdminLevel.lowest = 99"
+            "boundaryAdminLevel.lowest = 99",
           )
         } match {
           case Success(cfg) =>
@@ -103,7 +104,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           viableConfigurationString.replace(
             "boundaryAdminLevel.starting = 4",
-            "boundaryAdminLevel.starting = -1"
+            "boundaryAdminLevel.starting = -1",
           )
         } match {
           case Success(cfg) =>
@@ -122,7 +123,7 @@ class ConfigFailFastSpec extends UnitSpec {
         OsmoGridConfigFactory.parseWithoutFallback {
           viableConfigurationString.replace(
             "boundaryAdminLevel.lowest = 8",
-            "boundaryAdminLevel.lowest = 2"
+            "boundaryAdminLevel.lowest = 2",
           )
         } match {
           case Success(cfg) =>

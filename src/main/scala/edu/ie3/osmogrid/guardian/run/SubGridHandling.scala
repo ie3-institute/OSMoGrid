@@ -3,13 +3,14 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.guardian.run
 
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.connector._
 import edu.ie3.datamodel.models.input.connector.`type`.{
   Transformer2WTypeInput,
-  Transformer3WTypeInput
+  Transformer3WTypeInput,
 }
 import edu.ie3.datamodel.models.input.container._
 import edu.ie3.datamodel.utils.ContainerNodeUpdateUtil
@@ -56,7 +57,7 @@ trait SubGridHandling {
       mvNodeChanges: Option[Map[UUID, NodeInput]],
       assetInformation: Option[AssetInformation],
       resultListener: Seq[ActorRef[OutputRequest]],
-      msgAdapters: MessageAdapters
+      msgAdapters: MessageAdapters,
   )(implicit log: Logger): Unit = {
     log.info("All requested grids successfully generated.")
 
@@ -67,7 +68,7 @@ trait SubGridHandling {
         mvData,
         hvData,
         mvNodeChanges,
-        assetInformation
+        assetInformation,
       )
 
     val jointGrid = if (allGrids.isEmpty) {
@@ -81,7 +82,7 @@ trait SubGridHandling {
         gridName,
         new RawGridElements(allGrids.map(_.getRawGrid).asJava),
         new SystemParticipants(allGrids.map(_.getSystemParticipants).asJava),
-        new GraphicElements(allGrids.map(_.getGraphics).asJava)
+        new GraphicElements(allGrids.map(_.getGraphics).asJava),
       )
 
       // maybe update some types
@@ -124,7 +125,7 @@ trait SubGridHandling {
       mvData: Option[Seq[SubGridContainer]],
       hvData: Option[Seq[GridContainer]],
       mvNodeChanges: Option[Map[UUID, NodeInput]],
-      assetInformation: Option[AssetInformation]
+      assetInformation: Option[AssetInformation],
   ): Seq[GridContainer] = {
     // assigning unique subgrid numbers to all given grids
     val nodeUpdateMap =
@@ -159,7 +160,7 @@ object SubGridHandling {
       lvGrids: Option[Seq[GridContainer]],
       mvGrids: Option[Seq[GridContainer]],
       mvNodeChanges: Option[Map[UUID, NodeInput]],
-      hvGrids: Option[Seq[GridContainer]]
+      hvGrids: Option[Seq[GridContainer]],
   ): Map[NodeInput, NodeInput] = {
     val lv = lvGrids.map(grids => assignSubNetNumbers(grids, 1))
     val mvOffset = lv.map(_._2).getOrElse(1)
@@ -211,7 +212,7 @@ object SubGridHandling {
 
         (
           Map(hvNode.getUuid -> hvNode.copy().subnet(hvOffset).build()),
-          hvOffset + 2
+          hvOffset + 2,
         )
       } else {
         assignSubNetNumbers(grids, hvOffset)
@@ -244,7 +245,7 @@ object SubGridHandling {
     */
   private def assignSubNetNumbers(
       subGrids: Seq[GridContainer],
-      offset: Int
+      offset: Int,
   ): (Map[UUID, NodeInput], Int) = {
     val higherNodesOffset = offset + subGrids.size + 1
 
@@ -293,7 +294,7 @@ object SubGridHandling {
     */
   private def updateTypes(
       jointGridContainer: JointGridContainer,
-      assetInformation: AssetInformation
+      assetInformation: AssetInformation,
   ): JointGridContainer = {
 
     val rawGridElements = jointGridContainer.getRawGrid
@@ -301,28 +302,28 @@ object SubGridHandling {
     // updating transformer2Ws
     val t2W = updateTransformer2Ws(
       rawGridElements.getTransformer2Ws.asScala.toSeq,
-      assetInformation.transformerTypes
+      assetInformation.transformerTypes,
     ).fold(
       exception =>
         throw GridException(
           "Unable to update transformers.",
-          exception
+          exception,
         ),
-      identity
+      identity,
     )
 
     // updating transformer3Ws
     // TODO: Add transformer3WType update (at the moment no transformer3WType are available)
     val t3W = updateTransformer3Ws(
       rawGridElements.getTransformer3Ws.asScala.toSeq,
-      assetInformation.transformer3WTypes
+      assetInformation.transformer3WTypes,
     ).fold(
       exception =>
         throw GridException(
           "Unable to update transformers.",
-          exception
+          exception,
         ),
-      identity
+      identity,
     )
 
     val rawGrid: RawGridElements = new RawGridElements(
@@ -331,14 +332,14 @@ object SubGridHandling {
       t2W.toSet.asJava,
       t3W.toSet.asJava,
       rawGridElements.getSwitches,
-      rawGridElements.getMeasurementUnits
+      rawGridElements.getMeasurementUnits,
     )
 
     new JointGridContainer(
       jointGridContainer.getGridName,
       rawGrid,
       jointGridContainer.getSystemParticipants,
-      jointGridContainer.getGraphics
+      jointGridContainer.getGraphics,
     )
   }
 
@@ -354,7 +355,7 @@ object SubGridHandling {
     */
   private def updateTransformer2Ws(
       transformer2Ws: Seq[Transformer2WInput],
-      typeInputs: Seq[Transformer2WTypeInput]
+      typeInputs: Seq[Transformer2WTypeInput],
   ): Try[Seq[Transformer2WInput]] = Try {
     transformer2Ws.map { originalTransformer =>
       val originalType = originalTransformer.getType
@@ -395,7 +396,7 @@ object SubGridHandling {
     */
   private def updateTransformer3Ws(
       transformer3Ws: Seq[Transformer3WInput],
-      typeInputs: Seq[Transformer3WTypeInput]
+      typeInputs: Seq[Transformer3WTypeInput],
   ): Try[Seq[Transformer3WInput]] = Try {
     transformer3Ws.map { originalTransformer =>
       val originalType = originalTransformer.getType

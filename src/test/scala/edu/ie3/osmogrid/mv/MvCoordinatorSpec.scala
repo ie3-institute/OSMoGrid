@@ -3,13 +3,14 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.mv
 
 import org.apache.pekko.actor.testkit.typed.CapturedLogEvent
 import org.apache.pekko.actor.testkit.typed.scaladsl.{
   ActorTestKit,
   BehaviorTestKit,
-  ScalaTestWithActorTestKit
+  ScalaTestWithActorTestKit,
 }
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfigFactory
@@ -43,7 +44,7 @@ class MvCoordinatorSpec
         MvCoordinator(
           cfg,
           inputDataProvider.ref,
-          runGuardian.ref
+          runGuardian.ref,
         )
       )
 
@@ -55,7 +56,7 @@ class MvCoordinatorSpec
         MvCoordinator(
           cfg,
           inputDataProvider.ref,
-          runGuardian.ref
+          runGuardian.ref,
         )
       )
 
@@ -63,7 +64,7 @@ class MvCoordinatorSpec
 
       idleTestKit.logEntries() should contain only CapturedLogEvent(
         Level.INFO,
-        "Got request to terminate."
+        "Got request to terminate.",
       )
     }
   }
@@ -83,7 +84,7 @@ class MvCoordinatorSpec
       idleTestKit.logEntries() should contain allOf (
         CapturedLogEvent(
           Level.INFO,
-          s"Starting generation of medium voltage grids!"
+          s"Starting generation of medium voltage grids!",
         ),
         CapturedLogEvent(Level.DEBUG, s"Waiting for input data.")
       )
@@ -104,7 +105,7 @@ class MvCoordinatorSpec
         CapturedLogEvent(Level.DEBUG, s"Received lv data."),
         CapturedLogEvent(
           Level.DEBUG,
-          s"All awaited mv data is present. Start processing."
+          s"All awaited mv data is present. Start processing.",
         )
       )
     }
@@ -117,11 +118,11 @@ class MvCoordinatorSpec
       idleTestKit.logEntries() should contain allOf (
         CapturedLogEvent(
           Level.DEBUG,
-          s"Starting medium voltage graph generation."
+          s"Starting medium voltage graph generation.",
         ),
         CapturedLogEvent(
           Level.INFO,
-          s"Given area was split into 1 polygon(s)."
+          s"Given area was split into 1 polygon(s).",
         )
       )
     }
@@ -136,7 +137,7 @@ class MvCoordinatorSpec
       idleTestKit.logEntries() should contain(
         CapturedLogEvent(
           Level.INFO,
-          s"Received all expected grids! Will report back SubGridContainers"
+          s"Received all expected grids! Will report back SubGridContainers",
         )
       )
 

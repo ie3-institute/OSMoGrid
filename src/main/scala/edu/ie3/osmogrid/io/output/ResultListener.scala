@@ -3,12 +3,13 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.io.output
 
 import org.apache.pekko.actor.typed.scaladsl.{
   ActorContext,
   Behaviors,
-  StashBuffer
+  StashBuffer,
 }
 import org.apache.pekko.actor.typed.{Behavior, PostStop}
 import edu.ie3.osmogrid.ActorStopSupport
@@ -19,7 +20,7 @@ import edu.ie3.osmogrid.io.output.PersistenceListenerEvent.{
   InitComplete,
   InitFailed,
   ResultHandlingFailed,
-  ResultHandlingSucceeded
+  ResultHandlingSucceeded,
 }
 
 import java.nio.file.Path
@@ -34,7 +35,7 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
 
   def apply(
       runId: UUID,
-      cfg: OsmoGridConfig.Output
+      cfg: OsmoGridConfig.Output,
   ): Behavior[ResultListenerProtocol] = {
     Behaviors.withStash[ResultListenerProtocol](100) { buffer =>
       Behaviors.setup[ResultListenerProtocol] { ctx =>
@@ -70,7 +71,7 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
         case ResultHandlingFailed(cause) =>
           stateData.ctx.log.error(
             s"Error during persistence of grid result. Shutting down!",
-            cause
+            cause,
           )
           Behaviors.stopped
         case ResultHandlingSucceeded =>
@@ -89,7 +90,7 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
 
   private def init(
       ctx: ActorContext[ResultListenerProtocol],
-      buffer: StashBuffer[ResultListenerProtocol]
+      buffer: StashBuffer[ResultListenerProtocol],
   ): Behavior[ResultListenerProtocol] =
     Behaviors.receiveMessage {
       case InitComplete(stateData) =>
@@ -105,7 +106,7 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
 
   private def initSinks(
       runId: UUID,
-      cfg: OsmoGridConfig.Output
+      cfg: OsmoGridConfig.Output,
   ): Future[ResultSink] = {
     val runStartTimeUTC: String =
       new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new java.util.Date())
@@ -120,7 +121,7 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
             runId,
             Path.of(csv.directory, gridName + optionalSuffix),
             csv.separator,
-            csv.hierarchic
+            csv.hierarchic,
           )
         )
       case unsupported =>

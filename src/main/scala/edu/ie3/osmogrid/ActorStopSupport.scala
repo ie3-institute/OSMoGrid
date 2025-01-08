@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid
 
 import org.apache.pekko.actor.typed.Behavior
@@ -34,7 +35,7 @@ trait ActorStopSupport[S] {
 
   final protected def postStopCleanUp[T](
       log: Logger,
-      stateData: S
+      stateData: S,
   ): Behavior[T] = {
     log.info("Got terminated by ActorSystem.")
     stopBehavior(stateData)

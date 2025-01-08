@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.io.output
 
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, StashBuffer}
@@ -41,5 +42,5 @@ private[output] final case class ListenerStateData(
     runId: UUID,
     ctx: ActorContext[ResultListenerProtocol],
     buffer: StashBuffer[ResultListenerProtocol],
-    sink: ResultSink
+    sink: ResultSink,
 )

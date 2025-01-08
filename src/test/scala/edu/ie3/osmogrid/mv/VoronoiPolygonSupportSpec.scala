@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.mv
 
 import edu.ie3.datamodel.models.input.NodeInput
@@ -28,7 +29,7 @@ class VoronoiPolygonSupportSpec extends UnitSpec with NodeInputSupport {
         (Seq(nodeToHv1, nodeToHv2, nodeToHv3), 3),
         (Seq(nodeToHv1, nodeToHv2, nodeToHv3, nodeToHv4), 4),
         (Seq(nodeToHv1, nodeInMv1), 2),
-        (Seq(nodeToHv3, nodeInMv2), 2)
+        (Seq(nodeToHv3, nodeInMv2), 2),
       )
 
       forAll(cases) { (nodes, expectedNumber) =>
@@ -65,7 +66,7 @@ class VoronoiPolygonSupportSpec extends UnitSpec with NodeInputSupport {
         (List(nodeToHv1), 1),
         (List(nodeToHv1, nodeToHv2), 2),
         (List(nodeToHv1, nodeToHv2, nodeToHv3), 3),
-        (List(nodeToHv1, nodeToHv2, nodeToHv3, nodeToHv4), 4)
+        (List(nodeToHv1, nodeToHv2, nodeToHv3, nodeToHv4), 4),
       )
 
       forAll(cases) { (nodes, expectedSize) =>
@@ -140,7 +141,7 @@ class VoronoiPolygonSupportSpec extends UnitSpec with NodeInputSupport {
       updatedPolygon(0).transitionPointsToLowerVoltLvl shouldBe List(
         nodeInMv1,
         nodeInMv2,
-        nodeInMv3
+        nodeInMv3,
       )
     }
 
@@ -165,7 +166,7 @@ class VoronoiPolygonSupportSpec extends UnitSpec with NodeInputSupport {
           List(nodeInMv1),
           List(),
           List(),
-          List()
+          List(),
         ),
         (
           List(nodeInMv1, nodeInMv2),
@@ -173,7 +174,7 @@ class VoronoiPolygonSupportSpec extends UnitSpec with NodeInputSupport {
           List(nodeInMv1),
           List(nodeInMv2),
           List(),
-          List()
+          List(),
         ),
         (
           List(nodeInMv1, nodeInMv3, nodeOutside),
@@ -181,7 +182,7 @@ class VoronoiPolygonSupportSpec extends UnitSpec with NodeInputSupport {
           List(nodeInMv1),
           List(),
           List(nodeInMv3),
-          List()
+          List(),
         ),
         (
           List(nodeInMv1, nodeInMv2, nodeInMv4, nodeOutside),
@@ -189,8 +190,8 @@ class VoronoiPolygonSupportSpec extends UnitSpec with NodeInputSupport {
           List(nodeInMv1),
           List(nodeInMv2),
           List(),
-          List(nodeInMv4)
-        )
+          List(nodeInMv4),
+        ),
       )
 
       forAll(cases) { (nodes, expectedNotAssigned, l1, l2, l3, l4) =>
@@ -198,7 +199,7 @@ class VoronoiPolygonSupportSpec extends UnitSpec with NodeInputSupport {
           VoronoiPolygonSupport invokePrivate updatePolygons(
             polygons,
             nodes,
-            log
+            log,
           )
 
         notAssigned shouldBe expectedNotAssigned

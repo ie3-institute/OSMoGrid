@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.lv
 
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
@@ -33,7 +34,7 @@ class LvGridGeneratorSupportSpec
         osmoGridModel,
         powerDensity,
         minDistance,
-        considerBuildingConnections
+        considerBuildingConnections,
       ).unzip match {
         case (Seq(osmGraph), Seq(buildingGraphConnections)) =>
           (osmGraph, buildingGraphConnections)
@@ -49,7 +50,7 @@ class LvGridGeneratorSupportSpec
         0.32.asOhmPerKilometre,
         0.07.asOhmPerKilometre,
         235.0.asAmpere,
-        0.4.asKiloVolt
+        0.4.asKiloVolt,
       )
 
       buildGrid(
@@ -61,7 +62,7 @@ class LvGridGeneratorSupportSpec
         0.15,
         lineType,
         trafo_10kV_to_lv,
-        "testGrid"
+        "testGrid",
       ) match {
         case List(subGridContainer) =>
           subGridContainer.getRawGrid.getNodes.size() shouldBe 3

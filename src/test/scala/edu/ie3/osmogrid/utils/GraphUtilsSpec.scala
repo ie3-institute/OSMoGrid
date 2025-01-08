@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.utils
 
 import edu.ie3.test.common.UnitSpec
@@ -19,13 +20,13 @@ class GraphUtilsSpec extends UnitSpec {
         (
           Node(1L, 0d, 1d, Map.empty, None),
           Node(2L, 1d, 0d, Map.empty, None),
-          new LineSegment(1d, 0d, 0d, 1d)
+          new LineSegment(1d, 0d, 0d, 1d),
         ),
         (
           Node(1L, 1d, 0d, Map.empty, None),
           Node(2L, 5d, 7d, Map.empty, None),
-          new LineSegment(0d, 1d, 7d, 5d)
-        )
+          new LineSegment(0d, 1d, 7d, 5d),
+        ),
       )
 
       forAll(cases) { (nodeA, nodeB, segment) =>
@@ -39,19 +40,19 @@ class GraphUtilsSpec extends UnitSpec {
         (
           new LineSegment(0d, 0d, 1d, 0d),
           new LineSegment(0d, 0d, 0d, 1d),
-          false
+          false,
         ),
         (
           new LineSegment(0d, 0d, 1d, 0d),
           new LineSegment(0d, 1d, 1d, 1d),
-          false
+          false,
         ),
         (
           new LineSegment(0d, 0d, 1d, 1d),
           new LineSegment(0d, 1d, 1d, 0d),
-          true
+          true,
         ),
-        (new LineSegment(0d, 0d, 1d, 0d), new LineSegment(0d, 0d, 2d, 0d), true)
+        (new LineSegment(0d, 0d, 1d, 0d), new LineSegment(0d, 0d, 2d, 0d), true),
       )
 
       forAll(cases) { (lineA, lineB, result) =>

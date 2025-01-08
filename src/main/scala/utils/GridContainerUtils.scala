@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package utils
 
 import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
@@ -60,7 +61,7 @@ object GridContainerUtils {
     */
   private def getNodes(
       voltageLevels: List[ComparableQuantity[ElectricPotential]],
-      subGrids: Seq[SubGridContainer]
+      subGrids: Seq[SubGridContainer],
   ): Seq[NodeInput] = {
     subGrids.flatMap(subgrid => {
       /* finds all transformer in the given subgrid */
@@ -93,13 +94,13 @@ object GridContainerUtils {
     */
   def from(
       assets: Seq[AssetInput],
-      gridName: String = "dummy grid"
+      gridName: String = "dummy grid",
   ): JointGridContainer = {
     new JointGridContainer(
       gridName,
       new RawGridElements(assets.asJava),
       new SystemParticipants(List.empty[SystemParticipants].asJava),
-      new GraphicElements(List.empty[GraphicElements].asJava)
+      new GraphicElements(List.empty[GraphicElements].asJava),
     )
   }
 
@@ -114,7 +115,7 @@ object GridContainerUtils {
     */
   def combine(
       containerA: JointGridContainer,
-      containerB: JointGridContainer
+      containerB: JointGridContainer,
   ): JointGridContainer = {
     // combining raw grid elements
     val rawGridElements = containerA.getRawGrid
@@ -135,7 +136,7 @@ object GridContainerUtils {
       s"Joint container of the two grids ${containerA.getGridName} and ${containerB.getGridName}",
       new RawGridElements(rawGridElements.asJava),
       new SystemParticipants(participants.asJava),
-      new GraphicElements(graphicElements.asJava)
+      new GraphicElements(graphicElements.asJava),
     )
   }
 }

@@ -3,32 +3,33 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package utils
 
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
-  Transformer2WTypeInput
+  Transformer2WTypeInput,
 }
 import edu.ie3.datamodel.models.input.connector.{
   LineInput,
   SwitchInput,
   Transformer2WInput,
-  Transformer3WInput
+  Transformer3WInput,
 }
 import edu.ie3.datamodel.models.input.container.{
   GraphicElements,
   RawGridElements,
   SubGridContainer,
-  SystemParticipants
+  SystemParticipants,
 }
 import edu.ie3.datamodel.models.input.graphics.{
   LineGraphicInput,
-  NodeGraphicInput
+  NodeGraphicInput,
 }
 import edu.ie3.datamodel.models.input.system._
 import edu.ie3.datamodel.models.input.system.characteristic.{
   CosPhiFixed,
-  OlmCharacteristicInput
+  OlmCharacteristicInput,
 }
 import edu.ie3.datamodel.models.input.{MeasurementUnitInput, NodeInput}
 import edu.ie3.datamodel.models.profile.BdewStandardLoadProfile
@@ -66,7 +67,7 @@ object GridConversion {
       voltageLevel: VoltageLevel
   )(id: String, coordinate: Point, isSlack: Boolean)(implicit
       subnet: Int = 1,
-      vTarget: ComparableQuantity[Dimensionless] = 1d.asPu
+      vTarget: ComparableQuantity[Dimensionless] = 1d.asPu,
   ): NodeInput = {
     val idString =
       if (id.isEmpty) {
@@ -86,7 +87,7 @@ object GridConversion {
       isSlack,
       coordinate,
       voltageLevel,
-      subnet
+      subnet,
     )
   }
 
@@ -110,7 +111,7 @@ object GridConversion {
       nodeB: NodeInput,
       parallel: Int,
       lineType: LineTypeInput,
-      length: Quantity[Length]
+      length: Quantity[Length],
   ): LineInput = {
     new LineInput(
       UUID.randomUUID(),
@@ -122,9 +123,9 @@ object GridConversion {
       Quantities.getQuantity(length.getValue, Units.METRE),
       GeoUtils.buildSafeLineStringBetweenCoords(
         nodeA.getGeoPosition.getCoordinate,
-        nodeB.getGeoPosition.getCoordinate
+        nodeB.getGeoPosition.getCoordinate,
       ),
-      OlmCharacteristicInput.CONSTANT_CHARACTERISTIC
+      OlmCharacteristicInput.CONSTANT_CHARACTERISTIC,
     )
   }
 
@@ -146,7 +147,7 @@ object GridConversion {
       firstNode: NodeInput,
       secondNode: NodeInput,
       passedStreetNodes: Seq[Node],
-      lineType: LineTypeInput
+      lineType: LineTypeInput,
   ): LineInput = {
     val lineGeoNodes = passedStreetNodes
       .map(_.coordinate.getCoordinate)
@@ -155,7 +156,7 @@ object GridConversion {
       new CoordinateArraySequence(
         lineGeoNodes
       ),
-      GeoUtils.DEFAULT_GEOMETRY_FACTORY
+      GeoUtils.DEFAULT_GEOMETRY_FACTORY,
     )
     val id = s"Line between: " + passedStreetNodes.headOption
       .getOrElse(
@@ -180,7 +181,7 @@ object GridConversion {
       GeoUtils.calcHaversine(geoPosition),
       geoPosition,
       // todo: What do we expect as OlmCharacteristic?
-      null
+      null,
     )
   }
 
@@ -209,11 +210,11 @@ object GridConversion {
       nodeA: NodeInput,
       nodeB: NodeInput,
       parallelDevices: Int,
-      transformerType: Transformer2WTypeInput
+      transformerType: Transformer2WTypeInput,
   )(implicit
       id: String = s"Transformer between ${nodeA.getId} and ${nodeB.getId}",
       tapPos: Int = 0,
-      autoTap: Boolean = false
+      autoTap: Boolean = false,
   ): Transformer2WInput = new Transformer2WInput(
     UUID.randomUUID(),
     id,
@@ -222,7 +223,7 @@ object GridConversion {
     parallelDevices,
     transformerType,
     tapPos,
-    autoTap
+    autoTap,
   )
 
   /** Creates a load.
@@ -250,7 +251,7 @@ object GridConversion {
       // todo: What to do for econsannual?
       0.asWattHour,
       ratedPower,
-      1d
+      1d,
     )
 
   /** Builds a GridContainer by adding all assets together
@@ -259,11 +260,11 @@ object GridConversion {
       gridName: String,
       nodes: util.Set[NodeInput],
       lines: util.Set[LineInput],
-      loads: util.Set[LoadInput]
+      loads: util.Set[LoadInput],
   )(implicit
       subnetNr: Int = 1,
       transformer2Ws: util.Set[Transformer2WInput] =
-        new util.HashSet[Transformer2WInput]
+        new util.HashSet[Transformer2WInput],
   ): SubGridContainer = {
     val rawGridElements = new RawGridElements(
       nodes,
@@ -271,7 +272,7 @@ object GridConversion {
       transformer2Ws,
       new util.HashSet[Transformer3WInput],
       new util.HashSet[SwitchInput],
-      new util.HashSet[MeasurementUnitInput]
+      new util.HashSet[MeasurementUnitInput],
     )
     val systemParticipants = new SystemParticipants(
       new util.HashSet[BmInput],
@@ -283,18 +284,18 @@ object GridConversion {
       loads,
       new util.HashSet[PvInput],
       new util.HashSet[StorageInput],
-      new util.HashSet[WecInput]
+      new util.HashSet[WecInput],
     )
     val graphicElements = new GraphicElements(
       new util.HashSet[NodeGraphicInput],
-      new util.HashSet[LineGraphicInput]
+      new util.HashSet[LineGraphicInput],
     )
     new SubGridContainer(
       gridName,
       subnetNr,
       rawGridElements,
       systemParticipants,
-      graphicElements
+      graphicElements,
     )
   }
 
@@ -308,7 +309,7 @@ object GridConversion {
     */
   final case class NodeConversion(
       conversionToOsm: Map[NodeInput, Node],
-      conversionToPSDM: Map[Node, NodeInput]
+      conversionToPSDM: Map[Node, NodeInput],
   ) {
 
     /** Returns all [[NodeInput]]s.
@@ -377,7 +378,7 @@ object GridConversion {
       */
     def apply(
         nodes: List[NodeInput],
-        osmNodes: List[Node]
+        osmNodes: List[Node],
     ): NodeConversion = {
       val conversion: Map[NodeInput, Node] = nodes.map { node =>
         val coordinate = node.getGeoPosition.getCoordinate
@@ -387,7 +388,7 @@ object GridConversion {
           .map { node: Node =>
             (
               node,
-              GeoUtils.calcHaversine(coordinate, node.coordinate.getCoordinate)
+              GeoUtils.calcHaversine(coordinate, node.coordinate.getCoordinate),
             )
           }
           .sortBy(_._2)

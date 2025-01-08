@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.mv
 
 import edu.ie3.datamodel.models.input.NodeInput
@@ -37,7 +38,7 @@ object MvCoordinator extends ActorStopSupportStateless {
   def apply(
       cfg: OsmoGridConfig,
       inputDataProvider: ActorRef[InputDataEvent],
-      runGuardian: ActorRef[MvResponse]
+      runGuardian: ActorRef[MvResponse],
   ): Behavior[MvRequest] = Behaviors.setup[MvRequest] { context =>
     val messageAdapters = MvMessageAdapters(
       context.messageAdapter(msg => WrappedInputResponse(msg))
@@ -58,7 +59,7 @@ object MvCoordinator extends ActorStopSupportStateless {
       cfg: OsmoGridConfig,
       inputDataProvider: ActorRef[InputDataEvent],
       messageAdapters: MvMessageAdapters,
-      runGuardian: ActorRef[MvResponse]
+      runGuardian: ActorRef[MvResponse],
   ): Behavior[MvRequest] = Behaviors
     .receive[MvRequest] {
       case (ctx, ReqMvGrids) =>
@@ -103,7 +104,7 @@ object MvCoordinator extends ActorStopSupportStateless {
             case Failure(exception) =>
               ctx.log.error(
                 "Request of needed input data failed. Stop medium voltage grid generation.",
-                exception
+                exception,
               )
               stopBehavior
           }
@@ -114,7 +115,7 @@ object MvCoordinator extends ActorStopSupportStateless {
             case Failure(exception) =>
               ctx.log.error(
                 "Request of needed input data failed. Stop medium voltage grid generation.",
-                exception
+                exception,
               )
               stopBehavior
           }
@@ -140,7 +141,7 @@ object MvCoordinator extends ActorStopSupportStateless {
     */
   private def handleUpdatedStateData(
       awaitingInputData: AwaitingInputData,
-      ctx: ActorContext[MvRequest]
+      ctx: ActorContext[MvRequest],
   ): Behavior[MvRequest] = {
     /* Check, if needed data was received */
     if (awaitingInputData.isComplete) {
@@ -154,7 +155,7 @@ object MvCoordinator extends ActorStopSupportStateless {
       // checking hv nodes
       val hvGrids = (
         awaitingInputData.hvGrids,
-        awaitingInputData.cfg.spawnMissingHvNodes
+        awaitingInputData.cfg.spawnMissingHvNodes,
       ) match {
         case (Some(hv), true) =>
           ctx.log.info(
@@ -185,7 +186,7 @@ object MvCoordinator extends ActorStopSupportStateless {
         lvGrids,
         hvGrids,
         streetGraph,
-        assetInformation
+        assetInformation,
       )
 
       startGraphGeneration(awaitingInputData.cfg, awaitingInputData.runGuardian)
@@ -204,12 +205,12 @@ object MvCoordinator extends ActorStopSupportStateless {
     */
   private def startGraphGeneration(
       cfg: OsmoGridConfig.Generation.Mv,
-      runGuardian: ActorRef[MvResponse]
+      runGuardian: ActorRef[MvResponse],
   ): Behavior[MvRequest] = Behaviors
     .receive[MvRequest] {
       case (
             ctx,
-            StartMvGeneration(lvGrids, hvGrids, streetGraph, assetInformation)
+            StartMvGeneration(lvGrids, hvGrids, streetGraph, assetInformation),
           ) =>
         ctx.log.debug(s"Starting medium voltage graph generation.")
 
@@ -244,7 +245,7 @@ object MvCoordinator extends ActorStopSupportStateless {
           VoronoiPolygonSupport.createVoronoiPolygons(
             transitionNodes.toList,
             mvToLv.toList,
-            ctx
+            ctx,
           )
 
         ctx.log.info(s"Given area was split into ${polygons.size} polygon(s).")
@@ -265,7 +266,7 @@ object MvCoordinator extends ActorStopSupportStateless {
               polygon,
               uuidOption,
               streetGraph,
-              assetInformation
+              assetInformation,
             )
 
             index + 1
@@ -274,7 +275,7 @@ object MvCoordinator extends ActorStopSupportStateless {
         // awaiting the psdm grid data
         awaitResults(
           runGuardian,
-          MvResultData.empty(subnets, hvToMv.map(_._1), assetInformation)
+          MvResultData.empty(subnets, hvToMv.map(_._1), assetInformation),
         )
       case (ctx, MvTerminate) =>
         terminate(ctx.log)
@@ -297,7 +298,7 @@ object MvCoordinator extends ActorStopSupportStateless {
     */
   private def awaitResults(
       runGuardian: ActorRef[MvResponse],
-      resultData: MvResultData
+      resultData: MvResultData,
   ): Behavior[MvRequest] = Behaviors
     .receive[MvRequest] {
       case (
@@ -305,9 +306,9 @@ object MvCoordinator extends ActorStopSupportStateless {
             WrappedMvResponse(
               FinishedMvGridData(
                 subGridContainer,
-                nodeChanges
+                nodeChanges,
               )
-            )
+            ),
           ) =>
         // updating the result data
         val updated =
@@ -323,7 +324,7 @@ object MvCoordinator extends ActorStopSupportStateless {
             updated.subGridContainer,
             updated.dummyHvGrid,
             updated.nodes,
-            resultData.assetInformation
+            resultData.assetInformation,
           )
           Behaviors.stopped
         } else {

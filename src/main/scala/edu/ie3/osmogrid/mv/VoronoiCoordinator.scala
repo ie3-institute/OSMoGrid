@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.mv
 
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
@@ -47,8 +48,8 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
                 polygon,
                 mvSlackNode,
                 streetGraph,
-                assetInformation
-              )
+                assetInformation,
+              ),
             ) =>
           val (graph, nodeConversion) =
             generateMvGraph(nr, polygon, streetGraph)
@@ -59,7 +60,7 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
             graph,
             mvSlackNode,
             nodeConversion,
-            assetInformation
+            assetInformation,
           )
           convertingGraphToPSDM(coordinator)
         case (ctx, MvTerminate) =>
@@ -92,8 +93,8 @@ object VoronoiCoordinator extends ActorStopSupportStateless {
               graph,
               mvSlackNode,
               nodeConversion,
-              assetInformation
-            )
+              assetInformation,
+            ),
           ) =>
         ctx.log.debug(s"Starting conversion for the graph of the grid $nr.")
 

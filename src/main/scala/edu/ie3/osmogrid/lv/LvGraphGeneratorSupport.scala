@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.lv
 
 import com.typesafe.scalalogging.LazyLogging
@@ -23,7 +24,7 @@ import utils.OsmoGridUtils.{
   buildStreetGraph,
   calcHouseholdPower,
   isInsideLanduse,
-  safeBuildPolygon
+  safeBuildPolygon,
 }
 
 import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
@@ -66,7 +67,7 @@ object LvGraphGeneratorSupport extends LazyLogging {
       highwayNodeB: Node,
       graphConnectionNode: Node,
       isSubstation: Boolean,
-      buildingConnectionNode: Option[Node] = None
+      buildingConnectionNode: Option[Node] = None,
   ) {
 
     /** Checks whether the graph connection node is a new node. If not it is one
@@ -110,7 +111,7 @@ object LvGraphGeneratorSupport extends LazyLogging {
       osmoGridModel: LvOsmoGridModel,
       powerDensity: ComparableQuantity[Irradiance],
       minDistance: ComparableQuantity[Length],
-      considerBuildingConnections: Boolean
+      considerBuildingConnections: Boolean,
   ): Seq[(OsmGraph, Seq[BuildingGraphConnection])] = {
     val (highways, highwayNodes) =
       OsmoGridModel.filterForWays(osmoGridModel.highways)
@@ -127,19 +128,19 @@ object LvGraphGeneratorSupport extends LazyLogging {
       highways,
       highwayNodes ++ buildingNodes ++ landUseNodes ++ substationNodes,
       powerDensity,
-      minDistance
+      minDistance,
     )
     val streetGraph = buildStreetGraph(highways.seq.toSeq, highwayNodes)
     val (updatedGraph, updatedBgcs) =
       updateGraphWithBuildingConnections(
         streetGraph,
         buildingGraphConnections,
-        considerBuildingConnections
+        considerBuildingConnections,
       )
 
     divideDisconnectedGraphs(
       updatedGraph,
-      updatedBgcs
+      updatedBgcs,
     )
   }
 
@@ -169,7 +170,7 @@ object LvGraphGeneratorSupport extends LazyLogging {
       highways: ParSeq[Way],
       nodes: Map[Long, Node],
       powerDensity: ComparableQuantity[Irradiance],
-      minDistance: ComparableQuantity[Length]
+      minDistance: ComparableQuantity[Length],
   ): Seq[BuildingGraphConnection] = {
     val landusePolygons =
       landuses.map(closedWay => safeBuildPolygon(closedWay, nodes))
@@ -192,7 +193,7 @@ object LvGraphGeneratorSupport extends LazyLogging {
         case node: Node =>
           (
             GeoUtils.buildCoordinate(node.latitude, node.longitude),
-            0.asKiloWatt
+            0.asKiloWatt,
           )
       }
 
@@ -216,7 +217,7 @@ object LvGraphGeneratorSupport extends LazyLogging {
                   nodeA,
                   nodeB,
                   center,
-                  minDistance
+                  minDistance,
                 ).getOrElse(
                   throw OsmDataException(
                     s"Could not retrieve closest nodes for highway ${highway.id}"
@@ -238,7 +239,7 @@ object LvGraphGeneratorSupport extends LazyLogging {
             closestOverall._3,
             closestOverall._4,
             closestOverall._2,
-            substations.toSet.contains(enhancedOsmEntity)
+            substations.toSet.contains(enhancedOsmEntity),
           )
         )
       } else None
@@ -267,7 +268,7 @@ object LvGraphGeneratorSupport extends LazyLogging {
       wayNodeA: Node,
       wayNodeB: Node,
       buildingCenter: Coordinate,
-      minDistance: ComparableQuantity[Length]
+      minDistance: ComparableQuantity[Length],
   ): Try[(ComparableQuantity[Length], Node)] = {
     val coordinateA = buildCoordinate(wayNodeA.latitude, wayNodeA.longitude)
     val coordinateB = buildCoordinate(wayNodeB.latitude, wayNodeB.longitude)
@@ -279,7 +280,7 @@ object LvGraphGeneratorSupport extends LazyLogging {
       orthogonalPt.isBetween(
         coordinateA,
         coordinateB,
-        1e-3
+        1e-3,
       ) && ((orthogonalPt haversineDistance coordinateA) isGreaterThan minDistance)
       && ((orthogonalPt haversineDistance coordinateB) isGreaterThan minDistance)
     ) {
@@ -288,7 +289,7 @@ object LvGraphGeneratorSupport extends LazyLogging {
         latitude = orthogonalPt.y,
         longitude = orthogonalPt.x,
         tags = Map.empty,
-        metaInformation = None
+        metaInformation = None,
       )
       Success(buildingCenter.haversineDistance(orthogonalPt), closestNode)
     }
@@ -315,7 +316,7 @@ object LvGraphGeneratorSupport extends LazyLogging {
   private def updateGraphWithBuildingConnections(
       graph: OsmGraph,
       buildingGraphConnections: Seq[BuildingGraphConnection],
-      considerBuildingConnections: Boolean
+      considerBuildingConnections: Boolean,
   ): (OsmGraph, Seq[BuildingGraphConnection]) = {
     val updatedBgcs = buildingGraphConnections.map(bgc => {
       if (bgc.hasNewNode) {
@@ -330,7 +331,7 @@ object LvGraphGeneratorSupport extends LazyLogging {
           bgc.center.y,
           bgc.center.x,
           Map.empty,
-          None
+          None,
         )
         graph.addVertex(buildingNode)
         graph.addWeightedEdge(bgc.graphConnectionNode, buildingNode)
@@ -344,7 +345,7 @@ object LvGraphGeneratorSupport extends LazyLogging {
       graph: OsmGraph,
       buildingGraphConnections: Seq[
         LvGraphGeneratorSupport.BuildingGraphConnection
-      ]
+      ],
   ): Seq[(OsmGraph, Seq[BuildingGraphConnection])] = {
     val bgcMap =
       buildingGraphConnections.map(bgc => bgc.graphConnectionNode -> bgc).toMap
@@ -384,7 +385,7 @@ object LvGraphGeneratorSupport extends LazyLogging {
         if (buildingGraphConnections.isEmpty) {
           logger.debug(
             s"Skipping component ({} OSM nodes) without connected buildings!",
-            connectedSet.size
+            connectedSet.size,
           )
           graphSeq
         } else

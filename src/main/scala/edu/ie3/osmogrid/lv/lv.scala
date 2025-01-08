@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.lv
 
 import org.apache.pekko.actor.typed.ActorRef
@@ -10,7 +11,7 @@ import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.{
   IllegalStateException,
-  RequestFailedException
+  RequestFailedException,
 }
 import edu.ie3.osmogrid.exception.RequestFailedException
 import edu.ie3.osmogrid.graph.OsmGraph
@@ -19,7 +20,7 @@ import edu.ie3.osmogrid.io.input.{AssetInformation, InputResponse}
 import edu.ie3.osmogrid.lv.region_coordinator.{
   LvRegionCoordinator,
   LvRegionRequest,
-  LvRegionResponse
+  LvRegionResponse,
 }
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import org.slf4j.Logger
@@ -50,7 +51,7 @@ final case class StartLvGeneration(
     lvConfig: OsmoGridConfig.Generation.Lv,
     regionCoordinator: ActorRef[LvRegionRequest],
     osmoGridModel: LvOsmoGridModel,
-    assetInformation: AssetInformation
+    assetInformation: AssetInformation,
 ) extends LvRequest
 
 object LvTerminate extends LvRequest
@@ -65,7 +66,7 @@ object LvTerminate extends LvRequest
 private final case class LvMessageAdapters(
     inputDataProvider: ActorRef[InputResponse],
     lvRegionCoordinator: ActorRef[LvRegionResponse],
-    lvGridGenerator: ActorRef[LvGridResponse]
+    lvGridGenerator: ActorRef[LvGridResponse],
 )
 
 private object LvMessageAdapters {
@@ -87,7 +88,7 @@ final case class GenerateLvGrid(
     gridUuid: UUID,
     osmData: LvOsmoGridModel,
     assetInformation: AssetInformation,
-    config: OsmoGridConfig.Generation.Lv
+    config: OsmoGridConfig.Generation.Lv,
 ) extends LvGridRequest
 
 sealed trait LvResponse
@@ -106,7 +107,7 @@ final case class RepLvGrids(grids: Seq[SubGridContainer], streetGraph: OsmGraph)
 
 final case class RepLvGrid(
     gridUuid: UUID,
-    grid: Seq[SubGridContainer]
+    grid: Seq[SubGridContainer],
 ) extends LvGridResponse
 
 /** State data for orientation of the actor
@@ -124,7 +125,7 @@ private[lv] final case class IdleData(
     cfg: OsmoGridConfig.Generation.Lv,
     inputDataProvider: ActorRef[input.InputDataEvent],
     runGuardian: ActorRef[LvResponse],
-    msgAdapters: LvMessageAdapters
+    msgAdapters: LvMessageAdapters,
 )
 
 /** State data to describe the actor's orientation while awaiting replies
@@ -145,7 +146,7 @@ private[lv] final case class AwaitingData(
     assetInformation: Option[input.AssetInformation],
     cfg: OsmoGridConfig.Generation.Lv,
     msgAdapters: LvMessageAdapters,
-    guardian: ActorRef[LvResponse]
+    guardian: ActorRef[LvResponse],
 ) {
 
   /** Takes the given response and adds the contained value to the currently
@@ -161,7 +162,7 @@ private[lv] final case class AwaitingData(
     */
   def registerResponse(
       response: InputResponse,
-      log: Logger
+      log: Logger,
   ): Try[AwaitingData] = response match {
     case input.RepOsm(osmModel: LvOsmoGridModel) =>
       log.debug(s"Received LV data model.")
@@ -176,14 +177,14 @@ private[lv] final case class AwaitingData(
       Failure(
         RequestFailedException(
           "The requested OSM data cannot be read. Stop generation. Exception:",
-          reason
+          reason,
         )
       )
     case input.AssetReadFailed(reason) =>
       Failure(
         RequestFailedException(
           "The requested asset data cannot be read. Stop generation. Exception:",
-          reason
+          reason,
         )
       )
   }
@@ -201,13 +202,13 @@ private[lv] object AwaitingData {
     None,
     coordinatorData.cfg,
     coordinatorData.msgAdapters,
-    coordinatorData.runGuardian
+    coordinatorData.runGuardian,
   )
 }
 
 private[lv] final case class ResultData(
     expectedGrids: Set[UUID],
-    subGridContainers: Seq[SubGridContainer]
+    subGridContainers: Seq[SubGridContainer],
 ) {
 
   def update(expectedGrid: UUID): ResultData = {
@@ -216,12 +217,12 @@ private[lv] final case class ResultData(
 
   def update(
       expectedGrid: UUID,
-      subGridContainer: Seq[SubGridContainer]
+      subGridContainer: Seq[SubGridContainer],
   ): ResultData = {
     if (expectedGrids.contains(expectedGrid)) {
       return ResultData(
         expectedGrids - expectedGrid,
-        subGridContainers ++ subGridContainer
+        subGridContainers ++ subGridContainer,
       )
     }
     throw IllegalStateException(

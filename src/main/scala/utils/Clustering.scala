@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package utils
 
 import com.typesafe.scalalogging.LazyLogging
@@ -27,7 +28,7 @@ final case class Clustering(
     additionalSubstations: Set[NodeWrapper],
     nodes: Set[NodeWrapper],
     nodeCount: Int,
-    substationCount: Int
+    substationCount: Int,
 ) extends LazyLogging {
 
   /** Method to run the algorithm. This algorithm is based on PAM (Partitioning
@@ -42,7 +43,7 @@ final case class Clustering(
     // creates the initial clusters
     val initialClusters: Set[Cluster] = createClusters(
       osmSubstations ++ additionalSubstations,
-      nodes
+      nodes,
     )
     val initialSubstations = Set(initialClusters.map(_.substation))
 
@@ -88,7 +89,7 @@ final case class Clustering(
     */
   private def calculateStep(
       swaps: Set[(NodeWrapper, NodeWrapper)],
-      substationCombinations: Set[Set[NodeWrapper]]
+      substationCombinations: Set[Set[NodeWrapper]],
   ): Option[Set[Cluster]] = {
     val (updatedSubstations, updatedNodes) =
       swaps.foldLeft((osmSubstations ++ additionalSubstations, nodes)) {
@@ -122,7 +123,7 @@ final case class Clustering(
     */
   private def createClusters(
       substations: Set[NodeWrapper],
-      others: Set[NodeWrapper]
+      others: Set[NodeWrapper],
   ): Set[Cluster] = {
     if (substations.size + nodes.size != nodeCount) {
       logger.debug(
@@ -179,7 +180,7 @@ final case class Clustering(
     */
   private def findClosestSubstation(
       substations: Set[NodeWrapper],
-      others: Set[NodeWrapper]
+      others: Set[NodeWrapper],
   ): Set[(NodeWrapper, NodeWrapper)] =
     others.map { n =>
       val closest = substations
@@ -199,7 +200,7 @@ object Clustering {
       gridElements: GridElements,
       lines: Set[LineInput],
       transformer2WTypeInput: Transformer2WTypeInput,
-      loadSimultaneousFactor: Double
+      loadSimultaneousFactor: Double,
   ): Clustering = {
     if (gridElements.nodes.size + gridElements.substations.size < 2) {
       throw ClusterException("Cannot cluster a grid with less than two nodes.")
@@ -208,7 +209,7 @@ object Clustering {
     val substationCount = getSubstationCount(
       gridElements.loads.toSet,
       loadSimultaneousFactor,
-      transformer2WTypeInput
+      transformer2WTypeInput,
     )
 
     val nodes = gridElements.nodes.values.map(NodeWrapper).toIndexedSeq
@@ -237,7 +238,7 @@ object Clustering {
       additionalSubstations,
       nodes.toSet.diff(additionalSubstations),
       nodes.size + gridElements.substations.size,
-      osmSubstations.size + additionalSubstations.size
+      osmSubstations.size + additionalSubstations.size,
     )
   }
 
@@ -254,7 +255,7 @@ object Clustering {
   private def getSubstationCount(
       loads: Set[LoadInput],
       loadSimultaneousFactor: Double,
-      transformer2WTypeInput: Transformer2WTypeInput
+      transformer2WTypeInput: Transformer2WTypeInput,
   ): Int = {
     // calculates the maximum power
     val maxPower: ComparableQuantity[Power] =
@@ -292,7 +293,7 @@ object Clustering {
     */
   def isImprovement(
       old: Set[Cluster],
-      current: Set[Cluster]
+      current: Set[Cluster],
   ): Boolean =
     calculateTotalLineLength(current) <= calculateTotalLineLength(old) * 0.99
 
@@ -317,7 +318,7 @@ object Clustering {
   final case class Cluster(
       substation: NodeWrapper,
       nodes: Set[NodeWrapper],
-      distances: Double
+      distances: Double,
   )
 
   /** Wrapper class that avoids expensive calls to the original [[NodeInput]]

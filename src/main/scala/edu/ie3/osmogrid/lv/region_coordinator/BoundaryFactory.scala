@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.lv.region_coordinator
 
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel.BoundaryAdminLevelValue
@@ -34,13 +35,13 @@ object BoundaryFactory {
     */
   def buildBoundaryPolygons(
       osmoGridModel: LvOsmoGridModel,
-      administrativeLevel: BoundaryAdminLevelValue
+      administrativeLevel: BoundaryAdminLevelValue,
   ): ParMap[AreaKey, Seq[Polygon]] = {
     osmoGridModel.boundaries
       .filter {
         case EnhancedOsmEntity(
               entity: OsmEntity,
-              _
+              _,
             ) =>
           entity match {
             case relation: OsmEntity.Relation =>
@@ -94,7 +95,7 @@ object BoundaryFactory {
               Failure(
                 new RuntimeException(
                   s"Could not create Polygon from relation ${relation.id}",
-                  exc
+                  exc,
                 )
               )
             }
@@ -160,14 +161,14 @@ object BoundaryFactory {
               (
                 acc + (acc.size + 1 -> newSeq),
                 indexes + (elem -> splitIdx),
-                splitIdx + 1
+                splitIdx + 1,
               )
             case None =>
               // Element has not been seen before
               (
                 acc,
                 indexes + (elem -> splitIdx),
-                splitIdx + 1
+                splitIdx + 1,
               )
           }
       }
@@ -187,7 +188,7 @@ object BoundaryFactory {
 
   private def addWayNodesToPolygonSequence(
       existingNodes: Seq[AreaKey],
-      currentWay: OsmEntity.Way
+      currentWay: OsmEntity.Way,
   ): Try[Seq[AreaKey]] = Try {
     // Construct one single sequence of nodes by joining the ways.
     // Each way can be ordered in correct or in reverse order

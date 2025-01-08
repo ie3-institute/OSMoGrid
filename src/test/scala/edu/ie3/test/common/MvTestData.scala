@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.test.common
 
 import edu.ie3.datamodel.models.input.connector.LineInput
@@ -15,7 +16,7 @@ import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.geo.GeoUtils.{
   buildSafeLineStringBetweenCoords,
-  calcHaversine
+  calcHaversine,
 }
 import edu.ie3.util.osm.model.OsmEntity.Node
 import org.locationtech.jts.geom.Coordinate
@@ -45,21 +46,21 @@ trait MvTestData {
     latitude = 50.0,
     longitude = 7.0,
     tags = Map.empty,
-    metaInformation = None
+    metaInformation = None,
   )
   val nodeToHv = new NodeInput(
     UUID.fromString("92c3a19d-2a07-4472-bd7a-cbb49a5ae5fd"),
     s"Transition point",
     new OperatorInput(
       UUID.fromString("8d4b3c30-8622-496f-831b-9376e367c499"),
-      "_"
+      "_",
     ),
     OperationTime.notLimited(),
     Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
     true,
     GeoUtils.buildPoint(50.0, 7.0),
     GermanVoltageLevelUtils.MV_10KV,
-    1
+    1,
   )
 
   protected val (osmNode1, nodeInMv1) = buildPoint(1L, 50.5, 7.0)
@@ -82,7 +83,7 @@ trait MvTestData {
       false,
       GeoUtils.buildPoint(lat, lon),
       GermanVoltageLevelUtils.MV_10KV,
-      1
+      1,
     )
     (node, nodeInput)
   }
@@ -99,13 +100,13 @@ trait MvTestData {
       mock[LineTypeInput],
       calcHaversine(
         nodeA.getGeoPosition.getCoordinate,
-        nodeB.getGeoPosition.getCoordinate
+        nodeB.getGeoPosition.getCoordinate,
       ),
       buildSafeLineStringBetweenCoords(
         nodeA.getGeoPosition.getCoordinate,
-        nodeB.getGeoPosition.getCoordinate
+        nodeB.getGeoPosition.getCoordinate,
       ),
-      OlmCharacteristicInput.CONSTANT_CHARACTERISTIC
+      OlmCharacteristicInput.CONSTANT_CHARACTERISTIC,
     )
 
   def toCoordinate(node: Node): Coordinate =
@@ -119,7 +120,7 @@ trait MvTestData {
       nodeInMv3 -> osmNode3,
       nodeInMv4 -> osmNode4,
       nodeInMv5 -> osmNode5,
-      nodeInMv6 -> osmNode6
+      nodeInMv6 -> osmNode6,
     )
 
     NodeConversion(conversion, conversion.map { case (k, v) => v -> k })
@@ -133,13 +134,13 @@ trait MvTestData {
         osmNode3,
         osmNode4,
         osmNode5,
-        osmNode6
+        osmNode6,
       )
     )
       .map { case (nodeA, nodeB) =>
         val distance = calcHaversine(
           nodeA.coordinate.getCoordinate,
-          nodeB.coordinate.getCoordinate
+          nodeB.coordinate.getCoordinate,
         )
         Connection(nodeA, nodeB, distance, None)
       }
@@ -151,7 +152,7 @@ trait MvTestData {
       osmNode3,
       osmNode4,
       osmNode5,
-      osmNode6
+      osmNode6,
     )
 
     Connections(osmNodes, uniqueConnections)
@@ -184,7 +185,7 @@ trait MvTestData {
     val removedEdge1 = copy1.removeEdge(osmNode3, osmNode2)
     val usedConnections1 = List(
       connections.getConnection(osmNode2, osmNode4),
-      connections.getConnection(osmNode3, osmNode4)
+      connections.getConnection(osmNode3, osmNode4),
     ).flatten
 
     usedConnections1.foreach(c => copy1.addConnection(c))
@@ -195,7 +196,7 @@ trait MvTestData {
     val removedEdge2 = copy2.removeEdge(osmNode1, osmNode3)
     val usedConnections2 = List(
       connections.getConnection(osmNode1, osmNode4),
-      connections.getConnection(osmNode3, osmNode4)
+      connections.getConnection(osmNode3, osmNode4),
     ).flatten
 
     usedConnections2.foreach(c => copy2.addConnection(c))
@@ -209,15 +210,15 @@ trait MvTestData {
         osmNode4,
         usedConnections1,
         graphAfterTwoSteps.getEdge(osmNode3, osmNode2),
-        addedWeight1
+        addedWeight1,
       ),
       StepResultOption(
         copy2,
         osmNode4,
         usedConnections2,
         graphAfterTwoSteps.getEdge(osmNode1, osmNode3),
-        addedWeight2
-      )
+        addedWeight2,
+      ),
     )
   }
 
@@ -234,7 +235,7 @@ trait MvTestData {
       connections.getConnection(transitionPoint, osmNode2),
       connections.getConnection(osmNode1, osmNode2),
       connections.getConnection(osmNode2, osmNode3),
-      connections.getConnection(osmNode3, osmNode1)
+      connections.getConnection(osmNode3, osmNode1),
     ).flatten.foreach(graph.addConnection)
 
     graph

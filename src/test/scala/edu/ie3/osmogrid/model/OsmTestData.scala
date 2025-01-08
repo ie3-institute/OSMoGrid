@@ -3,6 +3,7 @@
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
+
 package edu.ie3.osmogrid.model
 
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
@@ -12,7 +13,7 @@ import edu.ie3.util.osm.model.OsmEntity
 import edu.ie3.util.osm.model.OsmEntity.{Node, Relation}
 import edu.ie3.util.osm.model.OsmEntity.Relation.{
   RelationMember,
-  RelationMemberType
+  RelationMemberType,
 }
 import edu.ie3.util.osm.model.OsmEntity.Way.{ClosedWay, OpenWay}
 import scala.collection.parallel.immutable.ParSeq
@@ -101,7 +102,7 @@ trait OsmTestData {
       51.4895185d,
       7.4058116d,
       Map("power" -> "substation", "building" -> "service"),
-      None
+      None,
     )
 
     val nodesMap: Map[Long, Node] = Map(
@@ -133,7 +134,7 @@ trait OsmTestData {
       boundaryNode2.id -> boundaryNode2,
       boundaryNode3.id -> boundaryNode3,
       boundaryNode4.id -> boundaryNode4,
-      substation.id -> substation
+      substation.id -> substation,
     )
   }
 
@@ -146,10 +147,10 @@ trait OsmTestData {
           nodes.building1Node2.id,
           nodes.building1Node3.id,
           nodes.building1Node4.id,
-          nodes.building1Node1.id
+          nodes.building1Node1.id,
         ),
         Map("building" -> "yes"),
-        None
+        None,
       )
 
     val building2: ClosedWay =
@@ -160,10 +161,10 @@ trait OsmTestData {
           nodes.building2Node2.id,
           nodes.building2Node3.id,
           nodes.building2Node4.id,
-          nodes.building2Node1.id
+          nodes.building2Node1.id,
         ),
         Map("building" -> "yes"),
-        None
+        None,
       )
 
     val building3: ClosedWay =
@@ -174,10 +175,10 @@ trait OsmTestData {
           nodes.building3Node2.id,
           nodes.building3Node3.id,
           nodes.building3Node4.id,
-          nodes.building3Node1.id
+          nodes.building3Node1.id,
         ),
         Map("building" -> "yes"),
-        None
+        None,
       )
 
     val highway1: OpenWay =
@@ -185,7 +186,7 @@ trait OsmTestData {
         111L,
         Seq(nodes.highway1Node1.id, nodes.highway1Node2.id),
         Map("highway" -> "motorway"),
-        None
+        None,
       )
 
     val highway2: OpenWay =
@@ -195,10 +196,10 @@ trait OsmTestData {
           nodes.highway2Node1.id,
           nodes.highway2Node2.id,
           nodes.highway2Node3.id,
-          nodes.highway2Node4.id
+          nodes.highway2Node4.id,
         ),
         Map("highway" -> "motorway"),
-        None
+        None,
       )
 
     val landuse1: ClosedWay = ClosedWay(
@@ -208,10 +209,10 @@ trait OsmTestData {
         nodes.landuse1Node2.id,
         nodes.landuse1Node3.id,
         nodes.landuse1Node4.id,
-        nodes.landuse1Node1.id
+        nodes.landuse1Node1.id,
       ),
       Map("landuse" -> "education"),
-      None
+      None,
     )
 
     val landuse2: ClosedWay = ClosedWay(
@@ -221,10 +222,10 @@ trait OsmTestData {
         nodes.landuse2Node2.id,
         nodes.landuse2Node3.id,
         nodes.landuse2Node4.id,
-        nodes.landuse2Node1.id
+        nodes.landuse2Node1.id,
       ),
       Map.empty[String, String],
-      None
+      None,
     )
 
     val landuse3: ClosedWay = ClosedWay(
@@ -234,10 +235,10 @@ trait OsmTestData {
         nodes.landuse3Node2.id,
         nodes.landuse3Node3.id,
         nodes.landuse3Node4.id,
-        nodes.landuse3Node1.id
+        nodes.landuse3Node1.id,
       ),
       Map("landuse" -> "residential"),
-      None
+      None,
     )
 
     val boundaryWay1: OpenWay = OpenWay(
@@ -245,20 +246,20 @@ trait OsmTestData {
       Seq(
         nodes.boundaryNode1.id,
         nodes.boundaryNode2.id,
-        nodes.boundaryNode3.id
+        nodes.boundaryNode3.id,
       ),
       Map.empty[String, String],
-      None
+      None,
     )
     val boundaryWay2: OpenWay = OpenWay(
       132L,
       Seq(
         nodes.boundaryNode3.id,
         nodes.boundaryNode4.id,
-        nodes.boundaryNode1.id
+        nodes.boundaryNode1.id,
       ),
       Map.empty[String, String],
-      None
+      None,
     )
   }
 
@@ -267,10 +268,10 @@ trait OsmTestData {
       231L,
       Seq(
         RelationMember(ways.boundaryWay1.id, RelationMemberType.Way, "outer"),
-        RelationMember(ways.boundaryWay2.id, RelationMemberType.Way, "outer")
+        RelationMember(ways.boundaryWay2.id, RelationMemberType.Way, "outer"),
       ),
       Map("boundary" -> "administrative"),
-      None
+      None,
     )
   }
 
@@ -312,7 +313,7 @@ trait OsmTestData {
       nodes.boundaryNode1,
       nodes.boundaryNode2,
       nodes.boundaryNode3,
-      nodes.boundaryNode4
+      nodes.boundaryNode4,
     )
     private val waySeq: ParSeq[OsmEntity.Way] = ParSeq(
       ways.building1,
@@ -324,7 +325,7 @@ trait OsmTestData {
       ways.landuse2,
       ways.landuse3,
       ways.boundaryWay1,
-      ways.boundaryWay2
+      ways.boundaryWay2,
     )
     private val relationSeq: ParSeq[Relation] = ParSeq(
       relations.boundary
@@ -332,11 +333,11 @@ trait OsmTestData {
     val osmContainer: ParOsmContainer = ParOsmContainer(
       nodeSeq,
       waySeq,
-      relationSeq
+      relationSeq,
     )
     val lvOsmoGridModel: LvOsmoGridModel = LvOsmoGridModel(
       osmContainer,
-      LvFilter()
+      LvFilter(),
     )
   }
 }
