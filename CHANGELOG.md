@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Include census boundaries and `admin_level=12` for finer partitioning of osm data [#502](https://github.com/ie3-institute/OSMoGrid/issues/502)
 - Scalafmt should always add trailing commas [#508](https://github.com/ie3-institute/OSMoGrid/issues/508)
 - Include highway filter in example config [#513](https://github.com/ie3-institute/OSMoGrid/issues/513)
+- Added Marius Staudt to list of reviewers [#516](https://github.com/ie3-institute/OSMoGrid/issues/501)
 
 ### Changed
 - Rely on Java 17
