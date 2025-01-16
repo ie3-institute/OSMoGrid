@@ -17,7 +17,7 @@ ext {
   javaVersion = JavaVersion.VERSION_17
 
   scalaVersion = '2.13'
-  scalaBinaryVersion = '2.13.15'
+  scalaBinaryVersion = '2.13.16'
   pekkoVersion = '1.1.3'
 
   tscfgVersion = '0.9.995'
