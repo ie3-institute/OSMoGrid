@@ -21,7 +21,10 @@ Lastly, the street graph is converted into a grid model.
 
 Following this concept, the following actor hierarchy is implemented:
 
-## Actors
+## General 
+
+Actors related to operations that are relevant to multiple or all voltage levels:
+
 ### OsmoGridGuardian
 - Coordination of multi voltage level spanning routine
 - Error handling
@@ -34,6 +37,13 @@ Following this concept, the following actor hierarchy is implemented:
 - Connects to OpenStreeMap (either via pbf file or API)
 - Acquires needed data and filters it (on request and dependent on the purpose)
 
+### ResultListener
+- Persisting overall grid model to sinks
+
+## Low voltage
+
+Actors relevant to low voltage grid generation:
+
 ### LvCoordinator
 - Coordinates the generation of the whole low voltage level
 - Spawns an `LvRegionCoordinator` to split up the region of interest
@@ -45,23 +55,26 @@ Following this concept, the following actor hierarchy is implemented:
 
 ### LvRegionCoordinator
 - Splits up the region of interest according to a given administrative boundary
-- If the level of a municipality is **NOT** reached:
+- If the lowest administrative level has **NOT** been reached:
   - Spawns new `LvRegionCoordinator`s per new subregion to split up for the next lower administrative boundary
   - *Outcome*: Subregions on administrative level `n` + the next lowest administrative level `n-1` 
-- If the level of a municipality is reached:
-  - Hand over the "municipalities" to `MunicipalityCoordinator`s
+- If the lowest administrative level has been reached:
+  - Hand over the partitioned regions to a `LvGridGenerator` each
   - *Outcome*: Subregions on administrative level "municipality"
 
 ### MunicipalityCoordinator
+- **Currently not implemented!**
 - Coordinates the region partitioning within the administrative boundary of a municipality
 - Determines dense and disjoint groups of houses as local "districts"
 - *Outcome*: Districts within the given municipality
 
 ### DistrictCoordinator
+- **Currently not implemented!**
 - Breaks down districts even further, if still too big w.r.t. computational measures (to be defined)
 - *Outcome*: (Sub)districts with suitable size
 
 ### SubDistrictCoordinator
+- **Currently not implemented!**
 - Responsible for handling a sub-district
 - A sub-district can also be a district, if that isn't too big
 - Derives loads from houses
@@ -72,8 +85,22 @@ Following this concept, the following actor hierarchy is implemented:
 - *Outcome*: Street subgraphs per secondary substation region
 
 ### LvGridGenerator
-- Generates a distinct, galvanically closed lv sub grid model from street graph
+- Detects unconnected sub graphs and further clusters LV nodes into smaller sub graphs
+- Builds galvanically isolated lv sub grid model from sub graphs
+- Hands back grid model to `LvCoordinator`
 - *Outcome*: Grid model per secondary substation region
 
-### ResultListener
-- Persisting overall grid model to sinks
+## Medium voltage
+
+Actors relevant to medium voltage grid generation:
+
+### MvCoordinator
+- Coordinates the generation of the whole medium voltage level
+- Requests and handles asset type information as well as LV and HV grid data
+- Partitions MV nodes by using Voronoi areas defined by HV nodes once all required data has been received
+- Starts VoronoiCoordinator and hands over partitioned data
+
+### VoronoiCoordinator
+- Generates a MV graph structure
+- Builds a grid model based on graph structure
+- Returns result to MvCoordinator
