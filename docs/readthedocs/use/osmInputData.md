@@ -60,6 +60,8 @@ out skel qt;
 
 This example will return the OSM data for the area of [TU Dortmund University](https://www.tu-dortmund.de/)
 
+Please note that the use of relational ids requires some pre-processing. TU Dortmund University has the relation id 6188406, but needs to be added to 3600000000 to get the correct id 3606188406 for the overpass query.  
+
 ```
 [out:xml][timeout:30];
 // relation of Dortmund University: 6188406
