@@ -55,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Simplify `GridElements` creation [#504](https://github.com/ie3-institute/OSMoGrid/issues/504)
 - Improve clustering efficiency by using faster hashcode method [#515](https://github.com/ie3-institute/OSMoGrid/issues/515)
 - Update concept in developers' documentation [#517](https://github.com/ie3-institute/OSMoGrid/issues/517)
+- Enhance documentation regarding overpass examples [#494](https://github.com/ie3-institute/OSMoGrid/issues/494)
 
 ### Fixed
 - Fixed bug in `LvGridGeneratorSupport` [#388](https://github.com/ie3-institute/OSMoGrid/issues/388)
