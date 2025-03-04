@@ -247,7 +247,6 @@ object GridConversion {
       CosPhiFixed.CONSTANT_CHARACTERISTIC,
       null,
       BdewStandardLoadProfile.H0,
-      false,
       // todo: What to do for econsannual?
       0.asWattHour,
       ratedPower,

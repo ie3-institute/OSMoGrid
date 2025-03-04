@@ -462,7 +462,6 @@ trait GridSupport {
       mock[ReactivePowerCharacteristic],
       null,
       BdewStandardLoadProfile.H0,
-      false,
       Quantities.getQuantity(3000d, KILOWATTHOUR),
       Quantities.getQuantity(10d, KILOWATT),
       0.95d,
