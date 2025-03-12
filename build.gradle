@@ -4,7 +4,7 @@ plugins {
   id 'scala'
   id 'pmd' // code check, working on source code
   id 'com.diffplug.spotless' version '6.25.0'//code format
-  id 'com.github.spotbugs' version '6.1.5' // code check, working on byte code
+  id 'com.github.spotbugs' version '6.1.7' // code check, working on byte code
   id 'de.undercouch.download' version '5.6.0'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.33" // run scalatest without specific spec task
@@ -21,7 +21,7 @@ ext {
   pekkoVersion = '1.1.3'
 
   tscfgVersion = '0.9.995'
-  scapegoatVersion = '3.1.4'
+  scapegoatVersion = '3.1.5'
 
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
   docsDirName = 'docs'
@@ -72,7 +72,7 @@ dependencies {
 
   // logging
   implementation "com.typesafe.scala-logging:scala-logging_${scalaVersion}:3.9.5"
-  implementation 'ch.qos.logback:logback-classic:1.5.16'
+  implementation 'ch.qos.logback:logback-classic:1.5.17'
 
   // config
   implementation 'com.typesafe:config:1.4.3'
@@ -92,7 +92,7 @@ dependencies {
   }
 
   // ie³ power system data model
-  implementation('com.github.ie3-institute:PowerSystemDataModel:5.1.0') {
+  implementation('com.github.ie3-institute:PowerSystemDataModel:6.0.0') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
@@ -110,7 +110,7 @@ dependencies {
   testRuntimeOnly 'com.vladsch.flexmark:flexmark-all:0.64.8' //scalatest html output
   testImplementation 'org.pegdown:pegdown:1.6.0'
 
-  testImplementation 'org.mockito:mockito-core:5.15.2' // mocking framework
+  testImplementation 'org.mockito:mockito-core:5.16.0' // mocking framework
   testImplementation "org.scalatestplus:mockito-3-12_$scalaVersion:3.2.10.0" // syntactic sugar
 }
 
