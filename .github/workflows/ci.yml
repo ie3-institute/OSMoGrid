@@ -36,49 +36,28 @@ jobs:
       - name: Check Branch
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ]; then
-            branch_name="${{ github.head_ref }}"
+            BRANCH_NAME="${{ github.head_ref }}"
           else
-            branch_name="${{ github.ref_name }}"
+            BRANCH_NAME="${{ github.ref_name }}"
           fi
 
-          if [[ "$branch_name" == refs/heads/* ]]; then
-            branch_name="${branch_name#refs/heads/}"
+          if [[ "$BRANCH_NAME" == refs/heads/* ]]; then
+            BRANCH_NAME="${BRANCH_NAME#refs/heads/}"
           fi
           
-          echo "branch_name=$branch_name" >> $GITHUB_ENV
+          export BRANCH_NAME
           
-          ./gradlew checkBranchName -PbranchName="$branch_name"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          
+          ./gradlew checkBranchName -PbranchName="$BRANCH_NAME" --warning-mode=none
+          
+          bash scripts/branch_type.sh
 
       - name: Version Check
         if: ${{ github.event_name == 'pull_request' }}
-        run: |
-          BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
-          echo "Base branch is $BASE_BRANCH"
-          
-          if [ "$BASE_BRANCH" = "main" ] || [ "$BASE_BRANCH" = "dev" ]; then
-            echo "Performing version check..."
-
-            git clone ${{ github.event.pull_request.base.repo.clone_url }} base-branch
-            cd base-branch
-
-            git checkout ${{ github.event.pull_request.base.sha }}
-
-            BASE_VERSION="$(./gradlew -q currentVersion)"
-            echo "Base version: $BASE_VERSION"
-            cd ..
-
-            HEAD_VERSION="$(./gradlew -q currentVersion)"
-            echo "PR head version: $HEAD_VERSION"
-
-            if [ "$BASE_VERSION" != "$HEAD_VERSION" ]; then
-              echo "ERROR: Version mismatch! Base: $BASE_VERSION vs. PR head: $HEAD_VERSION"
-              exit 1
-            else
-              echo "Version check passed. ($BASE_VERSION == $HEAD_VERSION)"
-            fi
-          else
-            echo "Base branch is $BASE_BRANCH; no version check needed."
-          fi
+        env:
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+        run: bash scripts/run-version-check.sh
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -90,7 +69,7 @@ jobs:
         run: ./gradlew --refresh-dependencies clean assemble spotlessCheck
 
       - name: Run Tests
-        run: ./gradlew test reportScoverage checkScoverage
+        run: ./gradlew pmdMain pmdTest spotbugsMain spotbugsTest test reportScoverage checkScoverage
 
       - name: Build Scala-Docs
         run: ./gradlew scaladoc
