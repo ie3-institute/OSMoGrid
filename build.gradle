@@ -71,7 +71,7 @@ dependencies {
 
   // logging
   implementation "com.typesafe.scala-logging:scala-logging_${scalaVersion}:3.9.5"
-  implementation 'ch.qos.logback:logback-classic:1.5.17'
+  implementation 'ch.qos.logback:logback-classic:1.5.18'
 
   // config
   implementation 'com.typesafe:config:1.4.3'
