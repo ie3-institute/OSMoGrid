@@ -58,6 +58,9 @@ jobs:
           ./gradlew checkBranchName -PbranchName="$BRANCH_NAME" --warning-mode=none
           
           bash scripts/branch_type.sh
+          
+          ./gradlew -version
+          java -version
 
       - name: Version Check
         if: ${{ github.event_name == 'pull_request' }}
