@@ -24,7 +24,7 @@ spotless {
   format 'misc', {
     target '**/.gitignore', 'configs/**'
     trimTrailingWhitespace()
-    indentWithTabs()
+    leadingSpacesToTabs()
     endWithNewline()
   }
 
@@ -32,7 +32,7 @@ spotless {
    * enumerations) */
   format 'md', {
     target '**/*.md'
-    indentWithSpaces 2
+    leadingTabsToSpaces(2)
     endWithNewline()
   }
 }
