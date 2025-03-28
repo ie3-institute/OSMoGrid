@@ -75,9 +75,9 @@ object VoronoiPolygonSupport {
     * that are used to generate a voronoi diagram, and additional points that
     * are added to the polygons.
     * @param transitionPoints
-    * i.e. hv to mv transition points
+    *   i.e. hv to mv transition points
     * @param additionalPoints
-    * i.e. mv to lv transition points
+    *   i.e. mv to lv transition points
     * @param ctx
     *   context
     * @tparam T
