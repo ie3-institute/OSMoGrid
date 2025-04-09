@@ -149,9 +149,8 @@ tasks.withType(Javadoc){
   options.encoding = 'UTF-8'
 }
 
-task printVersion {
+tasks.register("printVersion") {
   doLast {
     println project.version
   }
 }
-
