@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added Marius Staudt to list of reviewers [#516](https://github.com/ie3-institute/OSMoGrid/issues/501)
 - Create `CITATION.cff` [#531](https://github.com/ie3-institute/OSMoGrid/issues/531)
 - Implemented GitHub Actions Pipeline [#545](https://github.com/ie3-institute/OSMoGrid/issues/545)
+- Implementing auto-merge for dependabot PRs [#556](https://github.com/ie3-institute/OSMoGrid/issues/566)
 
 ### Changed
 - Rely on Java 17
