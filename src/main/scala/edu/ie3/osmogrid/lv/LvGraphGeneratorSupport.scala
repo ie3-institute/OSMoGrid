@@ -7,15 +7,20 @@
 package edu.ie3.osmogrid.lv
 
 import com.typesafe.scalalogging.LazyLogging
-import edu.ie3.osmogrid.exception.OsmDataException
+import edu.ie3.osmogrid.exception.{InputDataException, OsmDataException}
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.OsmoGridModel.{EnhancedOsmEntity, LvOsmoGridModel}
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.geo.GeoUtils.{buildCoordinate, orthogonalProjection}
-import edu.ie3.util.geo.RichGeometries.{RichCoordinate, RichPolygon}
+import edu.ie3.util.geo.RichGeometries.{
+  calcAreaOnEarth,
+  haversineDistance,
+  isBetween,
+}
 import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
 import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
+import edu.ie3.util.quantities.QuantityUtils.asKiloWatt
 import edu.ie3.util.quantities.interfaces.Irradiance
 import org.jgrapht.alg.connectivity.ConnectivityInspector
 import org.locationtech.jts.geom.Coordinate
@@ -27,12 +32,10 @@ import utils.OsmoGridUtils.{
   safeBuildPolygon,
 }
 
-import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
-
 import java.util.UUID
 import javax.measure.quantity.{Length, Power}
 import scala.collection.parallel.ParSeq
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.{Success, Try}
 
 object LvGraphGeneratorSupport extends LazyLogging {
@@ -281,8 +284,10 @@ object LvGraphGeneratorSupport extends LazyLogging {
         coordinateA,
         coordinateB,
         1e-3,
-      ) && ((orthogonalPt haversineDistance coordinateA) isGreaterThan minDistance)
-      && ((orthogonalPt haversineDistance coordinateB) isGreaterThan minDistance)
+      ) && orthogonalPt
+        .haversineDistance(coordinateA)
+        .isGreaterThan(minDistance)
+      && orthogonalPt.haversineDistance(coordinateB).isGreaterThan(minDistance)
     ) {
       val closestNode = Node(
         id = UUID.randomUUID().getMostSignificantBits,

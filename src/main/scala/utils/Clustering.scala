@@ -212,10 +212,11 @@ object Clustering {
       transformer2WTypeInput,
     )
 
-    val nodes = gridElements.nodes.values.map(NodeWrapper).toIndexedSeq
+    val nodes = gridElements.nodes.values.map(NodeWrapper.apply).toIndexedSeq
 
     val connections = Connections(gridElements, lines.toSeq)
-    val osmSubstations = gridElements.substations.values.map(NodeWrapper).toSet
+    val osmSubstations =
+      gridElements.substations.values.map(NodeWrapper.apply).toSet
 
     val additionalSubstationCount = substationCount - osmSubstations.size
 

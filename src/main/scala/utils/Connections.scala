@@ -136,8 +136,10 @@ object Connections extends LazyLogging {
 
     // adding all nodes to the graph
     val nodes: Set[NodeWrapper] =
-      (elements.nodes.values.map(NodeWrapper) ++ elements.substations.values
-        .map(NodeWrapper)).toSet
+      (elements.nodes.values.map(
+        NodeWrapper.apply
+      ) ++ elements.substations.values
+        .map(NodeWrapper.apply)).toSet
     nodes.foreach { n => graph.addVertex(n) }
 
     lines.foreach { line =>

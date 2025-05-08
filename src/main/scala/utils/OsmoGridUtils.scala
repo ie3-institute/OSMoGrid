@@ -17,12 +17,12 @@ import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.util.geo.GeoUtils
-import edu.ie3.util.geo.RichGeometries.RichPolygon
+import edu.ie3.util.geo.RichGeometries.containsCoordinate
 import edu.ie3.util.osm.OsmUtils.GeometryUtils.buildPolygon
 import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
 import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
 import edu.ie3.util.quantities.PowerSystemUnits
-import edu.ie3.util.quantities.QuantityUtils.{RichQuantity, RichQuantityDouble}
+import edu.ie3.util.quantities.QuantityUtils.{asKiloVolt, asPu, round}
 import edu.ie3.util.quantities.interfaces.Irradiance
 import org.locationtech.jts.algorithm.Centroid
 import org.locationtech.jts.geom.{Coordinate, Polygon}
@@ -32,7 +32,7 @@ import tech.units.indriya.unit.Units
 import java.util.UUID
 import javax.measure.quantity.{Area, Power}
 import scala.collection.parallel.ParSeq
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success}
 
 object OsmoGridUtils {
@@ -174,7 +174,7 @@ object OsmoGridUtils {
       Option(new Centroid(hull).getCentroid) match {
         case Some(coordinate) =>
           val sortedList = mvNodes
-            .map { node: NodeInput =>
+            .map { (node: NodeInput) =>
               (
                 node,
                 GeoUtils.calcHaversine(

@@ -35,7 +35,7 @@ object OsmSource {
 
   final case class PbfFileSource(
       filePath: String,
-      ctx: ActorContext[_],
+      ctx: ActorContext[?],
   ) extends OsmSource {
 
     def read(

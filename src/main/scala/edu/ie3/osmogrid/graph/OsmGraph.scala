@@ -24,7 +24,9 @@ import java.util
 import java.util.function.Supplier
 import javax.measure.Quantity
 import javax.measure.quantity.Length
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
+import scala.util.boundary
+import scala.util.boundary.{Label, break}
 
 @SerialVersionUID(-2797654003980753341L)
 class OsmGraph(
@@ -141,57 +143,46 @@ class OsmGraph(
   def containsEdgeIntersection(): Boolean = {
     val edges = edgeSet().asScala
 
-    val connections: util.List[(DistanceWeightedEdge, DistanceWeightedEdge)] =
-      new util.ArrayList[(DistanceWeightedEdge, DistanceWeightedEdge)]
-
     // algorithm to check if two edges intersects each other
-    edges.foreach(edgeA => {
-      val sourceA = getEdgeSource(edgeA)
-      val targetA = getEdgeTarget(edgeA)
+    boundary {
+      for {
+        (edgeA, i) <- edges.zipWithIndex
+        edgeB <- edges.drop(i + 1)
+      } {
+        val sourceA = getEdgeSource(edgeA)
+        val targetA = getEdgeTarget(edgeA)
 
-      edges.foreach(edgeB => {
-        // an edge cannot intersect itself, therefore these combination are not tested
-        if (edgeA != edgeB) {
-          // two combinations possible
-          val t1 = (edgeA, edgeB)
-          val t2 = (edgeB, edgeA)
+        val sourceB = getEdgeSource(edgeB)
+        val targetB = getEdgeTarget(edgeB)
 
-          // check if the possible combinations are already tested
-          if (!connections.contains(t1) && !connections.contains(t2)) {
-            connections.add(t1)
+        val lineA =
+          getLineSegmentBetweenNodes(sourceA, targetA)
+        val lineB =
+          getLineSegmentBetweenNodes(sourceB, targetB)
 
-            val sourceB = getEdgeSource(edgeB)
-            val targetB = getEdgeTarget(edgeB)
+        // checks if the two line intersects each other
+        val intersection = hasIntersection(lineA, lineB)
 
-            val lineA =
-              getLineSegmentBetweenNodes(sourceA, targetA)
-            val lineB =
-              getLineSegmentBetweenNodes(sourceB, targetB)
-
-            // checks if the two line intersects each other
-            val intersection = hasIntersection(lineA, lineB)
-
-            if (intersection) {
-              return true
-            }
-          }
+        if (intersection) {
+          break(true)
         }
-      })
-    })
-
-    false
+      }
+      false
+    }
   }
 
   /** Returns true if at least one vertex of this graph is connected to more
     * than two edges.
     */
   def tooManyVertexConnections(): Boolean = {
-    vertexSet().asScala.foreach { v =>
-      if (edgesOf(v).size() > 2) {
-        return true
+    boundary {
+      vertexSet().asScala.foreach { v =>
+        if (edgesOf(v).size() > 2) {
+          break(true)
+        }
       }
+      false
     }
-    false
   }
 
   /** Uses the given [[Polygon]] to create a subgraph that only contains

@@ -35,7 +35,7 @@ class OsmoGridGuardianSpec extends UnitSpec {
 
         /* Check if the right child is spawned */
         idleTestKit
-          .expectEffectType[Spawned[_]]
+          .expectEffectType[Spawned[?]]
           .childName shouldBe s"RunGuardian_$runId"
       }
 

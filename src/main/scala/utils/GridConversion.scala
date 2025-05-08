@@ -384,7 +384,7 @@ object GridConversion {
 
         // calculate the distance to each osm node
         val sortedList = osmNodes
-          .map { node: Node =>
+          .map { (node: Node) =>
             (
               node,
               GeoUtils.calcHaversine(coordinate, node.coordinate.getCoordinate),
