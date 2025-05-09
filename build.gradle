@@ -17,7 +17,7 @@ ext {
   javaVersion = JavaVersion.VERSION_17
 
   scalaVersion = '3'
-  scalaBinaryVersion = '3.6.4'
+  scalaBinaryVersion = '3.7.0'
   pekkoVersion = '1.1.3'
 
   tscfgVersion = '0.9.995'
@@ -84,15 +84,14 @@ dependencies {
 
 
   // ie³ power system utils
-  implementation('com.github.ie3-institute:PowerSystemUtils:3.0.0') {
+  implementation('com.github.ie3-institute:PowerSystemUtils:3.1.0') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
-    exclude group: 'com.github.johanneshiry', module: 'OSMonaut'
   }
 
   // ie³ power system data model
-  implementation('com.github.ie3-institute:PowerSystemDataModel:6.0.0') {
+  implementation('com.github.ie3-institute:PowerSystemDataModel:7.0.0') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
@@ -126,7 +125,6 @@ tasks.withType(ScalaCompile) {
     "-P:scapegoat:dataDir:" + layout.buildDirectory.dir("reports/scapegoat/src/").get(),
     "-P:scapegoat:disabledInspections:VariableShadowing",
     "-P:scapegoat:overrideLevels:LonelySealedTrait=warning",
-    "-P:scapegoat:ignoredFiles:.*/SimonaConfig.scala" // see scapegoat-sbt page for this param
   ]
 }
 
