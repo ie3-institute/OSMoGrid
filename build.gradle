@@ -92,7 +92,7 @@ dependencies {
   }
 
   // ie³ power system data model
-  implementation('com.github.ie3-institute:PowerSystemDataModel:6.0.0') {
+  implementation('com.github.ie3-institute:PowerSystemDataModel:7.0.0') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
