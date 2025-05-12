@@ -69,7 +69,7 @@ object LvGridGeneratorSupport extends LazyLogging {
     * @param mvVoltage
     *   the rated medium voltage of the grid to build
     * @param considerHouseConnectionPoints
-    *   whether or not to build distinct lines to houses
+    *   whether to build distinct lines to houses
     * @param loadSimultaneousFactor
     *   simultaneous factor for loads
     * @param lineType
@@ -93,7 +93,7 @@ object LvGridGeneratorSupport extends LazyLogging {
     val nodesWithBuildings: ParMap[Node, BuildingGraphConnection] =
       buildingGraphConnections.map(bgc => (bgc.graphConnectionNode, bgc)).toMap
 
-    val nodeCreator = buildNode(lvVoltage) _
+    val nodeCreator = buildNode(lvVoltage)
 
     val gridElements = osmGraph
       .vertexSet()
@@ -120,7 +120,7 @@ object LvGridGeneratorSupport extends LazyLogging {
             val loadCreator = buildLoad(
               "Load of building: " + buildingGraphConnection.building.entity.id.toString,
               buildingGraphConnection.buildingPower,
-            ) _
+            )
             if (considerHouseConnectionPoints) {
               val osmBuildingConnectionNode =
                 buildingGraphConnection.buildingConnectionNode.getOrElse(

@@ -177,7 +177,7 @@ object OsmoGridModel {
         models: ParSeq[LvOsmoGridModel],
         filterNodes: Boolean = true,
     ): Option[OsmoGridModel] = {
-      models.headOption.flatMap { lvHeadModel: LvOsmoGridModel =>
+      models.headOption.flatMap { (lvHeadModel: LvOsmoGridModel) =>
         if (models.forall(_.filter == lvHeadModel.filter)) {
           Some(
             LvOsmoGridModel(

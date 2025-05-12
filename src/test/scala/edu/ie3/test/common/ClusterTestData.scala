@@ -17,7 +17,7 @@ import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.GridElements
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.geo.GeoUtils.calcHaversine
 import edu.ie3.util.osm.model.OsmEntity.Node
-import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
+import edu.ie3.util.quantities.QuantityUtils.{asKiloVoltAmpere, asPu}
 import utils.Clustering.NodeWrapper
 import utils.GridConversion.{buildLine, buildLoad}
 

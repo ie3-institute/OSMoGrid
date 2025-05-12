@@ -15,7 +15,7 @@ import edu.ie3.osmogrid.io.input._
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.UnitSpec
-import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
+import edu.ie3.util.quantities.QuantityUtils.*
 import org.apache.pekko.actor.testkit.typed.scaladsl.{
   ActorTestKit,
   ScalaTestWithActorTestKit,

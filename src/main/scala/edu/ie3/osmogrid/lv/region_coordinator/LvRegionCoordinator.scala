@@ -8,6 +8,7 @@ package edu.ie3.osmogrid.lv.region_coordinator
 
 import edu.ie3.osmogrid.io.input.BoundaryAdminLevel
 import edu.ie3.osmogrid.lv.{GenerateLvGrid, LvGridGenerator}
+import edu.ie3.osmogrid.model.OsmoGridModel
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 
 import java.util.UUID
@@ -45,7 +46,7 @@ object LvRegionCoordinator {
                 )
               if (partitionedAreas.isEmpty)
                 Iterable.single(osmoGridModel)
-              else partitionedAreas.values
+              else partitionedAreas.values.seq
             }
 
           val levels = BoundaryAdminLevel

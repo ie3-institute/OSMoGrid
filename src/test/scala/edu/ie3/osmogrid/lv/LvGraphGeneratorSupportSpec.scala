@@ -16,10 +16,14 @@ import edu.ie3.osmogrid.model.OsmoGridModel.EnhancedOsmEntity
 import edu.ie3.test.common.UnitSpec
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.geo.GeoUtils.orthogonalProjection
-import edu.ie3.util.geo.RichGeometries.RichCoordinate
+import edu.ie3.util.geo.RichGeometries.{haversineDistance, isBetween}
 import edu.ie3.util.osm.model.OsmEntity.Node
 import edu.ie3.util.quantities.QuantityMatchers.equalWithTolerance
-import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
+import edu.ie3.util.quantities.QuantityUtils.{
+  asKiloWatt,
+  asKilometre,
+  asWattPerSquareMetre,
+}
 import org.jgrapht.alg.connectivity.ConnectivityInspector
 import org.locationtech.jts.geom.Coordinate
 import org.scalatestplus.mockito.MockitoSugar.mock

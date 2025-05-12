@@ -191,18 +191,24 @@ object VoronoiPolygonSupport {
     builder.setSites(nodes.asJava)
 
     /* finds all subdivisions and returns them as polygons */
-    builder.getSubdivision
+    val geometries = builder.getSubdivision
       .getVoronoiCellPolygons(
         GeoUtils.DEFAULT_GEOMETRY_FACTORY
       )
       /* necessary to get proper polygons */
       .asScala
-      .toList match {
-      case polygons: List[Polygon] => polygons
-      case wrongType =>
-        throw new GeoException(
-          s"Expected a list of polygons as a result, but got $wrongType instead."
-        )
+      .toList
+
+    val wrongTypes = geometries.filter(geom => !geom.isInstanceOf[Polygon])
+
+    if (wrongTypes.nonEmpty) {
+      throw new GeoException(
+        s"Expected only a list of polygons as a result, but also got $wrongTypes."
+      )
+    }
+
+    geometries.map { case geom: Polygon =>
+      geom
     }
   }
 }
