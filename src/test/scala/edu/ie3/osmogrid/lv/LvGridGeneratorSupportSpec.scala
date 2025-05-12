@@ -7,12 +7,13 @@
 package edu.ie3.osmogrid.lv
 
 import edu.ie3.datamodel.models.input.connector.`type`.LineTypeInput
+import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.buildConnectedGridGraphs
 import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.buildGrid
 import edu.ie3.osmogrid.model.OsmTestData
 import edu.ie3.test.common.{GridSupport, UnitSpec}
-import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
+import edu.ie3.util.quantities.QuantityUtils.*
 
 import java.util.UUID
 import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
@@ -64,9 +65,11 @@ class LvGridGeneratorSupportSpec
         trafo_10kV_to_lv,
         "testGrid",
       ) match {
-        case List(subGridContainer) =>
-          subGridContainer.getRawGrid.getNodes.size() shouldBe 3
-          subGridContainer.getRawGrid.getLines.size() shouldBe 1
+        case List(subGridContainer: SubGridContainer) =>
+          val rawGrid = subGridContainer.getRawGrid
+
+          rawGrid.getNodes.size() shouldBe 3
+          rawGrid.getLines.size() shouldBe 1
           subGridContainer.getSystemParticipants.getLoads.size() shouldBe 2
         case Nil =>
           fail("No grid received!")

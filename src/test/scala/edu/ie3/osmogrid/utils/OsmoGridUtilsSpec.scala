@@ -9,7 +9,7 @@ package edu.ie3.osmogrid.utils
 import edu.ie3.test.common.{GridSupport, MvTestData, OsmTestData, UnitSpec}
 import edu.ie3.util.geo.GeoUtils.buildCoordinate
 import edu.ie3.util.quantities.PowerSystemUnits
-import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
+import edu.ie3.util.quantities.QuantityUtils.{asKiloVolt, asKiloWatt}
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units
 import utils.OsmoGridUtils.{

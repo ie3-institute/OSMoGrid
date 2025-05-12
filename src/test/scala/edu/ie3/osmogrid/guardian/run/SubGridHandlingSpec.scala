@@ -75,10 +75,10 @@ class SubGridHandlingSpec
       empty match {
         case Failure(exception: GridException) =>
           exception.msg shouldBe "Error during creating of joint grid container, because no grids were found."
+        case Failure(exception) =>
+          fail(s"This test should receive a GridException!")
         case Success(value) =>
-          throw new Error(
-            s"This test should not pass! But received values: $value"
-          )
+          fail(s"This test should not pass! But received values: $value")
       }
     }
 

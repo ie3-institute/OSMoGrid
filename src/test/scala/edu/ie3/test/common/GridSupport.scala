@@ -43,7 +43,7 @@ import edu.ie3.datamodel.utils.GridAndGeoUtils
 import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.util.geo.GeoUtils._
 import edu.ie3.util.quantities.PowerSystemUnits._
-import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
+import edu.ie3.util.quantities.QuantityUtils.*
 import org.locationtech.jts.geom.Point
 import org.scalatestplus.mockito.MockitoSugar.mock
 import tech.units.indriya.ComparableQuantity

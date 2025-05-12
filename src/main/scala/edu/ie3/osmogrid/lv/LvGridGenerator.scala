@@ -13,7 +13,7 @@ import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.buildConnectedGridGraphs
 import edu.ie3.osmogrid.lv.LvGridGeneratorSupport.buildGrid
-import edu.ie3.util.quantities.QuantityUtils.RichQuantityDouble
+import edu.ie3.util.quantities.QuantityUtils.{asKiloVolt, asWattPerSquareMetre}
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units

@@ -61,8 +61,8 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
       val clustering = Clustering.setup(elements, lines, trafo_10kV_to_lv, 0.5)
 
       val clusters = clustering invokePrivate createClusters(
-        elements.substations.values.map(NodeWrapper).toSet,
-        elements.nodes.values.map(NodeWrapper).toSet,
+        elements.substations.values.map(NodeWrapper.apply).toSet,
+        elements.nodes.values.map(NodeWrapper.apply).toSet,
       )
 
       val map = clusters.map { c => c.substation -> c }.toMap
@@ -106,7 +106,7 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
         connections,
         Set(p1_1),
         additionalSubstation,
-        elements.nodes.values.map(NodeWrapper).toSet,
+        elements.nodes.values.map(NodeWrapper.apply).toSet,
         9,
         2,
       )
@@ -142,7 +142,7 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
         connections,
         Set(p1_1),
         Set(p2_1),
-        elements.nodes.values.map(NodeWrapper).toSet,
+        elements.nodes.values.map(NodeWrapper.apply).toSet,
         9,
         2,
       )

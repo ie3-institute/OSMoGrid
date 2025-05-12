@@ -164,7 +164,7 @@ class SolverSpec extends UnitSpec with MvTestData {
                 usedConnections shouldBe List(connectionA, connectionB).flatten
                 removedEdge shouldBe expectedRemovedEdgeA
                 addedWeight.getValue.doubleValue() shouldBe weightA
-              case _ => throw new Error("This should not happen!")
+              case null => throw new Error("This should not happen!")
             }
 
             list(1) match {
@@ -180,7 +180,7 @@ class SolverSpec extends UnitSpec with MvTestData {
                 usedConnections shouldBe List(connectionC, connectionA).flatten
                 removedEdge shouldBe expectedRemovedEdgeB
                 addedWeight.getValue.doubleValue() shouldBe weightB
-              case _ => throw new Error("This should not happen!")
+              case null => throw new Error("This should not happen!")
             }
           }
       }
@@ -219,7 +219,7 @@ class SolverSpec extends UnitSpec with MvTestData {
           addedWeight.isEquivalentTo(
             stepResultOptionsForThirdStep(0).addedWeight
           ) shouldBe true
-        case _ => throw new Error("This should not happen!")
+        case null => throw new Error("This should not happen!")
       }
 
       stepResultOptions(1) match {
@@ -239,7 +239,7 @@ class SolverSpec extends UnitSpec with MvTestData {
           addedWeight.isEquivalentTo(
             stepResultOptionsForThirdStep(1).addedWeight
           ) shouldBe true
-        case _ => throw new Error("This should not happen!")
+        case null => throw new Error("This should not happen!")
       }
     }
 
