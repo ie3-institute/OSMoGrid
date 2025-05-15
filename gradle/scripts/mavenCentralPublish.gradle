@@ -1,5 +1,3 @@
-/* Maven publish - start */
-
 tasks.register("sourcesJar", Jar) {
   archiveClassifier.set("sources")
   from sourceSets.main.allJava
@@ -105,5 +103,3 @@ def removeTestDependenciesFromPom(pom) {
     }
   }
 }
-
-/* Maven publish - end */
