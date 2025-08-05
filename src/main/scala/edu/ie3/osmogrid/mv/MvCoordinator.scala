@@ -8,9 +8,9 @@ package edu.ie3.osmogrid.mv
 
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container.JointGridContainer
+import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.{InputDataEvent, ReqAssetTypes}
 import edu.ie3.osmogrid.mv.MvMessageAdapters.WrappedInputResponse
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
@@ -214,37 +214,57 @@ object MvCoordinator extends ActorStopSupportStateless {
           ) =>
         ctx.log.debug(s"Starting medium voltage graph generation.")
 
-        // collect all mv node from lv sub grid containers
-        val mvToLv = GridContainerUtils.filterLv(lvGrids)
+        val mvNodesFromLvTransformers =
+          GridContainerUtils.filterForVoltageLvl(
+            lvGrids,
+            GermanVoltageLevelUtils.MV_10KV,
+          )
 
         // collect all mv nodes from hv sub grid container or spawn a new mv node
-        val hvOption = hvGrids.map(GridContainerUtils.filterHv)
+        val mvNodesFromHvTransformers =
+          hvGrids.map(grid =>
+            GridContainerUtils
+              .filterForVoltageLvl(grid, GermanVoltageLevelUtils.MV_10KV)
+          )
 
         // if no hv subgrid container were provided or no mv nodes could be extracted
         // check if spawning a dummy node is activated
         val hvToMv: Option[(JointGridContainer, NodeInput)] =
-          Option.when(hvOption.isEmpty && cfg.spawnMissingHvNodes)(
-            spawnDummyHvNode(mvToLv, assetInformation)
+          Option.when(
+            mvNodesFromHvTransformers.isEmpty && cfg.spawnMissingHvNodes
+          )(
+            spawnDummyHvNode(mvNodesFromLvTransformers, assetInformation)
           )
 
         // get the mv transition nodes
-        val (transitionNodes, uuidOption) = (hvOption, hvToMv) match {
-          case (Some(nodeList), _) =>
-            // found mv nodes from hv containers
-            (nodeList, None)
-          case (None, Some(value)) =>
-            // using a mv node with a spawned dummy hv node
-            (List(value._2), None)
-          case (None, None) =>
-            // using a mv node with no dummy hv node
-            val mvSlackNode = mvToLv(0).copy().slack(true).build()
-            (hvOption.getOrElse(List(mvSlackNode)), Some(mvSlackNode.getUuid))
-        }
+        val (transitionNodes, uuidOption) =
+          (mvNodesFromHvTransformers, hvToMv) match {
+            case (Some(nodeList), _) =>
+              // found mv nodes from hv containers
+              (nodeList, None)
+            case (None, Some(value)) =>
+              // using a mv node with a spawned dummy hv node
+              (List(value._2), None)
+            case (None, None) =>
+              // using a mv node with no dummy hv node
+              val mvSlackNode = mvNodesFromLvTransformers.headOption match {
+                case Some(node) =>
+                  node.copy().slack(true).build()
+                case None =>
+                  throw new NoSuchElementException(
+                    "Expected to have at least one MV Node available"
+                  )
+              }
+              (
+                mvNodesFromHvTransformers.getOrElse(List(mvSlackNode)),
+                Some(mvSlackNode.getUuid),
+              )
+          }
 
         val (polygons, notAssignedNodes) =
           VoronoiPolygonSupport.createVoronoiPolygons(
             transitionNodes.toList,
-            mvToLv.toList,
+            mvNodesFromLvTransformers.toList,
             ctx,
           )
 
