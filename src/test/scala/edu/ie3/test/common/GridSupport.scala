@@ -28,7 +28,7 @@ import edu.ie3.datamodel.models.input.graphics.{
   LineGraphicInput,
   NodeGraphicInput,
 }
-import edu.ie3.datamodel.models.input.system._
+import edu.ie3.datamodel.models.input.system.*
 import edu.ie3.datamodel.models.input.system.characteristic.{
   OlmCharacteristicInput,
   ReactivePowerCharacteristic,
@@ -41,8 +41,8 @@ import edu.ie3.datamodel.models.voltagelevels.{
 }
 import edu.ie3.datamodel.utils.GridAndGeoUtils
 import edu.ie3.osmogrid.io.input.AssetInformation
-import edu.ie3.util.geo.GeoUtils._
-import edu.ie3.util.quantities.PowerSystemUnits._
+import edu.ie3.util.geo.GeoUtils.*
+import edu.ie3.util.quantities.PowerSystemUnits.*
 import edu.ie3.util.quantities.QuantityUtils.*
 import org.locationtech.jts.geom.Point
 import org.scalatestplus.mockito.MockitoSugar.mock
@@ -51,8 +51,8 @@ import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units.PERCENT
 
 import java.util.UUID
-import javax.measure.quantity._
-import scala.jdk.CollectionConverters._
+import javax.measure.quantity.*
+import scala.jdk.CollectionConverters.*
 
 trait GridSupport {
   val defaultLineTypeLv = new LineTypeInput(
@@ -260,12 +260,13 @@ trait GridSupport {
     // include at least a single node for voltage level determination
     val dummyNodeA = new NodeInput(
       UUID.randomUUID(),
-      s"Dummy nodeA in $subgridNo",
+      s"Dummy nodeA in ${subgridNo + 1}",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       true,
       mock[Point],
       voltLvlA,
-      subgridNo,
+      // Node A not part of provided sub grid since it's the upper voltage node of the transformer
+      subgridNo + 1,
     )
 
     val dummyNodeB1 = new NodeInput(
@@ -300,7 +301,8 @@ trait GridSupport {
     )
 
     val rawGrid = new RawGridElements(
-      Set(dummyNodeA, dummyNodeB1, dummyNodeB2).asJava,
+      // Since we mock a SubGrid, only nodes B1 and B2 are considered
+      Set(dummyNodeB1, dummyNodeB2).asJava,
       Set.empty[LineInput].asJava,
       Set(dummyTrafo).asJava,
       Set.empty[Transformer3WInput].asJava,
@@ -375,21 +377,21 @@ trait GridSupport {
 
     val topNode1 = new NodeInput(
       UUID.randomUUID(),
-      s"Top node 1 in $subgridNo",
+      s"Top node 2 in ${subgridNo + 1}",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       false,
       mock[Point],
       GermanVoltageLevelUtils.MV_10KV,
-      subgridNo,
+      subgridNo + 1,
     )
     val topNode2 = new NodeInput(
       UUID.randomUUID(),
-      s"Top node 2 in $subgridNo",
+      s"Top node 2 in ${subgridNo + 2}",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       false,
       mock[Point],
       GermanVoltageLevelUtils.MV_20KV,
-      subgridNo,
+      subgridNo + 2,
     )
 
     val lineInput = new LineInput(
@@ -446,7 +448,8 @@ trait GridSupport {
     )
 
     val rawGrid = new RawGridElements(
-      Set(nodeA, nodeB, nodeC, topNode1, topNode2).asJava,
+      // Since we mock a SubGrid, only the nodes of the subGrid are  considered
+      Set(nodeA, nodeB, nodeC).asJava,
       Set(lineInput).asJava,
       Set(transformer2W).asJava,
       Set(transformer3W).asJava,
