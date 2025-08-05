@@ -13,13 +13,13 @@ import edu.ie3.datamodel.models.input.container.{
   SystemParticipants,
 }
 import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
-import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils._
+import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils.*
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.test.common.{GridSupport, MvTestData, UnitSpec}
 import utils.GridContainerUtils.combine
 import utils.{GridContainerUtils, VoltageUtils}
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class GridContainerUtilsSpec extends UnitSpec with GridSupport with MvTestData {
   "GridContainerUtils" should {
@@ -28,10 +28,26 @@ class GridContainerUtilsSpec extends UnitSpec with GridSupport with MvTestData {
       val lvGrid2 = mockSubGrid(2, MV_20KV, LV)
       val lvGrid3 = mockSubGrid(3, MV_10KV, LV)
 
-      GridContainerUtils.filterLv(Seq(lvGrid1)).size shouldBe 1
-      GridContainerUtils.filterLv(Seq(lvGrid1, lvGrid2)).size shouldBe 1
       GridContainerUtils
-        .filterLv(Seq(lvGrid1, lvGrid2, lvGrid3))
+        .filterForVoltageLvl(Seq(lvGrid1), MV_10KV)
+        .size shouldBe 1
+      GridContainerUtils
+        .filterForVoltageLvl(Seq(lvGrid1), MV_20KV)
+        .size shouldBe 0
+      GridContainerUtils
+        .filterForVoltageLvl(Seq(lvGrid2), MV_10KV)
+        .size shouldBe 0
+      GridContainerUtils
+        .filterForVoltageLvl(Seq(lvGrid2), MV_20KV)
+        .size shouldBe 1
+      GridContainerUtils
+        .filterForVoltageLvl(Seq(lvGrid1, lvGrid2), MV_10KV)
+        .size shouldBe 1
+      GridContainerUtils
+        .filterForVoltageLvl(
+          Seq(lvGrid1, lvGrid2, lvGrid3),
+          MV_10KV,
+        )
         .size shouldBe 2
     }
 
@@ -40,11 +56,21 @@ class GridContainerUtilsSpec extends UnitSpec with GridSupport with MvTestData {
       val hvGrid2 = mockSubGrid(2, HV, MV_10KV)
       val hvGrid3 = mockSubGrid(3, HV, MV_10KV)
 
-      GridContainerUtils.filterLv(Seq(hvGrid1)).size shouldBe 0
-      GridContainerUtils.filterLv(Seq(hvGrid1, hvGrid2)).size shouldBe 1
       GridContainerUtils
-        .filterLv(Seq(hvGrid1, hvGrid2, hvGrid3))
+        .filterForVoltageLvl(Seq(hvGrid1), MV_10KV)
+        .size shouldBe 0
+      GridContainerUtils
+        .filterForVoltageLvl(Seq(hvGrid1), MV_20KV)
         .size shouldBe 2
+      GridContainerUtils
+        .filterForVoltageLvl(Seq(hvGrid1, hvGrid2), MV_10KV)
+        .size shouldBe 2
+      GridContainerUtils
+        .filterForVoltageLvl(
+          Seq(hvGrid1, hvGrid2, hvGrid3),
+          MV_10KV,
+        )
+        .size shouldBe 4
     }
 
     "return mv nodes correctly" in {
