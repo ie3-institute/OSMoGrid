@@ -20,7 +20,7 @@ import edu.ie3.datamodel.models.input.container.{
 import edu.ie3.datamodel.models.input.graphics.GraphicInput
 import edu.ie3.datamodel.models.input.system.SystemParticipantInput
 import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
-import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils._
+import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils.*
 import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
 import edu.ie3.osmogrid.exception.GridException
 import edu.ie3.osmogrid.io.output.{OutputRequest, ResultListenerProtocol}
@@ -35,7 +35,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import tech.units.indriya.quantity.Quantities
 
 import java.util.UUID
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
 class SubGridHandlingSpec
@@ -100,10 +100,10 @@ class SubGridHandlingSpec
       val rawGridElements = grid.getRawGrid
       val numbers = rawGridElements.getNodes.asScala.toSeq.map(_.getSubnet)
       numbers.count(_ == 1) shouldBe 2
-      numbers.count(_ == 3) shouldBe 1
+      numbers.size shouldBe 2
 
       val transformer = rawGridElements.getTransformer2Ws.asScala.toSeq(0)
-      transformer.getNodeA.getSubnet shouldBe 3
+      transformer.getNodeA.getSubnet shouldBe 2
       transformer.getNodeB.getSubnet shouldBe 1
 
       grid.getSystemParticipants shouldBe lv.getSystemParticipants
@@ -113,11 +113,16 @@ class SubGridHandlingSpec
     "process and update lv results correctly" in {
       val lv = mockSubGrid(1, MV_10KV, LV)
 
-      val commonNode = lv.getRawGrid.getNodes.asScala
-        .filter(_.isSlack)
+      val mvNode = lv.getRawGrid.getTransformer2Ws.asScala
         .toSeq(0)
+        .getNodeA
         .copy()
         .slack(false)
+        .build()
+
+      val commonNode = mvNode
+        .copy()
+        .subnet(3)
         .build()
 
       val mv = new SubGridContainer(
@@ -128,7 +133,7 @@ class SubGridHandlingSpec
         new GraphicElements(List.empty[GraphicInput].asJava),
       )
 
-      val expectedUpdatedNode = commonNode.copy().subnet(3).build()
+      val expectedUpdatedNode = commonNode.copy().subnet(2).build().copy().slack(true).build()
 
       val processed = processResults(
         cfg,
@@ -143,7 +148,7 @@ class SubGridHandlingSpec
       val grid = processed(0)
 
       val rawGridElements = grid.getRawGrid
-      rawGridElements.getNodes.asScala should contain(expectedUpdatedNode)
+      rawGridElements.getNodes.asScala shouldNot contain(expectedUpdatedNode)
       rawGridElements.getTransformer2Ws.asScala
         .toSeq(0)
         .getNodeA shouldBe expectedUpdatedNode
@@ -299,12 +304,10 @@ class SubGridHandlingSpec
         val allNodes = actual._1.values.toSet
 
         allNodes
-          .filter(!_.getId.contains("Top node"))
           .map(_.getSubnet) shouldBe Set(42)
 
         allNodes
-          .filter(_.getId.contains("Top node"))
-          .map(_.getSubnet) shouldBe Set(44)
+          .filter(_.getId.contains("Top node")).size shouldBe 0
       }
     }
 
@@ -322,7 +325,7 @@ class SubGridHandlingSpec
           42,
         )
 
-        actual._1.values.size shouldBe givenContainers.size * 5
+        actual._1.values.size shouldBe givenContainers.size * 3
 
         for (i <- 42 to 52) {
           actual._1.values
@@ -331,8 +334,7 @@ class SubGridHandlingSpec
         }
 
         val topNodes = actual._1.values.filter(_.getId.contains("Top"))
-        topNodes.size shouldBe 22
-        topNodes.map(_.getSubnet).toSet shouldBe Set(54)
+        topNodes.size shouldBe 0
       }
     }
 

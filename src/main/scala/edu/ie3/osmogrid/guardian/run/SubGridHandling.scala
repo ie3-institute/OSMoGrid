@@ -7,17 +7,17 @@
 package edu.ie3.osmogrid.guardian.run
 
 import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.datamodel.models.input.connector._
+import edu.ie3.datamodel.models.input.connector.*
 import edu.ie3.datamodel.models.input.connector.`type`.{
   Transformer2WTypeInput,
   Transformer3WTypeInput,
 }
-import edu.ie3.datamodel.models.input.container._
+import edu.ie3.datamodel.models.input.container.*
 import edu.ie3.datamodel.utils.ContainerNodeUpdateUtil
 import edu.ie3.datamodel.utils.validation.ValidationUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.GridException
-import edu.ie3.osmogrid.guardian.run.SubGridHandling._
+import edu.ie3.osmogrid.guardian.run.SubGridHandling.*
 import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.osmogrid.io.output.{GridResult, OutputRequest}
 import org.apache.pekko.actor.typed.ActorRef
@@ -26,7 +26,8 @@ import tech.units.indriya.ComparableQuantity
 
 import java.util.UUID
 import javax.measure.quantity.ElectricPotential
-import scala.jdk.CollectionConverters._
+import javax.naming.directory.InvalidAttributesException
+import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
 trait SubGridHandling {
@@ -129,7 +130,7 @@ trait SubGridHandling {
   ): Seq[GridContainer] = {
     // assigning unique subgrid numbers to all given grids
     val nodeUpdateMap =
-      updateNodeSubNetNumbers(lvData, mvData, mvNodeChanges, hvData)
+      updateNodeSubNetNumbers(lvData, mvData, hvData)
 
     val lvGrids = Option.when(cfg.lv)(lvData).flatten
     val mvGrids = Option.when(cfg.mv)(mvData).flatten
@@ -159,7 +160,6 @@ object SubGridHandling {
   private def updateNodeSubNetNumbers(
       lvGrids: Option[Seq[GridContainer]],
       mvGrids: Option[Seq[GridContainer]],
-      mvNodeChanges: Option[Map[UUID, NodeInput]],
       hvGrids: Option[Seq[GridContainer]],
   ): Map[NodeInput, NodeInput] = {
     val lv = lvGrids.map(grids => assignSubNetNumbers(grids, 1))
@@ -168,48 +168,14 @@ object SubGridHandling {
     val mv = mvGrids.map(grids => assignSubNetNumbers(grids, mvOffset))
     val hvOffset = mv.map(_._2).getOrElse(100)
 
-    val mvCombined: Map[UUID, NodeInput] = (mv, mvNodeChanges) match {
-      case (Some(gridNodeChanges), Some(nodeChanges)) =>
-        // we need to combine multiple mv node changes
-        val gridNodeMap = gridNodeChanges._1
-
-        val commonKeys = nodeChanges.keySet.intersect(gridNodeMap.keySet)
-        val allKeys = gridNodeChanges._1.keySet ++ nodeChanges.keySet
-
-        allKeys.map { key =>
-          if (commonKeys.contains(key)) {
-            // update subnet information
-            key -> nodeChanges(key)
-              .copy()
-              .subnet(
-                gridNodeMap(key).getSubnet
-              )
-              .build()
-          } else key -> gridNodeMap.getOrElse(key, nodeChanges(key))
-        }.toMap
-
-      case (Some(gridNodeChanges), None) =>
-        // we only got mv grid containers
-        gridNodeChanges._1
-      case (None, Some(nodeChanges)) =>
-        // we only got mv node changes
-        nodeChanges
-
-      case _ =>
-        // if no mv nodes are present
-        Map.empty
-    }
-
     val hv = hvGrids.map { grids =>
       if (grids.size == 1 && grids(0).getGridName == "dummyHvGrid") {
-
         val hvNode: NodeInput = grids(0).getRawGrid.getNodes.asScala.toList
           .sortBy(
             _.getVoltLvl.getNominalVoltage.getValue.doubleValue()
           )
           .lastOption
           .getOrElse(throw GridException("No hv node found."))
-
         (
           Map(hvNode.getUuid -> hvNode.copy().subnet(hvOffset).build()),
           hvOffset + 2,
@@ -220,9 +186,9 @@ object SubGridHandling {
     }
 
     // maps with updated nodes
-    val updateMap = lv.map(_._1).getOrElse(Map.empty) ++ mvCombined ++ hv
+    val updateMap = lv.map(_._1).getOrElse(Map.empty) ++ mv
       .map(_._1)
-      .getOrElse(Map.empty)
+      .getOrElse(Map.empty) ++ hv.map(_._1).getOrElse(Map.empty)
 
     val allNodes: Seq[NodeInput] = List(lvGrids, mvGrids, hvGrids).flatten
       .flatMap(_.flatMap(_.getRawGrid.getNodes.asScala))
@@ -260,7 +226,9 @@ object SubGridHandling {
         val updatedNode = if (nodeVoltage.isEquivalentTo(voltage)) {
           node.copy().subnet(i + offset).build()
         } else if (nodeVoltage.isGreaterThan(voltage)) {
-          node.copy().subnet(higherNodesOffset).build()
+          throw new InvalidAttributesException(
+            s"When assigning SubNetNumbers, a voltage of ${nodeVoltage} which is higher as the expected voltage of ${voltage} was found for node: ${node} "
+          )
         } else node
 
         node.getUuid -> updatedNode
