@@ -71,7 +71,7 @@ dependencies {
   testImplementation "org.apache.pekko:pekko-actor-testkit-typed_${scalaVersion}:${pekkoVersion}"
 
   // logging
-  implementation "com.typesafe.scala-logging:scala-logging_${scalaVersion}:3.9.5"
+  implementation "com.typesafe.scala-logging:scala-logging_${scalaVersion}:3.9.6"
   implementation 'ch.qos.logback:logback-classic:1.5.18'
 
   // config
