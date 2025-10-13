@@ -220,12 +220,29 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         )
       }
 
-      "handle all received grid results" in {
-        runningTestKit.run(HandleGridResults)
+     "handle all received grid results" in new GridSupport {
+       val lvGrids: Seq[SubGridContainer] = Seq(mockSubGrid(1))
+       val mvGrids: Seq[SubGridContainer] = Seq(mockSubGrid(3))
+       val streetGraph: OsmGraph = new OsmGraph()
 
-        /* Result is forwarded to listener */
-        resultListener.expectMessageType[GridResult]
-      }
+       // LV first
+       runningTestKit.run(
+         MessageAdapters.WrappedLvCoordinatorResponse(
+           RepLvGrids(lvGrids, streetGraph)
+         )
+       )
+
+       // MV
+       runningTestKit.run(
+         MessageAdapters.WrappedMvCoordinatorResponse(
+           RepMvGrids(mvGrids, None, Map.empty, assetInformation)
+         )
+       )
+
+       
+       runningTestKit.run(HandleGridResults)
+       resultListener.expectMessageType[GridResult]
+     }
 
       "being in stopping state without a LvCoordinator" should {
         val stopping = PrivateMethod[Behavior[RunRequest]](Symbol("stopping"))
