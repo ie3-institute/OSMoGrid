@@ -61,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhance documentation regarding overpass examples [#494](https://github.com/ie3-institute/OSMoGrid/issues/494)
 - Upgraded to `scala3` [#575](https://github.com/ie3-institute/OSMoGrid/issues/575)
 - Updated dependabot workflow and added CODEOWNERS [#584](https://github.com/ie3-institute/OSMoGrid/issues/584)
-- Update to Java 21 and gradle to 9.1.0 [#620](https://github.com/ie3-institute/OSMoGrid/issues/620)
+- Update to Java 21 [#620](https://github.com/ie3-institute/OSMoGrid/issues/620)
 
 ### Fixed
 - Fixed bug in `LvGridGeneratorSupport` [#388](https://github.com/ie3-institute/OSMoGrid/issues/388)
