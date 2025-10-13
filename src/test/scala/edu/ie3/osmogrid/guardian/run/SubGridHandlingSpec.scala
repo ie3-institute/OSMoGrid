@@ -133,7 +133,8 @@ class SubGridHandlingSpec
         new GraphicElements(List.empty[GraphicInput].asJava),
       )
 
-      val expectedUpdatedNode = commonNode.copy().subnet(2).build().copy().slack(true).build()
+      val expectedUpdatedNode =
+        commonNode.copy().subnet(2).build().copy().slack(true).build()
 
       val processed = processResults(
         cfg,
@@ -307,7 +308,8 @@ class SubGridHandlingSpec
           .map(_.getSubnet) shouldBe Set(42)
 
         allNodes
-          .filter(_.getId.contains("Top node")).size shouldBe 0
+          .filter(_.getId.contains("Top node"))
+          .size shouldBe 0
       }
     }
 
