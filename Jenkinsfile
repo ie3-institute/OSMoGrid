@@ -11,7 +11,7 @@
 ////////////////////////////////
 
 /* project configuration */
-String javaVersionId = 'jdk-21' // id that matches the java tool with the java version that should be used set as jenkins property
+String javaVersionId = 'jdk-17' // id that matches the java tool with the java version that should be used set as jenkins property
 
 /* git configuration */
 String projectName = 'OSMoGrid' // name of the repository, is case insensitive
