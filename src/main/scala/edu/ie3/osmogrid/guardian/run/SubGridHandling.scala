@@ -39,8 +39,6 @@ trait SubGridHandling {
     *   option for medium voltage grids
     * @param hvData
     *   option for high voltage grids
-    * @param mvNodeChanges
-    *   option for mv nodes that may have been changed
     * @param assetInformation
     *   information for assets
     * @param resultListener
@@ -55,7 +53,6 @@ trait SubGridHandling {
       lvData: Option[Seq[SubGridContainer]],
       mvData: Option[Seq[SubGridContainer]],
       hvData: Option[Seq[GridContainer]],
-      mvNodeChanges: Option[Map[UUID, NodeInput]],
       assetInformation: Option[AssetInformation],
       resultListener: Seq[ActorRef[OutputRequest]],
       msgAdapters: MessageAdapters,
@@ -68,7 +65,6 @@ trait SubGridHandling {
         lvData,
         mvData,
         hvData,
-        mvNodeChanges,
         assetInformation,
       )
 
@@ -113,8 +109,6 @@ trait SubGridHandling {
     *   option for medium voltage grids
     * @param hvData
     *   option for high voltage grids
-    * @param mvNodeChanges
-    *   option for mv nodes that may have been changed
     * @param assetInformation
     *   information for assets
     * @return
@@ -125,7 +119,6 @@ trait SubGridHandling {
       lvData: Option[Seq[SubGridContainer]],
       mvData: Option[Seq[SubGridContainer]],
       hvData: Option[Seq[GridContainer]],
-      mvNodeChanges: Option[Map[UUID, NodeInput]],
       assetInformation: Option[AssetInformation],
   ): Seq[GridContainer] = {
     // assigning unique subgrid numbers to all given grids
@@ -150,8 +143,6 @@ object SubGridHandling {
     *   option for low voltage grids
     * @param mvGrids
     *   option for medium voltage grids
-    * @param mvNodeChanges
-    *   option for medium voltage node changes
     * @param hvGrids
     *   option for high voltage grids
     * @return

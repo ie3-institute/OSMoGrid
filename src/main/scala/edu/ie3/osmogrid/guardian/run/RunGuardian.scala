@@ -170,7 +170,6 @@ object RunGuardian
       val updated = finishedGridData.copy(
         mvData = Some(subGridContainer),
         hvData = dummyHvGrid.map(Seq(_)), // converting to sequence
-        mvNodeChanges = Option.when(nodeChanges.nonEmpty)(nodeChanges),
         assetInformation = Some(assetInformation),
       )
 
@@ -194,7 +193,6 @@ object RunGuardian
         finishedGridData.lvData,
         finishedGridData.mvData,
         finishedGridData.hvData,
-        finishedGridData.mvNodeChanges,
         finishedGridData.assetInformation,
         childReferences.resultListeners,
         runGuardianData.msgAdapters,

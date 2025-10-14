@@ -66,7 +66,6 @@ class SubGridHandlingSpec
           None,
           None,
           None,
-          None,
           listener,
           msgAdapters,
         )(log)
@@ -88,7 +87,6 @@ class SubGridHandlingSpec
       val processed = processResults(
         cfg,
         Some(Seq(lv)),
-        None,
         None,
         None,
         Some(assetInformation),
@@ -140,7 +138,6 @@ class SubGridHandlingSpec
         cfg,
         Some(Seq(lv)),
         Some(Seq(mv)),
-        None,
         None,
         Some(assetInformation),
       )
