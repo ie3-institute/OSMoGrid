@@ -131,7 +131,7 @@ class SubGridHandlingSpec
         new GraphicElements(List.empty[GraphicInput].asJava),
       )
 
-      val expectedUpdatedNode =
+      val superiorGridNode =
         commonNode.copy().subnet(2).build().copy().slack(true).build()
 
       val processed = processResults(
@@ -146,10 +146,10 @@ class SubGridHandlingSpec
       val grid = processed(0)
 
       val rawGridElements = grid.getRawGrid
-      rawGridElements.getNodes.asScala shouldNot contain(expectedUpdatedNode)
+      rawGridElements.getNodes.asScala shouldNot contain(superiorGridNode)
       rawGridElements.getTransformer2Ws.asScala
         .toSeq(0)
-        .getNodeA shouldBe expectedUpdatedNode
+        .getNodeA shouldBe superiorGridNode
 
       grid.getSystemParticipants shouldBe lv.getSystemParticipants
       grid.getGraphics shouldBe lv.getGraphics
