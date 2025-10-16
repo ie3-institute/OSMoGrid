@@ -66,6 +66,7 @@ class SubGridHandlingSpec
           None,
           None,
           None,
+          None,
           listener,
           msgAdapters,
         )(log)
@@ -89,6 +90,7 @@ class SubGridHandlingSpec
         Some(Seq(lv)),
         None,
         None,
+        None,
         Some(assetInformation),
       )
 
@@ -98,10 +100,10 @@ class SubGridHandlingSpec
       val rawGridElements = grid.getRawGrid
       val numbers = rawGridElements.getNodes.asScala.toSeq.map(_.getSubnet)
       numbers.count(_ == 1) shouldBe 2
-      numbers.size shouldBe 2
+      numbers.count(_ == 3) shouldBe 1
 
       val transformer = rawGridElements.getTransformer2Ws.asScala.toSeq(0)
-      transformer.getNodeA.getSubnet shouldBe 2
+      transformer.getNodeA.getSubnet shouldBe 3
       transformer.getNodeB.getSubnet shouldBe 1
 
       grid.getSystemParticipants shouldBe lv.getSystemParticipants
@@ -131,13 +133,13 @@ class SubGridHandlingSpec
         new GraphicElements(List.empty[GraphicInput].asJava),
       )
 
-      val superiorGridNode =
-        commonNode.copy().subnet(2).build().copy().slack(true).build()
+      val expectedUpdatedNode = commonNode.copy().subnet(3).build()
 
       val processed = processResults(
         cfg,
         Some(Seq(lv)),
         Some(Seq(mv)),
+        None,
         None,
         Some(assetInformation),
       )
@@ -146,10 +148,10 @@ class SubGridHandlingSpec
       val grid = processed(0)
 
       val rawGridElements = grid.getRawGrid
-      rawGridElements.getNodes.asScala shouldNot contain(superiorGridNode)
+      rawGridElements.getNodes.asScala should contain(expectedUpdatedNode)
       rawGridElements.getTransformer2Ws.asScala
         .toSeq(0)
-        .getNodeA shouldBe superiorGridNode
+        .getNodeA shouldBe expectedUpdatedNode
 
       grid.getSystemParticipants shouldBe lv.getSystemParticipants
       grid.getGraphics shouldBe lv.getGraphics
@@ -302,11 +304,12 @@ class SubGridHandlingSpec
         val allNodes = actual._1.values.toSet
 
         allNodes
+          .filter(!_.getId.contains("Top node"))
           .map(_.getSubnet) shouldBe Set(42)
 
         allNodes
           .filter(_.getId.contains("Top node"))
-          .size shouldBe 0
+          .map(_.getSubnet) shouldBe Set(44)
       }
     }
 
@@ -324,7 +327,7 @@ class SubGridHandlingSpec
           42,
         )
 
-        actual._1.values.size shouldBe givenContainers.size * 3
+        actual._1.values.size shouldBe givenContainers.size * 5
 
         for (i <- 42 to 52) {
           actual._1.values
@@ -333,7 +336,8 @@ class SubGridHandlingSpec
         }
 
         val topNodes = actual._1.values.filter(_.getId.contains("Top"))
-        topNodes.size shouldBe 0
+        topNodes.size shouldBe 22
+        topNodes.map(_.getSubnet).toSet shouldBe Set(54)
       }
     }
 

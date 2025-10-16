@@ -39,6 +39,8 @@ trait SubGridHandling {
     *   option for medium voltage grids
     * @param hvData
     *   option for high voltage grids
+    * @param mvNodeChanges
+    *   option for mv nodes that may have been changed
     * @param assetInformation
     *   information for assets
     * @param resultListener
@@ -53,6 +55,7 @@ trait SubGridHandling {
       lvData: Option[Seq[SubGridContainer]],
       mvData: Option[Seq[SubGridContainer]],
       hvData: Option[Seq[GridContainer]],
+      mvNodeChanges: Option[Map[UUID, NodeInput]],
       assetInformation: Option[AssetInformation],
       resultListener: Seq[ActorRef[OutputRequest]],
       msgAdapters: MessageAdapters,
@@ -65,6 +68,7 @@ trait SubGridHandling {
         lvData,
         mvData,
         hvData,
+        mvNodeChanges,
         assetInformation,
       )
 
@@ -109,6 +113,8 @@ trait SubGridHandling {
     *   option for medium voltage grids
     * @param hvData
     *   option for high voltage grids
+    * @param mvNodeChanges
+    *   option for mv nodes that may have been changed
     * @param assetInformation
     *   information for assets
     * @return
@@ -119,11 +125,12 @@ trait SubGridHandling {
       lvData: Option[Seq[SubGridContainer]],
       mvData: Option[Seq[SubGridContainer]],
       hvData: Option[Seq[GridContainer]],
+      mvNodeChanges: Option[Map[UUID, NodeInput]],
       assetInformation: Option[AssetInformation],
   ): Seq[GridContainer] = {
     // assigning unique subgrid numbers to all given grids
     val nodeUpdateMap =
-      updateNodeSubNetNumbers(lvData, mvData, hvData)
+      updateNodeSubNetNumbers(lvData, mvData, mvNodeChanges, hvData)
 
     val lvGrids = Option.when(cfg.lv)(lvData).flatten
     val mvGrids = Option.when(cfg.mv)(mvData).flatten
@@ -143,6 +150,8 @@ object SubGridHandling {
     *   option for low voltage grids
     * @param mvGrids
     *   option for medium voltage grids
+    * @param mvNodeChanges
+    *   option for medium voltage node changes
     * @param hvGrids
     *   option for high voltage grids
     * @return
@@ -151,6 +160,7 @@ object SubGridHandling {
   private def updateNodeSubNetNumbers(
       lvGrids: Option[Seq[GridContainer]],
       mvGrids: Option[Seq[GridContainer]],
+      mvNodeChanges: Option[Map[UUID, NodeInput]],
       hvGrids: Option[Seq[GridContainer]],
   ): Map[NodeInput, NodeInput] = {
     val lv = lvGrids.map(grids => assignSubNetNumbers(grids, 1))
@@ -158,6 +168,38 @@ object SubGridHandling {
 
     val mv = mvGrids.map(grids => assignSubNetNumbers(grids, mvOffset))
     val hvOffset = mv.map(_._2).getOrElse(100)
+
+    val mvCombined: Map[UUID, NodeInput] = (mv, mvNodeChanges) match {
+      case (Some(gridNodeChanges), Some(nodeChanges)) =>
+        // we need to combine multiple mv node changes
+        val gridNodeMap = gridNodeChanges._1
+
+        val commonKeys = nodeChanges.keySet.intersect(gridNodeMap.keySet)
+        val allKeys = gridNodeChanges._1.keySet ++ nodeChanges.keySet
+
+        allKeys.map { key =>
+          if (commonKeys.contains(key)) {
+            // update subnet information
+            key -> nodeChanges(key)
+              .copy()
+              .subnet(
+                gridNodeMap(key).getSubnet
+              )
+              .build()
+          } else key -> gridNodeMap.getOrElse(key, nodeChanges(key))
+        }.toMap
+
+      case (Some(gridNodeChanges), None) =>
+        // we only got mv grid containers
+        gridNodeChanges._1
+      case (None, Some(nodeChanges)) =>
+        // we only got mv node changes
+        nodeChanges
+
+      case _ =>
+        // if no mv nodes are present
+        Map.empty
+    }
 
     val hv = hvGrids.map { grids =>
       if (grids.size == 1 && grids(0).getGridName == "dummyHvGrid") {
@@ -177,9 +219,9 @@ object SubGridHandling {
     }
 
     // maps with updated nodes
-    val updateMap = lv.map(_._1).getOrElse(Map.empty) ++ mv
+    val updateMap = lv.map(_._1).getOrElse(Map.empty) ++ mvCombined ++ hv
       .map(_._1)
-      .getOrElse(Map.empty) ++ hv.map(_._1).getOrElse(Map.empty)
+      .getOrElse(Map.empty)
 
     val allNodes: Seq[NodeInput] = List(lvGrids, mvGrids, hvGrids).flatten
       .flatMap(_.flatMap(_.getRawGrid.getNodes.asScala))
@@ -217,9 +259,7 @@ object SubGridHandling {
         val updatedNode = if (nodeVoltage.isEquivalentTo(voltage)) {
           node.copy().subnet(i + offset).build()
         } else if (nodeVoltage.isGreaterThan(voltage)) {
-          throw new InvalidAttributesException(
-            s"When assigning SubNetNumbers, a voltage of ${nodeVoltage} which is higher as the expected voltage of ${voltage} was found for node: ${node} "
-          )
+          node.copy().subnet(higherNodesOffset).build()
         } else node
 
         node.getUuid -> updatedNode

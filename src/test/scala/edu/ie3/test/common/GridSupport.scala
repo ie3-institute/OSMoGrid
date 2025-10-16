@@ -301,8 +301,7 @@ trait GridSupport {
     )
 
     val rawGrid = new RawGridElements(
-      // Since we mock a SubGrid, only nodes B1 and B2 are considered
-      Set(dummyNodeB1, dummyNodeB2).asJava,
+      Set(dummyNodeA, dummyNodeB1, dummyNodeB2).asJava,
       Set.empty[LineInput].asJava,
       Set(dummyTrafo).asJava,
       Set.empty[Transformer3WInput].asJava,

@@ -19,49 +19,34 @@ import scala.jdk.CollectionConverters.*
 object GridContainerUtils {
   private val cfg: Voltage = RunGuardian.getVoltageConfig
 
-  /** Method for retrieving all nodes of a given voltage level from a sequence
-    * of [[SubGridContainer]].
-    *
-    * @param grids
-    *   given sub or inferior grids
+  /** Method for retrieving all mv nodes from a sequence of lv
+    * [[SubGridContainer]].
+    * @param lvGrids
+    *   given sub grids
     * @return
     *   all found nodes
     */
-  def filterForVoltageLvl(
-      grids: Seq[SubGridContainer],
-      voltageLvL: CommonVoltageLevel,
+  def filterLv(
+      lvGrids: Seq[SubGridContainer]
   ): Seq[NodeInput] = {
-    grids.flatMap { grid =>
-      val preDominantVoltageLvl =
-        grid.getPredominantVoltageLevel.getNominalVoltage
+    val mvVoltLvl = VoltageUtils.parse(cfg.mv)
+    /* gets all mv-lv nodes */
+    getNodes(mvVoltLvl, lvGrids)
+  }
 
-      // if Voltage is higher then preDominantVoltage than we must take the nodes from transformer
-      if (voltageLvL.getNominalVoltage.isGreaterThan(preDominantVoltageLvl)) {
-        // Collect nodes from 2W transformers
-        val nodes2WTransformers = grid.getRawGrid.getTransformer2Ws.asScala
-          .flatMap(transformer => transformer.allNodes().asScala)
-          .filter(node => voltageLvL.equals(node.getVoltLvl))
-
-        // Collect nodes from 3W transformers
-        val nodes3WTransformers = grid.getRawGrid.getTransformer3Ws.asScala
-          .flatMap(transformer => transformer.allNodes().asScala)
-          .filter(node => voltageLvL.equals(node.getVoltLvl))
-
-        // Combine the results from both transformers
-        nodes2WTransformers ++ nodes3WTransformers
-
-      } else if (
-        voltageLvL.getNominalVoltage.isLessThanOrEqualTo(preDominantVoltageLvl)
-      ) {
-        // Collect all nodes directly from the raw grid
-        grid.getRawGrid.getNodes.asScala.filter(node =>
-          voltageLvL.equals(node.getVoltLvl)
-        )
-
-      } else {
-        Seq.empty[NodeInput] // Return an empty sequence if no conditions match.
-      }
-    }
+  /** Method for retrieving all mv nodes from a sequence of hv
+    * [[SubGridContainer]].
+    * @param hvGrids
+    *   given sub grids
+    * @return
+    *   all found nodes
+    */
+  def filterHv(
+      hvGrids: Seq[SubGridContainer]
+  ): Seq[NodeInput] = {
+    val mvVoltLvl = VoltageUtils.parse(cfg.mv)
+    /* gets all hv-mv nodes */
+    getNodes(mvVoltLvl, hvGrids)
   }
 
   /** Method to return all [[NodeInput]]'s of all given [[SubGridContainer]]
