@@ -62,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgraded to `scala3` [#575](https://github.com/ie3-institute/OSMoGrid/issues/575)
 - Updated dependabot workflow and added CODEOWNERS [#584](https://github.com/ie3-institute/OSMoGrid/issues/584)
 - Update `Gradle` to 9.1.0 [#622](https://github.com/ie3-institute/OSMoGrid/issues/622)
+- Improve documentation of overpass query [#628](https://github.com/ie3-institute/OSMoGrid/issues/628)
 
 ### Fixed
 - Fixed bug in `LvGridGeneratorSupport` [#388](https://github.com/ie3-institute/OSMoGrid/issues/388)
