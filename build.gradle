@@ -4,7 +4,7 @@ plugins {
   id 'scala'
   id 'pmd' // code check, working on source code
   id 'com.diffplug.spotless' version '8.0.0'//code format
-  id 'com.github.spotbugs' version '6.4.3' // code check, working on byte code
+  id 'com.github.spotbugs' version '6.4.4' // code check, working on byte code
   id 'de.undercouch.download' version '5.6.0'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.33" // run scalatest without specific spec task
@@ -74,7 +74,7 @@ dependencies {
 
   // logging
   implementation "com.typesafe.scala-logging:scala-logging_${scalaVersion}:3.9.6"
-  implementation 'ch.qos.logback:logback-classic:1.5.19'
+  implementation 'ch.qos.logback:logback-classic:1.5.20'
 
   // config
   implementation 'com.typesafe:config:1.4.5'
