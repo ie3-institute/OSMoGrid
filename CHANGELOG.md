@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added Marius Staudt to list of reviewers [#516](https://github.com/ie3-institute/OSMoGrid/issues/501)
 - Create `CITATION.cff` [#531](https://github.com/ie3-institute/OSMoGrid/issues/531)
 - Implemented GitHub Actions Pipeline [#545](https://github.com/ie3-institute/OSMoGrid/issues/545)
+- Added `mavenCentralPublish.gradle` to enable deployment to MavenCentral [#568](https://github.com/ie3-institute/OSMoGrid/issues/568)
 - Implementing auto-merge for dependabot PRs [#556](https://github.com/ie3-institute/OSMoGrid/issues/566)
 
 ### Changed
@@ -60,6 +61,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhance documentation regarding overpass examples [#494](https://github.com/ie3-institute/OSMoGrid/issues/494)
 - Upgraded to `scala3` [#575](https://github.com/ie3-institute/OSMoGrid/issues/575)
 - Updated dependabot workflow and added CODEOWNERS [#584](https://github.com/ie3-institute/OSMoGrid/issues/584)
+- Update `Gradle` to 9.1.0 [#622](https://github.com/ie3-institute/OSMoGrid/issues/622)
+- Update `Gradle Wrapper` to 9.1.0 [#624](https://github.com/ie3-institute/OSMoGrid/issues/624)
 
 ### Fixed
 - Fixed bug in `LvGridGeneratorSupport` [#388](https://github.com/ie3-institute/OSMoGrid/issues/388)
