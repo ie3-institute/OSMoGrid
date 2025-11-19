@@ -39,11 +39,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
 
       # Remove injected Groovy init scripts that break Java‑21 builds
-      - name: Disable Gradle Action init scripts
+      - name: Disable all injected Gradle init scripts
         run: |
           echo "Cleaning /home/runner/.gradle/init.d"
-          rm -f /home/runner/.gradle/init.d/gradle-actions.inject-develocity.init.gradle \
-          /home/runner/.gradle/init.d/gradle-actions.build-result-capture.init.gradle || true
+          rm -f /home/runner/.gradle/init.d/*.init.gradle || true
           ls -la /home/runner/.gradle/init.d || true
 
       - name: Print Environment Variables
