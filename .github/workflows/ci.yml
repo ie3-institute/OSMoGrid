@@ -38,8 +38,6 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
-        env:
-          DEVELOCITY_INJECTION_INIT_SCRIPT_NAME: ""
 
       - name: Check Branch
         run: |
