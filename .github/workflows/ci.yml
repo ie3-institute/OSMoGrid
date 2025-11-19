@@ -26,9 +26,6 @@ jobs:
     env:
       DEVELOCITY_INJECTION_INIT_SCRIPT_NAME: ""
       DEVELOCITY_INJECTION_CUSTOM_VALUE: ""
-      GRADLE_BUILD_ACTION_SETUP_COMPLETED: ""
-      GRADLE_BUILD_ACTION_CACHE_RESTORED: ""
-
     steps:
       - name: Checkout Source
         uses: actions/checkout@v5
