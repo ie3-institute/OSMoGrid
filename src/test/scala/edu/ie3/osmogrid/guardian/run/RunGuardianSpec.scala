@@ -240,7 +240,8 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         )
 
         runningTestKit.run(HandleGridResults)
-        resultListener.expectMessageType[GridResult]
+        val grid=resultListener.expectMessageType[GridResult]
+        grid.grid.getRawGrid.getNodes.size() shouldBe 2
       }
 
       "being in stopping state without a LvCoordinator" should {
