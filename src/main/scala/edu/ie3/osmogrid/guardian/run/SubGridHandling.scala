@@ -26,7 +26,6 @@ import tech.units.indriya.ComparableQuantity
 
 import java.util.UUID
 import javax.measure.quantity.ElectricPotential
-import javax.naming.directory.InvalidAttributesException
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 

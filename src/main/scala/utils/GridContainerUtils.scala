@@ -8,7 +8,6 @@ package utils
 
 import edu.ie3.datamodel.models.input.container.*
 import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
-import edu.ie3.datamodel.models.voltagelevels.CommonVoltageLevel
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import tech.units.indriya.ComparableQuantity

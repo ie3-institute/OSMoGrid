@@ -8,7 +8,6 @@ package edu.ie3.osmogrid.mv
 
 import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.container.JointGridContainer
-import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.{InputDataEvent, ReqAssetTypes}
