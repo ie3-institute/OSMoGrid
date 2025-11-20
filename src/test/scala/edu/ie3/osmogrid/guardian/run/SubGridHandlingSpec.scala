@@ -113,15 +113,11 @@ class SubGridHandlingSpec
     "process and update lv results correctly" in {
       val lv = mockSubGrid(1, MV_10KV, LV)
 
-      val mvNode = lv.getRawGrid.getTransformer2Ws.asScala
+      val commonNode = lv.getRawGrid.getTransformer2Ws.asScala
         .toSeq(0)
         .getNodeA
         .copy()
         .slack(false)
-        .build()
-
-      val commonNode = mvNode
-        .copy()
         .subnet(3)
         .build()
 

@@ -260,7 +260,7 @@ trait GridSupport {
     // include at least a single node for voltage level determination
     val dummyNodeA = new NodeInput(
       UUID.randomUUID(),
-      s"Dummy nodeA in $subgridNo + 1",
+      s"Dummy nodeA in ${subgridNo + 1}",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       true,
       mock[Point],
@@ -375,7 +375,7 @@ trait GridSupport {
 
     val topNode1 = new NodeInput(
       UUID.randomUUID(),
-      s"Top node 1 in $subgridNo + 1",
+      s"Top node 1 in ${subgridNo + 1}",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       false,
       mock[Point],
@@ -384,7 +384,7 @@ trait GridSupport {
     )
     val topNode2 = new NodeInput(
       UUID.randomUUID(),
-      s"Top node 2 in $subgridNo + 2",
+      s"Top node 2 in ${subgridNo + 2}",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       false,
       mock[Point],
