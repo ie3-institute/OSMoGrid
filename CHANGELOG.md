@@ -63,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated dependabot workflow and added CODEOWNERS [#584](https://github.com/ie3-institute/OSMoGrid/issues/584)
 - Update `Gradle` to 9.1.0 [#622](https://github.com/ie3-institute/OSMoGrid/issues/622)
 - Update `Gradle Wrapper` to 9.1.0 [#624](https://github.com/ie3-institute/OSMoGrid/issues/624)
+- Updated Ubuntu version to 24.04 and Python version to 3.13 in readthedocs.yml [#640](https://github.com/ie3-institute/OSMoGrid/issues/640)
 - Update to Java 21 [#620](https://github.com/ie3-institute/OSMoGrid/issues/620)
 
 ### Fixed
