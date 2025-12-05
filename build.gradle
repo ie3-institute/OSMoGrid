@@ -17,11 +17,11 @@ ext {
   javaVersion = JavaVersion.VERSION_17
 
   scalaVersion = '3'
-  scalaBinaryVersion = '3.7.3'
+  scalaBinaryVersion = '3.7.4'
   pekkoVersion = '1.3.0'
 
   tscfgVersion = '0.9.995'
-  scapegoatVersion = '3.2.2'
+  scapegoatVersion = '3.2.3'
 
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
   docsDirName = 'docs'
