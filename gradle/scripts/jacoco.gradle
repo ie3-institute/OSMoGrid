@@ -4,16 +4,16 @@
 // general configuration
 jacoco {
 	toolVersion = "0.8.4"
-	reportsDir = file("$buildDir/reports/jacoco")
+  reportsDirectory = layout.buildDirectory.dir("reports/jacoco")
 }
 
-jacocoTestReport {
-	reports {
-		xml.enabled true
-		csv.enabled false
-		html.enabled true
-		html.destination file("${buildDir}/reports/jacoco")
-	}
+tasks.jacocoTestReport {
+  reports {
+    xml.required.set(true)
+    csv.required.set(false)
+    html.required.set(true)
+    html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/html"))
+  }
 
 	// what to exclude from coverage report (files that should not be analyzed!)
 	// UI, "noise", generated classes, platform classes, etc.
@@ -27,10 +27,12 @@ jacocoTestReport {
 		'**/**IT**.**' // exclude integration tests files
 	]
 
-	getClassDirectories().setFrom(fileTree(
-			dir: "$buildDir/classes/",
-			excludes: excludes
-			))
+  classDirectories.setFrom(
+    files([
+      fileTree(dir: "$buildDir/classes/java/main", excludes: excludes),
+      fileTree(dir: "$buildDir/classes/kotlin/main", excludes: excludes)
+    ])
+  )
 
 	//	sourceSets sourceSets.main
 	executionData check // include integration tests in jacoco reports

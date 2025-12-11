@@ -14,7 +14,7 @@ plugins {
 
 ext {
 	//version (changing these should be considered thoroughly!)
-	javaVersion = JavaVersion.VERSION_11
+	javaVersion = JavaVersion.VERSION_17
 	tscfgVersion = '0.9.986'
 	scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator //location of script
 }
@@ -90,7 +90,7 @@ dependencies {
 	testImplementation 'junit:junit:4.13.2'
 	testImplementation 'cglib:cglib-nodep:3.3.0' // enables mocking of classes (in addition to interfaces)
 	testImplementation 'org.mockito:mockito-core:3.11.2' // mocking framework
-	testImplementation 'org.spockframework:spock-core:2.0-M3-groovy-3.0'
+	testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
 	testImplementation 'org.objenesis:objenesis:3.2' // Mock creation with constructor parameters
 
 	// config //
@@ -99,16 +99,16 @@ dependencies {
 
 }
 
-wrapper {
-	gradleVersion = '7.0'
-}
-
 tasks.withType(JavaCompile) {
-	options.encoding = 'UTF-8'
+  options.encoding = 'UTF-8'
 }
 
-task printVersion {
-	doLast {
-		println project.version
-	}
+tasks.withType(Javadoc){
+  options.encoding = 'UTF-8'
+}
+
+tasks.register("printVersion") {
+  doLast {
+    println project.version
+  }
 }
