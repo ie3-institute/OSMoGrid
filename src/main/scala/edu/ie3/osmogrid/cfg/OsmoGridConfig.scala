@@ -1,5 +1,5 @@
 /*
- * © 2024. TU Dortmund University,
+ * © 2025. TU Dortmund University,
  * Institute of Energy Systems, Energy Efficiency and Energy Economics,
  * Research group Distribution grid planning and operation
  */
@@ -19,6 +19,12 @@ object OsmoGridConfig {
       mv: scala.Option[OsmoGridConfig.Generation.Mv],
   )
   object Generation {
+
+    /** @param averagePowerDensity
+      *   as W/m^2
+      * @param considerHouseConnectionPoints
+      *   If there shall be no distinct lines for house connection
+      */
     final case class Lv(
         averagePowerDensity: scala.Double,
         boundaryAdminLevel: OsmoGridConfig.Generation.Lv.BoundaryAdminLevel,
@@ -50,6 +56,10 @@ object OsmoGridConfig {
           filter: scala.Option[OsmoGridConfig.Generation.Lv.Osm.Filter]
       )
       object Osm {
+
+        /** @param building
+          *   filter to be applied for the LvOsmoGridModel
+          */
         final case class Filter(
             building: scala.List[java.lang.String],
             highway: scala.List[java.lang.String],
@@ -87,7 +97,7 @@ object OsmoGridConfig {
                     $tsCfgValidator,
                   )
                 )
-              else None
+              else scala.None
           )
         }
       }
@@ -173,14 +183,14 @@ object OsmoGridConfig {
               OsmoGridConfig.Generation
                 .Lv(c.getConfig("lv"), parentPath + "lv.", $tsCfgValidator)
             )
-          else None,
+          else scala.None,
         mv =
           if (c.hasPathOrNull("mv"))
             scala.Some(
               OsmoGridConfig.Generation
                 .Mv(c.getConfig("mv"), parentPath + "mv.", $tsCfgValidator)
             )
-          else None,
+          else scala.None,
       )
     }
   }
@@ -284,7 +294,7 @@ object OsmoGridConfig {
                   $tsCfgValidator,
                 )
               )
-            else None
+            else scala.None
         )
       }
     }
@@ -336,7 +346,7 @@ object OsmoGridConfig {
                 OsmoGridConfig.Input.Osm
                   .Pbf(c.getConfig("pbf"), parentPath + "pbf.", $tsCfgValidator)
               )
-            else None
+            else scala.None
         )
       }
     }
@@ -421,7 +431,7 @@ object OsmoGridConfig {
               OsmoGridConfig.Output
                 .Csv(c.getConfig("csv"), parentPath + "csv.", $tsCfgValidator)
             )
-          else None,
+          else scala.None,
         gridName = $_reqStr(parentPath, c, "gridName", $tsCfgValidator),
       )
     }
@@ -449,6 +459,10 @@ object OsmoGridConfig {
       mv: OsmoGridConfig.Voltage.Mv,
   )
   object Voltage {
+
+    /** @param vNom
+      *   values should be given in kV
+      */
     final case class Hv(
         default: scala.Double,
         id: java.lang.String,
@@ -469,11 +483,14 @@ object OsmoGridConfig {
               scala.Some(
                 $_L$_dbl(c.getList("vNom"), parentPath, $tsCfgValidator)
               )
-            else None,
+            else scala.None,
         )
       }
     }
 
+    /** @param vNom
+      *   values should be given in kV
+      */
     final case class Lv(
         default: scala.Double,
         id: java.lang.String,
@@ -494,11 +511,14 @@ object OsmoGridConfig {
               scala.Some(
                 $_L$_dbl(c.getList("vNom"), parentPath, $tsCfgValidator)
               )
-            else None,
+            else scala.None,
         )
       }
     }
 
+    /** @param vNom
+      *   values should be given in kV
+      */
     final case class Mv(
         default: scala.Double,
         id: java.lang.String,
@@ -519,7 +539,7 @@ object OsmoGridConfig {
               scala.Some(
                 $_L$_dbl(c.getList("vNom"), parentPath, $tsCfgValidator)
               )
-            else None,
+            else scala.None,
         )
       }
     }

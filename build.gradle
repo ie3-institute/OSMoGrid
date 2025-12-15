@@ -20,7 +20,7 @@ ext {
   scalaBinaryVersion = '3.7.4'
   pekkoVersion = '1.3.0'
 
-  tscfgVersion = '0.9.995'
+  tscfgVersion = '1.2.5'
   scapegoatVersion = '3.2.3'
 
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
