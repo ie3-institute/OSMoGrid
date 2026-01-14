@@ -125,7 +125,7 @@ tasks.withType(ScalaCompile) {
   scalaCompileOptions.additionalParameters = [
     "-Xplugin:" + configurations.scalaCompilerPlugin.asPath,
     "-P:scapegoat:dataDir:" + layout.buildDirectory.dir("reports/scapegoat/src/").get(),
-    "-P:scapegoat:disabledInspections:VariableShadowing",
+    "-P:scapegoat:disabledInspections:ComparingFloatingPointTypes",
     "-P:scapegoat:overrideLevels:LonelySealedTrait=warning",
   ]
 }
@@ -135,7 +135,7 @@ compileTestScala {
   scalaCompileOptions.additionalParameters = [
     "-Xplugin:" + configurations.scalaCompilerPlugin.asPath,
     "-P:scapegoat:dataDir:" + layout.buildDirectory.dir("reports/scapegoat/testsrc/").get(),
-    "-P:scapegoat:disabledInspections:VariableShadowing",
+    "-P:scapegoat:disabledInspections:ComparingFloatingPointTypes",
     "-P:scapegoat:overrideLevels:LonelySealedTrait=warning"
   ]
 }
