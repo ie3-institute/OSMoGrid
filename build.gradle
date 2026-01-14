@@ -8,7 +8,7 @@ plugins {
   id 'de.undercouch.download' version '5.6.0'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.33" // run scalatest without specific spec task
-  id "org.sonarqube" version "7.2.1.6560" // sonarqube
+  id "org.sonarqube" version "7.2.2.6593" // sonarqube
   id "org.scoverage" version "8.1" // scala code coverage scoverage
   id 'net.thauvin.erik.gradle.semver' version '1.0.4' // semantic versioning
 }
@@ -18,10 +18,10 @@ ext {
 
   scalaVersion = '3'
   scalaBinaryVersion = '3.7.4'
-  pekkoVersion = '1.3.0'
+  pekkoVersion = '1.4.0'
 
   tscfgVersion = '1.2.5'
-  scapegoatVersion = '3.2.3'
+  scapegoatVersion = '3.2.4'
 
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
   docsDirName = 'docs'
@@ -74,7 +74,7 @@ dependencies {
 
   // logging
   implementation "com.typesafe.scala-logging:scala-logging_${scalaVersion}:3.9.6"
-  implementation 'ch.qos.logback:logback-classic:1.5.22'
+  implementation 'ch.qos.logback:logback-classic:1.5.24'
 
   // config
   implementation 'com.typesafe:config:1.4.5'
@@ -125,7 +125,7 @@ tasks.withType(ScalaCompile) {
   scalaCompileOptions.additionalParameters = [
     "-Xplugin:" + configurations.scalaCompilerPlugin.asPath,
     "-P:scapegoat:dataDir:" + layout.buildDirectory.dir("reports/scapegoat/src/").get(),
-    "-P:scapegoat:disabledInspections:VariableShadowing",
+    "-P:scapegoat:disabledInspections:ComparingFloatingPointTypes",
     "-P:scapegoat:overrideLevels:LonelySealedTrait=warning",
   ]
 }
@@ -135,7 +135,7 @@ compileTestScala {
   scalaCompileOptions.additionalParameters = [
     "-Xplugin:" + configurations.scalaCompilerPlugin.asPath,
     "-P:scapegoat:dataDir:" + layout.buildDirectory.dir("reports/scapegoat/testsrc/").get(),
-    "-P:scapegoat:disabledInspections:VariableShadowing",
+    "-P:scapegoat:disabledInspections:ComparingFloatingPointTypes",
     "-P:scapegoat:overrideLevels:LonelySealedTrait=warning"
   ]
 }
