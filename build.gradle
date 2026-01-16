@@ -14,7 +14,7 @@ plugins {
 }
 
 ext {
-  javaVersion = JavaVersion.VERSION_17
+  javaVersion = JavaVersion.VERSION_21
 
   scalaVersion = '3'
   scalaBinaryVersion = '3.7.4'
@@ -31,6 +31,8 @@ java {
   toolchain {
     languageVersion.set(JavaLanguageVersion.of(javaVersion.toString()))
   }
+  sourceCompatibility = javaVersion
+  targetCompatibility = javaVersion
 }
 
 group = 'com.github.ie3-institute'
