@@ -10,7 +10,6 @@ import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
 import com.typesafe.config.ConfigFactory
 import edu.ie3.datamodel.exceptions.SourceException
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.$TsCfgValidator
 import edu.ie3.osmogrid.exception.{InputDataException, PbfReadFailedException}
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
@@ -216,8 +215,7 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
         "asset.file.hierarchic" -> assetHierarchic,
       ).asJava
     )
-    val config =
-      OsmoGridConfig.Input(parsedCfg, "input", new $TsCfgValidator())
+    val config = OsmoGridConfig(parsedCfg).input
     config
   }
 }

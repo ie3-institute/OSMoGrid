@@ -50,7 +50,7 @@ trait SubGridHandling {
     *   logger
     */
   protected def handleResults(
-      cfg: OsmoGridConfig.Grids.Output,
+      cfg: OsmoGridConfig.Grids,
       lvData: Option[Seq[SubGridContainer]],
       mvData: Option[Seq[SubGridContainer]],
       hvData: Option[Seq[GridContainer]],
@@ -120,7 +120,7 @@ trait SubGridHandling {
     *   a sequence of [[SubGridContainer]]
     */
   protected def processResults(
-      cfg: OsmoGridConfig.Grids.Output,
+      cfg: OsmoGridConfig.Grids,
       lvData: Option[Seq[SubGridContainer]],
       mvData: Option[Seq[SubGridContainer]],
       hvData: Option[Seq[GridContainer]],

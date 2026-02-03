@@ -17,44 +17,16 @@ import javax.measure.quantity.ElectricPotential
 
 object VoltageUtils {
 
-  /** Method to parse a [[edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage.Lv]]
+  /** Method to parse a [[edu.ie3.osmogrid.cfg.OsmoGridConfig.VoltageLevel]]
     * easily.
     *
     * @param cfg
-    *   given config
+    *   Given config.
     * @return
-    *   a list of [[Quantity]]
+    *   A list of [[Quantity]].
     */
   def parse(
-      cfg: OsmoGridConfig.Voltage.Lv
-  ): List[ComparableQuantity[ElectricPotential]] = {
-    toQuantities(cfg.vNom, cfg.default)
-  }
-
-  /** Method to parse a [[edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage.Mv]]
-    * easily.
-    *
-    * @param cfg
-    *   given config
-    * @return
-    *   a list of [[Quantities]]
-    */
-  def parse(
-      cfg: OsmoGridConfig.Voltage.Mv
-  ): List[ComparableQuantity[ElectricPotential]] = {
-    toQuantities(cfg.vNom, cfg.default)
-  }
-
-  /** Method to parse a [[edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage.Hv]]
-    * easily.
-    *
-    * @param cfg
-    *   given config
-    * @return
-    *   a list of [[Quantities]]
-    */
-  def parse(
-      cfg: OsmoGridConfig.Voltage.Hv
+      cfg: OsmoGridConfig.VoltageLevel
   ): List[ComparableQuantity[ElectricPotential]] = {
     toQuantities(cfg.vNom, cfg.default)
   }
