@@ -58,7 +58,6 @@ configurations {
 
 repositories {
   mavenCentral() //searches in bintray's repository 'jCenter', which contains Maven Central
-  maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' } // sonatype snapshot repo
 }
 
 dependencies {
