@@ -261,7 +261,7 @@ object GridConversion {
       lines: util.Set[LineInput],
       loads: util.Set[LoadInput],
   )(implicit
-      subnetNr: Int = 1,
+      subnetNr: Int,
       transformer2Ws: util.Set[Transformer2WInput] =
         new util.HashSet[Transformer2WInput],
   ): SubGridContainer = {
