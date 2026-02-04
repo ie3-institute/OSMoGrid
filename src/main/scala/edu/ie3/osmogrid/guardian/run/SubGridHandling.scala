@@ -245,7 +245,7 @@ object SubGridHandling {
       subGrids: Seq[GridContainer],
       offset: Int,
   ): (Map[UUID, NodeInput], Int) = {
-    val higherNodesOffset = offset + subGrids.size + 1
+    val higherNodesOffset = offset + subGrids.size
 
     val nodeMap = subGrids.zipWithIndex.flatMap { case (container, i) =>
       val nodes = container.getRawGrid.getNodes.asScala.toSeq
