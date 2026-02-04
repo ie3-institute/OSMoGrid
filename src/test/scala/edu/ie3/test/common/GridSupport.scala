@@ -28,7 +28,7 @@ import edu.ie3.datamodel.models.input.graphics.{
   LineGraphicInput,
   NodeGraphicInput,
 }
-import edu.ie3.datamodel.models.input.system._
+import edu.ie3.datamodel.models.input.system.*
 import edu.ie3.datamodel.models.input.system.characteristic.{
   OlmCharacteristicInput,
   ReactivePowerCharacteristic,
@@ -41,8 +41,8 @@ import edu.ie3.datamodel.models.voltagelevels.{
 }
 import edu.ie3.datamodel.utils.GridAndGeoUtils
 import edu.ie3.osmogrid.io.input.AssetInformation
-import edu.ie3.util.geo.GeoUtils._
-import edu.ie3.util.quantities.PowerSystemUnits._
+import edu.ie3.util.geo.GeoUtils.*
+import edu.ie3.util.quantities.PowerSystemUnits.*
 import edu.ie3.util.quantities.QuantityUtils.*
 import org.locationtech.jts.geom.Point
 import org.scalatestplus.mockito.MockitoSugar.mock
@@ -51,8 +51,8 @@ import tech.units.indriya.quantity.Quantities
 import tech.units.indriya.unit.Units.PERCENT
 
 import java.util.UUID
-import javax.measure.quantity._
-import scala.jdk.CollectionConverters._
+import javax.measure.quantity.*
+import scala.jdk.CollectionConverters.*
 
 trait GridSupport {
   val defaultLineTypeLv = new LineTypeInput(

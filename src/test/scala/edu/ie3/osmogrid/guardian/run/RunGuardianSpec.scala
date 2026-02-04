@@ -25,8 +25,8 @@ import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.io.input.{InputRequest, InputTerminate}
 import edu.ie3.osmogrid.io.output.{GridResult, ResultListenerProtocol}
-import edu.ie3.osmogrid.lv._
-import edu.ie3.osmogrid.mv._
+import edu.ie3.osmogrid.lv.*
+import edu.ie3.osmogrid.mv.*
 import edu.ie3.test.common.{GridSupport, UnitSpec}
 import org.slf4j.event.Level
 
