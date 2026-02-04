@@ -264,7 +264,7 @@ object LvGridGeneratorSupport extends LazyLogging {
       val allNodes = lvNodes ++ Set(NodeWrapper(mvNode))
 
       buildGridContainer(
-        gridNameBase,
+        s"LV-subnet-$subnetNr",
         allNodes.map(_.input).asJava,
         lvLines.values.toSet.asJava,
         loads.asJava,
@@ -273,7 +273,7 @@ object LvGridGeneratorSupport extends LazyLogging {
   }
 
   /** This method will reduce the graph by removing some vertices. A vertex is
-    * removed if its degree is <= 2 and it is not defined to be kept.
+    * removed if its degree is <= 2, and it is not defined to be kept.
     *
     * @param osmGraph
     *   graph to reduce
