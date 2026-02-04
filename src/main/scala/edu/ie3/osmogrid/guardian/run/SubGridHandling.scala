@@ -7,17 +7,17 @@
 package edu.ie3.osmogrid.guardian.run
 
 import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.datamodel.models.input.connector._
+import edu.ie3.datamodel.models.input.connector.*
 import edu.ie3.datamodel.models.input.connector.`type`.{
   Transformer2WTypeInput,
   Transformer3WTypeInput,
 }
-import edu.ie3.datamodel.models.input.container._
+import edu.ie3.datamodel.models.input.container.*
 import edu.ie3.datamodel.utils.ContainerNodeUpdateUtil
 import edu.ie3.datamodel.utils.validation.ValidationUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.exception.GridException
-import edu.ie3.osmogrid.guardian.run.SubGridHandling._
+import edu.ie3.osmogrid.guardian.run.SubGridHandling.*
 import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.osmogrid.io.output.{GridResult, OutputRequest}
 import org.apache.pekko.actor.typed.ActorRef
@@ -26,7 +26,7 @@ import tech.units.indriya.ComparableQuantity
 
 import java.util.UUID
 import javax.measure.quantity.ElectricPotential
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
 trait SubGridHandling {
