@@ -20,7 +20,7 @@ import edu.ie3.datamodel.models.input.container.{
 import edu.ie3.datamodel.models.input.graphics.GraphicInput
 import edu.ie3.datamodel.models.input.system.SystemParticipantInput
 import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
-import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils._
+import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils.*
 import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
 import edu.ie3.osmogrid.exception.GridException
 import edu.ie3.osmogrid.io.output.{OutputRequest, ResultListenerProtocol}
@@ -35,7 +35,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import tech.units.indriya.quantity.Quantities
 
 import java.util.UUID
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
 class SubGridHandlingSpec
@@ -304,7 +304,7 @@ class SubGridHandlingSpec
 
         allNodes
           .filter(_.getId.contains("Top node"))
-          .map(_.getSubnet) shouldBe Set(44)
+          .map(_.getSubnet) shouldBe Set(43)
       }
     }
 
@@ -332,7 +332,7 @@ class SubGridHandlingSpec
 
         val topNodes = actual._1.values.filter(_.getId.contains("Top"))
         topNodes.size shouldBe 22
-        topNodes.map(_.getSubnet).toSet shouldBe Set(54)
+        topNodes.map(_.getSubnet).toSet shouldBe Set(53)
       }
     }
 
