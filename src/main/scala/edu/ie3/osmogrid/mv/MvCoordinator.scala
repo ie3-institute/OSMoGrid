@@ -258,17 +258,18 @@ object MvCoordinator extends ActorStopSupportStateless {
         // spawns a voronoi coordinator for each polygon
         val subnets: Set[Int] = polygons.zipWithIndex.map {
           case (polygon, index) =>
+            val subnetNo = lvGrids.size + index + 1
             val voronoiCoordinator: ActorRef[MvRequest] =
               ctx.spawnAnonymous(VoronoiCoordinator(ctx.self))
             voronoiCoordinator ! StartMvGraphGeneration(
-              index + 1,
+              subnetNo,
               polygon,
               uuidOption,
               streetGraph,
               assetInformation,
             )
 
-            index + 1
+            subnetNo
         }.toSet
 
         // awaiting the psdm grid data
