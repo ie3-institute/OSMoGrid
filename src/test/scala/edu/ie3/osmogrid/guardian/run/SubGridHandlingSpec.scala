@@ -100,10 +100,10 @@ class SubGridHandlingSpec
       val rawGridElements = grid.getRawGrid
       val numbers = rawGridElements.getNodes.asScala.toSeq.map(_.getSubnet)
       numbers.count(_ == 1) shouldBe 2
-      numbers.count(_ == 3) shouldBe 1
+      numbers.count(_ == 2) shouldBe 1
 
       val transformer = rawGridElements.getTransformer2Ws.asScala.toSeq(0)
-      transformer.getNodeA.getSubnet shouldBe 3
+      transformer.getNodeA.getSubnet shouldBe 2
       transformer.getNodeB.getSubnet shouldBe 1
 
       grid.getSystemParticipants shouldBe lv.getSystemParticipants
@@ -121,14 +121,14 @@ class SubGridHandlingSpec
         .build()
 
       val mv = new SubGridContainer(
-        "3",
-        3,
+        "2",
+        2,
         new RawGridElements(List[AssetInput](commonNode).asJava),
         new SystemParticipants(List.empty[SystemParticipantInput].asJava),
         new GraphicElements(List.empty[GraphicInput].asJava),
       )
 
-      val expectedUpdatedNode = commonNode.copy().subnet(3).build()
+      val expectedUpdatedNode = commonNode.copy().subnet(2).build()
 
       val processed = processResults(
         cfg,
@@ -304,7 +304,7 @@ class SubGridHandlingSpec
 
         allNodes
           .filter(_.getId.contains("Top node"))
-          .map(_.getSubnet) shouldBe Set(44)
+          .map(_.getSubnet) shouldBe Set(43)
       }
     }
 
@@ -332,7 +332,7 @@ class SubGridHandlingSpec
 
         val topNodes = actual._1.values.filter(_.getId.contains("Top"))
         topNodes.size shouldBe 22
-        topNodes.map(_.getSubnet).toSet shouldBe Set(54)
+        topNodes.map(_.getSubnet).toSet shouldBe Set(53)
       }
     }
 
