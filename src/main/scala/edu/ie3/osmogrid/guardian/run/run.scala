@@ -105,7 +105,7 @@ private[run] final case class RunGuardianData(
     msgAdapters: MessageAdapters,
 ) extends StateData
 
-/** Meta data to keep track of which children already terminated during the
+/** Metadata to keep track of which children already terminated during the
   * coordinated shutdown phase
   *
   * @param runId
