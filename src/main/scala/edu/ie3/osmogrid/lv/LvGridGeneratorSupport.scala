@@ -236,31 +236,37 @@ object LvGridGeneratorSupport extends LazyLogging {
           NodeWrapper(n.input.copy().subnet(subnetNr).build())
         )
 
-      val updatedNodesUuids = updatedNodes.map(_.input.getUuid)
-
-      val substation =
+      val substationNodeB =
         NodeWrapper(cluster.substation.input.copy().subnet(subnetNr).build())
 
-      val lvNodes = updatedNodes + substation
+      val lvNodes = updatedNodes + substationNodeB
+      val uuidToUpdatedNode =
+        lvNodes.map(n => n.input.getUuid -> n.input).toMap
 
-      val lvLines = lineMap
-        .filter { case ((nodeA, nodeB), _) =>
-          lvNodes.contains(nodeA) && lvNodes.contains(nodeB)
-        }
+      val updatedLvLines = lineInputs.collect {
+        case line
+            if uuidToUpdatedNode.contains(line.getNodeA.getUuid) &&
+              uuidToUpdatedNode.contains(line.getNodeB.getUuid) =>
+          val newA = uuidToUpdatedNode(line.getNodeA.getUuid)
+          val newB = uuidToUpdatedNode(line.getNodeB.getUuid)
+          line.copy().nodeA(newA).nodeB(newB).build()
+      }
 
-      val loads = gridElements.loads.filter { load =>
-        updatedNodesUuids.contains(load.getNode.getUuid)
+      val updatedLoads = gridElements.loads.collect {
+        case load if uuidToUpdatedNode.contains(load.getNode.getUuid) =>
+          val newN = uuidToUpdatedNode(load.getNode.getUuid)
+          load.copy().node(newN).build()
       }
 
       val mvNode = buildNode(mvVoltage)(
-        s"Mv node for LV subnet $subnetNr (${substation.input.getId})",
-        substation.input.getGeoPosition,
+        s"Mv node for LV subnet $subnetNr (${substationNodeB.input.getId})",
+        substationNodeB.input.getGeoPosition,
         isSlack = true,
       )(using subnet = 100)
 
       val transformer2W = buildTransformer2W(
         mvNode,
-        substation.input,
+        substationNodeB.input,
         parallelDevices = 1,
         transformer2WTypeInput,
       )
@@ -269,8 +275,8 @@ object LvGridGeneratorSupport extends LazyLogging {
       buildGridContainer(
         s"LV-subnet-$subnetNr",
         allNodes.map(_.input).asJava,
-        lvLines.values.toSet.asJava,
-        loads.asJava,
+        updatedLvLines.toSet.asJava,
+        updatedLoads.asJava,
       )(using subnetNr = subnetNr, transformer2Ws = Set(transformer2W).asJava)
     }
   }
