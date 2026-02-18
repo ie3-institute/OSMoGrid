@@ -236,24 +236,27 @@ object LvGridGeneratorSupport extends LazyLogging {
           NodeWrapper(n.input.copy().subnet(subnetNr).build())
         )
 
+      val updatedNodesUuids = updatedNodes.map(_.input.getUuid)
+
       val substation =
         NodeWrapper(cluster.substation.input.copy().subnet(subnetNr).build())
 
-      val lvNodes = updatedNodes.toSet + substation
+      val lvNodes = updatedNodes + substation
+
       val lvLines = lineMap
         .filter { case ((nodeA, nodeB), _) =>
           lvNodes.contains(nodeA) && lvNodes.contains(nodeB)
         }
 
       val loads = gridElements.loads.filter { load =>
-        lvNodes.contains(NodeWrapper(load.getNode))
+        updatedNodesUuids.contains(load.getNode.getUuid)
       }
 
       val mvNode = buildNode(mvVoltage)(
         s"Mv node for LV subnet $subnetNr (${substation.input.getId})",
         substation.input.getGeoPosition,
         isSlack = true,
-      )(subnet = 100)
+      )(using subnet = 100)
 
       val transformer2W = buildTransformer2W(
         mvNode,
@@ -268,7 +271,7 @@ object LvGridGeneratorSupport extends LazyLogging {
         allNodes.map(_.input).asJava,
         lvLines.values.toSet.asJava,
         loads.asJava,
-      )(subnetNr = subnetNr, transformer2Ws = Set(transformer2W).asJava)
+      )(using subnetNr = subnetNr, transformer2Ws = Set(transformer2W).asJava)
     }
   }
 
