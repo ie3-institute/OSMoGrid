@@ -10,11 +10,7 @@ import edu.ie3.datamodel.io.source.csv.CsvJointGridContainerSource
 import edu.ie3.osmogrid.cfg.ConfigFailFastSpec.viableConfigurationString
 import edu.ie3.osmogrid.cfg.{OsmoGridConfig, OsmoGridConfigFactory}
 import edu.ie3.osmogrid.exception.IllegalConfigException
-import edu.ie3.osmogrid.io.output.PersistenceListenerEvent.{
-  InitComplete,
-  InitFailed,
-  ResultHandlingSucceeded,
-}
+import edu.ie3.osmogrid.io.output.PersistenceListenerEvent.{InitComplete, InitFailed, ResultHandlingSucceeded}
 import edu.ie3.test.common.{ThreeWindingTestData, UnitSpec}
 import edu.ie3.util.io.FileIOUtils
 import org.apache.pekko.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -22,7 +18,7 @@ import org.apache.pekko.actor.typed.scaladsl.Behaviors
 
 import java.nio.file.{Files, Path}
 import java.util.UUID
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, Future}
 
 class ResultListenerIT
@@ -112,7 +108,7 @@ class ResultListenerIT
 
         testActor ! GridResult(jointGrid)
 
-        testProbe.expectMessageType[GridResult]
+        testProbe.expectMessageType[GridResult](FiniteDuration(5, "seconds"))
         testProbe.expectMessage(ResultHandlingSucceeded)
         testProbe.expectTerminated(testActor)
 
