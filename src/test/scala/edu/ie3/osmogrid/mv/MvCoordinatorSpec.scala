@@ -128,7 +128,7 @@ class MvCoordinatorSpec
     }
 
     "send all finished results to the guardian" in {
-      val mvGrid: SubGridContainer = mockSubGrid(1)
+      val mvGrid: SubGridContainer = mockSubGrid(2)
 
       idleTestKit.run(
         WrappedMvResponse(FinishedMvGridData(mvGrid, Map.empty))
