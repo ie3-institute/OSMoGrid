@@ -20,14 +20,14 @@ import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.BuildingGraphConnection
 import edu.ie3.util.osm.model.OsmEntity.Node
-import edu.ie3.util.quantities.QuantityUtils._
+import edu.ie3.util.quantities.QuantityUtils.*
 import utils.Clustering
 import utils.Clustering.{Cluster, NodeWrapper}
-import utils.GridConversion._
+import utils.GridConversion.*
 
 import scala.collection.Set
 import scala.collection.parallel.{ParMap, ParSeq}
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 object LvGridGeneratorSupport extends LazyLogging {
 
@@ -216,7 +216,7 @@ object LvGridGeneratorSupport extends LazyLogging {
       mvVoltage: VoltageLevel,
       transformer2WTypeInput: Transformer2WTypeInput,
   ): List[SubGridContainer] = {
-    val cluster: List[Cluster] = Clustering
+    val clusters: List[Cluster] = Clustering
       .setup(
         gridElements,
         lineInputs.toSet,
@@ -229,39 +229,60 @@ object LvGridGeneratorSupport extends LazyLogging {
     }.toMap
 
     // converting the cluster into an actual psdm subgrid
-    cluster.map { c =>
-      val substation = c.substation
-      val nodes = c.nodes ++ Set(substation)
-      val lines = lineMap.filter { case ((nodeA, nodeB), _) =>
-        nodes.contains(nodeA) && nodes.contains(nodeB)
+    clusters.zipWithIndex.map { case (cluster, idx) =>
+      val subnetNr = idx + 1
+      val updatedNodes =
+        cluster.nodes.map(n =>
+          NodeWrapper(n.input.copy().subnet(subnetNr).build())
+        )
+
+      val substationNodeB =
+        NodeWrapper(cluster.substation.input.copy().subnet(subnetNr).build())
+
+      val lvNodes = updatedNodes + substationNodeB
+      val uuidToUpdatedNode =
+        lvNodes.map(n => n.input.getUuid -> n.input).toMap
+
+      val updatedLvLines = lineInputs.collect {
+        case line
+            if uuidToUpdatedNode.contains(line.getNodeA.getUuid) &&
+              uuidToUpdatedNode.contains(line.getNodeB.getUuid) =>
+          val newA = uuidToUpdatedNode(line.getNodeA.getUuid)
+          val newB = uuidToUpdatedNode(line.getNodeB.getUuid)
+          line.copy().nodeA(newA).nodeB(newB).build()
       }
 
-      val loads = gridElements.loads.filter { load =>
-        nodes.contains(NodeWrapper(load.getNode))
+      val updatedLoads = gridElements.loads.collect {
+        case load if uuidToUpdatedNode.contains(load.getNode.getUuid) =>
+          val newN = uuidToUpdatedNode(load.getNode.getUuid)
+          load.copy().node(newN).build()
       }
 
       val mvNode = buildNode(mvVoltage)(
-        s"Mv node to lv node ${substation.input.getId}",
-        substation.input.getGeoPosition,
+        s"Mv node for LV subnet $subnetNr (${substationNodeB.input.getId})",
+        substationNodeB.input.getGeoPosition,
         isSlack = true,
-      )(subnet = 100)
+      )(using subnet = 100)
 
-      val transformer2W =
-        buildTransformer2W(mvNode, substation.input, 1, transformer2WTypeInput)
-
-      val allNodes = nodes ++ Set(NodeWrapper(mvNode))
+      val transformer2W = buildTransformer2W(
+        mvNode,
+        substationNodeB.input,
+        parallelDevices = 1,
+        transformer2WTypeInput,
+      )
+      val allNodes = lvNodes ++ Set(NodeWrapper(mvNode))
 
       buildGridContainer(
-        gridNameBase,
+        s"LV-subnet-$subnetNr",
         allNodes.map(_.input).asJava,
-        lines.values.toSet.asJava,
-        loads.asJava,
-      )(transformer2Ws = Set(transformer2W).asJava)
+        updatedLvLines.toSet.asJava,
+        updatedLoads.asJava,
+      )(using subnetNr = subnetNr, transformer2Ws = Set(transformer2W).asJava)
     }
   }
 
   /** This method will reduce the graph by removing some vertices. A vertex is
-    * removed if its degree is <= 2 and it is not defined to be kept.
+    * removed if its degree is <= 2, and it is not defined to be kept.
     *
     * @param osmGraph
     *   graph to reduce

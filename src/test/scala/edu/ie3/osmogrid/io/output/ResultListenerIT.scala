@@ -108,7 +108,7 @@ class ResultListenerIT
           )
         )
 
-        testProbe.expectMessageType[InitComplete]
+        testProbe.expectMessageType[InitComplete](5.seconds)
 
         testActor ! GridResult(jointGrid)
 

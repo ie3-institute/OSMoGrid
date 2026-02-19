@@ -6,15 +6,14 @@
 
 package utils
 
+import edu.ie3.datamodel.models.input.container.*
 import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
-import edu.ie3.datamodel.models.input.container._
-import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import tech.units.indriya.ComparableQuantity
 
 import javax.measure.quantity.ElectricPotential
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 object GridContainerUtils {
   private val cfg: Voltage = RunGuardian.getVoltageConfig
