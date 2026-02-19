@@ -67,6 +67,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated gradle version 9.2.1 new version  [#649](https://github.com/ie3-institute/OSMoGrid/issues/649)
 - Update to Java 21 [#620](https://github.com/ie3-institute/OSMoGrid/issues/620)
 - Removed snapshot repository [#675](https://github.com/ie3-institute/OSMoGrid/issues/675)
+- Refactor nodeUpdateMap in `SubGridHandling` [#681](https://github.com/ie3-institute/OSMoGrid/issues/681)
+
 
 ### Fixed
 - Fixed bug in `LvGridGeneratorSupport` [#388](https://github.com/ie3-institute/OSMoGrid/issues/388)
