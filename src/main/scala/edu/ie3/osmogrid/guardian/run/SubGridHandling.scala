@@ -202,12 +202,14 @@ object SubGridHandling {
 
     val hv = hvGrids.map { grids =>
       if (grids.size == 1 && grids(0).getGridName == "dummyHvGrid") {
+
         val hvNode: NodeInput = grids(0).getRawGrid.getNodes.asScala.toList
           .sortBy(
             _.getVoltLvl.getNominalVoltage.getValue.doubleValue()
           )
           .lastOption
           .getOrElse(throw GridException("No hv node found."))
+
         (
           Map(hvNode.getUuid -> hvNode.copy().subnet(hvOffset).build()),
           hvOffset + 2,
