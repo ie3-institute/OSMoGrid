@@ -27,9 +27,9 @@ import scala.deriving.Mirror
   *   Subconfig for voltage parameters.
   */
 final case class OsmoGridConfig(
-    generation: OsmoGridConfig.Generation,
-    input: OsmoGridConfig.Input,
-    output: OsmoGridConfig.Output,
+    generation: OsmoGridConfig.Generation = OsmoGridConfig.Generation(),
+    input: OsmoGridConfig.Input = OsmoGridConfig.Input(),
+    output: OsmoGridConfig.Output = OsmoGridConfig.Output(),
     voltage: OsmoGridConfig.Voltage = Voltage(),
 ) derives ConfigConvert
 object OsmoGridConfig {
@@ -126,11 +126,12 @@ object OsmoGridConfig {
       */
     final case class Lv(
         averagePowerDensity: Double,
-        boundaryAdminLevel: OsmoGridConfig.Generation.Lv.BoundaryAdminLevel,
+        boundaryAdminLevel: OsmoGridConfig.Generation.Lv.BoundaryAdminLevel =
+          Lv.BoundaryAdminLevel(),
         considerHouseConnectionPoints: Boolean = false,
         loadSimultaneousFactor: Double = 0.2,
         minDistance: Double,
-        osm: OsmoGridConfig.Generation.Lv.Osm,
+        osm: OsmoGridConfig.Generation.Lv.Osm = Lv.Osm(),
     ) derives ConfigConvert
 
     object Lv {
@@ -187,7 +188,7 @@ object OsmoGridConfig {
   final case class Output(
       addTimestampToOutputDir: Boolean = true,
       csv: Option[OsmoGridConfig.Csv] = None,
-      gridName: String,
+      gridName: String = "",
       grids: Grids = Grids(),
   ) derives ConfigConvert
 
