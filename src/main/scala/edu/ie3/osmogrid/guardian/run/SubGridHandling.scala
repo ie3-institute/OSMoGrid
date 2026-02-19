@@ -227,9 +227,13 @@ object SubGridHandling {
     val allNodes: Seq[NodeInput] = List(lvGrids, mvGrids, hvGrids).flatten
       .flatMap(_.flatMap(_.getRawGrid.getNodes.asScala))
 
-    // final update map
-    allNodes.map { node =>
-      node -> updateMap.getOrElse(node.getUuid, node)
+    // final update map containing only changed nodes
+    allNodes.flatMap { node =>
+      updateMap.get(node.getUuid) match {
+        case Some(updatedNode) if updatedNode != node =>
+          Some(node -> updatedNode)
+        case _ => None
+      }
     }.toMap
   }
 
