@@ -55,7 +55,7 @@ object LvGridGenerator extends LazyLogging {
       val lvVoltage = new VoltageLevel("lv", voltages.lv.default.asKiloVolt)
       val mvVoltage = new VoltageLevel("mv", voltages.mv.default.asKiloVolt)
 
-      val transformer2WTypes = assetInformation.transformerTypes
+      val ratedPower = assetInformation.transformerTypes
         .find { t =>
           t.getvRatedA() == mvVoltage.getNominalVoltage && t
             .getvRatedB() == lvVoltage.getNominalVoltage
@@ -65,11 +65,12 @@ object LvGridGenerator extends LazyLogging {
             s"There are no transformer2WType for voltage levels $mvVoltage and $lvVoltage found within received asset types. Cannot build the grid!"
           )
         )
+        .getsRated()
 
       ctx.log.info(
         s"Finished building of grid graph. Starting to build electrical grid for grid: $gridUuid"
       )
-      val lvSubGrids = connectedGridGraphs.map {
+      val lvSubGrids = connectedGridGraphs.flatMap {
         case (graph, buildingGraphConnections) =>
           buildGrid(
             graph,
@@ -79,7 +80,7 @@ object LvGridGenerator extends LazyLogging {
             config.considerHouseConnectionPoints,
             config.loadSimultaneousFactor,
             lineType,
-            transformer2WTypes,
+            ratedPower,
             gridUuid.toString,
           )
       }
@@ -87,7 +88,7 @@ object LvGridGenerator extends LazyLogging {
       ctx.log.info(
         s"Finished grid generation and sending results for grid: $gridUuid"
       )
-      replyTo ! RepLvGrid(gridUuid, lvSubGrids.flatten)
+      replyTo ! RepLvGrid(gridUuid, lvSubGrids)
       Behaviors.stopped
     case (ctx, unsupported) =>
       ctx.log.warn(s"Received unsupported message '$unsupported'.")

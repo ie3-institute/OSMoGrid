@@ -16,6 +16,7 @@ import edu.ie3.osmogrid.exception.OsmDataException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.osmogrid.io.input.AssetInformation
+import edu.ie3.osmogrid.model.GridData.HvGridData
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.geo.RichGeometries.containsCoordinate
 import edu.ie3.util.osm.OsmUtils.GeometryUtils.buildPolygon
@@ -157,7 +158,7 @@ object OsmoGridUtils {
   def spawnDummyHvNode(
       mvNodes: Seq[NodeInput],
       assetInformation: AssetInformation,
-  ): (JointGridContainer, NodeInput) = {
+  ): (HvGridData, NodeInput) = {
     if (mvNodes.isEmpty) {
       throw new IllegalArgumentException(
         "No mv nodes were provided! Therefore no hv node can be spawned."
@@ -204,34 +205,6 @@ object OsmoGridUtils {
       node.getSubnet + 1000,
     )
 
-    val transformerType = assetInformation.transformerTypes
-      .find { t =>
-        t.getvRatedA().isEquivalentTo(hvVoltage.getNominalVoltage) && t
-          .getvRatedB()
-          .isEquivalentTo(node.getVoltLvl.getNominalVoltage)
-      }
-      .getOrElse(
-        throw new IllegalArgumentException(
-          "No transformer type for hv -> mv found."
-        )
-      )
-
-    val transformer = new Transformer2WInput(
-      UUID.randomUUID(),
-      s"Transformer between ${hvNode.getId} and ${node.getId}",
-      OperatorInput.NO_OPERATOR_ASSIGNED,
-      OperationTime.notLimited(),
-      hvNode,
-      node,
-      2,
-      transformerType,
-      0,
-      true,
-    )
-
-    (
-      GridContainerUtils.from(List(hvNode, transformer, node), "dummyHvGrid"),
-      node,
-    )
+    (HvGridData(hvNode), node)
   }
 }

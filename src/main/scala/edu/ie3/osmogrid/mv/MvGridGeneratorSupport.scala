@@ -14,13 +14,14 @@ import edu.ie3.datamodel.models.input.system.LoadInput
 import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.io.input.AssetInformation
+import edu.ie3.osmogrid.model.GridData.MvGridData
 import tech.units.indriya.ComparableQuantity
 import utils.GridConversion.{NodeConversion, buildGridContainer, buildLine}
 
 import java.util
 import java.util.UUID
 import javax.measure.quantity.ElectricPotential
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 object MvGridGeneratorSupport {
 
@@ -45,7 +46,7 @@ object MvGridGeneratorSupport {
       mvSlackNode: Option[UUID],
       nodeConversion: NodeConversion,
       assetInformation: AssetInformation,
-  ): (SubGridContainer, Map[UUID, NodeInput]) = {
+  ): MvGridData = {
     // converting the osm nodes to psdm nodes
     val nodes: Map[UUID, NodeInput] =
       graph
@@ -54,7 +55,10 @@ object MvGridGeneratorSupport {
         .map { node =>
           val nodeInput = nodeConversion.getPSDMNode(node)
           val uuid = nodeInput.getUuid
-          val copy = nodeInput.copy().subnet(n)
+          
+          val id = s"MV node for LV node: ${node.id}"
+          
+          val copy = nodeInput.copy().subnet(n).id(id)
 
           // necessary if a mv node is a slack node
           val isSlack = mvSlackNode.contains(uuid)
@@ -99,6 +103,8 @@ object MvGridGeneratorSupport {
       }
       .toSet
 
+    
+    
     val subGridContainer = buildGridContainer(
       s"Subnet_$n",
       nodes.values.toSet.asJava,

@@ -6,8 +6,6 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.MessageAdapters.{
   WrappedLvCoordinatorResponse,
@@ -16,6 +14,8 @@ import edu.ie3.osmogrid.guardian.run.MessageAdapters.{
 import edu.ie3.osmogrid.io.output.ResultListenerProtocol
 import edu.ie3.osmogrid.lv.RepLvGrids
 import edu.ie3.osmogrid.mv.{ProvidedLvData, RepMvGrids, WrappedMvResponse}
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 
 import java.util.UUID
 import scala.util.{Failure, Success}
@@ -120,7 +120,7 @@ object RunGuardian
     case (
           ctx,
           WrappedLvCoordinatorResponse(
-            RepLvGrids(subGridContainer, streetGraph)
+            RepLvGrids(grids, streetGraph)
           ),
         ) =>
       ctx.log.info(s"Received lv grids.")
@@ -132,11 +132,11 @@ object RunGuardian
       // if a mv coordinator is present, send the lv results to the mv coordinator
       childReferences.mvCoordinator.foreach { mv =>
         mv ! WrappedMvResponse(
-          ProvidedLvData(subGridContainer, streetGraph)
+          ProvidedLvData(grids, streetGraph)
         )
       }
 
-      val updated = finishedGridData.copy(lvData = Some(subGridContainer))
+      val updated = finishedGridData.copy(lvData = Some(grids))
 
       // check if all possible data was received
       if (!updatedChildReferences.stillRunning) {
@@ -198,7 +198,7 @@ object RunGuardian
         finishedGridData.assetInformation,
         childReferences.resultListeners,
         runGuardianData.msgAdapters,
-      )(ctx.log)
+      )(using ctx.log)
 
       stopping(stopChildren(runGuardianData.runId, childReferences, ctx))
     case (ctx, ResultEventListenerDied) =>

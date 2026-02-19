@@ -199,7 +199,7 @@ object Clustering {
   def setup(
       gridElements: GridElements,
       lines: Set[LineInput],
-      transformer2WTypeInput: Transformer2WTypeInput,
+      ratedPower: ComparableQuantity[Power],
       loadSimultaneousFactor: Double,
   ): Clustering = {
     if (gridElements.nodes.size + gridElements.substations.size < 2) {
@@ -209,7 +209,7 @@ object Clustering {
     val substationCount = getSubstationCount(
       gridElements.loads.toSet,
       loadSimultaneousFactor,
-      transformer2WTypeInput,
+      ratedPower,
     )
 
     val nodes = gridElements.nodes.values.map(NodeWrapper.apply).toIndexedSeq
@@ -248,15 +248,15 @@ object Clustering {
     *   all loads
     * @param loadSimultaneousFactor
     *   for loads
-    * @param transformer2WTypeInput
-    *   type of transformer
+    * @param ratedPower
+    *   rated power to use
     * @return
     *   a number of substations
     */
   private def getSubstationCount(
       loads: Set[LoadInput],
       loadSimultaneousFactor: Double,
-      transformer2WTypeInput: Transformer2WTypeInput,
+      ratedPower: ComparableQuantity[Power],
   ): Int = {
     // calculates the maximum power
     val maxPower: ComparableQuantity[Power] =
@@ -268,18 +268,11 @@ object Clustering {
       }
 
     // calculates the number of substations we need
-    if (transformer2WTypeInput.getsRated().isGreaterThan(maxPower)) {
+    if (power.isGreaterThan(maxPower)) {
       1 // if one substation is enough
     } else {
       // rounds up the number of substations
-      Math
-        .ceil(
-          maxPower
-            .divide(transformer2WTypeInput.getsRated())
-            .getValue
-            .doubleValue()
-        )
-        .toInt
+      Math.ceil(maxPower.divide(power).getValue.doubleValue()).toInt
     }
   }
 

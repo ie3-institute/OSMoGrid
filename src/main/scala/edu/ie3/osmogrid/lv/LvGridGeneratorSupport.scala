@@ -7,7 +7,6 @@
 package edu.ie3.osmogrid.lv
 
 import com.typesafe.scalalogging.LazyLogging
-import edu.ie3.datamodel.models.input.NodeInput
 import edu.ie3.datamodel.models.input.connector.LineInput
 import edu.ie3.datamodel.models.input.connector.`type`.{
   LineTypeInput,
@@ -15,19 +14,24 @@ import edu.ie3.datamodel.models.input.connector.`type`.{
 }
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.datamodel.models.input.system.LoadInput
+import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.osmogrid.exception.IllegalStateException
 import edu.ie3.osmogrid.graph.OsmGraph
 import edu.ie3.osmogrid.lv.LvGraphGeneratorSupport.BuildingGraphConnection
+import edu.ie3.osmogrid.model.GridData
+import edu.ie3.osmogrid.model.GridData.{LvGridData, combine}
 import edu.ie3.util.osm.model.OsmEntity.Node
-import edu.ie3.util.quantities.QuantityUtils._
+import edu.ie3.util.quantities.QuantityUtils.*
+import tech.units.indriya.ComparableQuantity
 import utils.Clustering
 import utils.Clustering.{Cluster, NodeWrapper}
-import utils.GridConversion._
+import utils.GridConversion.*
 
+import javax.measure.quantity.Power
 import scala.collection.Set
 import scala.collection.parallel.{ParMap, ParSeq}
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 object LvGridGeneratorSupport extends LazyLogging {
 
@@ -87,9 +91,9 @@ object LvGridGeneratorSupport extends LazyLogging {
       considerHouseConnectionPoints: Boolean,
       loadSimultaneousFactor: Double,
       lineType: LineTypeInput,
-      transformer2WTypeInput: Transformer2WTypeInput,
+      ratedPower: ComparableQuantity[Power],
       gridName: String,
-  ): Seq[SubGridContainer] = {
+  ): Seq[LvGridData] = {
     val nodesWithBuildings: ParMap[Node, BuildingGraphConnection] =
       buildingGraphConnections.map(bgc => (bgc.graphConnectionNode, bgc)).toMap
 
@@ -188,7 +192,7 @@ object LvGridGeneratorSupport extends LazyLogging {
       gridName,
       loadSimultaneousFactor,
       mvVoltage,
-      transformer2WTypeInput,
+      ratedPower,
     )
   }
 
@@ -204,8 +208,8 @@ object LvGridGeneratorSupport extends LazyLogging {
     *   simultaneous factor for loads
     * @param mvVoltage
     *   the rated medium voltage of the grid to build
-    * @param transformer2WTypeInput
-    *   type used for two winding transformers
+    * @param ratedPower
+    *   rated power to use
     * @return
     */
   private def clusterLvGrids(
@@ -214,49 +218,46 @@ object LvGridGeneratorSupport extends LazyLogging {
       gridNameBase: String,
       loadSimultaneousFactor: Double,
       mvVoltage: VoltageLevel,
-      transformer2WTypeInput: Transformer2WTypeInput,
-  ): List[SubGridContainer] = {
+      ratedPower: ComparableQuantity[Power],
+  ): Seq[LvGridData] = {
     val cluster: List[Cluster] = Clustering
       .setup(
         gridElements,
         lineInputs.toSet,
-        transformer2WTypeInput,
+        ratedPower,
         loadSimultaneousFactor,
       )
       .run
     val lineMap = lineInputs.map { l =>
-      (NodeWrapper(l.getNodeA), NodeWrapper(l.getNodeB)) -> l
+      (l.getNodeA.getUuid, l.getNodeB.getUuid) -> l
     }.toMap
 
     // converting the cluster into an actual psdm subgrid
-    cluster.map { c =>
-      val substation = c.substation
-      val nodes = c.nodes ++ Set(substation)
-      val lines = lineMap.filter { case ((nodeA, nodeB), _) =>
-        nodes.contains(nodeA) && nodes.contains(nodeB)
+    cluster.zipWithIndex.map { case (c, idx) =>
+      val subgridNo = idx + 1
+
+      val substation = c.substation.input.copy().subnet(subgridNo).build()
+      val nodes =
+        c.nodes.map(_.input.copy().subnet(subgridNo).build()) ++ Set(substation)
+
+      val nodeMap = nodes.map(node => node.getUuid -> node).toMap
+
+      val lines = lineMap.flatMap {
+        case ((nodeA, nodeB), line)
+            if nodeMap.contains(nodeA) && nodeMap.contains(nodeB) =>
+          Some(line.copy().nodeA(nodeMap(nodeA)).nodeB(nodeMap(nodeB)).build())
+        case _ => None
       }
 
-      val loads = gridElements.loads.filter { load =>
-        nodes.contains(NodeWrapper(load.getNode))
+      val loads = gridElements.loads.flatMap { load =>
+        nodeMap.get(load.getNode.getUuid).map { node =>
+          load.copy().node(node).build()
+        }
       }
 
-      val mvNode = buildNode(mvVoltage)(
-        s"Mv node to lv node ${substation.input.getId}",
-        substation.input.getGeoPosition,
-        isSlack = true,
-      )(subnet = 100)
+      val assets = nodes.toSeq ++ lines ++ loads
 
-      val transformer2W =
-        buildTransformer2W(mvNode, substation.input, 1, transformer2WTypeInput)
-
-      val allNodes = nodes ++ Set(NodeWrapper(mvNode))
-
-      buildGridContainer(
-        gridNameBase,
-        allNodes.map(_.input).asJava,
-        lines.values.toSet.asJava,
-        loads.asJava,
-      )(transformer2Ws = Set(transformer2W).asJava)
+      LvGridData(substation, assets)
     }
   }
 

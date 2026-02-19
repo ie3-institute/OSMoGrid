@@ -15,6 +15,7 @@ import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.{AssetInformation, InputDataEvent}
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.{LvRequest, LvResponse}
+import edu.ie3.osmogrid.model.GridData.{HvGridData, LvGridData, MvGridData}
 import edu.ie3.osmogrid.mv.{MvRequest, MvResponse}
 import org.apache.pekko.actor.typed.ActorRef
 
@@ -132,9 +133,9 @@ private[run] final case class StoppingData(
 }
 
 final case class FinishedGridData(
-    lvData: Option[Seq[SubGridContainer]],
-    mvData: Option[Seq[SubGridContainer]],
-    hvData: Option[Seq[GridContainer]],
+    lvData: Option[Seq[LvGridData]],
+    mvData: Option[Seq[MvGridData]],
+    hvData: Option[Seq[HvGridData]],
     mvNodeChanges: Option[Map[UUID, NodeInput]],
     assetInformation: Option[AssetInformation],
 ) extends StateData

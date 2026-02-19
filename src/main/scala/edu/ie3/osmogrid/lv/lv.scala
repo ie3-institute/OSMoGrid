@@ -6,6 +6,7 @@
 
 package edu.ie3.osmogrid.lv
 
+import edu.ie3.datamodel.models.input.NodeInput
 import org.apache.pekko.actor.typed.ActorRef
 import edu.ie3.datamodel.models.input.container.SubGridContainer
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
@@ -22,6 +23,7 @@ import edu.ie3.osmogrid.lv.region_coordinator.{
   LvRegionRequest,
   LvRegionResponse,
 }
+import edu.ie3.osmogrid.model.GridData.LvGridData
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import org.slf4j.Logger
 
@@ -102,12 +104,12 @@ sealed trait LvGridResponse
   * @param streetGraph
   *   [[OsmGraph]] of the streets
   */
-final case class RepLvGrids(grids: Seq[SubGridContainer], streetGraph: OsmGraph)
+final case class RepLvGrids(grids: Seq[LvGridData], streetGraph: OsmGraph)
     extends LvResponse
 
 final case class RepLvGrid(
     gridUuid: UUID,
-    grid: Seq[SubGridContainer],
+    grid: Seq[LvGridData],
 ) extends LvGridResponse
 
 /** State data for orientation of the actor
@@ -208,21 +210,21 @@ private[lv] object AwaitingData {
 
 private[lv] final case class ResultData(
     expectedGrids: Set[UUID],
-    subGridContainers: Seq[SubGridContainer],
+    lvGridData: Seq[LvGridData],
 ) {
 
   def update(expectedGrid: UUID): ResultData = {
-    ResultData(expectedGrids + expectedGrid, subGridContainers)
+    ResultData(expectedGrids + expectedGrid, lvGridData)
   }
 
   def update(
       expectedGrid: UUID,
-      subGridContainer: Seq[SubGridContainer],
+      newData: Seq[LvGridData],
   ): ResultData = {
     if (expectedGrids.contains(expectedGrid)) {
       return ResultData(
         expectedGrids - expectedGrid,
-        subGridContainers ++ subGridContainer,
+        lvGridData ++ newData,
       )
     }
     throw IllegalStateException(
@@ -232,7 +234,5 @@ private[lv] final case class ResultData(
 }
 
 private[lv] object ResultData {
-  def empty: ResultData = {
-    ResultData(Set.empty[UUID], Seq.empty[SubGridContainer])
-  }
+  def empty: ResultData = ResultData(Set.empty[UUID], Seq.empty)
 }

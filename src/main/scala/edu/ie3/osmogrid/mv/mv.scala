@@ -28,6 +28,7 @@ import org.apache.pekko.actor.typed.ActorRef
 import org.slf4j.Logger
 import utils.GridConversion.NodeConversion
 import VoronoiPolygonSupport.VoronoiPolygon
+import edu.ie3.osmogrid.model.GridData.{HvGridData, LvGridData, MvGridData}
 
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
@@ -98,15 +99,15 @@ final case class StartMvGraphConversion(
 /** Response for a mv coordinator that contains the converted grid structure as
   * nodes and lines.
   *
-  * @param subGridContainer
-  *   container with the generated grid
-  * @param nodeChanges
-  *   nodes that were changed during mv generation
+  * @param grid
+  *   that was generated
+  * @param subgridNo
+  *   number of the subgrid
   */
 private[mv] final case class FinishedMvGridData(
-    subGridContainer: SubGridContainer,
-    nodeChanges: Map[UUID, NodeInput],
-) extends MvResponse
+    grid: MvGridData,
+    subgridNo: Int
+                                               ) extends MvResponse
 
 /** Request for a mv coordinator to start the generation of medium voltage
   * grids.
@@ -121,8 +122,8 @@ private[mv] final case class FinishedMvGridData(
   *   information for assets
   */
 final case class StartMvGeneration(
-    lvGrids: Seq[SubGridContainer],
-    hvGrids: Option[Seq[SubGridContainer]],
+    lvGrids: Seq[LvGridData],
+    hvGrids: Option[Seq[HvGridData]],
     streetGraph: OsmGraph,
     assetInformation: AssetInformation,
 ) extends MvRequest
@@ -133,15 +134,12 @@ final case class StartMvGeneration(
   *   Collection of medium voltage grids
   * @param dummyHvGrid
   *   if one was spawned
-  * @param nodeChanges
-  *   updated nodes
   * @param assetInformation
   *   contains information for assets
   */
 final case class RepMvGrids(
-    grids: Seq[SubGridContainer],
-    dummyHvGrid: Option[JointGridContainer],
-    nodeChanges: Map[UUID, NodeInput],
+    grids: Seq[MvGridData],
+    dummyHvGrid: Option[HvGridData],
     assetInformation: AssetInformation,
 ) extends MvResponse
 
@@ -153,7 +151,7 @@ final case class RepMvGrids(
   *   a graph of the streets
   */
 final case class ProvidedLvData(
-    lvGrids: Seq[SubGridContainer],
+    lvGrids: Seq[LvGridData],
     streetGraph: OsmGraph,
 ) extends MvResponse
 
@@ -163,7 +161,7 @@ final case class ProvidedLvData(
   *   high voltage grids
   */
 final case class ProvidedHvData(
-    hvGrids: Seq[SubGridContainer]
+    hvGrids: Seq[HvGridData]
 ) extends MvResponse
 
 /** Utility class that contains some message adapters.
@@ -202,8 +200,8 @@ private[mv] final case class AwaitingInputData(
     cfg: OsmoGridConfig.Generation.Mv,
     hvGridsRequired: Boolean,
     runGuardian: ActorRef[MvResponse],
-    lvGrids: Option[Seq[SubGridContainer]],
-    hvGrids: Option[Seq[SubGridContainer]],
+    lvGrids: Option[Seq[LvGridData]],
+    hvGrids: Option[Seq[HvGridData]],
     streetGraph: Option[OsmGraph],
     assetInformation: Option[AssetInformation],
 ) {
@@ -288,18 +286,15 @@ private[mv] object AwaitingInputData {
   *   a set of sub grids that are not generated yet
   * @param dummyHvGrid
   *   if one was spawned
-  * @param subGridContainer
+  * @param grids
   *   all finished sub grids
-  * @param nodes
-  *   that were changed during the mv generation
   * @param assetInformation
   *   information for assets
   */
 private[mv] final case class MvResultData(
     subnets: Set[Int],
-    dummyHvGrid: Option[JointGridContainer],
-    subGridContainer: Seq[SubGridContainer],
-    nodes: Map[UUID, NodeInput],
+    dummyHvGrid: Option[HvGridData],
+    grids: Seq[MvGridData],
     assetInformation: AssetInformation,
 ) extends MvRequest {
 
@@ -307,26 +302,20 @@ private[mv] final case class MvResultData(
     *
     * @param subgrid
     *   that was generated
-    * @param nodeChanges
-    *   [[NodeInput]]s that were changed
     * @return
     *   an updated [[MvResultData]]
     */
-  def update(
-      subgrid: SubGridContainer,
-      nodeChanges: Map[UUID, NodeInput],
-  ): MvResultData = {
-    if (subnets.contains(subgrid.getSubnet)) {
+  def update(subgrid: MvGridData, subgridNo: Int): MvResultData = {
+    if (subnets.contains(subgridNo)) {
       MvResultData(
-        subnets - subgrid.getSubnet,
+        subnets - subgridNo,
         dummyHvGrid,
-        subGridContainer :+ subgrid,
-        nodes ++ nodeChanges,
+        grids :+ subgrid,
         assetInformation,
       )
     } else {
       throw IllegalStateException(
-        s"Trying to update with subgrid container that was not expected. Subnet: ${subgrid.getSubnet}"
+        s"Trying to update with subgrid container that was not expected. Subnet: $subgridNo"
       )
     }
   }
@@ -347,9 +336,9 @@ private[mv] object MvResultData {
     */
   def empty(
       subnets: Set[Int],
-      dummyHvGrid: Option[JointGridContainer],
+      dummyHvGrid: Option[HvGridData],
       assetInformation: AssetInformation,
   ): MvResultData = {
-    MvResultData(subnets, dummyHvGrid, Seq.empty, Map.empty, assetInformation)
+    MvResultData(subnets, dummyHvGrid, Seq.empty, assetInformation)
   }
 }
