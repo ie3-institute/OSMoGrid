@@ -8,7 +8,7 @@ package edu.ie3.osmogrid.io.input
 
 import org.apache.pekko.actor.typed.{ActorSystem, Behavior}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Csv
 import edu.ie3.test.common.UnitSpec
 import org.scalatestplus.mockito.MockitoSugar.mock
 
@@ -20,7 +20,7 @@ class AssetSourceSpec extends UnitSpec {
 
   "a asset file source should read asset data successfully" in {
     val dir = getResourcePath("/lv_assets")
-    val assetCfg = Asset(Some(File(dir, hierarchic = false, ",")))
+    val assetCfg = Asset(Some(Csv(dir, hierarchic = false, ",")))
     val system = ActorSystem(mock[Behavior[String]], "test_system")
     val assetSource = AssetSource(system.executionContext, assetCfg)
     Try(Await.result(assetSource.read(), 15.seconds)) match {

@@ -190,7 +190,7 @@ object RunGuardian
       ctx.log.info(s"Starting to handle grid results.")
 
       handleResults(
-        runGuardianData.cfg.grids.output,
+        runGuardianData.cfg.output.grids,
         finishedGridData.lvData,
         finishedGridData.mvData,
         finishedGridData.hvData,

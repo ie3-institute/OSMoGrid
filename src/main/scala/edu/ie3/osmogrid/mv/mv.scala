@@ -273,7 +273,7 @@ private[mv] object AwaitingInputData {
       cfg.generation.mv.getOrElse(
         throw IllegalConfigException(s"No medium voltage config found in $cfg!")
       ),
-      cfg.grids.output.hv,
+      cfg.output.grids.hv,
       runGuardian,
       None,
       None,
