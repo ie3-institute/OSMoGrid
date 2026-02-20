@@ -8,7 +8,8 @@ package edu.ie3.osmogrid.utils
 
 import edu.ie3.datamodel.models.StandardUnits
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage.{Hv, Lv, Mv}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage
 import edu.ie3.test.common.UnitSpec
 import tech.units.indriya.quantity.Quantities
 import utils.VoltageUtils
@@ -32,13 +33,13 @@ class VoltageUtilsSpec extends UnitSpec {
       val cases = Table(
         ("cfg", "expected"),
         (
-          Lv(0.4, "lv", None),
+          OsmoGridConfig.VoltageLevel(0.4, "lv", None),
           List(
             Quantities.getQuantity(0.4, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
           ),
         ),
         (
-          Lv(0.4, "lv", Some(List(1d, 0.32, 0.7))),
+          OsmoGridConfig.VoltageLevel(0.4, "lv", Some(List(1d, 0.32, 0.7))),
           List(
             Quantities.getQuantity(1d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
             Quantities.getQuantity(0.32, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
@@ -56,13 +57,13 @@ class VoltageUtilsSpec extends UnitSpec {
       val cases = Table(
         ("cfg", "expected"),
         (
-          Mv(10.0, "mv", None),
+          OsmoGridConfig.VoltageLevel(10.0, "mv", None),
           List(
             Quantities.getQuantity(10d, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
           ),
         ),
         (
-          Mv(10.0, "mv", Some(List(10d, 20d, 30d))),
+          OsmoGridConfig.VoltageLevel(10.0, "mv", Some(List(10d, 20d, 30d))),
           List(
             Quantities.getQuantity(10d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
             Quantities.getQuantity(20d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
@@ -80,13 +81,13 @@ class VoltageUtilsSpec extends UnitSpec {
       val cases = Table(
         ("cfg", "expected"),
         (
-          Hv(110.0, "hvh", None),
+          OsmoGridConfig.VoltageLevel(110.0, "hvh", None),
           List(
             Quantities.getQuantity(110d, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
           ),
         ),
         (
-          Hv(110.0, "hv", Some(List(100d, 120d, 60d))),
+          OsmoGridConfig.VoltageLevel(110.0, "hv", Some(List(100d, 120d, 60d))),
           List(
             Quantities.getQuantity(100d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
             Quantities.getQuantity(120d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),

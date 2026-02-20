@@ -6,21 +6,12 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Voltage.{Hv, Lv, Mv}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Voltage, VoltageLevel}
 
 /** Simple wrapper object that holds a [[Voltage]] config for global access. The
   * current config can be retrieved via the [[getVoltageConfig]] method.
   */
 trait VoltageSupport {
-
-  /** Default [[Voltage]] values.
-    */
-  val DEFAULT: Voltage = Voltage(
-    Hv(110.0, "hv", None),
-    Lv(0.4, "lv", None),
-    Mv(10.0, "mv", None),
-  )
 
   private var cfg: Option[Voltage] = None
 
@@ -34,5 +25,5 @@ trait VoltageSupport {
 
   /** Returns the [[Voltage]] config or a default value.
     */
-  def getVoltageConfig: Voltage = cfg.getOrElse(DEFAULT)
+  def getVoltageConfig: Voltage = cfg.getOrElse(Voltage())
 }

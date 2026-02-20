@@ -6,657 +6,219 @@
 
 package edu.ie3.osmogrid.cfg
 
+import com.typesafe.config.Config
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Grids, Voltage}
+import edu.ie3.osmogrid.exception.IllegalConfigException
+import pureconfig.error.*
+import pureconfig.generic.*
+import pureconfig.generic.semiauto.deriveConvert
+import pureconfig.*
+
+import scala.deriving.Mirror
+
+/** Configuration for OSMoGrid.
+  * @param generation
+  *   Subconfig for grid generation.
+  * @param input
+  *   Subconfig for input parameters.
+  * @param output
+  *   Subconfig for output parameters.
+  * @param voltage
+  *   Subconfig for voltage parameters.
+  */
 final case class OsmoGridConfig(
-    generation: OsmoGridConfig.Generation,
-    grids: OsmoGridConfig.Grids,
-    input: OsmoGridConfig.Input,
-    output: OsmoGridConfig.Output,
-    voltage: OsmoGridConfig.Voltage,
-)
+    generation: OsmoGridConfig.Generation = OsmoGridConfig.Generation(),
+    input: OsmoGridConfig.Input = OsmoGridConfig.Input(),
+    output: OsmoGridConfig.Output = OsmoGridConfig.Output(),
+    voltage: OsmoGridConfig.Voltage = Voltage(),
+) derives ConfigConvert
 object OsmoGridConfig {
-  final case class Generation(
-      lv: scala.Option[OsmoGridConfig.Generation.Lv],
-      mv: scala.Option[OsmoGridConfig.Generation.Mv],
+  // pure config start
+  implicit def productHint[T]: ProductHint[T] =
+    ProductHint[T](ConfigFieldMapping(CamelCase, CamelCase))
+
+  extension (c: ConfigConvert.type)
+    inline def derived[A](using m: Mirror.Of[A]): ConfigConvert[A] =
+      deriveConvert[A]
+
+  def apply(typeSafeConfig: Config): OsmoGridConfig =
+    apply(ConfigSource.fromConfig(typeSafeConfig))
+
+  def apply(confSrc: ConfigObjectSource): OsmoGridConfig =
+    confSrc.load[OsmoGridConfig] match {
+      case Left(readerFailures) =>
+        val detailedErrors = readerFailures.toList
+          .map {
+            case CannotParse(msg, origin) =>
+              f"CannotParse => $msg, Origin: $origin \n"
+            case _: CannotRead =>
+              f"CannotRead => Can not read config source} \n"
+            case ConvertFailure(reason, _, path) =>
+              f"ConvertFailure => Path: $path, Description: ${reason.description} \n"
+            case ThrowableFailure(throwable, origin) =>
+              f"ThrowableFailure => ${throwable.getMessage}, Origin: $origin \n"
+            case failure =>
+              f"Unknown failure type => ${failure.toString} \n"
+          }
+          .mkString("\n")
+        throw IllegalConfigException(
+          s"Unable to load config due to following failures:\n$detailedErrors"
+        )
+      case Right(conf) => conf
+    }
+
+  // pure config end
+
+  /** Parameters for csv files.
+    * @param directory
+    *   Folder of the files.
+    * @param hierarchic
+    *   If the files are using hierarchical structure.
+    * @param separator
+    *   The separator to use.
+    */
+  final case class Csv(
+      directory: String,
+      hierarchic: Boolean = false,
+      separator: String = ",",
+  ) derives ConfigConvert
+
+  /** Definition of a voltage level.
+    * @param default
+    *   The default rated voltage.
+    * @param id
+    *   The id of this level.
+    * @param vNom
+    *   Option for a list with more rated voltages (default: None).
+    */
+  case class VoltageLevel(
+      default: Double,
+      id: String,
+      vNom: Option[List[Double]] = None,
   )
+
+  /** Generation config parameters.
+    * @param lv
+    *   Option for parameters for low voltage generation (default: None).
+    * @param mv
+    *   Option for parameters for medium voltage generation (default: None).
+    */
+  final case class Generation(
+      lv: Option[OsmoGridConfig.Generation.Lv] = None,
+      mv: Option[OsmoGridConfig.Generation.Mv] = None,
+  ) derives ConfigConvert
+
   object Generation {
+
+    /** Parameters for low voltage generation.
+      * @param averagePowerDensity
+      *   The average power density to use.
+      * @param boundaryAdminLevel
+      *   Boundary admin configuration.
+      * @param considerHouseConnectionPoints
+      *   Should house connection points be considered (default: false).
+      * @param loadSimultaneousFactor
+      *   The load simultaneous factor to use (default: 0.2)
+      * @param minDistance
+      *   Minimal distance.
+      * @param osm
+      *   The open street map filters to use.
+      */
     final case class Lv(
-        averagePowerDensity: scala.Double,
-        boundaryAdminLevel: OsmoGridConfig.Generation.Lv.BoundaryAdminLevel,
-        considerHouseConnectionPoints: scala.Boolean,
-        loadSimultaneousFactor: scala.Double,
-        minDistance: scala.Double,
-        osm: OsmoGridConfig.Generation.Lv.Osm,
-    )
+        averagePowerDensity: Double,
+        boundaryAdminLevel: OsmoGridConfig.Generation.Lv.BoundaryAdminLevel =
+          Lv.BoundaryAdminLevel(),
+        considerHouseConnectionPoints: Boolean = false,
+        loadSimultaneousFactor: Double = 0.2,
+        minDistance: Double,
+        osm: OsmoGridConfig.Generation.Lv.Osm = Lv.Osm(),
+    ) derives ConfigConvert
+
     object Lv {
+
       final case class BoundaryAdminLevel(
-          lowest: scala.Int,
-          starting: scala.Int,
-      )
-      object BoundaryAdminLevel {
-        def apply(
-            c: com.typesafe.config.Config,
-            parentPath: java.lang.String,
-            $tsCfgValidator: $TsCfgValidator,
-        ): OsmoGridConfig.Generation.Lv.BoundaryAdminLevel = {
-          OsmoGridConfig.Generation.Lv.BoundaryAdminLevel(
-            lowest = if (c.hasPathOrNull("lowest")) c.getInt("lowest") else 8,
-            starting =
-              if (c.hasPathOrNull("starting")) c.getInt("starting") else 2,
-          )
-        }
-      }
+          lowest: Int = 8,
+          starting: Int = 2,
+      ) derives ConfigConvert
 
       final case class Osm(
-          filter: scala.Option[OsmoGridConfig.Generation.Lv.Osm.Filter]
-      )
+          filter: Option[OsmoGridConfig.Generation.Lv.Osm.Filter] = None
+      ) derives ConfigConvert
+
       object Osm {
+
         final case class Filter(
-            building: scala.List[java.lang.String],
-            highway: scala.List[java.lang.String],
-            landuse: scala.List[java.lang.String],
-        )
-        object Filter {
-          def apply(
-              c: com.typesafe.config.Config,
-              parentPath: java.lang.String,
-              $tsCfgValidator: $TsCfgValidator,
-          ): OsmoGridConfig.Generation.Lv.Osm.Filter = {
-            OsmoGridConfig.Generation.Lv.Osm.Filter(
-              building =
-                $_L$_str(c.getList("building"), parentPath, $tsCfgValidator),
-              highway =
-                $_L$_str(c.getList("highway"), parentPath, $tsCfgValidator),
-              landuse =
-                $_L$_str(c.getList("landuse"), parentPath, $tsCfgValidator),
-            )
-          }
-        }
-
-        def apply(
-            c: com.typesafe.config.Config,
-            parentPath: java.lang.String,
-            $tsCfgValidator: $TsCfgValidator,
-        ): OsmoGridConfig.Generation.Lv.Osm = {
-          OsmoGridConfig.Generation.Lv.Osm(
-            filter =
-              if (c.hasPathOrNull("filter"))
-                scala.Some(
-                  OsmoGridConfig.Generation.Lv.Osm.Filter(
-                    c.getConfig("filter"),
-                    parentPath + "filter.",
-                    $tsCfgValidator,
-                  )
-                )
-              else None
-          )
-        }
-      }
-
-      def apply(
-          c: com.typesafe.config.Config,
-          parentPath: java.lang.String,
-          $tsCfgValidator: $TsCfgValidator,
-      ): OsmoGridConfig.Generation.Lv = {
-        OsmoGridConfig.Generation.Lv(
-          averagePowerDensity =
-            $_reqDbl(parentPath, c, "averagePowerDensity", $tsCfgValidator),
-          boundaryAdminLevel = OsmoGridConfig.Generation.Lv.BoundaryAdminLevel(
-            if (c.hasPathOrNull("boundaryAdminLevel"))
-              c.getConfig("boundaryAdminLevel")
-            else
-              com.typesafe.config.ConfigFactory
-                .parseString("boundaryAdminLevel{}"),
-            parentPath + "boundaryAdminLevel.",
-            $tsCfgValidator,
-          ),
-          considerHouseConnectionPoints = c.hasPathOrNull(
-            "considerHouseConnectionPoints"
-          ) && c.getBoolean("considerHouseConnectionPoints"),
-          loadSimultaneousFactor =
-            if (c.hasPathOrNull("loadSimultaneousFactor"))
-              c.getDouble("loadSimultaneousFactor")
-            else 0.2,
-          minDistance = $_reqDbl(parentPath, c, "minDistance", $tsCfgValidator),
-          osm = OsmoGridConfig.Generation.Lv.Osm(
-            if (c.hasPathOrNull("osm")) c.getConfig("osm")
-            else com.typesafe.config.ConfigFactory.parseString("osm{}"),
-            parentPath + "osm.",
-            $tsCfgValidator,
-          ),
-        )
-      }
-      private def $_reqDbl(
-          parentPath: java.lang.String,
-          c: com.typesafe.config.Config,
-          path: java.lang.String,
-          $tsCfgValidator: $TsCfgValidator,
-      ): scala.Double = {
-        if (c == null) 0
-        else
-          try c.getDouble(path)
-          catch {
-            case e: com.typesafe.config.ConfigException =>
-              $tsCfgValidator.addBadPath(parentPath + path, e)
-              0
-          }
+            building: List[String] = Nil,
+            highway: List[String] = Nil,
+            landuse: List[String] = Nil,
+        ) derives ConfigConvert
       }
 
     }
 
     final case class Mv(
-        spawnMissingHvNodes: scala.Boolean
-    )
-    object Mv {
-      def apply(
-          c: com.typesafe.config.Config,
-          parentPath: java.lang.String,
-          $tsCfgValidator: $TsCfgValidator,
-      ): OsmoGridConfig.Generation.Mv = {
-        OsmoGridConfig.Generation.Mv(
-          spawnMissingHvNodes =
-            !c.hasPathOrNull("spawnMissingHvNodes") || c.getBoolean(
-              "spawnMissingHvNodes"
-            )
-        )
-      }
-    }
+        spawnMissingHvNodes: Boolean = true
+    ) derives ConfigConvert
 
-    def apply(
-        c: com.typesafe.config.Config,
-        parentPath: java.lang.String,
-        $tsCfgValidator: $TsCfgValidator,
-    ): OsmoGridConfig.Generation = {
-      OsmoGridConfig.Generation(
-        lv =
-          if (c.hasPathOrNull("lv"))
-            scala.Some(
-              OsmoGridConfig.Generation
-                .Lv(c.getConfig("lv"), parentPath + "lv.", $tsCfgValidator)
-            )
-          else None,
-        mv =
-          if (c.hasPathOrNull("mv"))
-            scala.Some(
-              OsmoGridConfig.Generation
-                .Mv(c.getConfig("mv"), parentPath + "mv.", $tsCfgValidator)
-            )
-          else None,
-      )
-    }
-  }
-
-  final case class Grids(
-      output: OsmoGridConfig.Grids.Output
-  )
-  object Grids {
-    final case class Output(
-        hv: scala.Boolean,
-        lv: scala.Boolean,
-        mv: scala.Boolean,
-    )
-    object Output {
-      def apply(
-          c: com.typesafe.config.Config,
-          parentPath: java.lang.String,
-          $tsCfgValidator: $TsCfgValidator,
-      ): OsmoGridConfig.Grids.Output = {
-        OsmoGridConfig.Grids.Output(
-          hv = !c.hasPathOrNull("hv") || c.getBoolean("hv"),
-          lv = !c.hasPathOrNull("lv") || c.getBoolean("lv"),
-          mv = !c.hasPathOrNull("mv") || c.getBoolean("mv"),
-        )
-      }
-    }
-
-    def apply(
-        c: com.typesafe.config.Config,
-        parentPath: java.lang.String,
-        $tsCfgValidator: $TsCfgValidator,
-    ): OsmoGridConfig.Grids = {
-      OsmoGridConfig.Grids(
-        output = OsmoGridConfig.Grids.Output(
-          if (c.hasPathOrNull("output")) c.getConfig("output")
-          else com.typesafe.config.ConfigFactory.parseString("output{}"),
-          parentPath + "output.",
-          $tsCfgValidator,
-        )
-      )
-    }
   }
 
   final case class Input(
-      asset: OsmoGridConfig.Input.Asset,
-      osm: OsmoGridConfig.Input.Osm,
-  )
+      asset: OsmoGridConfig.Input.Asset = Input.Asset(),
+      osm: OsmoGridConfig.Input.Osm = Input.Osm(),
+  ) derives ConfigConvert
+
   object Input {
+
     final case class Asset(
-        file: scala.Option[OsmoGridConfig.Input.Asset.File]
-    )
-    object Asset {
-      final case class File(
-          directory: java.lang.String,
-          hierarchic: scala.Boolean,
-          separator: java.lang.String,
-      )
-      object File {
-        def apply(
-            c: com.typesafe.config.Config,
-            parentPath: java.lang.String,
-            $tsCfgValidator: $TsCfgValidator,
-        ): OsmoGridConfig.Input.Asset.File = {
-          OsmoGridConfig.Input.Asset.File(
-            directory = $_reqStr(parentPath, c, "directory", $tsCfgValidator),
-            hierarchic =
-              c.hasPathOrNull("hierarchic") && c.getBoolean("hierarchic"),
-            separator = $_reqStr(parentPath, c, "separator", $tsCfgValidator),
-          )
-        }
-        private def $_reqStr(
-            parentPath: java.lang.String,
-            c: com.typesafe.config.Config,
-            path: java.lang.String,
-            $tsCfgValidator: $TsCfgValidator,
-        ): java.lang.String = {
-          if (c == null) null
-          else
-            try c.getString(path)
-            catch {
-              case e: com.typesafe.config.ConfigException =>
-                $tsCfgValidator.addBadPath(parentPath + path, e)
-                null
-            }
-        }
-
-      }
-
-      def apply(
-          c: com.typesafe.config.Config,
-          parentPath: java.lang.String,
-          $tsCfgValidator: $TsCfgValidator,
-      ): OsmoGridConfig.Input.Asset = {
-        OsmoGridConfig.Input.Asset(
-          file =
-            if (c.hasPathOrNull("file"))
-              scala.Some(
-                OsmoGridConfig.Input.Asset.File(
-                  c.getConfig("file"),
-                  parentPath + "file.",
-                  $tsCfgValidator,
-                )
-              )
-            else None
-        )
-      }
-    }
+        file: Option[OsmoGridConfig.Csv] = None
+    ) derives ConfigConvert
 
     final case class Osm(
-        pbf: scala.Option[OsmoGridConfig.Input.Osm.Pbf]
-    )
+        pbf: Option[OsmoGridConfig.Input.Osm.Pbf] = None
+    ) derives ConfigConvert
+
     object Osm {
+
       final case class Pbf(
-          file: java.lang.String
-      )
-      object Pbf {
-        def apply(
-            c: com.typesafe.config.Config,
-            parentPath: java.lang.String,
-            $tsCfgValidator: $TsCfgValidator,
-        ): OsmoGridConfig.Input.Osm.Pbf = {
-          OsmoGridConfig.Input.Osm.Pbf(
-            file = $_reqStr(parentPath, c, "file", $tsCfgValidator)
-          )
-        }
-        private def $_reqStr(
-            parentPath: java.lang.String,
-            c: com.typesafe.config.Config,
-            path: java.lang.String,
-            $tsCfgValidator: $TsCfgValidator,
-        ): java.lang.String = {
-          if (c == null) null
-          else
-            try c.getString(path)
-            catch {
-              case e: com.typesafe.config.ConfigException =>
-                $tsCfgValidator.addBadPath(parentPath + path, e)
-                null
-            }
-        }
-
-      }
-
-      def apply(
-          c: com.typesafe.config.Config,
-          parentPath: java.lang.String,
-          $tsCfgValidator: $TsCfgValidator,
-      ): OsmoGridConfig.Input.Osm = {
-        OsmoGridConfig.Input.Osm(
-          pbf =
-            if (c.hasPathOrNull("pbf"))
-              scala.Some(
-                OsmoGridConfig.Input.Osm
-                  .Pbf(c.getConfig("pbf"), parentPath + "pbf.", $tsCfgValidator)
-              )
-            else None
-        )
-      }
-    }
-
-    def apply(
-        c: com.typesafe.config.Config,
-        parentPath: java.lang.String,
-        $tsCfgValidator: $TsCfgValidator,
-    ): OsmoGridConfig.Input = {
-      OsmoGridConfig.Input(
-        asset = OsmoGridConfig.Input.Asset(
-          if (c.hasPathOrNull("asset")) c.getConfig("asset")
-          else com.typesafe.config.ConfigFactory.parseString("asset{}"),
-          parentPath + "asset.",
-          $tsCfgValidator,
-        ),
-        osm = OsmoGridConfig.Input.Osm(
-          if (c.hasPathOrNull("osm")) c.getConfig("osm")
-          else com.typesafe.config.ConfigFactory.parseString("osm{}"),
-          parentPath + "osm.",
-          $tsCfgValidator,
-        ),
-      )
+          file: String
+      ) derives ConfigConvert
     }
   }
 
   final case class Output(
-      addTimestampToOutputDir: scala.Boolean,
-      csv: scala.Option[OsmoGridConfig.Output.Csv],
-      gridName: java.lang.String,
-  )
-  object Output {
-    final case class Csv(
-        directory: java.lang.String,
-        hierarchic: scala.Boolean,
-        separator: java.lang.String,
-    )
-    object Csv {
-      def apply(
-          c: com.typesafe.config.Config,
-          parentPath: java.lang.String,
-          $tsCfgValidator: $TsCfgValidator,
-      ): OsmoGridConfig.Output.Csv = {
-        OsmoGridConfig.Output.Csv(
-          directory = $_reqStr(parentPath, c, "directory", $tsCfgValidator),
-          hierarchic =
-            c.hasPathOrNull("hierarchic") && c.getBoolean("hierarchic"),
-          separator =
-            if (c.hasPathOrNull("separator")) c.getString("separator") else ",",
-        )
-      }
-      private def $_reqStr(
-          parentPath: java.lang.String,
-          c: com.typesafe.config.Config,
-          path: java.lang.String,
-          $tsCfgValidator: $TsCfgValidator,
-      ): java.lang.String = {
-        if (c == null) null
-        else
-          try c.getString(path)
-          catch {
-            case e: com.typesafe.config.ConfigException =>
-              $tsCfgValidator.addBadPath(parentPath + path, e)
-              null
-          }
-      }
+      addTimestampToOutputDir: Boolean = true,
+      csv: Option[OsmoGridConfig.Csv] = None,
+      gridName: String = "",
+      grids: Grids = Grids(),
+  ) derives ConfigConvert
 
-    }
+  /** Parameters for grid outputs.
+    *
+    * @param hv
+    *   If high voltage grids should be written (default: true).
+    * @param lv
+    *   If low voltage grids should be written (default: true).
+    * @param mv
+    *   If medium voltage grids should be written (default: true).
+    */
+  final case class Grids(
+      hv: Boolean = true,
+      lv: Boolean = true,
+      mv: Boolean = true,
+  ) derives ConfigConvert
 
-    def apply(
-        c: com.typesafe.config.Config,
-        parentPath: java.lang.String,
-        $tsCfgValidator: $TsCfgValidator,
-    ): OsmoGridConfig.Output = {
-      OsmoGridConfig.Output(
-        addTimestampToOutputDir = !c.hasPathOrNull(
-          "addTimestampToOutputDir"
-        ) || c.getBoolean("addTimestampToOutputDir"),
-        csv =
-          if (c.hasPathOrNull("csv"))
-            scala.Some(
-              OsmoGridConfig.Output
-                .Csv(c.getConfig("csv"), parentPath + "csv.", $tsCfgValidator)
-            )
-          else None,
-        gridName = $_reqStr(parentPath, c, "gridName", $tsCfgValidator),
-      )
-    }
-    private def $_reqStr(
-        parentPath: java.lang.String,
-        c: com.typesafe.config.Config,
-        path: java.lang.String,
-        $tsCfgValidator: $TsCfgValidator,
-    ): java.lang.String = {
-      if (c == null) null
-      else
-        try c.getString(path)
-        catch {
-          case e: com.typesafe.config.ConfigException =>
-            $tsCfgValidator.addBadPath(parentPath + path, e)
-            null
-        }
-    }
-
-  }
-
+  /** Voltage level configuration.
+    * @param hv
+    *   Parameters for high voltage level.
+    * @param mv
+    *   Parameters for medium voltage level.
+    * @param lv
+    *   Parameters for low voltage level.
+    */
   final case class Voltage(
-      hv: OsmoGridConfig.Voltage.Hv,
-      lv: OsmoGridConfig.Voltage.Lv,
-      mv: OsmoGridConfig.Voltage.Mv,
-  )
-  object Voltage {
-    final case class Hv(
-        default: scala.Double,
-        id: java.lang.String,
-        vNom: scala.Option[scala.List[scala.Double]],
-    )
-    object Hv {
-      def apply(
-          c: com.typesafe.config.Config,
-          parentPath: java.lang.String,
-          $tsCfgValidator: $TsCfgValidator,
-      ): OsmoGridConfig.Voltage.Hv = {
-        OsmoGridConfig.Voltage.Hv(
-          default =
-            if (c.hasPathOrNull("default")) c.getDouble("default") else 110.0,
-          id = if (c.hasPathOrNull("id")) c.getString("id") else "hv",
-          vNom =
-            if (c.hasPathOrNull("vNom"))
-              scala.Some(
-                $_L$_dbl(c.getList("vNom"), parentPath, $tsCfgValidator)
-              )
-            else None,
-        )
-      }
-    }
+      hv: VoltageLevel = VoltageLevel(110.0, "hv"),
+      mv: VoltageLevel = VoltageLevel(10.0, "mv"),
+      lv: VoltageLevel = VoltageLevel(0.4, "lv"),
+  ) derives ConfigConvert
 
-    final case class Lv(
-        default: scala.Double,
-        id: java.lang.String,
-        vNom: scala.Option[scala.List[scala.Double]],
-    )
-    object Lv {
-      def apply(
-          c: com.typesafe.config.Config,
-          parentPath: java.lang.String,
-          $tsCfgValidator: $TsCfgValidator,
-      ): OsmoGridConfig.Voltage.Lv = {
-        OsmoGridConfig.Voltage.Lv(
-          default =
-            if (c.hasPathOrNull("default")) c.getDouble("default") else 0.4,
-          id = if (c.hasPathOrNull("id")) c.getString("id") else "lv",
-          vNom =
-            if (c.hasPathOrNull("vNom"))
-              scala.Some(
-                $_L$_dbl(c.getList("vNom"), parentPath, $tsCfgValidator)
-              )
-            else None,
-        )
-      }
-    }
-
-    final case class Mv(
-        default: scala.Double,
-        id: java.lang.String,
-        vNom: scala.Option[scala.List[scala.Double]],
-    )
-    object Mv {
-      def apply(
-          c: com.typesafe.config.Config,
-          parentPath: java.lang.String,
-          $tsCfgValidator: $TsCfgValidator,
-      ): OsmoGridConfig.Voltage.Mv = {
-        OsmoGridConfig.Voltage.Mv(
-          default =
-            if (c.hasPathOrNull("default")) c.getDouble("default") else 10.0,
-          id = if (c.hasPathOrNull("id")) c.getString("id") else "mv",
-          vNom =
-            if (c.hasPathOrNull("vNom"))
-              scala.Some(
-                $_L$_dbl(c.getList("vNom"), parentPath, $tsCfgValidator)
-              )
-            else None,
-        )
-      }
-    }
-
-    def apply(
-        c: com.typesafe.config.Config,
-        parentPath: java.lang.String,
-        $tsCfgValidator: $TsCfgValidator,
-    ): OsmoGridConfig.Voltage = {
-      OsmoGridConfig.Voltage(
-        hv = OsmoGridConfig.Voltage.Hv(
-          if (c.hasPathOrNull("hv")) c.getConfig("hv")
-          else com.typesafe.config.ConfigFactory.parseString("hv{}"),
-          parentPath + "hv.",
-          $tsCfgValidator,
-        ),
-        lv = OsmoGridConfig.Voltage.Lv(
-          if (c.hasPathOrNull("lv")) c.getConfig("lv")
-          else com.typesafe.config.ConfigFactory.parseString("lv{}"),
-          parentPath + "lv.",
-          $tsCfgValidator,
-        ),
-        mv = OsmoGridConfig.Voltage.Mv(
-          if (c.hasPathOrNull("mv")) c.getConfig("mv")
-          else com.typesafe.config.ConfigFactory.parseString("mv{}"),
-          parentPath + "mv.",
-          $tsCfgValidator,
-        ),
-      )
-    }
-  }
-
-  def apply(c: com.typesafe.config.Config): OsmoGridConfig = {
-    val $tsCfgValidator: $TsCfgValidator = new $TsCfgValidator()
-    val parentPath: java.lang.String = ""
-    val $result = OsmoGridConfig(
-      generation = OsmoGridConfig.Generation(
-        if (c.hasPathOrNull("generation")) c.getConfig("generation")
-        else com.typesafe.config.ConfigFactory.parseString("generation{}"),
-        parentPath + "generation.",
-        $tsCfgValidator,
-      ),
-      grids = OsmoGridConfig.Grids(
-        if (c.hasPathOrNull("grids")) c.getConfig("grids")
-        else com.typesafe.config.ConfigFactory.parseString("grids{}"),
-        parentPath + "grids.",
-        $tsCfgValidator,
-      ),
-      input = OsmoGridConfig.Input(
-        if (c.hasPathOrNull("input")) c.getConfig("input")
-        else com.typesafe.config.ConfigFactory.parseString("input{}"),
-        parentPath + "input.",
-        $tsCfgValidator,
-      ),
-      output = OsmoGridConfig.Output(
-        if (c.hasPathOrNull("output")) c.getConfig("output")
-        else com.typesafe.config.ConfigFactory.parseString("output{}"),
-        parentPath + "output.",
-        $tsCfgValidator,
-      ),
-      voltage = OsmoGridConfig.Voltage(
-        if (c.hasPathOrNull("voltage")) c.getConfig("voltage")
-        else com.typesafe.config.ConfigFactory.parseString("voltage{}"),
-        parentPath + "voltage.",
-        $tsCfgValidator,
-      ),
-    )
-    $tsCfgValidator.validate()
-    $result
-  }
-
-  private def $_L$_dbl(
-      cl: com.typesafe.config.ConfigList,
-      parentPath: java.lang.String,
-      $tsCfgValidator: $TsCfgValidator,
-  ): scala.List[scala.Double] = {
-    import scala.jdk.CollectionConverters._
-    cl.asScala.map(cv => $_dbl(cv)).toList
-  }
-  private def $_L$_str(
-      cl: com.typesafe.config.ConfigList,
-      parentPath: java.lang.String,
-      $tsCfgValidator: $TsCfgValidator,
-  ): scala.List[java.lang.String] = {
-    import scala.jdk.CollectionConverters._
-    cl.asScala.map(cv => $_str(cv)).toList
-  }
-  private def $_dbl(cv: com.typesafe.config.ConfigValue): scala.Double = {
-    val u: Any = cv.unwrapped
-    if (
-      (cv.valueType != com.typesafe.config.ConfigValueType.NUMBER) ||
-      !u.isInstanceOf[java.lang.Number]
-    ) throw $_expE(cv, "double")
-    u.asInstanceOf[java.lang.Number].doubleValue()
-  }
-
-  private def $_expE(
-      cv: com.typesafe.config.ConfigValue,
-      exp: java.lang.String,
-  ) = {
-    val u: Any = cv.unwrapped
-    new java.lang.RuntimeException(
-      s"${cv.origin.lineNumber}: " +
-        "expecting: " + exp + " got: " +
-        (if (u.isInstanceOf[java.lang.String]) "\"" + u + "\"" else u)
-    )
-  }
-
-  private def $_str(cv: com.typesafe.config.ConfigValue): java.lang.String = {
-    java.lang.String.valueOf(cv.unwrapped())
-  }
-
-  final class $TsCfgValidator {
-    private val badPaths =
-      scala.collection.mutable.ArrayBuffer[java.lang.String]()
-
-    def addBadPath(
-        path: java.lang.String,
-        e: com.typesafe.config.ConfigException,
-    ): Unit = {
-      badPaths += s"'$path': ${e.getClass.getName}(${e.getMessage})"
-    }
-
-    def addInvalidEnumValue(
-        path: java.lang.String,
-        value: java.lang.String,
-        enumName: java.lang.String,
-    ): Unit = {
-      badPaths += s"'$path': invalid value $value for enumeration $enumName"
-    }
-
-    def validate(): Unit = {
-      if (badPaths.nonEmpty) {
-        throw new com.typesafe.config.ConfigException(
-          badPaths.mkString("Invalid configuration:\n    ", "\n    ", "")
-        ) {}
-      }
-    }
-  }
 }

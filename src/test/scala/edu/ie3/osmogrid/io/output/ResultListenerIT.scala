@@ -92,7 +92,7 @@ class ResultListenerIT
         val config = OsmoGridConfig.Output(
           addTimestampToOutputDir = false,
           Some(
-            OsmoGridConfig.Output.Csv(
+            OsmoGridConfig.Csv(
               tmpDir.toFile.getAbsolutePath,
               hierarchic = false,
               ",",

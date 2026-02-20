@@ -34,7 +34,7 @@ object RunOsmoGridStandalone {
     println(" ")
 
     val grid = cfg.output match {
-      case Output(_, Some(csv), gridName) =>
+      case Output(_, Some(csv), gridName, _) =>
         val newestOutput =
           Path.of(csv.directory).toFile.listFiles().toSeq.lastOption
 
@@ -49,7 +49,7 @@ object RunOsmoGridStandalone {
           case None =>
             throw IllegalConfigException("No output given.")
         }
-      case Output(_, None, _) =>
+      case Output(_, None, _, _) =>
         throw IllegalConfigException("No output given.")
     }
 
