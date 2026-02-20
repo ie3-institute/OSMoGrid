@@ -29,11 +29,10 @@ object ConfigFailFast extends LazyLogging {
       additionalListener: Seq[ActorRef[OutputRequest]] = Seq.empty,
   ): Try[OsmoGridConfig] = Try {
     cfg match {
-      case OsmoGridConfig(generation, grids, input, output, voltage) =>
+      case OsmoGridConfig(generation, input, output, voltage) =>
         checkInputConfig(input)
         checkOutputConfig(output, additionalListener)
         checkGenerationConfig(generation)
-        checkGridsConfig(grids)
         checkVoltageConfig(voltage)
     }
     cfg
@@ -122,7 +121,7 @@ object ConfigFailFast extends LazyLogging {
         )
     }
 
-  private def checkAssetInputFile(file: OsmoGridConfig.Input.Asset.File): Unit =
+  private def checkAssetInputFile(file: OsmoGridConfig.Csv): Unit =
     if (file.directory.isEmpty)
       throw IllegalConfigException("Asset input directory may be set!")
 
@@ -143,32 +142,36 @@ object ConfigFailFast extends LazyLogging {
       additionalListener: Seq[ActorRef[OutputRequest]],
   ): Unit =
     output match {
-      case Output(_, Some(file), _) =>
+      case Output(_, Some(file), _, grids) =>
         checkOutputFile(file)
-      case Output(_, None, _) if additionalListener.nonEmpty =>
+        checkGridOutput(grids)
+
+      case Output(_, None, _, grids) if additionalListener.nonEmpty =>
         logger.info(
           "No output data type defined, but other listener provided. Will use them accordingly!"
         )
-      case Output(_, None, _) =>
+        checkGridOutput(grids)
+
+      case Output(_, None, _, _) =>
         throw IllegalConfigException(
           "You have to provide at least one output data sink, e.g. to .csv-files!"
         )
     }
 
-  private def checkOutputFile(file: OsmoGridConfig.Output.Csv): Unit = if (
+  private def checkOutputFile(file: OsmoGridConfig.Csv): Unit = if (
     file.directory.isEmpty || file.separator.isEmpty
   )
     throw IllegalConfigException(
       "Output directory and separator must be set when using .csv file sink!"
     )
 
-  private def checkGridsConfig(grids: Grids): Unit = {
-    grids.output match {
-      case Grids.Output(false, false, false) =>
+  private def checkGridOutput(grids: Grids): Unit = {
+    grids match {
+      case Grids(false, false, false) =>
         // at least one output must be set
         throw IllegalConfigException(s"No grid output defined.")
 
-      case Grids.Output(true, false, false) =>
+      case Grids(true, false, false) =>
         logger.warn(s"Only hv output is currently not supported!")
       case _ =>
 

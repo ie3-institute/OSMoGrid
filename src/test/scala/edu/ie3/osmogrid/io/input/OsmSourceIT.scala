@@ -7,6 +7,7 @@
 package edu.ie3.osmogrid.io.input
 
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Csv
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
@@ -28,7 +29,7 @@ class OsmSourceIT extends UnitSpec with InputDataCheck {
         val testActor = testKit.spawn(
           InputDataProvider(
             OsmoGridConfig.Input(
-              Asset(Some(Asset.File("", hierarchic = false, ","))),
+              Asset(Some(Csv("", hierarchic = false, ","))),
               Osm(Some(Osm.Pbf(resourcePath))),
             )
           )

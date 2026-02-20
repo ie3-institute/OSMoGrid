@@ -14,6 +14,7 @@ import edu.ie3.datamodel.models.input.container.{
 }
 import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils.*
+import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.test.common.{GridSupport, MvTestData, UnitSpec}
 import utils.GridContainerUtils.combine
@@ -49,7 +50,7 @@ class GridContainerUtilsSpec extends UnitSpec with GridSupport with MvTestData {
 
     "return mv nodes correctly" in {
       val getNodes = PrivateMethod[Seq[NodeInput]](Symbol("getNodes"))
-      val voltLevels = VoltageUtils.parse(RunGuardian.DEFAULT.mv)
+      val voltLevels = VoltageUtils.parse(OsmoGridConfig.Voltage().mv)
 
       val lvGrid1 = mockSubGrid(1, MV_10KV, LV)
       val lvGrid2 = mockSubGrid(2, MV_20KV, LV)

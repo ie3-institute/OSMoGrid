@@ -14,7 +14,7 @@ import edu.ie3.datamodel.io.naming.{
 import edu.ie3.datamodel.io.source.TypeSource
 import edu.ie3.datamodel.io.source.csv.CsvDataSource
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Asset.File
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Csv
 import edu.ie3.osmogrid.exception.{IllegalConfigException, InputDataException}
 
 import java.nio.file.Paths
@@ -30,7 +30,7 @@ object AssetSource {
 
   def apply(ec: ExecutionContextExecutor, assetCfg: Asset): AssetSource = {
     assetCfg match {
-      case Asset(Some(File(directory, hierarchic, separator))) =>
+      case Asset(Some(Csv(directory, hierarchic, separator))) =>
         val namingStrategy = if (hierarchic) {
           new FileNamingStrategy(
             new EntityPersistenceNamingStrategy(),

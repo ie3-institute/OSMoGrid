@@ -58,7 +58,7 @@ trait RunSupport {
           s"Initializing grid generation for run with id '${runGuardianData.runId}'!"
         )
 
-        val gridOutput = validConfig.grids.output
+        val gridOutput = validConfig.output.grids
         val generation = validConfig.generation
 
         val mvFallback = if (gridOutput.hv) {
@@ -170,7 +170,7 @@ trait RunSupport {
       ctx: ActorContext[RunRequest],
   ): Option[ActorRef[ResultListenerProtocol]] = {
     val resultListener = outputConfig match {
-      case Output(_, Some(_), _) =>
+      case Output(_, Some(_), _, _) =>
         ctx.log.info("Starting output data listener ...")
         Some(
           ctx.spawn(
@@ -178,7 +178,7 @@ trait RunSupport {
             s"PersistenceResultListener_${runId.toString}",
           )
         )
-      case Output(_, None, _) =>
+      case Output(_, None, _, _) =>
         ctx.log.warn(s"No result listener configured for run $runId.")
         None
     }

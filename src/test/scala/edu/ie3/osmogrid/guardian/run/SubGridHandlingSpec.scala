@@ -56,7 +56,7 @@ class SubGridHandlingSpec
       mvCoordinator.ref,
     )
     val log = testKit.system.log
-    val cfg = OsmoGridConfig.Grids.Output(hv = true, lv = true, mv = true)
+    val cfg = OsmoGridConfig.Grids(hv = true, lv = true, mv = true)
 
     "handle empty results correctly" in {
       val empty = Try {

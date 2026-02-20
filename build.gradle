@@ -20,7 +20,6 @@ ext {
   scalaBinaryVersion = '3.7.4'
   pekkoVersion = '1.4.0'
 
-  tscfgVersion = '0.9.995'
   scapegoatVersion = '3.2.4'
 
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
@@ -47,7 +46,6 @@ apply from: scriptsLocation + 'sonarqube.gradle' // sonarqube config
 apply from: scriptsLocation + 'scoverage.gradle' // scoverage scala code coverage
 apply from: scriptsLocation + 'vcs.gradle'
 apply from: scriptsLocation + 'semVer.gradle'
-apply from: scriptsLocation + 'tscfg.gradle'
 apply from: scriptsLocation + 'uploadToMavenCentralPortal.gradle' // upload for deploy
 apply from: scriptsLocation + 'stagingAtMavenCentralPortal.gradle' // stage for deploy
 apply from: scriptsLocation + 'branchName.gradle' // checks naming scheme of branches
@@ -80,6 +78,8 @@ dependencies {
   // config
   implementation 'com.typesafe:config:1.4.5'
   implementation "com.github.scopt:scopt_$scalaVersion:4.1.0" // cmd args parser
+  implementation "com.github.pureconfig:pureconfig-core_${scalaVersion}:0.17.10"
+  implementation "com.github.pureconfig:pureconfig-generic-scala3_${scalaVersion}:0.17.10"
 
   // osm4scala
   implementation "org.openstreetmap.osmosis:osmosis-core:0.49.2"
