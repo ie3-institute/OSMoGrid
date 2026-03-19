@@ -188,8 +188,12 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
           ) match {
           case AssetReadFailed(exception) =>
             exception.getClass shouldBe classOf[SourceException]
-            exception.getMessage shouldBe s"edu.ie3.datamodel.exceptions.FailureException: 1 exception(s) occurred within \"Transformer2WTypeInput\" data, one is: " +
-              s"edu.ie3.datamodel.exceptions.FactoryException: An error occurred when creating instance of Transformer2WTypeInput.class."
+            exception.getMessage should startWith(
+              "1 exception(s) occurred within \"Transformer2WTypeInput\" data:"
+            )
+            exception.getMessage should include(
+              "Field \"uuid\" not found in EntityData"
+            )
           case RepAssetTypes(
                 assetInformation: AssetInformation
               ) =>

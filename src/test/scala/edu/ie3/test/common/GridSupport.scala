@@ -260,12 +260,12 @@ trait GridSupport {
     // include at least a single node for voltage level determination
     val dummyNodeA = new NodeInput(
       UUID.randomUUID(),
-      s"Dummy nodeA in $subgridNo",
+      s"Dummy nodeA in ${subgridNo + 1}",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       true,
       mock[Point],
       voltLvlA,
-      subgridNo,
+      subgridNo + 1, // NodeA of Transformer needs to have different subgridNo
     )
 
     val dummyNodeB1 = new NodeInput(
@@ -375,21 +375,21 @@ trait GridSupport {
 
     val topNode1 = new NodeInput(
       UUID.randomUUID(),
-      s"Top node 1 in $subgridNo",
+      s"Top node 1 in ${subgridNo + 1}",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       false,
       mock[Point],
       GermanVoltageLevelUtils.MV_10KV,
-      subgridNo,
+      subgridNo + 1, // NodeB of 3wTransformer needs to have different subgridNo
     )
     val topNode2 = new NodeInput(
       UUID.randomUUID(),
-      s"Top node 2 in $subgridNo",
+      s"Top node 2 in ${subgridNo + 2}",
       Quantities.getQuantity(1.0d, StandardUnits.TARGET_VOLTAGE_MAGNITUDE),
       false,
       mock[Point],
       GermanVoltageLevelUtils.MV_20KV,
-      subgridNo,
+      subgridNo + 2, // NodeB of 3wTransformer needs to have different subgridNo
     )
 
     val lineInput = new LineInput(
