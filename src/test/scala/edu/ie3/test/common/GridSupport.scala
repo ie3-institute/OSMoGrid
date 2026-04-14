@@ -77,7 +77,7 @@ trait GridSupport {
     10.0.asKiloVolt,
   )
 
-  val trafo_hv_to_10kv = new Transformer2WTypeInput(
+  val transformer_hv_to_10kv = new Transformer2WTypeInput(
     UUID.fromString("b49db20f-b8b5-4265-8318-f669b9d121e9"),
     "63 MVA 110/10 kV YNd5",
     0.6146031746031745.asOhm,
@@ -95,7 +95,7 @@ trait GridSupport {
     9,
   )
 
-  val trafo_10kV_to_lv = new Transformer2WTypeInput(
+  val transformer_10kV_to_lv = new Transformer2WTypeInput(
     UUID.fromString("a0cbd90a-4e9f-47db-8dca-041d3a288f77"),
     "0.63 MVA 10/0.4 kV Dyn5 ASEA",
     1.7384731670445954.asOhm,
@@ -113,7 +113,7 @@ trait GridSupport {
     2,
   )
 
-  val trafo_20kV_to_lv = new Transformer2WTypeInput(
+  val transformer_20kV_to_lv = new Transformer2WTypeInput(
     UUID.fromString("0843b836-cee4-4a8c-81a4-098400fe91cf"),
     "0.4 MVA 20/0.4 kV Dyn5 ASEA",
     11.999999999999998.asOhm,
@@ -131,7 +131,7 @@ trait GridSupport {
     2,
   )
 
-  val trafo_20kV_10kV_LV: Transformer3WTypeInput =
+  val transformer_20kV_10kV_LV: Transformer3WTypeInput =
     new Transformer3WTypeInput(
       UUID.fromString("a3732a04-08f4-44db-b059-16ea04d89363"),
       "dummy transformer3W type",
@@ -156,7 +156,7 @@ trait GridSupport {
       2,
     )
 
-  val trafo_HV_10kV_LV: Transformer3WTypeInput =
+  val transformer_HV_10kV_LV: Transformer3WTypeInput =
     new Transformer3WTypeInput(
       UUID.fromString("2d4934ac-1d5a-4710-b46b-5bdaba78bcda"),
       "dummy transformer3W type",
@@ -184,8 +184,12 @@ trait GridSupport {
   val assetInformation: AssetInformation =
     AssetInformation(
       Seq(defaultLineTypeMv),
-      Seq(trafo_10kV_to_lv, trafo_20kV_to_lv, trafo_hv_to_10kv),
-      Seq(trafo_HV_10kV_LV, trafo_20kV_10kV_LV),
+      Seq(
+        transformer_10kV_to_lv,
+        transformer_20kV_to_lv,
+        transformer_hv_to_10kv,
+      ),
+      Seq(transformer_HV_10kV_LV, transformer_20kV_10kV_LV),
     )
 
   /** Return a mocked test grid with given sub grid number
@@ -288,7 +292,7 @@ trait GridSupport {
       subgridNo,
     )
 
-    val dummyTrafo = new Transformer2WInput(
+    val dummyTransformer = new Transformer2WInput(
       UUID.randomUUID(),
       s"Dummy transformer",
       dummyNodeA,
@@ -302,7 +306,7 @@ trait GridSupport {
     val rawGrid = new RawGridElements(
       Set(dummyNodeA, dummyNodeB1, dummyNodeB2).asJava,
       Set.empty[LineInput].asJava,
-      Set(dummyTrafo).asJava,
+      Set(dummyTransformer).asJava,
       Set.empty[Transformer3WInput].asJava,
       Set.empty[SwitchInput].asJava,
       Set.empty[MeasurementUnitInput].asJava,

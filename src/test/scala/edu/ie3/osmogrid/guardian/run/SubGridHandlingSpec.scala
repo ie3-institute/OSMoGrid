@@ -185,7 +185,7 @@ class SubGridHandlingSpec
         dummyNodeA,
         dummyNodeB,
         1,
-        trafo_10kV_to_lv,
+        transformer_10kV_to_lv,
         0,
         false,
       )
@@ -202,7 +202,7 @@ class SubGridHandlingSpec
           transformer.getNodeA shouldBe dummyNodeA
           transformer.getNodeB shouldBe dummyNodeB
           transformer.getParallelDevices shouldBe 1
-          transformer.getType shouldBe trafo_20kV_to_lv
+          transformer.getType shouldBe transformer_20kV_to_lv
           transformer.getTapPos shouldBe 0
           transformer.isAutoTap shouldBe false
         case None => fail("This test should pass!")
@@ -249,7 +249,7 @@ class SubGridHandlingSpec
         dummyNodeB,
         dummyNodeC,
         1,
-        trafo_HV_10kV_LV,
+        transformer_HV_10kV_LV,
         0,
         false,
       )
@@ -257,7 +257,7 @@ class SubGridHandlingSpec
       val updated: Try[Seq[Transformer3WInput]] =
         SubGridHandling invokePrivate updateTransformer3Ws(
           Seq(dummyTrafo),
-          Seq(trafo_20kV_10kV_LV),
+          Seq(transformer_20kV_10kV_LV),
         )
 
       updated.getOrElse(fail("This test should pass!")).headOption match {
@@ -267,7 +267,7 @@ class SubGridHandlingSpec
           transformer.getNodeB shouldBe dummyNodeB
           transformer.getNodeC shouldBe dummyNodeC
           transformer.getParallelDevices shouldBe 1
-          transformer.getType shouldBe trafo_20kV_10kV_LV
+          transformer.getType shouldBe transformer_20kV_10kV_LV
           transformer.getTapPos shouldBe 0
           transformer.isAutoTap shouldBe false
         case None => fail("This test should pass!")
