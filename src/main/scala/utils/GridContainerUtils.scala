@@ -99,6 +99,7 @@ object GridContainerUtils {
       gridName,
       new RawGridElements(assets.asJava),
       new SystemParticipants(List.empty[SystemParticipants].asJava),
+      new EnergyManagementUnits(List.empty[EnergyManagementUnits].asJava),
       new GraphicElements(List.empty[GraphicElements].asJava),
     )
   }
@@ -135,6 +136,7 @@ object GridContainerUtils {
       s"Joint container of the two grids ${containerA.getGridName} and ${containerB.getGridName}",
       new RawGridElements(rawGridElements.asJava),
       new SystemParticipants(participants.asJava),
+      new EnergyManagementUnits(List.empty[EnergyManagementUnits].asJava),
       new GraphicElements(graphicElements.asJava),
     )
   }

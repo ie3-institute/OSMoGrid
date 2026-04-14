@@ -17,6 +17,7 @@ import edu.ie3.datamodel.models.input.connector.{
   Transformer3WInput,
 }
 import edu.ie3.datamodel.models.input.container.{
+  EnergyManagementUnits,
   GraphicElements,
   RawGridElements,
   SubGridContainer,
@@ -26,7 +27,7 @@ import edu.ie3.datamodel.models.input.graphics.{
   LineGraphicInput,
   NodeGraphicInput,
 }
-import edu.ie3.datamodel.models.input.system._
+import edu.ie3.datamodel.models.input.system.*
 import edu.ie3.datamodel.models.input.system.characteristic.{
   CosPhiFixed,
   OlmCharacteristicInput,
@@ -36,7 +37,7 @@ import edu.ie3.datamodel.models.profile.BdewStandardLoadProfile
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
-import edu.ie3.util.quantities.QuantityUtils._
+import edu.ie3.util.quantities.QuantityUtils.*
 import org.locationtech.jts.geom.impl.CoordinateArraySequence
 import org.locationtech.jts.geom.{LineString, Point}
 import tech.units.indriya.ComparableQuantity
@@ -246,7 +247,7 @@ object GridConversion {
       node,
       CosPhiFixed.CONSTANT_CHARACTERISTIC,
       null,
-      BdewStandardLoadProfile.H0,
+      BdewStandardLoadProfile.H0.getKey,
       // todo: What to do for econsannual?
       0.asWattHour,
       ratedPower,
@@ -280,11 +281,13 @@ object GridConversion {
       new util.HashSet[EvInput],
       new util.HashSet[FixedFeedInInput],
       new util.HashSet[HpInput],
+      new util.HashSet[AcInput],
       loads,
       new util.HashSet[PvInput],
       new util.HashSet[StorageInput],
       new util.HashSet[WecInput],
     )
+    val emUnits = new EnergyManagementUnits(util.HashSet[EnergyManagementUnits])
     val graphicElements = new GraphicElements(
       new util.HashSet[NodeGraphicInput],
       new util.HashSet[LineGraphicInput],
@@ -294,6 +297,7 @@ object GridConversion {
       subnetNr,
       rawGridElements,
       systemParticipants,
+      emUnits,
       graphicElements,
     )
   }

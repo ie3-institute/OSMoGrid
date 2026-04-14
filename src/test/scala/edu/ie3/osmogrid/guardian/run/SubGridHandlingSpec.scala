@@ -12,6 +12,7 @@ import edu.ie3.datamodel.models.input.connector.{
   Transformer3WInput,
 }
 import edu.ie3.datamodel.models.input.container.{
+  EnergyManagementUnits,
   GraphicElements,
   RawGridElements,
   SubGridContainer,
@@ -126,6 +127,7 @@ class SubGridHandlingSpec
         2,
         new RawGridElements(List[AssetInput](commonNode).asJava),
         new SystemParticipants(List.empty[SystemParticipantInput].asJava),
+        new EnergyManagementUnits(Set.empty[EnergyManagementUnits].asJava),
         new GraphicElements(List.empty[GraphicInput].asJava),
       )
 
