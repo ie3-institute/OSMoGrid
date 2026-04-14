@@ -129,8 +129,8 @@ object GridConversion {
     )
   }
 
-  /** Builds line between the nodes. Includes passed passed osm street node to
-    * the geo position to track the street profile.
+  /** Builds line between the nodes. Includes passed osm street node to the geo
+    * position to track the street profile.
     *
     * @param firstNode
     *   node at which the line starts
@@ -393,7 +393,7 @@ object GridConversion {
           .sortBy(_._2)
 
         // map the osm node with the shortest distance
-        node -> sortedList(0)._1
+        node -> sortedList.head._1
       }.toMap
 
       // creating the NodeConversion object

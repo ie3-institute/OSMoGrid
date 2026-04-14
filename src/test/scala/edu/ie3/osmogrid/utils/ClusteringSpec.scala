@@ -23,7 +23,7 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
       val getSubstationCount = PrivateMethod[Int](Symbol("getSubstationCount"))
 
       val loads = Set(l1_1, l1_2, l1_3, l1_4, l2_1, l2_2, l2_3, l2_4)
-      val transformer2WTypeInput = trafo_10kV_to_lv
+      val transformer2WTypeInput = transformer_10kV_to_lv
 
       val cases = Table(
         ("loadSimultaneousFactor", "expectedNumber"),
@@ -45,7 +45,7 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
       val clustering = Clustering.setup(
         gridElements(List(p1_1.input, p2_1.input)),
         lines,
-        trafo_10kV_to_lv,
+        transformer_10kV_to_lv,
         0.5,
       )
 
@@ -58,7 +58,8 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
 
     "create clusters correctly" in {
       val elements = gridElements(List(p1_1.input, p2_1.input))
-      val clustering = Clustering.setup(elements, lines, trafo_10kV_to_lv, 0.5)
+      val clustering =
+        Clustering.setup(elements, lines, transformer_10kV_to_lv, 0.5)
 
       val clusters = clustering invokePrivate createClusters(
         elements.substations.values.map(NodeWrapper.apply).toSet,
@@ -175,7 +176,7 @@ class ClusteringSpec extends UnitSpec with ClusterTestData {
       val clustering = Clustering.setup(
         gridElements(List(p1_1.input, p2_1.input)),
         lines,
-        trafo_10kV_to_lv,
+        transformer_10kV_to_lv,
         0.5,
       )
 

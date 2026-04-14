@@ -62,7 +62,7 @@ class LvGridGeneratorSupportSpec
         considerHouseConnectionPoints = false,
         0.15,
         lineType,
-        trafo_10kV_to_lv,
+        transformer_10kV_to_lv,
         "testGrid",
       ) match {
         case List(subGridContainer: SubGridContainer) =>

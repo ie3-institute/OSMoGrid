@@ -76,7 +76,7 @@ trait SubGridHandling {
         s"Error during creating of joint grid container, because no grids were found."
       )
     } else {
-      val gridName = allGrids(0).getGridName
+      val gridName = allGrids.head.getGridName
 
       val grid = new JointGridContainer(
         gridName,
@@ -201,9 +201,9 @@ object SubGridHandling {
     }
 
     val hv = hvGrids.map { grids =>
-      if (grids.size == 1 && grids(0).getGridName == "dummyHvGrid") {
+      if (grids.size == 1 && grids.head.getGridName == "dummyHvGrid") {
 
-        val hvNode: NodeInput = grids(0).getRawGrid.getNodes.asScala.toList
+        val hvNode: NodeInput = grids.head.getRawGrid.getNodes.asScala.toList
           .sortBy(
             _.getVoltLvl.getNominalVoltage.getValue.doubleValue()
           )
