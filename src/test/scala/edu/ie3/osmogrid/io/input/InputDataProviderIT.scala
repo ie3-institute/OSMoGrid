@@ -7,19 +7,17 @@
 package edu.ie3.osmogrid.io.input
 
 import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
-import com.typesafe.config.ConfigFactory
 import edu.ie3.datamodel.exceptions.SourceException
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Csv
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Osm.Pbf
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
-import edu.ie3.osmogrid.exception.{InputDataException, PbfReadFailedException}
+import edu.ie3.osmogrid.exception.PbfReadFailedException
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.{InputDataCheck, UnitSpec}
 
 import scala.concurrent.duration.DurationInt
-import scala.jdk.CollectionConverters.*
 import scala.language.postfixOps
 
 class InputDataProviderIT extends UnitSpec with InputDataCheck {
