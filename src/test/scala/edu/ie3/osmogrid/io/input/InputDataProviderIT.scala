@@ -72,8 +72,8 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
           case RepAssetTypes(
                 assetInformation: AssetInformation
               ) =>
-            assetInformation.lineTypes.length shouldBe 1
-            assetInformation.transformerTypes.length shouldBe 1
+            assetInformation.lineTypes.length shouldBe 34 // 33 from PSDM + 1 from input-file
+            assetInformation.transformerTypes.length shouldBe 12 // 11 from PSDM + 1 from input-file
         }
       }
     }
