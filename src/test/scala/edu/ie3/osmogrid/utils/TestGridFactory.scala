@@ -71,7 +71,7 @@ object TestGridFactory {
     * @param rawGridElements
     *   The raw grid elements, default to empty container
     * @param systemParticipants
-    *   The system participants, default to empty
+    *   The system participants, default to empty container
     * @param emUnits
     *   The energy management units, default to empty container
     * @param graphicElements
