@@ -36,6 +36,8 @@ object TestGridFactory {
     *   The raw grid elements, default to empty container
     * @param systemParticipants
     *   The system participants, default to empty container
+    * @param emUnits
+    *   The energy management units, default to empty container
     * @param graphicElements
     *   The graphic elements, default to empty container
     * @return
@@ -45,12 +47,14 @@ object TestGridFactory {
       gridName: String = "TestGrid",
       rawGridElements: RawGridElements = createEmptyRawGridElements(),
       systemParticipants: SystemParticipants = createEmptySystemParticipants(),
+      emUnits: EnergyManagementUnits = createEmptyEmUnits(),
       graphicElements: GraphicElements = createEmptyGraphicElements(),
   ): JointGridContainer =
     new JointGridContainer(
       gridName,
       rawGridElements,
       systemParticipants,
+      emUnits,
       graphicElements,
     )
 
@@ -68,6 +72,8 @@ object TestGridFactory {
     *   The raw grid elements, default to empty container
     * @param systemParticipants
     *   The system participants, default to empty container
+    * @param emUnits
+    *   The energy management units, default to empty container
     * @param graphicElements
     *   The graphic elements, default to empty container
     * @return
@@ -78,6 +84,7 @@ object TestGridFactory {
       subgrid: Int = 100,
       rawGridElements: RawGridElements = createEmptyRawGridElements(),
       systemParticipants: SystemParticipants = createEmptySystemParticipants(),
+      emUnits: EnergyManagementUnits = createEmptyEmUnits(),
       graphicElements: GraphicElements = createEmptyGraphicElements(),
   ): SubGridContainer =
     new SubGridContainer(
@@ -85,6 +92,7 @@ object TestGridFactory {
       subgrid,
       rawGridElements,
       systemParticipants,
+      emUnits,
       graphicElements,
     )
 
@@ -106,11 +114,16 @@ object TestGridFactory {
       Set.empty[EvInput].asJava,
       Set.empty[FixedFeedInInput].asJava,
       Set.empty[HpInput].asJava,
+      Set.empty[AcInput].asJava,
       Set.empty[LoadInput].asJava,
       Set.empty[PvInput].asJava,
       Set.empty[StorageInput].asJava,
       Set.empty[WecInput].asJava,
     )
+
+  def createEmptyEmUnits(): EnergyManagementUnits = new EnergyManagementUnits(
+    Set.empty[EnergyManagementUnits].asJava
+  )
 
   def createEmptyGraphicElements(): GraphicElements =
     new GraphicElements(

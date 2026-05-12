@@ -19,6 +19,7 @@ import edu.ie3.datamodel.models.input.connector.{
   Transformer3WInput,
 }
 import edu.ie3.datamodel.models.input.container.{
+  EnergyManagementUnits,
   GraphicElements,
   RawGridElements,
   SubGridContainer,
@@ -226,10 +227,15 @@ trait GridSupport {
       Set.empty[EvInput].asJava,
       Set.empty[FixedFeedInInput].asJava,
       Set.empty[HpInput].asJava,
+      Set.empty[AcInput].asJava,
       Set.empty[LoadInput].asJava,
       Set.empty[PvInput].asJava,
       Set.empty[StorageInput].asJava,
       Set.empty[WecInput].asJava,
+    )
+
+    val mockedEmUnits = new EnergyManagementUnits(
+      Set.empty[EnergyManagementUnits].asJava
     )
 
     val mockedGraphics = new GraphicElements(
@@ -242,6 +248,7 @@ trait GridSupport {
       subgridNo,
       rawGrid,
       mockedParticipants,
+      mockedEmUnits,
       mockedGraphics,
     )
   }
@@ -319,10 +326,15 @@ trait GridSupport {
       Set.empty[EvInput].asJava,
       Set.empty[FixedFeedInInput].asJava,
       Set.empty[HpInput].asJava,
+      Set.empty[AcInput].asJava,
       Set.empty[LoadInput].asJava,
       Set.empty[PvInput].asJava,
       Set.empty[StorageInput].asJava,
       Set.empty[WecInput].asJava,
+    )
+
+    val mockedEmUnits = new EnergyManagementUnits(
+      Set.empty[EnergyManagementUnits].asJava
     )
 
     val mockedGraphics = new GraphicElements(
@@ -335,6 +347,7 @@ trait GridSupport {
       subgridNo,
       rawGrid,
       mockedParticipants,
+      mockedEmUnits,
       mockedGraphics,
     )
   }
@@ -465,7 +478,7 @@ trait GridSupport {
       nodeB,
       mock[ReactivePowerCharacteristic],
       null,
-      BdewStandardLoadProfile.H0,
+      BdewStandardLoadProfile.H0.getKey,
       Quantities.getQuantity(3000d, KILOWATTHOUR),
       Quantities.getQuantity(10d, KILOWATT),
       0.95d,
@@ -483,7 +496,6 @@ trait GridSupport {
       Quantities.getQuantity(0d, DEGREE_GEOM),
       1d,
       1d,
-      false,
       Quantities.getQuantity(1, KILOWATT),
       0.9d,
     )
@@ -495,10 +507,16 @@ trait GridSupport {
       Set.empty[EvInput].asJava,
       Set.empty[FixedFeedInInput].asJava,
       Set.empty[HpInput].asJava,
+      Set.empty[AcInput].asJava,
       Set(loadInput).asJava,
       Set(pvInput).asJava,
       Set.empty[StorageInput].asJava,
       Set.empty[WecInput].asJava,
+    )
+
+    // EMs (just mocked) //
+    val mockedEmUnits = new EnergyManagementUnits(
+      Set.empty[EnergyManagementUnits].asJava
     )
 
     // GRAPHICS (just mocked) //
@@ -512,6 +530,7 @@ trait GridSupport {
       subgridNo,
       rawGrid,
       participants,
+      mockedEmUnits,
       mockedGraphics,
     )
   }

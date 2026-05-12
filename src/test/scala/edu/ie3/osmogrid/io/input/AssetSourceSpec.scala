@@ -25,11 +25,13 @@ class AssetSourceSpec extends UnitSpec {
     val assetSource = AssetSource(system.executionContext, assetCfg)
     Try(Await.result(assetSource.read(), 15.seconds)) match {
       case Success(assetInformation: AssetInformation) =>
-        assetInformation.lineTypes.headOption
+        assetInformation.lineTypes
+          .find(_.getUuid.toString == "803c298b-61c6-412c-9b60-21cabc5bd945")
           .getOrElse(fail("No line types."))
           .getUuid
           .toString shouldBe "803c298b-61c6-412c-9b60-21cabc5bd945"
-        assetInformation.transformerTypes.headOption
+        assetInformation.transformerTypes
+          .find(_.getUuid.toString == "4984f493-d6e5-4201-a040-c10722b30362")
           .getOrElse(fail("No transformer types."))
           .getUuid
           .toString shouldBe "4984f493-d6e5-4201-a040-c10722b30362"

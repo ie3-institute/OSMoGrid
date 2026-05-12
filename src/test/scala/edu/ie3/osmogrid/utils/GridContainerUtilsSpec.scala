@@ -7,6 +7,7 @@
 package edu.ie3.osmogrid.utils
 
 import edu.ie3.datamodel.models.input.container.{
+  EnergyManagementUnits,
   GraphicElements,
   JointGridContainer,
   RawGridElements,
@@ -73,6 +74,7 @@ class GridContainerUtilsSpec extends UnitSpec with GridSupport with MvTestData {
         "containerA",
         new RawGridElements(List[AssetInput](nodeInMv1, nodeInMv2).asJava),
         new SystemParticipants(Set.empty[SystemParticipants].asJava),
+        new EnergyManagementUnits(Set.empty[EnergyManagementUnits].asJava),
         new GraphicElements(Set.empty[GraphicElements].asJava),
       )
 
@@ -82,6 +84,7 @@ class GridContainerUtilsSpec extends UnitSpec with GridSupport with MvTestData {
           List[AssetInput](nodeInMv3, nodeInMv4, nodeInMv5).asJava
         ),
         new SystemParticipants(Set.empty[SystemParticipants].asJava),
+        new EnergyManagementUnits(Set.empty[EnergyManagementUnits].asJava),
         new GraphicElements(Set.empty[GraphicElements].asJava),
       )
 
