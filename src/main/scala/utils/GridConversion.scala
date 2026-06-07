@@ -23,10 +23,6 @@ import edu.ie3.datamodel.models.input.container.{
   SubGridContainer,
   SystemParticipants,
 }
-import edu.ie3.datamodel.models.input.graphics.{
-  LineGraphicInput,
-  NodeGraphicInput,
-}
 import edu.ie3.datamodel.models.input.system.*
 import edu.ie3.datamodel.models.input.system.characteristic.{
   CosPhiFixed,
@@ -288,17 +284,12 @@ object GridConversion {
       new util.HashSet[WecInput],
     )
     val emUnits = new EnergyManagementUnits(util.HashSet[EnergyManagementUnits])
-    val graphicElements = new GraphicElements(
-      new util.HashSet[NodeGraphicInput],
-      new util.HashSet[LineGraphicInput],
-    )
     new SubGridContainer(
       gridName,
       subnetNr,
       rawGridElements,
       systemParticipants,
       emUnits,
-      graphicElements,
     )
   }
 

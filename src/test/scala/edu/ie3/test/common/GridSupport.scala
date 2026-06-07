@@ -238,18 +238,12 @@ trait GridSupport {
       Set.empty[EnergyManagementUnits].asJava
     )
 
-    val mockedGraphics = new GraphicElements(
-      Set.empty[NodeGraphicInput].asJava,
-      Set.empty[LineGraphicInput].asJava,
-    )
-
     new SubGridContainer(
       "DummyGrid",
       subgridNo,
       rawGrid,
       mockedParticipants,
       mockedEmUnits,
-      mockedGraphics,
     )
   }
 
@@ -337,18 +331,12 @@ trait GridSupport {
       Set.empty[EnergyManagementUnits].asJava
     )
 
-    val mockedGraphics = new GraphicElements(
-      Set.empty[NodeGraphicInput].asJava,
-      Set.empty[LineGraphicInput].asJava,
-    )
-
     new SubGridContainer(
       "DummyGrid",
       subgridNo,
       rawGrid,
       mockedParticipants,
       mockedEmUnits,
-      mockedGraphics,
     )
   }
 
@@ -519,19 +507,12 @@ trait GridSupport {
       Set.empty[EnergyManagementUnits].asJava
     )
 
-    // GRAPHICS (just mocked) //
-    val mockedGraphics = new GraphicElements(
-      Set.empty[NodeGraphicInput].asJava,
-      Set.empty[LineGraphicInput].asJava,
-    )
-
     new SubGridContainer(
       "SubGrid",
       subgridNo,
       rawGrid,
       participants,
       mockedEmUnits,
-      mockedGraphics,
     )
   }
 }
