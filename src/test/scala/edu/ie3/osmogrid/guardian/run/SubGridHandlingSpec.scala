@@ -18,7 +18,6 @@ import edu.ie3.datamodel.models.input.container.{
   SubGridContainer,
   SystemParticipants,
 }
-import edu.ie3.datamodel.models.input.graphics.GraphicInput
 import edu.ie3.datamodel.models.input.system.SystemParticipantInput
 import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils.*

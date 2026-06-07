@@ -18,17 +18,7 @@ import edu.ie3.datamodel.models.input.connector.{
   Transformer2WInput,
   Transformer3WInput,
 }
-import edu.ie3.datamodel.models.input.container.{
-  EnergyManagementUnits,
-  GraphicElements,
-  RawGridElements,
-  SubGridContainer,
-  SystemParticipants,
-}
-import edu.ie3.datamodel.models.input.graphics.{
-  LineGraphicInput,
-  NodeGraphicInput,
-}
+import edu.ie3.datamodel.models.input.container.*
 import edu.ie3.datamodel.models.input.system.*
 import edu.ie3.datamodel.models.input.system.characteristic.{
   OlmCharacteristicInput,
