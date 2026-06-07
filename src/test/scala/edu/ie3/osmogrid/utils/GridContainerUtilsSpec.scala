@@ -75,7 +75,6 @@ class GridContainerUtilsSpec extends UnitSpec with GridSupport with MvTestData {
         new RawGridElements(List[AssetInput](nodeInMv1, nodeInMv2).asJava),
         new SystemParticipants(Set.empty[SystemParticipants].asJava),
         new EnergyManagementUnits(Set.empty[EnergyManagementUnits].asJava),
-        new GraphicElements(Set.empty[GraphicElements].asJava),
       )
 
       val containerB = new JointGridContainer(
@@ -85,7 +84,6 @@ class GridContainerUtilsSpec extends UnitSpec with GridSupport with MvTestData {
         ),
         new SystemParticipants(Set.empty[SystemParticipants].asJava),
         new EnergyManagementUnits(Set.empty[EnergyManagementUnits].asJava),
-        new GraphicElements(Set.empty[GraphicElements].asJava),
       )
 
       val jointGridContainer = combine(containerA, containerB)
@@ -97,7 +95,6 @@ class GridContainerUtilsSpec extends UnitSpec with GridSupport with MvTestData {
       jointGridContainer.getSystemParticipants
         .allEntitiesAsList()
         .size() shouldBe 0
-      jointGridContainer.getGraphics.allEntitiesAsList().size() shouldBe 0
     }
   }
 }

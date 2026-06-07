@@ -38,8 +38,6 @@ object TestGridFactory {
     *   The system participants, default to empty container
     * @param emUnits
     *   The energy management units, default to empty container
-    * @param graphicElements
-    *   The graphic elements, default to empty container
     * @return
     *   A JointGridContainer for testing purposes
     */
@@ -48,14 +46,12 @@ object TestGridFactory {
       rawGridElements: RawGridElements = createEmptyRawGridElements(),
       systemParticipants: SystemParticipants = createEmptySystemParticipants(),
       emUnits: EnergyManagementUnits = createEmptyEmUnits(),
-      graphicElements: GraphicElements = createEmptyGraphicElements(),
   ): JointGridContainer =
     new JointGridContainer(
       gridName,
       rawGridElements,
       systemParticipants,
       emUnits,
-      graphicElements,
     )
 
   /** Creates a sub grid container for testing purposes.
@@ -74,8 +70,6 @@ object TestGridFactory {
     *   The system participants, default to empty container
     * @param emUnits
     *   The energy management units, default to empty container
-    * @param graphicElements
-    *   The graphic elements, default to empty container
     * @return
     *   A SubGridContainer for testing purposes
     */
@@ -85,7 +79,6 @@ object TestGridFactory {
       rawGridElements: RawGridElements = createEmptyRawGridElements(),
       systemParticipants: SystemParticipants = createEmptySystemParticipants(),
       emUnits: EnergyManagementUnits = createEmptyEmUnits(),
-      graphicElements: GraphicElements = createEmptyGraphicElements(),
   ): SubGridContainer =
     new SubGridContainer(
       gridName,
@@ -93,7 +86,6 @@ object TestGridFactory {
       rawGridElements,
       systemParticipants,
       emUnits,
-      graphicElements,
     )
 
   def createEmptyRawGridElements(): RawGridElements =
@@ -124,10 +116,4 @@ object TestGridFactory {
   def createEmptyEmUnits(): EnergyManagementUnits = new EnergyManagementUnits(
     Set.empty[EnergyManagementUnits].asJava
   )
-
-  def createEmptyGraphicElements(): GraphicElements =
-    new GraphicElements(
-      Set.empty[NodeGraphicInput].asJava,
-      Set.empty[LineGraphicInput].asJava,
-    )
 }
