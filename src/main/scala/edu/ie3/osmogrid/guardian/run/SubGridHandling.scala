@@ -83,7 +83,6 @@ trait SubGridHandling {
         new RawGridElements(allGrids.map(_.getRawGrid).asJava),
         new SystemParticipants(allGrids.map(_.getSystemParticipants).asJava),
         new EnergyManagementUnits(Set.empty[EnergyManagementUnits].asJava),
-        new GraphicElements(allGrids.map(_.getGraphics).asJava),
       )
 
       // maybe update some types
@@ -345,7 +344,6 @@ object SubGridHandling {
       rawGrid,
       jointGridContainer.getSystemParticipants,
       jointGridContainer.getEmUnits,
-      jointGridContainer.getGraphics,
     )
   }
 

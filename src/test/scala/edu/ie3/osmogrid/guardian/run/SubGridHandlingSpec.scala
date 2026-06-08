@@ -18,7 +18,6 @@ import edu.ie3.datamodel.models.input.container.{
   SubGridContainer,
   SystemParticipants,
 }
-import edu.ie3.datamodel.models.input.graphics.GraphicInput
 import edu.ie3.datamodel.models.input.system.SystemParticipantInput
 import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils.*
@@ -108,7 +107,6 @@ class SubGridHandlingSpec
       transformer.getNodeB.getSubnet shouldBe 1
 
       grid.getSystemParticipants shouldBe lv.getSystemParticipants
-      grid.getGraphics shouldBe lv.getGraphics
     }
 
     "process and update lv results correctly" in {
@@ -128,7 +126,6 @@ class SubGridHandlingSpec
         new RawGridElements(List[AssetInput](commonNode).asJava),
         new SystemParticipants(List.empty[SystemParticipantInput].asJava),
         new EnergyManagementUnits(Set.empty[EnergyManagementUnits].asJava),
-        new GraphicElements(List.empty[GraphicInput].asJava),
       )
 
       val expectedUpdatedNode = commonNode.copy().subnet(2).build()
@@ -150,7 +147,6 @@ class SubGridHandlingSpec
       rawGridElements.getTransformer2Ws.asScala.toSeq.head.getNodeA shouldBe expectedUpdatedNode
 
       grid.getSystemParticipants shouldBe lv.getSystemParticipants
-      grid.getGraphics shouldBe lv.getGraphics
     }
   }
 
