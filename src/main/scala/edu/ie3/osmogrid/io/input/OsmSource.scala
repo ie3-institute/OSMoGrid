@@ -77,9 +77,9 @@ object OsmSource {
       osm: OsmoGridConfig.Input.Osm
   ): ActorContext[InputDataEvent] => OsmSource =
     osm match {
-      case Osm(Some(pbf: OsmoGridConfig.Input.Osm.Pbf)) =>
+      case Osm(Some(pbf: OsmoGridConfig.Input.Osm.Pbf), _, _) =>
         getPbfFileSource(pbf)
-      case Osm(None) =>
+      case Osm(None, _, _) =>
         throw IllegalConfigException(
           "You have to provide at least one input data type for open street map information!"
         )

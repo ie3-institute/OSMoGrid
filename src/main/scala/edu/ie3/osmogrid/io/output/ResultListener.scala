@@ -53,14 +53,24 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
   private def idle(
       stateData: ListenerStateData
   ): Behavior[ResultListenerProtocol] =
-    Behaviors.receiveMessagePartial { case gridResult: GridResult =>
-      stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
-        case Success(_) =>
-          ResultHandlingSucceeded
-        case Failure(exception) =>
-          ResultHandlingFailed(exception)
-      }
-      save(stateData)
+    Behaviors.receiveMessagePartial {
+      case gridResult: GridResult =>
+        stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
+          case Success(_) =>
+            ResultHandlingSucceeded
+          case Failure(exception) =>
+            ResultHandlingFailed(exception)
+        }
+        save(stateData)
+        
+      case PoiResult(pois) =>
+        stateData.ctx.pipeToSelf(stateData.sink.handlePOIs(pois)) {
+          case Success(_) =>
+            ResultHandlingSucceeded
+          case Failure(exception) =>
+            ResultHandlingFailed(exception)
+        }
+        save(stateData)
     }
 
   private def save(

@@ -6,10 +6,7 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv.{
-  BoundaryAdminLevel,
-  Osm,
-}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv.BoundaryAdminLevel
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.{Lv, Mv}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Output
 import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
@@ -17,6 +14,8 @@ import edu.ie3.osmogrid.io.input.{InputDataEvent, InputDataProvider}
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.{LvCoordinator, LvRequest, LvResponse, ReqLvGrids}
 import edu.ie3.osmogrid.mv.{MvCoordinator, MvRequest, MvResponse, ReqMvGrids}
+import edu.ie3.osmogrid.poi.PoiParser
+import edu.ie3.osmogrid.poi.PoiParser.StartParsing
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.scaladsl.ActorContext
 
@@ -31,7 +30,6 @@ trait RunSupport {
     considerHouseConnectionPoints = false,
     loadSimultaneousFactor = 0.2,
     minDistance = 10,
-    osm = Osm(None),
   )
 
   /** Initiate a generation run and return the updated run meta data
@@ -87,12 +85,24 @@ trait RunSupport {
         val msgAdapters = runGuardianData.msgAdapters
 
         ctx.log.info("Starting input provider ...")
-        implicit val inputProvider: ActorRef[InputDataEvent] =
+        given inputProvider: ActorRef[InputDataEvent] =
           spawnInputDataProvider(id, validConfig.input, ctx)
 
         // spin up listeners, watch them and wait until they terminate in this state
         val resultListener =
           spawnResultListener(id, runGuardianData.cfg.output, ctx)
+
+        /* Check if we can parser pois. */
+        val poiParser = resultListener match {
+          case Some(listener) if validConfig.input.osm.poi.isDefined =>
+            val parser = ctx.spawn(PoiParser(listener), s"PoiParser_${id.toString}")
+            parser ! StartParsing
+            
+            ctx.watchWith(parser, PoiParserDied)
+            Some(parser)
+          case _ => None
+        }
+        
 
         /* Check, which voltage level configs are given. Start with lv level, if this is desired for. */
         // spin up lv coordinator if a config is given
@@ -120,6 +130,7 @@ trait RunSupport {
             inputProvider,
             resultListener,
             runGuardianData.additionalListener,
+            poiParser,
             lvCoordinator,
             mvCoordinator,
           )

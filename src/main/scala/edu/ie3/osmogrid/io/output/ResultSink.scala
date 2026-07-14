@@ -6,6 +6,8 @@
 
 package edu.ie3.osmogrid.io.output
 
+import edu.ie3.osmogrid.poi.PoiElement
+
 import scala.concurrent.Future
 
 /** Trait that should be mixed into each sink in [[edu.ie3.osmogrid.io.output]]
@@ -14,6 +16,8 @@ import scala.concurrent.Future
   */
 trait ResultSink {
 
+  def handlePOIs(pois: Iterable[PoiElement]): Future[Unit]
+  
   def handleResult(gridResult: GridResult): Future[Unit]
 
   /** Contains all cleanup operations before closing this sink. Should be

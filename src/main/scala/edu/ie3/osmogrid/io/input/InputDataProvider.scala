@@ -8,6 +8,7 @@ package edu.ie3.osmogrid.io.input
 
 import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.model.SourceFilter.{LvFilter, PoiFilter}
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
 
@@ -26,6 +27,7 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
           ProviderData(
             ctx,
             buffer,
+            osmConfig.osm,
             OsmSource(osmConfig.osm, ctx),
             AssetSource(ec, osmConfig.asset),
           )
@@ -38,7 +40,15 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
     Behaviors
       .receive[InputDataEvent] { case (ctx, msg) =>
         msg match {
-          case ReqOsm(replyTo, filter) =>
+          case ReqOsm(replyTo, filterType) =>
+            
+            val filter = filterType match {
+              case FilterType.LV => 
+                providerData.osmCfg.filter.map(LvFilter.apply).getOrElse(LvFilter())
+              case FilterType.POI => 
+                providerData.osmCfg.poi.map(PoiFilter.apply).getOrElse(PoiFilter())
+            }
+            
             providerData.osmSource.read(filter, ctx.self)
             readOsmData(providerData, replyTo)
           case ReqAssetTypes(replyTo) =>

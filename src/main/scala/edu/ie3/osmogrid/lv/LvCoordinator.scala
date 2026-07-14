@@ -11,21 +11,10 @@ import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
 import edu.ie3.osmogrid.ActorStopSupportStateless
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.graph.OsmGraph
-import edu.ie3.osmogrid.io.input.{
-  BoundaryAdminLevel,
-  InputDataEvent,
-  ReqAssetTypes,
-  ReqOsm,
-}
-import edu.ie3.osmogrid.lv.LvMessageAdapters.{
-  WrappedGridGeneratorResponse,
-  WrappedRegionResponse,
-}
-import edu.ie3.osmogrid.lv.region_coordinator.{
-  GridToExpect,
-  LvRegionCoordinator,
-  Partition,
-}
+import edu.ie3.osmogrid.io.input.FilterType.LV
+import edu.ie3.osmogrid.io.input.{BoundaryAdminLevel, InputDataEvent, ReqAssetTypes, ReqOsm}
+import edu.ie3.osmogrid.lv.LvMessageAdapters.{WrappedGridGeneratorResponse, WrappedRegionResponse}
+import edu.ie3.osmogrid.lv.region_coordinator.{GridToExpect, LvRegionCoordinator, Partition}
 import edu.ie3.osmogrid.model.OsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import utils.OsmoGridUtils.buildStreetGraph
@@ -90,19 +79,9 @@ object LvCoordinator extends ActorStopSupportStateless {
           ctx.log.debug("Request input data")
 
           /* Ask for OSM data */
-          val filter = stateData.cfg.osm.filter
-            .map(cfg =>
-              LvFilter(
-                cfg.building.toSet,
-                cfg.highway.toSet,
-                cfg.landuse.toSet,
-              )
-            )
-            .getOrElse(LvFilter())
-
           stateData.inputDataProvider ! ReqOsm(
             replyTo = stateData.msgAdapters.inputDataProvider,
-            filter = filter,
+            filterType = LV
           )
           /* Ask for grid asset data */
           stateData.inputDataProvider ! ReqAssetTypes(

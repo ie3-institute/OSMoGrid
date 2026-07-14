@@ -7,15 +7,13 @@
 package edu.ie3.osmogrid.guardian.run
 
 import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.datamodel.models.input.container.{
-  GridContainer,
-  SubGridContainer,
-}
+import edu.ie3.datamodel.models.input.container.{GridContainer, SubGridContainer}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.{AssetInformation, InputDataEvent}
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.{LvRequest, LvResponse}
 import edu.ie3.osmogrid.mv.{MvRequest, MvResponse}
+import edu.ie3.osmogrid.poi.PoiParser.PoiRequest
 import org.apache.pekko.actor.typed.ActorRef
 
 import java.util.UUID
@@ -56,6 +54,8 @@ object InputDataProviderDied extends RunWatch
 
 object ResultEventListenerDied extends RunWatch
 
+object PoiParserDied extends RunWatch
+
 object LvCoordinatorDied extends RunWatch
 
 object MvCoordinatorDied extends RunWatch
@@ -79,6 +79,7 @@ private[run] final case class ChildReferences(
     inputDataProvider: ActorRef[InputDataEvent],
     resultListener: Option[ActorRef[ResultListenerProtocol]],
     additionalResultListeners: Seq[ActorRef[ResultListenerProtocol]],
+    poiParser: Option[ActorRef[PoiRequest]],
     lvCoordinator: Option[ActorRef[LvRequest]],
     mvCoordinator: Option[ActorRef[MvRequest]],
 ) {
@@ -89,11 +90,11 @@ private[run] final case class ChildReferences(
 
   /** Returns true if at least one coordinator exists.
     */
-  def canRun: Boolean = lvCoordinator.isDefined || mvCoordinator.isDefined
+  def canRun: Boolean = poiParser.isDefined || lvCoordinator.isDefined || mvCoordinator.isDefined
 
   /** Returns true if at least one coordinator is still alive and running.
     */
-  def stillRunning: Boolean = lvCoordinator.isDefined || mvCoordinator.isDefined
+  def stillRunning: Boolean = poiParser.isDefined || lvCoordinator.isDefined || mvCoordinator.isDefined
 }
 
 sealed trait StateData
@@ -121,11 +122,12 @@ private[run] final case class StoppingData(
     runId: UUID,
     inputDataProviderTerminated: Boolean,
     resultListenerTerminated: Boolean,
+    poiParserTerminated: Option[Boolean],
     lvCoordinatorTerminated: Option[Boolean],
     mvCoordinatorTerminated: Option[Boolean],
 ) extends StateData {
   def allChildrenTerminated: Boolean =
-    inputDataProviderTerminated && resultListenerTerminated && lvCoordinatorTerminated
+    inputDataProviderTerminated && resultListenerTerminated && poiParserTerminated.forall(terminated => terminated) && lvCoordinatorTerminated
       .forall(terminated => terminated) && mvCoordinatorTerminated.forall(
       terminated => terminated
     )
