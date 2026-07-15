@@ -9,6 +9,7 @@ package edu.ie3.osmogrid.io.input
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Csv
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
+import edu.ie3.osmogrid.io.input.FilterType.LV
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.{InputDataCheck, UnitSpec}
@@ -35,7 +36,7 @@ class OsmSourceIT extends UnitSpec with InputDataCheck {
           )
         )
 
-        testActor ! ReqOsm(requestProbe.ref, LvFilter())
+        testActor ! ReqOsm(requestProbe.ref, LV)
 
         requestProbe
           .expectMessageType[RepOsm](

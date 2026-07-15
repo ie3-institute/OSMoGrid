@@ -98,20 +98,20 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
                 name,
                 _,
               ) =>
-            name shouldBe s"InputDataProvider_$runId"
+            name shouldBe s"PersistenceResultListener_$runId"
         }
         idleTestKit
-          .expectEffectType[WatchedWith[InputRequest, RunWatch]]
+          .expectEffectType[WatchedWith[ResultListenerProtocol, RunWatch]]
         idleTestKit.expectEffectPF {
           case Spawned(
                 _: Behavior[_],
                 name,
                 _,
               ) =>
-            name shouldBe s"PersistenceResultListener_$runId"
+            name shouldBe s"InputDataProvider_$runId"
         }
         idleTestKit
-          .expectEffectType[WatchedWith[ResultListenerProtocol, RunWatch]]
+          .expectEffectType[WatchedWith[InputRequest, RunWatch]]
 
         idleTestKit.expectEffectPF { case Spawned(_: Behavior[_], name, _) =>
           name shouldBe s"LvCoordinator_$runId"
@@ -159,6 +159,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         inputDataProvider.ref,
         Some(resultListener.ref),
         Seq.empty,
+        None,
         Some(lvCoordinator.ref),
         Some(mvCoordinator.ref),
       )
@@ -234,6 +235,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           runId,
           inputDataProviderTerminated = false,
           resultListenerTerminated = false,
+          poiParserTerminated = None,
           lvCoordinatorTerminated = None,
           mvCoordinatorTerminated = None,
         )
@@ -269,6 +271,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
           runId,
           inputDataProviderTerminated = false,
           resultListenerTerminated = false,
+          poiParserTerminated = None,
           lvCoordinatorTerminated = Some(false),
           mvCoordinatorTerminated = Some(false),
         )
@@ -320,6 +323,7 @@ class RunGuardianSpec extends ScalaTestWithActorTestKit with UnitSpec {
         inputDataProvider.ref,
         Some(resultListener.ref),
         Seq.empty,
+        None,
         Some(lvCoordinator.ref),
         Some(mvCoordinator.ref),
       )
