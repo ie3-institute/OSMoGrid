@@ -23,8 +23,7 @@ import scala.util.{Failure, Try}
 sealed trait OsmSource {
 
   def read(
-      filter: SourceFilter,
-      requester: ActorRef[InputDataEvent],
+      requester: ActorRef[InputDataEvent]
   ): Unit
 
   def close(): Unit
@@ -38,13 +37,10 @@ object OsmSource {
       ctx: ActorContext[?],
   ) extends OsmSource {
 
-    def read(
-        filter: SourceFilter,
-        requester: ActorRef[InputDataEvent],
-    ): Unit = {
+    def read(requester: ActorRef[InputDataEvent]): Unit = {
       val inputStream = new FileInputStream(new File(filePath))
 
-      val sink = ReaderSink(inputStream, filter, requester, ctx.log)
+      val sink = ReaderSink(inputStream, requester, ctx.log)
 
       val reader =
         new PbfReader(

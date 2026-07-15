@@ -76,41 +76,43 @@ object SourceFilter {
       )
 
     def apply(cfg: OsmoGridConfig.Input.Osm.Filter): LvFilter = apply(
-        cfg.building.toSet,
-        cfg.highway.toSet,
-        cfg.landuse.toSet
-      )
+      cfg.building.toSet,
+      cfg.highway.toSet,
+      cfg.landuse.toSet,
+    )
   }
 
   final case class PoiFilter(
-                              home: Set[Filter],
-                              supermarket: Set[Filter],
-                              bbpq: Set[Filter],
-                              services: Set[Filter],
-                              culture: Set[Filter],
-                              medicinal: Set[Filter],
-                              religious: Set[Filter],
-                              restaurant: Set[Filter],
-                              sports: Set[Filter],
-                              otherShops: Set[Filter]
-                            ) extends SourceFilter
+      home: Set[Filter],
+      supermarket: Set[Filter],
+      bbpq: Set[Filter],
+      services: Set[Filter],
+      culture: Set[Filter],
+      medicinal: Set[Filter],
+      religious: Set[Filter],
+      restaurant: Set[Filter],
+      sports: Set[Filter],
+      otherShops: Set[Filter],
+  ) extends SourceFilter
 
   object PoiFilter {
 
-    given Conversion[Map[String, List[String]], Set[Filter]] = _.map { case (key, values) => Filter(key, values.toSet) }.toSet
+    given Conversion[Map[String, List[String]], Set[Filter]] = _.map {
+      case (key, values) => Filter(key, values.toSet)
+    }.toSet
 
     def apply(cfg: OsmoGridConfig.Input.Osm.POI): PoiFilter = PoiFilter(
-        cfg.home,
-        cfg.supermarket,
-        cfg.bbpq,
-        cfg.services,
-        cfg.culture,
-        cfg.medicinal,
-        cfg.religious,
-        cfg.restaurant,
-        cfg.sports,
-        cfg.otherShops
-      )
+      cfg.home,
+      cfg.supermarket,
+      cfg.bbpq,
+      cfg.services,
+      cfg.culture,
+      cfg.medicinal,
+      cfg.religious,
+      cfg.restaurant,
+      cfg.sports,
+      cfg.otherShops,
+    )
 
     def apply(): PoiFilter = PoiFilter(
       Set.empty,

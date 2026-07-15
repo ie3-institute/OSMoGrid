@@ -62,7 +62,7 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
             ResultHandlingFailed(exception)
         }
         save(stateData)
-        
+
       case PoiResult(pois) =>
         stateData.ctx.pipeToSelf(stateData.sink.handlePOIs(pois)) {
           case Success(_) =>

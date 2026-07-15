@@ -26,9 +26,7 @@ trait RunSupport {
 
   private val lvFallback: Lv = Lv(
     averagePowerDensity = 12.5, // W/m^2
-    boundaryAdminLevel = BoundaryAdminLevel(lowest = 8, starting = 2),
-    considerHouseConnectionPoints = false,
-    loadSimultaneousFactor = 0.2,
+    boundaryAdminLevel = BoundaryAdminLevel(),
     minDistance = 10,
   )
 
@@ -95,14 +93,14 @@ trait RunSupport {
         /* Check if we can parser pois. */
         val poiParser = resultListener match {
           case Some(listener) if validConfig.input.osm.poi.isDefined =>
-            val parser = ctx.spawn(PoiParser(listener), s"PoiParser_${id.toString}")
+            val parser =
+              ctx.spawn(PoiParser(listener), s"PoiParser_${id.toString}")
             parser ! StartParsing
-            
+
             ctx.watchWith(parser, PoiParserDied)
             Some(parser)
           case _ => None
         }
-        
 
         /* Check, which voltage level configs are given. Start with lv level, if this is desired for. */
         // spin up lv coordinator if a config is given

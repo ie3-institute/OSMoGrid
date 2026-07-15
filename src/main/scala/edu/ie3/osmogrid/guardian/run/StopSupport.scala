@@ -63,7 +63,9 @@ trait StopSupport {
     case ResultEventListenerDied =>
       stoppingData.copy(resultListenerTerminated = true)
     case PoiParserDied =>
-      stoppingData.copy(poiParserTerminated = stoppingData.poiParserTerminated.map(_ => true))
+      stoppingData.copy(poiParserTerminated =
+        stoppingData.poiParserTerminated.map(_ => true)
+      )
     case LvCoordinatorDied =>
       stoppingData.copy(lvCoordinatorTerminated =
         stoppingData.lvCoordinatorTerminated.map(_ => true)
@@ -106,8 +108,12 @@ trait StopSupport {
         )
         stoppingData.copy(resultListenerTerminated = true)
       case (stoppingData, PoiParserDied) =>
-        ctx.log.warn(s"POI Parser for run $runId unexpectedly died. Start coordinated shut down phase for this run.")
-        stoppingData.copy(poiParserTerminated = stoppingData.poiParserTerminated.map(_ => true))
+        ctx.log.warn(
+          s"POI Parser for run $runId unexpectedly died. Start coordinated shut down phase for this run."
+        )
+        stoppingData.copy(poiParserTerminated =
+          stoppingData.poiParserTerminated.map(_ => true)
+        )
       case (stoppingData, LvCoordinatorDied) =>
         ctx.log.warn(
           s"Lv coordinator for run $runId unexpectedly died. Start coordinated shut down phase for this run."

@@ -17,7 +17,7 @@ import scala.concurrent.Future
 trait ResultSink {
 
   def handlePOIs(pois: Iterable[PoiElement]): Future[Unit]
-  
+
   def handleResult(gridResult: GridResult): Future[Unit]
 
   /** Contains all cleanup operations before closing this sink. Should be

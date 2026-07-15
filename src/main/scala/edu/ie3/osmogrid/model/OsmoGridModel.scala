@@ -199,22 +199,34 @@ object OsmoGridModel {
   }
 
   final case class PoiModel(
-                        home: ParSeq[EnhancedOsmEntity],
-                        supermarket: ParSeq[EnhancedOsmEntity],
-                        bbpq: ParSeq[EnhancedOsmEntity],
-                        services: ParSeq[EnhancedOsmEntity],
-                        culture: ParSeq[EnhancedOsmEntity],
-                        medicinal: ParSeq[EnhancedOsmEntity],
-                        religious: ParSeq[EnhancedOsmEntity],
-                        restaurant: ParSeq[EnhancedOsmEntity],
-                        sports: ParSeq[EnhancedOsmEntity],
-                        otherShops: ParSeq[EnhancedOsmEntity],
-                        filter: PoiFilter
-                      ) extends OsmoGridModel {
+      home: ParSeq[EnhancedOsmEntity],
+      supermarket: ParSeq[EnhancedOsmEntity],
+      bbpq: ParSeq[EnhancedOsmEntity],
+      services: ParSeq[EnhancedOsmEntity],
+      culture: ParSeq[EnhancedOsmEntity],
+      medicinal: ParSeq[EnhancedOsmEntity],
+      religious: ParSeq[EnhancedOsmEntity],
+      restaurant: ParSeq[EnhancedOsmEntity],
+      sports: ParSeq[EnhancedOsmEntity],
+      otherShops: ParSeq[EnhancedOsmEntity],
+      filter: PoiFilter,
+  ) extends OsmoGridModel {
 
     override def +(additional: OsmoGridModel): Option[OsmoGridModel] = {
       additional match {
-        case PoiModel(home, supermarket, bbpq, services, culture, medicinal, religious, restaurant, sports, otherShops, _) if this.filter.equals(additional.filter) =>
+        case PoiModel(
+              home,
+              supermarket,
+              bbpq,
+              services,
+              culture,
+              medicinal,
+              religious,
+              restaurant,
+              sports,
+              otherShops,
+              _,
+            ) if this.filter.equals(additional.filter) =>
           Some(
             PoiModel(
               this.home ++ home,
@@ -246,25 +258,26 @@ object OsmoGridModel {
         "religious" -> religious,
         "restaurant" -> restaurant,
         "sports" -> sports,
-        "otherShops" -> otherShops
+        "otherShops" -> otherShops,
       )
   }
 
   object PoiModel {
 
-    def apply(osmContainer: ParOsmContainer, poiFilter: PoiFilter): PoiModel = new PoiModel(
-      filterOr(osmContainer, poiFilter.home),
-      filterOr(osmContainer, poiFilter.supermarket),
-      filterOr(osmContainer, poiFilter.bbpq),
-      filterOr(osmContainer, poiFilter.services),
-      filterOr(osmContainer, poiFilter.culture),
-      filterOr(osmContainer, poiFilter.medicinal),
-      filterOr(osmContainer, poiFilter.religious),
-      filterOr(osmContainer, poiFilter.restaurant),
-      filterOr(osmContainer, poiFilter.sports),
-      filterOr(osmContainer, poiFilter.otherShops),
-      poiFilter
-    )
+    def apply(osmContainer: ParOsmContainer, poiFilter: PoiFilter): PoiModel =
+      new PoiModel(
+        filterOr(osmContainer, poiFilter.home),
+        filterOr(osmContainer, poiFilter.supermarket),
+        filterOr(osmContainer, poiFilter.bbpq),
+        filterOr(osmContainer, poiFilter.services),
+        filterOr(osmContainer, poiFilter.culture),
+        filterOr(osmContainer, poiFilter.medicinal),
+        filterOr(osmContainer, poiFilter.religious),
+        filterOr(osmContainer, poiFilter.restaurant),
+        filterOr(osmContainer, poiFilter.sports),
+        filterOr(osmContainer, poiFilter.otherShops),
+        poiFilter,
+      )
   }
 
   case class EnhancedOsmEntity(

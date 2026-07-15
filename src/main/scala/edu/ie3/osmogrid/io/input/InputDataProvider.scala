@@ -8,6 +8,8 @@ package edu.ie3.osmogrid.io.input
 
 import edu.ie3.osmogrid.ActorStopSupport
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
+import edu.ie3.osmogrid.model.OsmoGridModel.{LvOsmoGridModel, PoiModel}
+import edu.ie3.osmogrid.model.SourceFilter
 import edu.ie3.osmogrid.model.SourceFilter.{LvFilter, PoiFilter}
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
@@ -41,16 +43,26 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
       .receive[InputDataEvent] { case (ctx, msg) =>
         msg match {
           case ReqOsm(replyTo, filterType) =>
-            
-            val filter = filterType match {
-              case FilterType.LV => 
-                providerData.osmCfg.filter.map(LvFilter.apply).getOrElse(LvFilter())
-              case FilterType.POI => 
-                providerData.osmCfg.poi.map(PoiFilter.apply).getOrElse(PoiFilter())
+            providerData.osmContainer match {
+              case Some(container) =>
+                ctx.self ! RepOsmContainer(container)
+
+              case None =>
+                providerData.osmSource.read(ctx.self)
             }
-            
-            providerData.osmSource.read(filter, ctx.self)
-            readOsmData(providerData, replyTo)
+
+            val filter = filterType match {
+              case FilterType.LV =>
+                providerData.osmCfg.filter
+                  .map(LvFilter.apply)
+                  .getOrElse(LvFilter())
+              case FilterType.POI =>
+                providerData.osmCfg.poi
+                  .map(PoiFilter.apply)
+                  .getOrElse(PoiFilter())
+            }
+
+            readOsmData(providerData, filter, replyTo)
           case ReqAssetTypes(replyTo) =>
             ctx.pipeToSelf(
               providerData.assetSource.read()
@@ -79,11 +91,20 @@ object InputDataProvider extends ActorStopSupport[ProviderData] {
 
   private def readOsmData(
       providerData: ProviderData,
+      filter: SourceFilter,
       replyTo: ActorRef[InputResponse],
   ): Behaviors.Receive[InputDataEvent] =
     Behaviors.receiveMessage {
-      case osmResponse: RepOsm =>
-        replyTo ! osmResponse
+      case RepOsmContainer(osmContainer) =>
+        val filteredDate = filter match {
+          case lvFilter: SourceFilter.LvFilter =>
+            LvOsmoGridModel(osmContainer, lvFilter, filterNodes = false)
+
+          case poiFilter: PoiFilter =>
+            PoiModel(osmContainer, poiFilter)
+        }
+
+        replyTo ! RepOsm(filteredDate)
         providerData.buffer.unstashAll(idle(providerData))
       case readFailed: OsmReadFailed =>
         replyTo ! readFailed

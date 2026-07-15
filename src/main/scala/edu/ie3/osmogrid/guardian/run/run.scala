@@ -7,7 +7,10 @@
 package edu.ie3.osmogrid.guardian.run
 
 import edu.ie3.datamodel.models.input.NodeInput
-import edu.ie3.datamodel.models.input.container.{GridContainer, SubGridContainer}
+import edu.ie3.datamodel.models.input.container.{
+  GridContainer,
+  SubGridContainer,
+}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.io.input.{AssetInformation, InputDataEvent}
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
@@ -90,11 +93,13 @@ private[run] final case class ChildReferences(
 
   /** Returns true if at least one coordinator exists.
     */
-  def canRun: Boolean = poiParser.isDefined || lvCoordinator.isDefined || mvCoordinator.isDefined
+  def canRun: Boolean =
+    poiParser.isDefined || lvCoordinator.isDefined || mvCoordinator.isDefined
 
   /** Returns true if at least one coordinator is still alive and running.
     */
-  def stillRunning: Boolean = poiParser.isDefined || lvCoordinator.isDefined || mvCoordinator.isDefined
+  def stillRunning: Boolean =
+    poiParser.isDefined || lvCoordinator.isDefined || mvCoordinator.isDefined
 }
 
 sealed trait StateData
@@ -127,7 +132,8 @@ private[run] final case class StoppingData(
     mvCoordinatorTerminated: Option[Boolean],
 ) extends StateData {
   def allChildrenTerminated: Boolean =
-    inputDataProviderTerminated && resultListenerTerminated && poiParserTerminated.forall(terminated => terminated) && lvCoordinatorTerminated
+    inputDataProviderTerminated && resultListenerTerminated && poiParserTerminated
+      .forall(terminated => terminated) && lvCoordinatorTerminated
       .forall(terminated => terminated) && mvCoordinatorTerminated.forall(
       terminated => terminated
     )

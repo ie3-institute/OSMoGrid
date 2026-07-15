@@ -7,7 +7,12 @@
 package edu.ie3.osmogrid.io.output
 
 import edu.ie3.datamodel.io.csv.BufferedCsvWriter
-import edu.ie3.datamodel.io.naming.{DefaultDirectoryHierarchy, EntityPersistenceNamingStrategy, FileNamingStrategy, FlatDirectoryHierarchy}
+import edu.ie3.datamodel.io.naming.{
+  DefaultDirectoryHierarchy,
+  EntityPersistenceNamingStrategy,
+  FileNamingStrategy,
+  FlatDirectoryHierarchy,
+}
 import edu.ie3.datamodel.io.sink.CsvFileSink
 import edu.ie3.osmogrid.poi.PoiElement
 
@@ -38,7 +43,12 @@ final case class ResultCsvSink(
   private val poiSink = {
     val path = saveFolderPath.resolve("poi")
     Files.createDirectories(path)
-    val writer = new BufferedCsvWriter(path.resolve("poi.csv"), Array("id", "size", "lat", "lon"), csvSeparator, false)
+    val writer = new BufferedCsvWriter(
+      path.resolve("poi.csv"),
+      Array("id", "size", "lat", "lon"),
+      csvSeparator,
+      false,
+    )
     writer.writeFileHeader()
     writer
   }
@@ -52,7 +62,9 @@ final case class ResultCsvSink(
     map
   }
 
-  override def handlePOIs(pois: Iterable[PoiElement]): Future[Unit] = Future(pois.foreach(poiSink.write(_)))
+  override def handlePOIs(pois: Iterable[PoiElement]): Future[Unit] = Future(
+    pois.foreach(poiSink.write(_))
+  )
 
   def handleResult(
       gridResult: GridResult

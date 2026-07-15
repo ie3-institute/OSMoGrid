@@ -38,7 +38,10 @@ object ConfigFailFast extends LazyLogging {
     cfg
   }
 
-  private def checkGenerationConfig(generation: Generation, required: Boolean): Unit =
+  private def checkGenerationConfig(
+      generation: Generation,
+      required: Boolean,
+  ): Unit =
     generation match {
       case Generation(lv, mv) =>
         /* Check, that at least one config is set */

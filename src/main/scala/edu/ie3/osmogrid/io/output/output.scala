@@ -17,7 +17,9 @@ sealed trait ResultListenerProtocol
 // external protocol requests
 sealed trait OutputRequest extends ResultListenerProtocol
 
-final case class PoiResult(pois: Iterable[PoiElement]) extends OutputRequest with ResultListenerProtocol
+final case class PoiResult(pois: Iterable[PoiElement])
+    extends OutputRequest
+    with ResultListenerProtocol
 
 final case class GridResult(
     grid: JointGridContainer

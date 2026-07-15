@@ -158,17 +158,18 @@ object OsmoGridConfig {
         file: Option[OsmoGridConfig.Csv] = None
     ) derives ConfigConvert
 
-    /**
-     *
-     * @param pbf
-     * @param filter
-     *   The open street map filters to use for grid generation.
-     * @param poi
-     */
+    /** @param pbf
+      *   The config for pbf files (default: None).
+      * @param filter
+      *   The open street map filters to use for grid generation (default:
+      *   None).
+      * @param poi
+      *   The filters for points of interest (default: None).
+      */
     final case class Osm(
         pbf: Option[OsmoGridConfig.Input.Osm.Pbf] = None,
         filter: Option[Filter] = None,
-        poi: Option[POI] = None
+        poi: Option[POI] = None,
     ) derives ConfigConvert
 
     object Osm {
@@ -178,23 +179,23 @@ object OsmoGridConfig {
       ) derives ConfigConvert
 
       final case class Filter(
-                  building: List[String] = Nil,
-                  highway: List[String] = Nil,
-                  landuse: List[String] = Nil,
-                             ) derives ConfigConvert
+          building: List[String] = Nil,
+          highway: List[String] = Nil,
+          landuse: List[String] = Nil,
+      ) derives ConfigConvert
 
       final case class POI(
-                            home: Map[String, List[String]] = Map.empty,
-                            supermarket: Map[String, List[String]] = Map.empty,
-                            bbpq: Map[String, List[String]] = Map.empty,
-                            services: Map[String, List[String]] = Map.empty,
-                            culture: Map[String, List[String]] = Map.empty,
-                            medicinal: Map[String, List[String]] = Map.empty,
-                            religious: Map[String, List[String]] = Map.empty,
-                            restaurant: Map[String, List[String]] = Map.empty,
-                            sports: Map[String, List[String]] = Map.empty,
-                            otherShops: Map[String, List[String]] = Map.empty,
-                          ) derives ConfigConvert
+          home: Map[String, List[String]] = Map.empty,
+          supermarket: Map[String, List[String]] = Map.empty,
+          bbpq: Map[String, List[String]] = Map.empty,
+          services: Map[String, List[String]] = Map.empty,
+          culture: Map[String, List[String]] = Map.empty,
+          medicinal: Map[String, List[String]] = Map.empty,
+          religious: Map[String, List[String]] = Map.empty,
+          restaurant: Map[String, List[String]] = Map.empty,
+          sports: Map[String, List[String]] = Map.empty,
+          otherShops: Map[String, List[String]] = Map.empty,
+      ) derives ConfigConvert
     }
   }
 
