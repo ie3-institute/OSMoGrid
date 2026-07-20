@@ -3,13 +3,13 @@ plugins {
   id 'java' //java support
   id 'scala'
   id 'pmd' // code check, working on source code
-  id 'com.diffplug.spotless' version '8.7.0'//code format
-  id 'com.github.spotbugs' version '6.5.8' // code check, working on byte code
+  id 'com.diffplug.spotless' version '8.8.0'//code format
+  id 'com.github.spotbugs' version '6.5.9' // code check, working on byte code
   id 'de.undercouch.download' version '5.7.0'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.33" // run scalatest without specific spec task
   id "org.sonarqube" version "7.3.1.8318" // sonarqube
-  id "org.scoverage" version "9.0" // scala code coverage scoverage
+  id "org.scoverage" version "9.1" // scala code coverage scoverage
   id 'net.thauvin.erik.gradle.semver' version '1.0.4' // semantic versioning
 }
 
@@ -73,7 +73,7 @@ dependencies {
 
   // logging
   implementation "com.typesafe.scala-logging:scala-logging_${scalaVersion}:3.9.6"
-  implementation 'ch.qos.logback:logback-classic:1.5.37'
+  implementation 'ch.qos.logback:logback-classic:1.5.38'
 
   // config
   implementation 'com.typesafe:config:1.4.9'

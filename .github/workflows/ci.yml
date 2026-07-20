@@ -75,6 +75,7 @@ jobs:
         run: ./gradlew scaladoc
 
       - name: SonarQube
+        if: ${{ github.actor != 'dependabot[bot]' }}
         run: |
           ./gradlew sonar \
           -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }} \
