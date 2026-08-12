@@ -12,12 +12,12 @@ import edu.ie3.datamodel.models.input.connector.{
   Transformer3WInput,
 }
 import edu.ie3.datamodel.models.input.container.{
+  EnergyManagementUnits,
   GraphicElements,
   RawGridElements,
   SubGridContainer,
   SystemParticipants,
 }
-import edu.ie3.datamodel.models.input.graphics.GraphicInput
 import edu.ie3.datamodel.models.input.system.SystemParticipantInput
 import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils.*
@@ -56,7 +56,7 @@ class SubGridHandlingSpec
       mvCoordinator.ref,
     )
     val log = testKit.system.log
-    val cfg = OsmoGridConfig.Grids(hv = true, lv = true, mv = true)
+    val cfg = OsmoGridConfig.Grids()
 
     "handle empty results correctly" in {
       val empty = Try {
@@ -69,7 +69,7 @@ class SubGridHandlingSpec
           None,
           listener,
           msgAdapters,
-        )(log)
+        )(using log)
       }
 
       empty match {
@@ -95,19 +95,18 @@ class SubGridHandlingSpec
       )
 
       processed.size shouldBe 1
-      val grid = processed(0)
+      val grid = processed.head
 
       val rawGridElements = grid.getRawGrid
       val numbers = rawGridElements.getNodes.asScala.toSeq.map(_.getSubnet)
       numbers.count(_ == 1) shouldBe 2
       numbers.count(_ == 2) shouldBe 1
 
-      val transformer = rawGridElements.getTransformer2Ws.asScala.toSeq(0)
+      val transformer = rawGridElements.getTransformer2Ws.asScala.toSeq.head
       transformer.getNodeA.getSubnet shouldBe 2
       transformer.getNodeB.getSubnet shouldBe 1
 
       grid.getSystemParticipants shouldBe lv.getSystemParticipants
-      grid.getGraphics shouldBe lv.getGraphics
     }
 
     "process and update lv results correctly" in {
@@ -115,7 +114,8 @@ class SubGridHandlingSpec
 
       val commonNode = lv.getRawGrid.getNodes.asScala
         .filter(_.isSlack)
-        .toSeq(0)
+        .toSeq
+        .head
         .copy()
         .slack(false)
         .build()
@@ -125,7 +125,7 @@ class SubGridHandlingSpec
         2,
         new RawGridElements(List[AssetInput](commonNode).asJava),
         new SystemParticipants(List.empty[SystemParticipantInput].asJava),
-        new GraphicElements(List.empty[GraphicInput].asJava),
+        new EnergyManagementUnits(Set.empty[EnergyManagementUnits].asJava),
       )
 
       val expectedUpdatedNode = commonNode.copy().subnet(2).build()
@@ -140,16 +140,13 @@ class SubGridHandlingSpec
       )
 
       processed.size shouldBe 2
-      val grid = processed(0)
+      val grid = processed.head
 
       val rawGridElements = grid.getRawGrid
       rawGridElements.getNodes.asScala should contain(expectedUpdatedNode)
-      rawGridElements.getTransformer2Ws.asScala
-        .toSeq(0)
-        .getNodeA shouldBe expectedUpdatedNode
+      rawGridElements.getTransformer2Ws.asScala.toSeq.head.getNodeA shouldBe expectedUpdatedNode
 
       grid.getSystemParticipants shouldBe lv.getSystemParticipants
-      grid.getGraphics shouldBe lv.getGraphics
     }
   }
 
@@ -179,20 +176,20 @@ class SubGridHandlingSpec
         1,
       )
 
-      val dummyTrafo = new Transformer2WInput(
+      val dummyTransformer = new Transformer2WInput(
         UUID.randomUUID(),
         s"Dummy transformer",
         dummyNodeA,
         dummyNodeB,
         1,
-        trafo_10kV_to_lv,
+        transformer_10kV_to_lv,
         0,
         false,
       )
 
       val updated: Try[Seq[Transformer2WInput]] =
         SubGridHandling invokePrivate updateTransformer2Ws(
-          Seq(dummyTrafo),
+          Seq(dummyTransformer),
           assetInformation.transformerTypes,
         )
 
@@ -202,7 +199,7 @@ class SubGridHandlingSpec
           transformer.getNodeA shouldBe dummyNodeA
           transformer.getNodeB shouldBe dummyNodeB
           transformer.getParallelDevices shouldBe 1
-          transformer.getType shouldBe trafo_20kV_to_lv
+          transformer.getType shouldBe transformer_20kV_to_lv
           transformer.getTapPos shouldBe 0
           transformer.isAutoTap shouldBe false
         case None => fail("This test should pass!")
@@ -242,22 +239,22 @@ class SubGridHandlingSpec
         1,
       )
 
-      val dummyTrafo = new Transformer3WInput(
+      val dummyTransformer = new Transformer3WInput(
         UUID.randomUUID(),
         s"Dummy transformer",
         dummyNodeA,
         dummyNodeB,
         dummyNodeC,
         1,
-        trafo_HV_10kV_LV,
+        transformer_HV_10kV_LV,
         0,
         false,
       )
 
       val updated: Try[Seq[Transformer3WInput]] =
         SubGridHandling invokePrivate updateTransformer3Ws(
-          Seq(dummyTrafo),
-          Seq(trafo_20kV_10kV_LV),
+          Seq(dummyTransformer),
+          Seq(transformer_20kV_10kV_LV),
         )
 
       updated.getOrElse(fail("This test should pass!")).headOption match {
@@ -267,7 +264,7 @@ class SubGridHandlingSpec
           transformer.getNodeB shouldBe dummyNodeB
           transformer.getNodeC shouldBe dummyNodeC
           transformer.getParallelDevices shouldBe 1
-          transformer.getType shouldBe trafo_20kV_10kV_LV
+          transformer.getType shouldBe transformer_20kV_10kV_LV
           transformer.getTapPos shouldBe 0
           transformer.isAutoTap shouldBe false
         case None => fail("This test should pass!")

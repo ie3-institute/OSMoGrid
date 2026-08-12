@@ -7,19 +7,17 @@
 package edu.ie3.osmogrid.io.input
 
 import org.apache.pekko.actor.testkit.typed.scaladsl.ActorTestKit
-import com.typesafe.config.ConfigFactory
 import edu.ie3.datamodel.exceptions.SourceException
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Csv
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Osm.Pbf
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.{Asset, Osm}
-import edu.ie3.osmogrid.exception.{InputDataException, PbfReadFailedException}
+import edu.ie3.osmogrid.exception.PbfReadFailedException
 import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
 import edu.ie3.osmogrid.model.SourceFilter.LvFilter
 import edu.ie3.test.common.{InputDataCheck, UnitSpec}
 
 import scala.concurrent.duration.DurationInt
-import scala.jdk.CollectionConverters.*
 import scala.language.postfixOps
 
 class InputDataProviderIT extends UnitSpec with InputDataCheck {
@@ -72,8 +70,8 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
           case RepAssetTypes(
                 assetInformation: AssetInformation
               ) =>
-            assetInformation.lineTypes.length shouldBe 1
-            assetInformation.transformerTypes.length shouldBe 1
+            assetInformation.lineTypes.length shouldBe 34 // 33 from PSDM + 1 from input-file
+            assetInformation.transformerTypes.length shouldBe 12 // 11 from PSDM + 1 from input-file
         }
       }
     }
@@ -103,38 +101,6 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
             )
           case RepOsm(lvModel: LvOsmoGridModel) =>
             fail(s"Provided OsmoGridModel $lvModel although it shouldn't")
-
-          case unexpected => fail(s"Unexpected message: $unexpected")
-        }
-      }
-      "return with failure for missing asset data" in {
-        val resourceName = "/"
-        val config: OsmoGridConfig.Input =
-          createConfig("/Witten_Stockum.pbf", resourceName)
-        val assetDir = getResourcePath(resourceName)
-
-        val requestProbe = testKit.createTestProbe[InputResponse]()
-        val testActor = testKit.spawn(
-          InputDataProvider(config)
-        )
-
-        testActor ! ReqAssetTypes(
-          requestProbe.ref
-        )
-        requestProbe
-          .expectMessageType[InputResponse](
-            3 seconds
-          ) match {
-          case AssetReadFailed(exception) =>
-            exception shouldBe InputDataException(
-              s"There are no or corrupt transformer types at: $assetDir"
-            )
-          case RepAssetTypes(
-                assetInformation: AssetInformation
-              ) =>
-            fail(
-              s"Provided asset information $assetInformation although it shouldn't"
-            )
 
           case unexpected => fail(s"Unexpected message: $unexpected")
         }

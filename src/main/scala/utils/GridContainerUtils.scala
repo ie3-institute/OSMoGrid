@@ -99,7 +99,7 @@ object GridContainerUtils {
       gridName,
       new RawGridElements(assets.asJava),
       new SystemParticipants(List.empty[SystemParticipants].asJava),
-      new GraphicElements(List.empty[GraphicElements].asJava),
+      new EnergyManagementUnits(List.empty[EnergyManagementUnits].asJava),
     )
   }
 
@@ -126,16 +126,11 @@ object GridContainerUtils {
       .allEntitiesAsList()
       .asScala :++ containerB.getSystemParticipants.allEntitiesAsList().asScala
 
-    // combining graphic elements
-    val graphicElements = containerA.getGraphics
-      .allEntitiesAsList()
-      .asScala :++ containerB.getGraphics.allEntitiesAsList().asScala
-
     new JointGridContainer(
       s"Joint container of the two grids ${containerA.getGridName} and ${containerB.getGridName}",
       new RawGridElements(rawGridElements.asJava),
       new SystemParticipants(participants.asJava),
-      new GraphicElements(graphicElements.asJava),
+      new EnergyManagementUnits(List.empty[EnergyManagementUnits].asJava),
     )
   }
 }

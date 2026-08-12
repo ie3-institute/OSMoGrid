@@ -17,16 +17,13 @@ import edu.ie3.datamodel.models.input.connector.{
   Transformer3WInput,
 }
 import edu.ie3.datamodel.models.input.container.{
+  EnergyManagementUnits,
   GraphicElements,
   RawGridElements,
   SubGridContainer,
   SystemParticipants,
 }
-import edu.ie3.datamodel.models.input.graphics.{
-  LineGraphicInput,
-  NodeGraphicInput,
-}
-import edu.ie3.datamodel.models.input.system._
+import edu.ie3.datamodel.models.input.system.*
 import edu.ie3.datamodel.models.input.system.characteristic.{
   CosPhiFixed,
   OlmCharacteristicInput,
@@ -36,7 +33,7 @@ import edu.ie3.datamodel.models.profile.BdewStandardLoadProfile
 import edu.ie3.datamodel.models.voltagelevels.VoltageLevel
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.osm.model.OsmEntity.Node
-import edu.ie3.util.quantities.QuantityUtils._
+import edu.ie3.util.quantities.QuantityUtils.*
 import org.locationtech.jts.geom.impl.CoordinateArraySequence
 import org.locationtech.jts.geom.{LineString, Point}
 import tech.units.indriya.ComparableQuantity
@@ -129,8 +126,8 @@ object GridConversion {
     )
   }
 
-  /** Builds line between the nodes. Includes passed passed osm street node to
-    * the geo position to track the street profile.
+  /** Builds line between the nodes. Includes passed osm street node to the geo
+    * position to track the street profile.
     *
     * @param firstNode
     *   node at which the line starts
@@ -246,7 +243,7 @@ object GridConversion {
       node,
       CosPhiFixed.CONSTANT_CHARACTERISTIC,
       null,
-      BdewStandardLoadProfile.H0,
+      BdewStandardLoadProfile.H0.getKey,
       // todo: What to do for econsannual?
       0.asWattHour,
       ratedPower,
@@ -280,21 +277,19 @@ object GridConversion {
       new util.HashSet[EvInput],
       new util.HashSet[FixedFeedInInput],
       new util.HashSet[HpInput],
+      new util.HashSet[AcInput],
       loads,
       new util.HashSet[PvInput],
       new util.HashSet[StorageInput],
       new util.HashSet[WecInput],
     )
-    val graphicElements = new GraphicElements(
-      new util.HashSet[NodeGraphicInput],
-      new util.HashSet[LineGraphicInput],
-    )
+    val emUnits = new EnergyManagementUnits(util.HashSet[EnergyManagementUnits])
     new SubGridContainer(
       gridName,
       subnetNr,
       rawGridElements,
       systemParticipants,
-      graphicElements,
+      emUnits,
     )
   }
 
@@ -393,7 +388,7 @@ object GridConversion {
           .sortBy(_._2)
 
         // map the osm node with the shortest distance
-        node -> sortedList(0)._1
+        node -> sortedList.head._1
       }.toMap
 
       // creating the NodeConversion object
