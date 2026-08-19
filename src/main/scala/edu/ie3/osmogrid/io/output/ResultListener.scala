@@ -25,7 +25,6 @@ import edu.ie3.osmogrid.io.output.PersistenceListenerEvent.{
 
 import java.nio.file.Path
 import java.text.SimpleDateFormat
-import java.time.ZonedDateTime
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -53,31 +52,45 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
   private def idle(
       stateData: ListenerStateData
   ): Behavior[ResultListenerProtocol] =
-    Behaviors.receiveMessagePartial {
-      case gridResult: GridResult =>
-        stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
-          case Success(_) =>
-            ResultHandlingSucceeded
-          case Failure(exception) =>
-            ResultHandlingFailed(exception)
-        }
-        save(stateData)
+    Behaviors
+      .receiveMessagePartial[ResultListenerProtocol] {
+        case StopListener =>
+          Behaviors.stopped
 
-      case PoiResult(pois) =>
-        stateData.ctx.pipeToSelf(stateData.sink.handlePOIs(pois)) {
-          case Success(_) =>
-            ResultHandlingSucceeded
-          case Failure(exception) =>
-            ResultHandlingFailed(exception)
-        }
-        save(stateData)
-    }
+        case gridResult: GridResult =>
+          stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
+            case Success(_) =>
+              ResultHandlingSucceeded
+            case Failure(exception) =>
+              ResultHandlingFailed(exception)
+          }
+          save(stateData)
+
+        case PoiResult(pois) =>
+          stateData.ctx.pipeToSelf(stateData.sink.handlePOIs(pois)) {
+            case Success(_) =>
+              ResultHandlingSucceeded
+            case Failure(exception) =>
+              ResultHandlingFailed(exception)
+          }
+          save(stateData)
+      }
+      .receiveSignal { case (ctx, PostStop) =>
+        if (!stateData.buffer.isEmpty)
+          ctx.log.warn(
+            s"Stash of ResultListener is not empty! This indicates an invalid system state!"
+          )
+        postStopCleanUp(ctx.log, stateData)
+      }
 
   private def save(
       stateData: ListenerStateData
   ): Behavior[ResultListenerProtocol] =
     Behaviors
       .receiveMessage[ResultListenerProtocol] {
+        case StopListener =>
+          Behaviors.stopped
+
         case ResultHandlingFailed(cause) =>
           stateData.ctx.log.error(
             s"Error during persistence of grid result. Shutting down!",
@@ -85,7 +98,7 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
           )
           Behaviors.stopped
         case ResultHandlingSucceeded =>
-          Behaviors.stopped
+          idle(stateData)
         case other =>
           stateData.buffer.stash(other)
           Behaviors.same

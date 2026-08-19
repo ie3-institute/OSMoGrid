@@ -23,7 +23,7 @@ import edu.ie3.util.osm.model.OsmEntity.Relation.{
 import edu.ie3.util.osm.model.OsmEntity.Way.{ClosedWay, OpenWay}
 import edu.ie3.util.osm.model.OsmEntity.{Node, Relation}
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import org.apache.pekko.actor.typed.{ActorRef, Behavior}
+import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
 import org.locationtech.jts.geom.*
 import org.slf4j.Logger
 import tech.units.indriya.unit.Units
@@ -38,32 +38,44 @@ object PoiParser extends ActorStopSupportStateless {
 
   sealed trait PoiRequest
 
+  final case class PoiResponse(response: Seq[PoiElement])
+
   object StartParsing extends PoiRequest
 
-  def apply(resultListener: ActorRef[ResultListenerProtocol])(using
+  def apply(runGuardian: ActorRef[PoiResponse])(using
       inputDataProvider: ActorRef[InputDataEvent]
-  ): Behavior[PoiRequest | InputResponse] = Behaviors.receive {
-    case (ctx, StartParsing) =>
-      ctx.log.info(s"Requesting points of interest ...")
+  ): Behavior[PoiRequest | InputResponse] = Behaviors
+    .receive[PoiRequest | InputResponse] {
+      case (ctx, StartParsing) =>
+        ctx.log.info(s"Requesting points of interest ...")
 
-      inputDataProvider ! ReqOsm(ctx.self, POI)
-      Behaviors.same
+        inputDataProvider ! ReqOsm(ctx.self, POI)
+        Behaviors.same
 
-    case (ctx, RepOsm(osmModel)) =>
-      osmModel match {
-        case poiModel: PoiModel =>
-          ctx.log.info(s"Received osm entities. Try to parse them ...")
-          val elements = parseElements(poiModel)(using ctx.log)
+      case (ctx, RepOsm(osmModel)) =>
+        osmModel match {
+          case poiModel: PoiModel =>
+            ctx.log.info(s"Received osm entities. Try to parse them ...")
+            val elements = parseElements(poiModel)(using ctx.log)
 
-          resultListener ! PoiResult(elements)
+            runGuardian ! PoiResponse(elements.toSeq)
 
-          stopBehavior
+            stopBehavior
 
-        case other =>
-          ctx.log.error(s"Cannot parse POIs from ${other.getClass}.")
-          Behaviors.stopped
-      }
-  }
+          case other =>
+            ctx.log.error(s"Cannot parse POIs from ${other.getClass}.")
+            Behaviors.stopped
+        }
+
+      case (ctx, unsupported) =>
+        ctx.log.error(
+          s"Received unsupported message '$unsupported' in idle state."
+        )
+        stopBehavior
+    }
+    .receiveSignal { case (ctx, PostStop) =>
+      postStopCleanUp(ctx.log)
+    }
 
   def parseElements(
       poiModel: PoiModel

@@ -14,6 +14,8 @@ import java.util.UUID
 
 sealed trait ResultListenerProtocol
 
+object StopListener extends ResultListenerProtocol
+
 // external protocol requests
 sealed trait OutputRequest extends ResultListenerProtocol
 

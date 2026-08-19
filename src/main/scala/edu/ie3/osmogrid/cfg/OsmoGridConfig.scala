@@ -87,14 +87,11 @@ object OsmoGridConfig {
   /** Definition of a voltage level.
     * @param default
     *   The default rated voltage.
-    * @param id
-    *   The id of this level.
     * @param vNom
     *   Option for a list with more rated voltages (default: None).
     */
   case class VoltageLevel(
       default: Double,
-      id: String,
       vNom: Option[List[Double]] = None,
   )
 
@@ -230,9 +227,9 @@ object OsmoGridConfig {
     *   Parameters for low voltage level.
     */
   final case class Voltage(
-      hv: VoltageLevel = VoltageLevel(110.0, "hv"),
-      mv: VoltageLevel = VoltageLevel(10.0, "mv"),
-      lv: VoltageLevel = VoltageLevel(0.4, "lv"),
+      hv: VoltageLevel = VoltageLevel(110.0),
+      mv: VoltageLevel = VoltageLevel(10.0),
+      lv: VoltageLevel = VoltageLevel(0.4),
   ) derives ConfigConvert
 
 }

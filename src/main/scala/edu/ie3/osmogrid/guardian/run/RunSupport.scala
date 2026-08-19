@@ -15,7 +15,7 @@ import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.{LvCoordinator, LvRequest, LvResponse, ReqLvGrids}
 import edu.ie3.osmogrid.mv.{MvCoordinator, MvRequest, MvResponse, ReqMvGrids}
 import edu.ie3.osmogrid.poi.PoiParser
-import edu.ie3.osmogrid.poi.PoiParser.StartParsing
+import edu.ie3.osmogrid.poi.PoiParser.{PoiResponse, StartParsing}
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.scaladsl.ActorContext
 
@@ -41,7 +41,7 @@ trait RunSupport {
     */
   protected def initRun(
       runGuardianData: RunGuardianData,
-      ctx: ActorContext[RunRequest],
+      ctx: ActorContext[Messages],
   ): Try[ChildReferences] = {
     val log = ctx.log
     ConfigFailFast
@@ -91,16 +91,14 @@ trait RunSupport {
           spawnResultListener(id, runGuardianData.cfg.output, ctx)
 
         /* Check if we can parser pois. */
-        val poiParser = resultListener match {
-          case Some(listener) if validConfig.input.osm.poi.isDefined =>
-            val parser =
-              ctx.spawn(PoiParser(listener), s"PoiParser_${id.toString}")
-            parser ! StartParsing
+        val poiParser = if validConfig.input.osm.poi.isDefined then {
+          val parser =
+            ctx.spawn(PoiParser(ctx.self), s"PoiParser_${id.toString}")
+          parser ! StartParsing
 
-            ctx.watchWith(parser, PoiParserDied)
-            Some(parser)
-          case _ => None
-        }
+          ctx.watchWith(parser, PoiParserDied)
+          Some(parser)
+        } else None
 
         /* Check, which voltage level configs are given. Start with lv level, if this is desired for. */
         // spin up lv coordinator if a config is given
@@ -150,7 +148,7 @@ trait RunSupport {
   private def spawnInputDataProvider(
       runId: UUID,
       inputConfig: OsmoGridConfig.Input,
-      ctx: ActorContext[RunRequest],
+      ctx: ActorContext[Messages],
   ): ActorRef[InputDataEvent] = {
     ctx.log.info("Starting input data provider ...")
     val inputProvider =
@@ -176,7 +174,7 @@ trait RunSupport {
   private def spawnResultListener(
       runId: UUID,
       outputConfig: OsmoGridConfig.Output,
-      ctx: ActorContext[RunRequest],
+      ctx: ActorContext[Messages],
   ): Option[ActorRef[ResultListenerProtocol]] = {
     val resultListener = outputConfig match {
       case Output(_, Some(_), _, _) =>
@@ -215,7 +213,7 @@ trait RunSupport {
       lvConfig: OsmoGridConfig.Generation.Lv,
       lvCoordinatorAdapter: ActorRef[LvResponse],
       runId: UUID,
-      ctx: ActorContext[RunRequest],
+      ctx: ActorContext[Messages],
   )(implicit
       inputDataProvider: ActorRef[InputDataEvent]
   ): ActorRef[LvRequest] = {
@@ -249,7 +247,7 @@ trait RunSupport {
       mvConfig: OsmoGridConfig,
       mvCoordinatorAdapter: ActorRef[MvResponse],
       runId: UUID,
-      ctx: ActorContext[RunRequest],
+      ctx: ActorContext[Messages],
   )(implicit
       inputDataProvider: ActorRef[InputDataEvent]
   ): ActorRef[MvRequest] = {

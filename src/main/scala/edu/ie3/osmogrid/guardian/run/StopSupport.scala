@@ -8,6 +8,7 @@ package edu.ie3.osmogrid.guardian.run
 
 import org.apache.pekko.actor.typed.scaladsl.ActorContext
 import edu.ie3.osmogrid.io.input.InputTerminate
+import edu.ie3.osmogrid.io.output.StopListener
 import edu.ie3.osmogrid.lv.LvTerminate
 import edu.ie3.osmogrid.mv.MvTerminate
 
@@ -28,11 +29,12 @@ trait StopSupport {
   protected def stopChildren(
       runId: UUID,
       childReferences: ChildReferences,
-      ctx: ActorContext[RunRequest],
+      ctx: ActorContext[Messages],
   ): StoppingData = {
     childReferences.lvCoordinator.foreach(_ ! LvTerminate)
     childReferences.mvCoordinator.foreach(_ ! MvTerminate)
     childReferences.inputDataProvider ! InputTerminate
+    childReferences.resultListeners.foreach(_ ! StopListener)
 
     StoppingData(
       runId,
@@ -94,7 +96,7 @@ trait StopSupport {
       runId: UUID,
       childReferences: ChildReferences,
       watchMsg: RunWatch,
-      ctx: ActorContext[RunRequest],
+      ctx: ActorContext[Messages],
   ): StoppingData = {
     (stopChildren(runId, childReferences, ctx), watchMsg) match {
       case (stoppingData, InputDataProviderDied) =>

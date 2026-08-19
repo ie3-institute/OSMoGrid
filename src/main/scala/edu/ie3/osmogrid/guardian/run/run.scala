@@ -16,7 +16,8 @@ import edu.ie3.osmogrid.io.input.{AssetInformation, InputDataEvent}
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.{LvRequest, LvResponse}
 import edu.ie3.osmogrid.mv.{MvRequest, MvResponse}
-import edu.ie3.osmogrid.poi.PoiParser.PoiRequest
+import edu.ie3.osmogrid.poi.PoiElement
+import edu.ie3.osmogrid.poi.PoiParser.{PoiRequest, PoiResponse}
 import org.apache.pekko.actor.typed.ActorRef
 
 import java.util.UUID
@@ -25,6 +26,8 @@ import java.util.UUID
 
 /* Received requests */
 sealed trait RunRequest
+
+type Messages = RunRequest | PoiResponse
 
 object Run extends RunRequest
 
