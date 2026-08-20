@@ -3,7 +3,7 @@ plugins {
   id 'java' //java support
   id 'scala'
   id 'pmd' // code check, working on source code
-  id 'com.diffplug.spotless' version '8.9.0'//code format
+  id 'com.diffplug.spotless' version '8.10.0'//code format
   id 'com.github.spotbugs' version '6.5.10' // code check, working on byte code
   id 'de.undercouch.download' version '5.7.0'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
@@ -18,7 +18,7 @@ ext {
 
   scalaVersion = '3'
   scalaBinaryVersion = '3.8.4'
-  pekkoVersion = '1.6.0'
+  pekkoVersion = '1.7.0'
 
   scapegoatVersion = '3.3.6'
 
@@ -73,7 +73,7 @@ dependencies {
 
   // logging
   implementation "com.typesafe.scala-logging:scala-logging_${scalaVersion}:3.9.6"
-  implementation 'ch.qos.logback:logback-classic:1.6.1'
+  implementation 'ch.qos.logback:logback-classic:1.6.3'
 
   // config
   implementation 'com.typesafe:config:1.4.9'
