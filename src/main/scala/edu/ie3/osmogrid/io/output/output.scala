@@ -50,4 +50,5 @@ private[output] final case class ListenerStateData(
     ctx: ActorContext[ResultListenerProtocol],
     buffer: StashBuffer[ResultListenerProtocol],
     sink: ResultSink,
+    waitingForSave: Boolean,
 )

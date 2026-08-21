@@ -127,7 +127,15 @@ object RunGuardian
 
       childReferences.resultListeners.foreach(_ ! PoiResult(response))
 
-      running(runGuardianData, updatedChildReferences, finishedGridData)
+      // check if all possible data was received
+      if (!updatedChildReferences.stillRunning) {
+        // if all data was received,
+        stopping(stopChildren(runGuardianData.runId, childReferences, ctx))
+      } else {
+
+        // if some expected data is still missing, keep waiting for missing data
+        running(runGuardianData, updatedChildReferences, finishedGridData)
+      }
 
     case (
           ctx,

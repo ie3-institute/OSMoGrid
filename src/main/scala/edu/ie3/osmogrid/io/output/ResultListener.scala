@@ -40,7 +40,7 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
       Behaviors.setup[ResultListenerProtocol] { ctx =>
         ctx.pipeToSelf(initSinks(runId, cfg)) {
           case Success(sink) =>
-            InitComplete(ListenerStateData(runId, ctx, buffer, sink))
+            InitComplete(ListenerStateData(runId, ctx, buffer, sink, false))
           case Failure(cause) =>
             InitFailed(cause)
         }
@@ -55,7 +55,10 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
     Behaviors
       .receiveMessagePartial[ResultListenerProtocol] {
         case StopListener =>
-          Behaviors.stopped
+          if stateData.waitingForSave then {
+            stateData.buffer.stash(StopListener)
+            Behaviors.same
+          } else Behaviors.stopped
 
         case gridResult: GridResult =>
           stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
@@ -64,7 +67,7 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
             case Failure(exception) =>
               ResultHandlingFailed(exception)
           }
-          save(stateData)
+          save(stateData.copy(waitingForSave = true))
 
         case PoiResult(pois) =>
           stateData.ctx.pipeToSelf(stateData.sink.handlePOIs(pois)) {
@@ -73,7 +76,7 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
             case Failure(exception) =>
               ResultHandlingFailed(exception)
           }
-          save(stateData)
+          save(stateData.copy(waitingForSave = true))
       }
       .receiveSignal { case (ctx, PostStop) =>
         if (!stateData.buffer.isEmpty)
@@ -89,7 +92,10 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
     Behaviors
       .receiveMessage[ResultListenerProtocol] {
         case StopListener =>
-          Behaviors.stopped
+          if stateData.waitingForSave then {
+            stateData.buffer.stash(StopListener)
+            Behaviors.same
+          } else Behaviors.stopped
 
         case ResultHandlingFailed(cause) =>
           stateData.ctx.log.error(
@@ -98,7 +104,9 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
           )
           Behaviors.stopped
         case ResultHandlingSucceeded =>
-          idle(stateData)
+          stateData.buffer.unstashAll(
+            idle(stateData.copy(waitingForSave = false))
+          )
         case other =>
           stateData.buffer.stash(other)
           Behaviors.same
