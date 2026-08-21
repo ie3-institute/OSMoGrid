@@ -129,13 +129,11 @@ object RunGuardian
 
       // check if all possible data was received
       if (!updatedChildReferences.stillRunning) {
-        // if all data was received,
-        stopping(stopChildren(runGuardianData.runId, childReferences, ctx))
-      } else {
-
-        // if some expected data is still missing, keep waiting for missing data
-        running(runGuardianData, updatedChildReferences, finishedGridData)
+        // if all data was received, handle the grid results before shutting down
+        ctx.self ! HandleGridResults
       }
+
+      running(runGuardianData, updatedChildReferences, finishedGridData)
 
     case (
           ctx,
