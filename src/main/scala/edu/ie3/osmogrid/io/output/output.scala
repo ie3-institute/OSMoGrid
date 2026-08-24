@@ -8,13 +8,20 @@ package edu.ie3.osmogrid.io.output
 
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, StashBuffer}
 import edu.ie3.datamodel.models.input.container.JointGridContainer
+import edu.ie3.osmogrid.poi.PoiElement
 
 import java.util.UUID
 
 sealed trait ResultListenerProtocol
 
+object StopListener extends ResultListenerProtocol
+
 // external protocol requests
 sealed trait OutputRequest extends ResultListenerProtocol
+
+final case class PoiResult(pois: Iterable[PoiElement])
+    extends OutputRequest
+    with ResultListenerProtocol
 
 final case class GridResult(
     grid: JointGridContainer
@@ -43,4 +50,5 @@ private[output] final case class ListenerStateData(
     ctx: ActorContext[ResultListenerProtocol],
     buffer: StashBuffer[ResultListenerProtocol],
     sink: ResultSink,
+    waitingForSave: Boolean,
 )

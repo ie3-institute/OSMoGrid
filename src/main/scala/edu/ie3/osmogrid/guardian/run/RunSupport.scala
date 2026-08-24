@@ -6,10 +6,7 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv.{
-  BoundaryAdminLevel,
-  Osm,
-}
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.Lv.BoundaryAdminLevel
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Generation.{Lv, Mv}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Output
 import edu.ie3.osmogrid.cfg.{ConfigFailFast, OsmoGridConfig}
@@ -17,6 +14,8 @@ import edu.ie3.osmogrid.io.input.{InputDataEvent, InputDataProvider}
 import edu.ie3.osmogrid.io.output.{ResultListener, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.{LvCoordinator, LvRequest, LvResponse, ReqLvGrids}
 import edu.ie3.osmogrid.mv.{MvCoordinator, MvRequest, MvResponse, ReqMvGrids}
+import edu.ie3.osmogrid.poi.PoiParser
+import edu.ie3.osmogrid.poi.PoiParser.{PoiResponse, StartParsing}
 import org.apache.pekko.actor.typed.ActorRef
 import org.apache.pekko.actor.typed.scaladsl.ActorContext
 
@@ -27,11 +26,8 @@ trait RunSupport {
 
   private val lvFallback: Lv = Lv(
     averagePowerDensity = 12.5, // W/m^2
-    boundaryAdminLevel = BoundaryAdminLevel(lowest = 8, starting = 2),
-    considerHouseConnectionPoints = false,
-    loadSimultaneousFactor = 0.2,
+    boundaryAdminLevel = BoundaryAdminLevel(),
     minDistance = 10,
-    osm = Osm(None),
   )
 
   /** Initiate a generation run and return the updated run meta data
@@ -45,7 +41,7 @@ trait RunSupport {
     */
   protected def initRun(
       runGuardianData: RunGuardianData,
-      ctx: ActorContext[RunRequest],
+      ctx: ActorContext[Messages],
   ): Try[ChildReferences] = {
     val log = ctx.log
     ConfigFailFast
@@ -87,12 +83,22 @@ trait RunSupport {
         val msgAdapters = runGuardianData.msgAdapters
 
         ctx.log.info("Starting input provider ...")
-        implicit val inputProvider: ActorRef[InputDataEvent] =
+        given inputProvider: ActorRef[InputDataEvent] =
           spawnInputDataProvider(id, validConfig.input, ctx)
 
         // spin up listeners, watch them and wait until they terminate in this state
         val resultListener =
           spawnResultListener(id, runGuardianData.cfg.output, ctx)
+
+        /* Check if we can parser pois. */
+        val poiParser = if validConfig.input.osm.poi.isDefined then {
+          val parser =
+            ctx.spawn(PoiParser(ctx.self), s"PoiParser_${id.toString}")
+          parser ! StartParsing
+
+          ctx.watchWith(parser, PoiParserDied)
+          Some(parser)
+        } else None
 
         /* Check, which voltage level configs are given. Start with lv level, if this is desired for. */
         // spin up lv coordinator if a config is given
@@ -120,6 +126,7 @@ trait RunSupport {
             inputProvider,
             resultListener,
             runGuardianData.additionalListener,
+            poiParser,
             lvCoordinator,
             mvCoordinator,
           )
@@ -141,7 +148,7 @@ trait RunSupport {
   private def spawnInputDataProvider(
       runId: UUID,
       inputConfig: OsmoGridConfig.Input,
-      ctx: ActorContext[RunRequest],
+      ctx: ActorContext[Messages],
   ): ActorRef[InputDataEvent] = {
     ctx.log.info("Starting input data provider ...")
     val inputProvider =
@@ -167,7 +174,7 @@ trait RunSupport {
   private def spawnResultListener(
       runId: UUID,
       outputConfig: OsmoGridConfig.Output,
-      ctx: ActorContext[RunRequest],
+      ctx: ActorContext[Messages],
   ): Option[ActorRef[ResultListenerProtocol]] = {
     val resultListener = outputConfig match {
       case Output(_, Some(_), _, _) =>
@@ -206,7 +213,7 @@ trait RunSupport {
       lvConfig: OsmoGridConfig.Generation.Lv,
       lvCoordinatorAdapter: ActorRef[LvResponse],
       runId: UUID,
-      ctx: ActorContext[RunRequest],
+      ctx: ActorContext[Messages],
   )(implicit
       inputDataProvider: ActorRef[InputDataEvent]
   ): ActorRef[LvRequest] = {
@@ -240,7 +247,7 @@ trait RunSupport {
       mvConfig: OsmoGridConfig,
       mvCoordinatorAdapter: ActorRef[MvResponse],
       runId: UUID,
-      ctx: ActorContext[RunRequest],
+      ctx: ActorContext[Messages],
   )(implicit
       inputDataProvider: ActorRef[InputDataEvent]
   ): ActorRef[MvRequest] = {

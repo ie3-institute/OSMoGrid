@@ -25,7 +25,6 @@ import edu.ie3.osmogrid.io.output.PersistenceListenerEvent.{
 
 import java.nio.file.Path
 import java.text.SimpleDateFormat
-import java.time.ZonedDateTime
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -41,7 +40,7 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
       Behaviors.setup[ResultListenerProtocol] { ctx =>
         ctx.pipeToSelf(initSinks(runId, cfg)) {
           case Success(sink) =>
-            InitComplete(ListenerStateData(runId, ctx, buffer, sink))
+            InitComplete(ListenerStateData(runId, ctx, buffer, sink, false))
           case Failure(cause) =>
             InitFailed(cause)
         }
@@ -53,21 +52,51 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
   private def idle(
       stateData: ListenerStateData
   ): Behavior[ResultListenerProtocol] =
-    Behaviors.receiveMessagePartial { case gridResult: GridResult =>
-      stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
-        case Success(_) =>
-          ResultHandlingSucceeded
-        case Failure(exception) =>
-          ResultHandlingFailed(exception)
+    Behaviors
+      .receiveMessagePartial[ResultListenerProtocol] {
+        case StopListener =>
+          if stateData.waitingForSave then {
+            stateData.buffer.stash(StopListener)
+            Behaviors.same
+          } else Behaviors.stopped
+
+        case gridResult: GridResult =>
+          stateData.ctx.pipeToSelf(stateData.sink.handleResult(gridResult)) {
+            case Success(_) =>
+              ResultHandlingSucceeded
+            case Failure(exception) =>
+              ResultHandlingFailed(exception)
+          }
+          save(stateData.copy(waitingForSave = true))
+
+        case PoiResult(pois) =>
+          stateData.ctx.pipeToSelf(stateData.sink.handlePOIs(pois)) {
+            case Success(_) =>
+              ResultHandlingSucceeded
+            case Failure(exception) =>
+              ResultHandlingFailed(exception)
+          }
+          save(stateData.copy(waitingForSave = true))
       }
-      save(stateData)
-    }
+      .receiveSignal { case (ctx, PostStop) =>
+        if (!stateData.buffer.isEmpty)
+          ctx.log.warn(
+            s"Stash of ResultListener is not empty! This indicates an invalid system state!"
+          )
+        postStopCleanUp(ctx.log, stateData)
+      }
 
   private def save(
       stateData: ListenerStateData
   ): Behavior[ResultListenerProtocol] =
     Behaviors
       .receiveMessage[ResultListenerProtocol] {
+        case StopListener =>
+          if stateData.waitingForSave then {
+            stateData.buffer.stash(StopListener)
+            Behaviors.same
+          } else Behaviors.stopped
+
         case ResultHandlingFailed(cause) =>
           stateData.ctx.log.error(
             s"Error during persistence of grid result. Shutting down!",
@@ -75,7 +104,9 @@ object ResultListener extends ActorStopSupport[ListenerStateData] {
           )
           Behaviors.stopped
         case ResultHandlingSucceeded =>
-          Behaviors.stopped
+          stateData.buffer.unstashAll(
+            idle(stateData.copy(waitingForSave = false))
+          )
         case other =>
           stateData.buffer.stash(other)
           Behaviors.same

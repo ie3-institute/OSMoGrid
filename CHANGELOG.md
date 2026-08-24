@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implemented GitHub Actions Pipeline [#545](https://github.com/ie3-institute/OSMoGrid/issues/545)
 - Added `mavenCentralPublish.gradle` to enable deployment to MavenCentral [#568](https://github.com/ie3-institute/OSMoGrid/issues/568)
 - Implementing auto-merge for dependabot PRs [#556](https://github.com/ie3-institute/OSMoGrid/issues/566)
+- Parsing of points of interest [#740](https://github.com/ie3-institute/OSMoGrid/issues/740)
 
 ### Changed
 - Rely on Java 17

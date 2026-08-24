@@ -7,6 +7,7 @@
 package edu.ie3.osmogrid.cfg
 
 import com.typesafe.config.Config
+import edu.ie3.osmogrid.cfg.OsmoGridConfig.Input.Osm.{Filter, POI}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.{Grids, Voltage}
 import edu.ie3.osmogrid.exception.IllegalConfigException
 import pureconfig.error.*
@@ -86,14 +87,11 @@ object OsmoGridConfig {
   /** Definition of a voltage level.
     * @param default
     *   The default rated voltage.
-    * @param id
-    *   The id of this level.
     * @param vNom
     *   Option for a list with more rated voltages (default: None).
     */
   case class VoltageLevel(
       default: Double,
-      id: String,
       vNom: Option[List[Double]] = None,
   )
 
@@ -121,8 +119,6 @@ object OsmoGridConfig {
       *   The load simultaneous factor to use (default: 0.2)
       * @param minDistance
       *   Minimal distance.
-      * @param osm
-      *   The open street map filters to use.
       */
     final case class Lv(
         averagePowerDensity: Double,
@@ -131,7 +127,6 @@ object OsmoGridConfig {
         considerHouseConnectionPoints: Boolean = false,
         loadSimultaneousFactor: Double = 0.2,
         minDistance: Double,
-        osm: OsmoGridConfig.Generation.Lv.Osm = Lv.Osm(),
     ) derives ConfigConvert
 
     object Lv {
@@ -140,19 +135,6 @@ object OsmoGridConfig {
           lowest: Int = 8,
           starting: Int = 2,
       ) derives ConfigConvert
-
-      final case class Osm(
-          filter: Option[OsmoGridConfig.Generation.Lv.Osm.Filter] = None
-      ) derives ConfigConvert
-
-      object Osm {
-
-        final case class Filter(
-            building: List[String] = Nil,
-            highway: List[String] = Nil,
-            landuse: List[String] = Nil,
-        ) derives ConfigConvert
-      }
 
     }
 
@@ -173,14 +155,43 @@ object OsmoGridConfig {
         file: Option[OsmoGridConfig.Csv] = None
     ) derives ConfigConvert
 
+    /** @param pbf
+      *   The config for pbf files (default: None).
+      * @param filter
+      *   The open street map filters to use for grid generation (default:
+      *   None).
+      * @param poi
+      *   The filters for points of interest (default: None).
+      */
     final case class Osm(
-        pbf: Option[OsmoGridConfig.Input.Osm.Pbf] = None
+        pbf: Option[OsmoGridConfig.Input.Osm.Pbf] = None,
+        filter: Option[Filter] = None,
+        poi: Option[POI] = None,
     ) derives ConfigConvert
 
     object Osm {
 
       final case class Pbf(
           file: String
+      ) derives ConfigConvert
+
+      final case class Filter(
+          building: List[String] = Nil,
+          highway: List[String] = Nil,
+          landuse: List[String] = Nil,
+      ) derives ConfigConvert
+
+      final case class POI(
+          home: Map[String, List[String]] = Map.empty,
+          supermarket: Map[String, List[String]] = Map.empty,
+          bbpq: Map[String, List[String]] = Map.empty,
+          services: Map[String, List[String]] = Map.empty,
+          culture: Map[String, List[String]] = Map.empty,
+          medicinal: Map[String, List[String]] = Map.empty,
+          religious: Map[String, List[String]] = Map.empty,
+          restaurant: Map[String, List[String]] = Map.empty,
+          sports: Map[String, List[String]] = Map.empty,
+          otherShops: Map[String, List[String]] = Map.empty,
       ) derives ConfigConvert
     }
   }
@@ -195,16 +206,16 @@ object OsmoGridConfig {
   /** Parameters for grid outputs.
     *
     * @param hv
-    *   If high voltage grids should be written (default: true).
+    *   If high voltage grids should be written (default: false).
     * @param lv
-    *   If low voltage grids should be written (default: true).
+    *   If low voltage grids should be written (default: false).
     * @param mv
-    *   If medium voltage grids should be written (default: true).
+    *   If medium voltage grids should be written (default: false).
     */
   final case class Grids(
-      hv: Boolean = true,
-      lv: Boolean = true,
-      mv: Boolean = true,
+      hv: Boolean = false,
+      lv: Boolean = false,
+      mv: Boolean = false,
   ) derives ConfigConvert
 
   /** Voltage level configuration.
@@ -216,9 +227,9 @@ object OsmoGridConfig {
     *   Parameters for low voltage level.
     */
   final case class Voltage(
-      hv: VoltageLevel = VoltageLevel(110.0, "hv"),
-      mv: VoltageLevel = VoltageLevel(10.0, "mv"),
-      lv: VoltageLevel = VoltageLevel(0.4, "lv"),
+      hv: VoltageLevel = VoltageLevel(110.0),
+      mv: VoltageLevel = VoltageLevel(10.0),
+      lv: VoltageLevel = VoltageLevel(0.4),
   ) derives ConfigConvert
 
 }

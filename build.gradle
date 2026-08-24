@@ -124,6 +124,7 @@ test.dependsOn processScoverageResources
 // see https://docs.gradle.org/current/userguide/scala_plugin.html#sec:configure_scala_classpath for details
 tasks.withType(ScalaCompile) {
   scalaCompileOptions.additionalParameters = [
+    "-Xmax-inlines:128",
     "-Xplugin:" + configurations.scalaCompilerPlugin.asPath,
     "-P:scapegoat:dataDir:" + layout.buildDirectory.dir("reports/scapegoat/src/").get(),
     "-P:scapegoat:disabledInspections:ComparingFloatingPointTypes",
@@ -134,6 +135,7 @@ tasks.withType(ScalaCompile) {
 // separate scapegoat report for test classes
 compileTestScala {
   scalaCompileOptions.additionalParameters = [
+    "-Xmax-inlines:128",
     "-Xplugin:" + configurations.scalaCompilerPlugin.asPath,
     "-P:scapegoat:dataDir:" + layout.buildDirectory.dir("reports/scapegoat/testsrc/").get(),
     "-P:scapegoat:disabledInspections:ComparingFloatingPointTypes",

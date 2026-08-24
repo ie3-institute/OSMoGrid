@@ -32,19 +32,22 @@ object ConfigFailFast extends LazyLogging {
       case OsmoGridConfig(generation, input, output, voltage) =>
         checkInputConfig(input)
         checkOutputConfig(output, additionalListener)
-        checkGenerationConfig(generation)
+        checkGenerationConfig(generation, input.osm.poi.isEmpty)
         checkVoltageConfig(voltage)
     }
     cfg
   }
 
-  private def checkGenerationConfig(generation: Generation): Unit =
+  private def checkGenerationConfig(
+      generation: Generation,
+      required: Boolean,
+  ): Unit =
     generation match {
       case Generation(lv, mv) =>
         /* Check, that at least one config is set */
         val defined = Seq(lv, mv).count(_.isDefined)
 
-        if (defined < 1)
+        if (required && defined < 1)
           throw IllegalConfigException(
             "At least one generation config has to be defined."
           )
@@ -64,7 +67,6 @@ object ConfigFailFast extends LazyLogging {
           ),
           _,
           loadSimultaneousFactor,
-          _,
           _,
         ) =>
       (BoundaryAdminLevel.get(lowest), BoundaryAdminLevel.get(starting)) match {
@@ -127,8 +129,8 @@ object ConfigFailFast extends LazyLogging {
 
   private def checkOsmInputConfig(osm: OsmoGridConfig.Input.Osm): Unit =
     osm match {
-      case Osm(Some(file)) => checkPbfFileDefinition(file)
-      case Osm(None) =>
+      case Osm(Some(file), _, _) => checkPbfFileDefinition(file)
+      case Osm(None, _, _) =>
         throw IllegalConfigException(
           "You have to provide at least one input data type for open street map information!"
         )
@@ -169,7 +171,7 @@ object ConfigFailFast extends LazyLogging {
     grids match {
       case Grids(false, false, false) =>
         // at least one output must be set
-        throw IllegalConfigException(s"No grid output defined.")
+        logger.warn(s"No grid output defined.")
 
       case Grids(true, false, false) =>
         logger.warn(s"Only hv output is currently not supported!")
