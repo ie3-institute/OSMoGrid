@@ -60,36 +60,37 @@ out skel qt;
 
 This example will return the OSM data for the area of [TU Dortmund University](https://www.tu-dortmund.de/)
 
-Please note that the use of relation ids requires some pre-processing. TU Dortmund University has the relation id 6188406, but needs to be added to 3600000000 to get the correct id 3606188406 for the overpass query.  
+Please note that the boundaries we are using here can be of type relation or of type way. The type needs to be specified. Belows code includes both, the boundary of TU Dortmund University as type relation and, currently comment out, an area in Dortmund which is limited by a way. To use the latter one, simply move the comment (`//`) before `w  way(id:37141772);` and place it before `relation(id:6188406);` to change from using relation's id to using the way's id.  
 
 ```
 [out:xml][timeout:30];
-// relation of Dortmund University: 6188406
-// relation: add 3600000000
-{{searcharea=area:3606188406}}
-(  
-  relation["boundary"="administrative"]["admin_level"~"^(6|7|8|9|10|11|12)$"]({{searcharea}});
-  relation["boundary"="census"]["admin_level"~"^(11|12)$"]({{searcharea}});
 
-  node["building"]({{searcharea}}); 
-  way["building"]({{searcharea}}); 
-  relation["building"]({{searcharea}}); 
-
-  node["highway"]({{searcharea}}); 
-  way["highway"]({{searcharea}}); 
-  relation["highway"]({{searcharea}}); 
-
-  node["landuse"]({{searcharea}}); 
-  way["landuse"]({{searcharea}}); 
-  relation["landuse"]({{searcharea}}); 
-
-  node["power"="substation"]({{searcharea}}); 
-  way["power"="substation"]({{searcharea}}); 
-  relation["power"="substation"]({{searcharea}}); 
-  
-  
+// Get the way or relation and convert it to an area dynamically
+// id of the relation of Dortmund University: 6188406
+// id of an area limted as a way in Dortmund: 37141772
+(
+  //way(id:37141772);
+  relation(id:6188406);
 );
-  
+map_to_area -> .searcharea;
+
+(
+ node["building"](area.searcharea); 
+  way["building"](area.searcharea); 
+  relation["building"](area.searcharea); 
+
+  node["highway"](area.searcharea); 
+  way["highway"](area.searcharea); 
+  relation["highway"](area.searcharea); 
+
+  node["landuse"](area.searcharea); 
+  way["landuse"](area.searcharea); 
+  relation["landuse"](area.searcharea); 
+
+  node["power"="substation"](area.searcharea); 
+  way["power"="substation"](area.searcharea); 
+  relation["power"="substation"](area.searcharea); 
+ );
 
 // print results
 out;
