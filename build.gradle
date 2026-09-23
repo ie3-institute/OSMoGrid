@@ -20,7 +20,7 @@ ext {
   scalaBinaryVersion = '3.9.0'
   pekkoVersion = '1.7.0'
 
-  scapegoatVersion = '3.3.6'
+  scapegoatVersion = '3.4.0'
 
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
   docsDirName = 'docs'
