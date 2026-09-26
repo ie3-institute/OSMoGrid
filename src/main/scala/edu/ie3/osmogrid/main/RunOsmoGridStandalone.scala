@@ -60,7 +60,9 @@ object RunOsmoGridStandalone {
               csv.hierarchic,
             )
           case None =>
-            throw IllegalConfigException(s"No grid output found at ${configured.toAbsolutePath}")
+            throw IllegalConfigException(
+              s"No grid output found at ${configured.toAbsolutePath}"
+            )
         }
       case Output(_, None, _, _) =>
         throw IllegalConfigException("No output given.")
@@ -110,14 +112,16 @@ object RunOsmoGridStandalone {
     // Otherwise, look for subdirectories that contain node_input.csv
     val candidates = Using.resource(Files.newDirectoryStream(dir)) { stream =>
       stream.asScala
-        .filter(p => Files.isDirectory(p) && Files.exists(p.resolve("node_input.csv")))
+        .filter(p =>
+          Files.isDirectory(p) && Files.exists(p.resolve("node_input.csv"))
+        )
         .toList
     }
 
     candidates match {
       case Nil           => None
       case single :: Nil => Some(single)
-      case many =>
+      case many          =>
         // Multiple candidates found — pick the most recently modified one to
         // match typical expectation that the latest run is intended.
         Some(many.maxBy(p => Files.getLastModifiedTime(p).toMillis))

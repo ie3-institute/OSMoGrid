@@ -248,11 +248,14 @@ object LvGridGeneratorSupport extends LazyLogging {
       }.toMap
 
     val allNodes: Set[NodeWrapper] =
-      (initialClusters.flatMap(_.nodes) ++ initialClusters.map(_.substation)).toSet
+      (initialClusters.flatMap(_.nodes) ++ initialClusters.map(
+        _.substation
+      )).toSet
 
     // discover connected components in the full adjacency graph
     val visited = scala.collection.mutable.Set.empty[NodeWrapper]
-    val components = scala.collection.mutable.ArrayBuffer.empty[Set[NodeWrapper]]
+    val components =
+      scala.collection.mutable.ArrayBuffer.empty[Set[NodeWrapper]]
     val queueCtor = () => scala.collection.mutable.Queue.empty[NodeWrapper]
 
     allNodes.foreach { n =>
@@ -282,7 +285,8 @@ object LvGridGeneratorSupport extends LazyLogging {
         cluster.nodes.map(_ -> idx)
       }.toMap
 
-    val finalAssignment = scala.collection.mutable.Map.empty[NodeWrapper, Int] ++ initialAssignment
+    val finalAssignment =
+      scala.collection.mutable.Map.empty[NodeWrapper, Int] ++ initialAssignment
 
     components.foreach { comp =>
       // substations present in this component (as cluster indices)
@@ -294,12 +298,16 @@ object LvGridGeneratorSupport extends LazyLogging {
         comp.foreach(n => finalAssignment.update(n, idx))
       } else if (subs.size > 1) {
         // multi-source BFS: determine nearest substation for each node
-        val sources: Seq[NodeWrapper] = comp.filter(substationToIdx.contains).toSeq
+        val sources: Seq[NodeWrapper] =
+          comp.filter(substationToIdx.contains).toSeq
 
         if (sources.nonEmpty) {
-          val dist = scala.collection.mutable.Map.empty[NodeWrapper, (NodeWrapper, Int)]
+          val dist =
+            scala.collection.mutable.Map.empty[NodeWrapper, (NodeWrapper, Int)]
           val q = queueCtor()
-          sources.foreach { s => dist.update(s, (s, 0)); q.enqueue(s) }
+          sources.foreach { s =>
+            dist.update(s, (s, 0)); q.enqueue(s)
+          }
 
           while (q.nonEmpty) {
             val cur = q.dequeue()
@@ -314,7 +322,9 @@ object LvGridGeneratorSupport extends LazyLogging {
 
           // assign nodes to nearest source's cluster
           dist.foreach { case (node, (source, _)) =>
-            substationToIdx.get(source).foreach { idx => finalAssignment.update(node, idx) }
+            substationToIdx.get(source).foreach { idx =>
+              finalAssignment.update(node, idx)
+            }
           }
         }
       }
