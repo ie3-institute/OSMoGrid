@@ -25,6 +25,7 @@ import edu.ie3.util.quantities.interfaces.Irradiance
 import org.jgrapht.alg.connectivity.ConnectivityInspector
 import org.locationtech.jts.geom.Coordinate
 import tech.units.indriya.ComparableQuantity
+import tech.units.indriya.unit.Units
 import utils.OsmoGridUtils.{
   buildStreetGraph,
   calcHouseholdPower,
@@ -86,7 +87,7 @@ object LvGraphGeneratorSupport extends LazyLogging {
     def createHighwayNodeName(considerHouseConnectionNode: Boolean): String = {
       if (considerHouseConnectionNode) {
         if (this.hasNewNode)
-          s"Highway node between: ${highwayNodeA.id} and ${highwayNodeB.id} at (${graphConnectionNode.latitude}, ${graphConnectionNode.longitude}) at Node.id ${graphConnectionNode.id}"
+          "Highway node between: " + highwayNodeA.id + " and " + highwayNodeB.id + " at " + graphConnectionNode.id
         else if (this.graphConnectionNode == this.highwayNodeA)
           "Highway node: " + highwayNodeA.id
         else "Highway node: " + highwayNodeB.id
@@ -323,12 +324,43 @@ object LvGraphGeneratorSupport extends LazyLogging {
       buildingGraphConnections: Seq[BuildingGraphConnection],
       considerBuildingConnections: Boolean,
   ): (OsmGraph, Seq[BuildingGraphConnection]) = {
+    // group building connections that require a new node on the same highway
+    // section, so that the section is split only once and all new nodes are
+    // inserted into a single connected chain along the section
+    val sectionKey = (bgc: BuildingGraphConnection) =>
+      Set(bgc.highwayNodeA, bgc.highwayNodeB)
+
+    val bySection = buildingGraphConnections
+      .filter(_.hasNewNode)
+      .groupBy(sectionKey)
+
+    bySection.values.foreach { bgcs =>
+      val nodeA = bgcs.head.highwayNodeA
+      val nodeB = bgcs.head.highwayNodeB
+      // sort the new nodes along the section from nodeA to nodeB
+      val sorted = bgcs.sortBy { bgc =>
+        buildCoordinate(
+          bgc.graphConnectionNode.latitude,
+          bgc.graphConnectionNode.longitude,
+        )
+          .haversineDistance(
+            buildCoordinate(nodeA.latitude, nodeA.longitude)
+          )
+          .to(Units.METRE)
+      }
+      graph.addVertex(nodeA)
+      graph.addVertex(nodeB)
+      bgcs.foreach(bgc => graph.addVertex(bgc.graphConnectionNode))
+      Option(graph.getEdge(nodeA, nodeB)).foreach(graph.removeEdge)
+      val chain = nodeA +: sorted.map(_.graphConnectionNode) :+ nodeB
+      chain.sliding(2).foreach { case Seq(prev, next) =>
+        graph.addWeightedEdge(prev, next)
+      }
+    }
+
     val updatedBgcs = buildingGraphConnections.map(bgc => {
-      if (bgc.hasNewNode) {
+      if (!bgc.hasNewNode) {
         graph.addVertex(bgc.graphConnectionNode)
-        graph.removeEdge(bgc.highwayNodeA, bgc.highwayNodeB)
-        graph.addWeightedEdge(bgc.highwayNodeA, bgc.graphConnectionNode)
-        graph.addWeightedEdge(bgc.graphConnectionNode, bgc.highwayNodeB)
       }
       if (considerBuildingConnections) {
         val buildingNode = Node(

@@ -86,6 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Handle additional case when building a polygon from ways [#427](https://github.com/ie3-institute/OSMoGrid/issues/427)
 - Fix clustering at LvGridGeneration [#680](https://github.com/ie3-institute/OSMoGrid/issues/680)
 - Fix NodeValidation issue [#687](https://github.com/ie3-institute/OSMoGrid/issues/687)
+- Fix Duplicated nodes and unconnected elements [#510](https://github.com/ie3-institute/OSMoGrid/issues/510=
 
 ### Removed
 - Legacy Java code
