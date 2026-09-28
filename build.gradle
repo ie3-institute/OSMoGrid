@@ -17,10 +17,10 @@ ext {
   javaVersion = JavaVersion.VERSION_21
 
   scalaVersion = '3'
-  scalaBinaryVersion = '3.8.4'
+  scalaBinaryVersion = '3.9.0'
   pekkoVersion = '1.7.0'
 
-  scapegoatVersion = '3.3.6'
+  scapegoatVersion = '3.4.0'
 
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
   docsDirName = 'docs'
@@ -125,6 +125,7 @@ test.dependsOn processScoverageResources
 tasks.withType(ScalaCompile) {
   scalaCompileOptions.additionalParameters = [
     "-Xmax-inlines:128",
+    '-Xunchecked-java-output-version:' + javaVersion.majorVersion,
     "-Xplugin:" + configurations.scalaCompilerPlugin.asPath,
     "-P:scapegoat:dataDir:" + layout.buildDirectory.dir("reports/scapegoat/src/").get(),
     "-P:scapegoat:disabledInspections:ComparingFloatingPointTypes",
