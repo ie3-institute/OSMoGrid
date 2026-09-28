@@ -125,6 +125,7 @@ test.dependsOn processScoverageResources
 tasks.withType(ScalaCompile) {
   scalaCompileOptions.additionalParameters = [
     "-Xmax-inlines:128",
+    '-Xunchecked-java-output-version:' + javaVersion.majorVersion,
     "-Xplugin:" + configurations.scalaCompilerPlugin.asPath,
     "-P:scapegoat:dataDir:" + layout.buildDirectory.dir("reports/scapegoat/src/").get(),
     "-P:scapegoat:disabledInspections:ComparingFloatingPointTypes",
