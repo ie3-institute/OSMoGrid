@@ -60,7 +60,7 @@ out skel qt;
 
 This example will return the OSM data for the area of [TU Dortmund University](https://www.tu-dortmund.de/)
 
-Please note that the boundaries we are using here can be of type relation or of type way. The type needs to be specified. Belows code includes both, the boundary of TU Dortmund University as type relation and, currently comment out, an area in Dortmund which is limited by a way. To use the latter one, simply move the comment (`//`) before `w  way(id:37141772);` and place it before `relation(id:6188406);` to change from using relation's id to using the way's id.  
+Please note that the boundaries we are using here can be of type relation or of type way. The type needs to be specified. Belows code includes both, the boundary of TU Dortmund University as type relation and, currently comment out, an area in Dortmund which is limited by a way. To use the latter one, simply move the comment (`//`) before `way(id:37141772);` and place it before `relation(id:6188406);` to change from using relation's id to using the way's id.  
 
 ```
 [out:xml][timeout:30];
