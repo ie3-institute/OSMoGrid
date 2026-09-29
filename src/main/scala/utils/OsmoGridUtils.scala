@@ -19,7 +19,7 @@ import edu.ie3.osmogrid.io.input.AssetInformation
 import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.geo.RichGeometries.containsCoordinate
 import edu.ie3.util.osm.OsmUtils.GeometryUtils.buildPolygon
-import edu.ie3.util.osm.model.OsmEntity.Way.ClosedWay
+import edu.ie3.util.osm.model.OsmEntity.Way.{ClosedWay, OpenWay}
 import edu.ie3.util.osm.model.OsmEntity.{Node, Way}
 import edu.ie3.util.quantities.PowerSystemUnits
 import edu.ie3.util.quantities.QuantityUtils.{asKiloVolt, asPu, round}
@@ -33,7 +33,7 @@ import java.util.UUID
 import javax.measure.quantity.{Area, Power}
 import scala.collection.parallel.ParSeq
 import scala.jdk.CollectionConverters.*
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object OsmoGridUtils {
   private val cfg: Voltage = RunGuardian.getVoltageConfig
@@ -62,6 +62,25 @@ object OsmoGridUtils {
       case Failure(exception) =>
         throw OsmDataException(
           s"Could not build polygon from closed way: $closedWay. Exception: ",
+          exception,
+        )
+    }
+  }
+
+  def safeBuildPolygon(
+      openWay: OpenWay,
+      nodes: Map[Long, Node],
+  ): Polygon = {
+    val coordinates = openWay.nodes.map { id =>
+      val node = nodes(id)
+      new Coordinate(node.longitude, node.latitude)
+    }.toArray
+
+    Try(GeoUtils.buildPolygon(coordinates :+ coordinates(0))) match {
+      case Success(polygon) => polygon
+      case Failure(exception) =>
+        throw OsmDataException(
+          s"Could not build polygon from open way: $openWay. Exception: ",
           exception,
         )
     }

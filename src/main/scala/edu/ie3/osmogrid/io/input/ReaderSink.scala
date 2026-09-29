@@ -7,28 +7,24 @@
 package edu.ie3.osmogrid.io.input
 
 import edu.ie3.osmogrid.exception.PbfReadFailedException
-import edu.ie3.osmogrid.model.OsmoGridModel.LvOsmoGridModel
-import edu.ie3.osmogrid.model.{OsmoGridModel, SourceFilter}
 import edu.ie3.util.osm.model.OsmContainer.ParOsmContainer
+import edu.ie3.util.osm.model.OsmEntity as UtilsEntity
 import edu.ie3.util.osm.model.OsmEntity.Relation.RelationMemberType
-import edu.ie3.util.osm.model.{OsmEntity => UtilsEntity}
 import org.apache.pekko.actor.typed.ActorRef
 import org.openstreetmap.osmosis.core.container.v0_6.EntityContainer
-import org.openstreetmap.osmosis.core.domain.v0_6._
+import org.openstreetmap.osmosis.core.domain.v0_6.*
 import org.openstreetmap.osmosis.core.task.v0_6.Sink
 import org.slf4j.Logger
 
 import java.io.FileInputStream
 import java.util
-import scala.collection.parallel.CollectionConverters._
-import scala.jdk.CollectionConverters._
+import scala.collection.parallel.CollectionConverters.*
+import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
 /** A [[Sink]] that will process the read data.
   * @param inputStream
   *   to close after finishing the processing
-  * @param filter
-  *   for the data
   * @param requester
   *   to send a reply to
   * @param log
@@ -42,7 +38,6 @@ import scala.util.{Failure, Success, Try}
   */
 case class ReaderSink(
     inputStream: FileInputStream,
-    filter: SourceFilter,
     requester: ActorRef[InputDataEvent],
     log: Logger,
     private var nodes: util.List[UtilsEntity.Node] = new util.ArrayList(),
@@ -109,21 +104,16 @@ case class ReaderSink(
   override def complete(): Unit = {
 
     val osmoGridModel = Try {
-      val osmContainer = ParOsmContainer(
+      ParOsmContainer(
         nodes.asScala.toSeq.par,
         ways.asScala.toSeq.par,
         relations.asScala.toSeq.par,
       )
-
-      filter match {
-        case lvFilter: SourceFilter.LvFilter =>
-          LvOsmoGridModel(osmContainer, lvFilter, filterNodes = false)
-      }
     }
 
     osmoGridModel match {
-      case Success(model: OsmoGridModel) =>
-        requester ! RepOsm(model)
+      case Success(osmContainer: ParOsmContainer) =>
+        requester ! RepOsmContainer(osmContainer)
       case Failure(exception) =>
         requester ! OsmReadFailed(
           PbfReadFailedException(s"Reading failed due to: $exception")

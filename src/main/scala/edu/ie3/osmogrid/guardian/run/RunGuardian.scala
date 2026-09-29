@@ -6,16 +6,17 @@
 
 package edu.ie3.osmogrid.guardian.run
 
-import org.apache.pekko.actor.typed.scaladsl.Behaviors
-import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
 import edu.ie3.osmogrid.guardian.run.MessageAdapters.{
   WrappedLvCoordinatorResponse,
   WrappedMvCoordinatorResponse,
 }
-import edu.ie3.osmogrid.io.output.ResultListenerProtocol
+import edu.ie3.osmogrid.io.output.{PoiResult, ResultListenerProtocol}
 import edu.ie3.osmogrid.lv.RepLvGrids
 import edu.ie3.osmogrid.mv.{ProvidedLvData, RepMvGrids, WrappedMvResponse}
+import edu.ie3.osmogrid.poi.PoiParser.PoiResponse
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.{ActorRef, Behavior}
 
 import java.util.UUID
 import scala.util.{Failure, Success}
@@ -41,7 +42,7 @@ object RunGuardian
       cfg: OsmoGridConfig,
       additionalListener: Seq[ActorRef[ResultListenerProtocol]] = Seq.empty,
       runId: UUID,
-  ): Behavior[RunRequest] = Behaviors.setup { ctx =>
+  ): Behavior[Messages] = Behaviors.setup { ctx =>
     // overwriting the default voltage config
     setVoltageConfig(cfg.voltage)
 
@@ -65,7 +66,7 @@ object RunGuardian
     * @return
     *   the next state
     */
-  private def idle(runGuardianData: RunGuardianData): Behavior[RunRequest] =
+  private def idle(runGuardianData: RunGuardianData): Behavior[Messages] =
     Behaviors.receive {
       case (ctx, Run) =>
         /* Start a run */
@@ -116,7 +117,24 @@ object RunGuardian
       runGuardianData: RunGuardianData,
       childReferences: ChildReferences,
       finishedGridData: FinishedGridData,
-  ): Behavior[RunRequest] = Behaviors.receive {
+  ): Behavior[Messages] = Behaviors.receive {
+    case (ctx, PoiResponse(response)) =>
+      ctx.log.info(s"Received poi data.")
+
+      // poi parser is now allowed to die in peace
+      childReferences.poiParser.foreach(ctx.unwatch)
+      val updatedChildReferences = childReferences.copy(poiParser = None)
+
+      childReferences.resultListeners.foreach(_ ! PoiResult(response))
+
+      // check if all possible data was received
+      if (!updatedChildReferences.stillRunning) {
+        // if all data was received, handle the grid results before shutting down
+        ctx.self ! HandleGridResults
+      }
+
+      running(runGuardianData, updatedChildReferences, finishedGridData)
+
     case (
           ctx,
           WrappedLvCoordinatorResponse(
@@ -198,7 +216,7 @@ object RunGuardian
         finishedGridData.assetInformation,
         childReferences.resultListeners,
         runGuardianData.msgAdapters,
-      )(ctx.log)
+      )(using ctx.log)
 
       stopping(stopChildren(runGuardianData.runId, childReferences, ctx))
     case (ctx, ResultEventListenerDied) =>
@@ -235,7 +253,7 @@ object RunGuardian
     */
   private def stopping(
       stoppingData: StoppingData
-  ): Behavior[RunRequest] = Behaviors.receive {
+  ): Behavior[Messages] = Behaviors.receive {
     case (ctx, watch: RunWatch) =>
       val updatedStoppingData = registerCoordinatedShutDown(watch, stoppingData)
       if (updatedStoppingData.allChildrenTerminated) {

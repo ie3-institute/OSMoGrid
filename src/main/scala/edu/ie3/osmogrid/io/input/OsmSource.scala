@@ -23,8 +23,7 @@ import scala.util.{Failure, Try}
 sealed trait OsmSource {
 
   def read(
-      filter: SourceFilter,
-      requester: ActorRef[InputDataEvent],
+      requester: ActorRef[InputDataEvent]
   ): Unit
 
   def close(): Unit
@@ -38,13 +37,10 @@ object OsmSource {
       ctx: ActorContext[?],
   ) extends OsmSource {
 
-    def read(
-        filter: SourceFilter,
-        requester: ActorRef[InputDataEvent],
-    ): Unit = {
+    def read(requester: ActorRef[InputDataEvent]): Unit = {
       val inputStream = new FileInputStream(new File(filePath))
 
-      val sink = ReaderSink(inputStream, filter, requester, ctx.log)
+      val sink = ReaderSink(inputStream, requester, ctx.log)
 
       val reader =
         new PbfReader(
@@ -77,9 +73,9 @@ object OsmSource {
       osm: OsmoGridConfig.Input.Osm
   ): ActorContext[InputDataEvent] => OsmSource =
     osm match {
-      case Osm(Some(pbf: OsmoGridConfig.Input.Osm.Pbf)) =>
+      case Osm(Some(pbf: OsmoGridConfig.Input.Osm.Pbf), _, _) =>
         getPbfFileSource(pbf)
-      case Osm(None) =>
+      case Osm(None, _, _) =>
         throw IllegalConfigException(
           "You have to provide at least one input data type for open street map information!"
         )

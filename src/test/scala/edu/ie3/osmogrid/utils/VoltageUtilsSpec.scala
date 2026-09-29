@@ -33,13 +33,13 @@ class VoltageUtilsSpec extends UnitSpec {
       val cases = Table(
         ("cfg", "expected"),
         (
-          OsmoGridConfig.VoltageLevel(0.4, "lv", None),
+          OsmoGridConfig.VoltageLevel(0.4, None),
           List(
             Quantities.getQuantity(0.4, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
           ),
         ),
         (
-          OsmoGridConfig.VoltageLevel(0.4, "lv", Some(List(1d, 0.32, 0.7))),
+          OsmoGridConfig.VoltageLevel(0.4, Some(List(1d, 0.32, 0.7))),
           List(
             Quantities.getQuantity(1d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
             Quantities.getQuantity(0.32, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
@@ -57,13 +57,13 @@ class VoltageUtilsSpec extends UnitSpec {
       val cases = Table(
         ("cfg", "expected"),
         (
-          OsmoGridConfig.VoltageLevel(10.0, "mv", None),
+          OsmoGridConfig.VoltageLevel(10.0, None),
           List(
             Quantities.getQuantity(10d, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
           ),
         ),
         (
-          OsmoGridConfig.VoltageLevel(10.0, "mv", Some(List(10d, 20d, 30d))),
+          OsmoGridConfig.VoltageLevel(10.0, Some(List(10d, 20d, 30d))),
           List(
             Quantities.getQuantity(10d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
             Quantities.getQuantity(20d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
@@ -81,13 +81,13 @@ class VoltageUtilsSpec extends UnitSpec {
       val cases = Table(
         ("cfg", "expected"),
         (
-          OsmoGridConfig.VoltageLevel(110.0, "hvh", None),
+          OsmoGridConfig.VoltageLevel(110.0, None),
           List(
             Quantities.getQuantity(110d, StandardUnits.RATED_VOLTAGE_MAGNITUDE)
           ),
         ),
         (
-          OsmoGridConfig.VoltageLevel(110.0, "hv", Some(List(100d, 120d, 60d))),
+          OsmoGridConfig.VoltageLevel(110.0, Some(List(100d, 120d, 60d))),
           List(
             Quantities.getQuantity(100d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
             Quantities.getQuantity(120d, StandardUnits.RATED_VOLTAGE_MAGNITUDE),
@@ -98,22 +98,6 @@ class VoltageUtilsSpec extends UnitSpec {
 
       forAll(cases) { (cfg, expected) =>
         parse(cfg) shouldBe expected
-      }
-    }
-
-    "convert multiple given input to the correct voltage level" in {
-      val cases = Table(
-        ("id", "voltages", "default", "expectedVoltLvl"),
-        ("lv", Some(List(0.23, 1.0)), 0.4, List(lv230, lv1000)),
-        ("lv", None, 0.4, List(lv400)),
-      )
-
-      forAll(cases) { (id, voltages, default, expectedVoltLvl) =>
-        val voltLvl: List[VoltageLevel] =
-          VoltageUtils.toVoltLvl(id, voltages, default)
-
-        voltLvl.size shouldBe expectedVoltLvl.size
-        voltLvl.foreach(lvl => expectedVoltLvl.contains(lvl))
       }
     }
 

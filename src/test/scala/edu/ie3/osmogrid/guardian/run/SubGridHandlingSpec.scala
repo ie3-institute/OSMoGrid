@@ -13,7 +13,6 @@ import edu.ie3.datamodel.models.input.connector.{
 }
 import edu.ie3.datamodel.models.input.container.{
   EnergyManagementUnits,
-  GraphicElements,
   RawGridElements,
   SubGridContainer,
   SystemParticipants,
@@ -56,7 +55,7 @@ class SubGridHandlingSpec
       mvCoordinator.ref,
     )
     val log = testKit.system.log
-    val cfg = OsmoGridConfig.Grids()
+    val cfg = OsmoGridConfig.Grids(true, true, true)
 
     "handle empty results correctly" in {
       val empty = Try {

@@ -114,6 +114,9 @@ class ResultListenerIT
 
         testProbe.expectMessageType[GridResult]
         testProbe.expectMessage(ResultHandlingSucceeded)
+
+        testActor ! StopListener
+
         testProbe.expectTerminated(testActor)
 
         val gridData = CsvJointGridContainerSource.read(

@@ -141,33 +141,22 @@ class OsmGraph(
   /** Returns true if at least two edges of this graph intersects each other.
     */
   def containsEdgeIntersection(): Boolean = {
-    val edges = edgeSet().asScala
-
+    val edgesList = edgeSet().asScala.toList
     // algorithm to check if two edges intersects each other
-    boundary {
-      for {
-        (edgeA, i) <- edges.zipWithIndex
-        edgeB <- edges.drop(i + 1)
-      } {
+    edgesList.zipWithIndex.exists { case (edgeA, i) =>
+      edgesList.drop(i + 1).exists { edgeB =>
         val sourceA = getEdgeSource(edgeA)
         val targetA = getEdgeTarget(edgeA)
 
         val sourceB = getEdgeSource(edgeB)
         val targetB = getEdgeTarget(edgeB)
 
-        val lineA =
-          getLineSegmentBetweenNodes(sourceA, targetA)
-        val lineB =
-          getLineSegmentBetweenNodes(sourceB, targetB)
+        val lineA = getLineSegmentBetweenNodes(sourceA, targetA)
+        val lineB = getLineSegmentBetweenNodes(sourceB, targetB)
 
         // checks if the two line intersects each other
-        val intersection = hasIntersection(lineA, lineB)
-
-        if (intersection) {
-          break(true)
-        }
+        hasIntersection(lineA, lineB)
       }
-      false
     }
   }
 
@@ -175,14 +164,7 @@ class OsmGraph(
     * than two edges.
     */
   def tooManyVertexConnections(): Boolean = {
-    boundary {
-      vertexSet().asScala.foreach { v =>
-        if (edgesOf(v).size() > 2) {
-          break(true)
-        }
-      }
-      false
-    }
+    vertexSet().asScala.exists(v => edgesOf(v).size() > 2)
   }
 
   /** Uses the given [[Polygon]] to create a subgraph that only contains

@@ -32,26 +32,6 @@ object VoltageUtils {
   }
 
   /** Utility to create a list of [[Quantity]].
-    * @param id
-    *   of the voltage level
-    * @param vNom
-    *   option for multiple voltages in kV
-    * @param default
-    *   a default voltage that should be used, if vNom is an empty option
-    * @return
-    *   a list of [[VoltageLevel]]s
-    */
-  def toVoltLvl(
-      id: String,
-      vNom: Option[List[Double]],
-      default: Double,
-  ): List[VoltageLevel] = {
-    toQuantities(vNom, default).map { quantity =>
-      new VoltageLevel(id, quantity)
-    }
-  }
-
-  /** Utility to create a list of [[Quantity]].
     *
     * @param vNom
     *   option for multiple voltages in kV

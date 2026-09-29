@@ -7,6 +7,7 @@
 package edu.ie3.osmogrid.main
 
 import edu.ie3.datamodel.io.source.csv.CsvJointGridContainerSource
+import edu.ie3.datamodel.utils.validation.ValidationUtils
 import edu.ie3.osmogrid.cfg.OsmoGridConfig.Output
 import edu.ie3.osmogrid.cfg.{ArgsParser, OsmoGridConfig}
 import edu.ie3.osmogrid.exception.{GridException, IllegalConfigException}
@@ -84,5 +85,6 @@ object RunOsmoGridStandalone {
     println(s"Number of hv nodes: ${nodes.toSeq
         .count(_.getVoltLvl.getNominalVoltage.getValue.doubleValue() == 110)}")
 
+    ValidationUtils.check(grid)
   }
 }
