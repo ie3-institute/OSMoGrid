@@ -18,7 +18,6 @@ import edu.ie3.datamodel.models.input.connector.{
 }
 import edu.ie3.datamodel.models.input.container.{
   EnergyManagementUnits,
-  GraphicElements,
   RawGridElements,
   SubGridContainer,
   SystemParticipants,
