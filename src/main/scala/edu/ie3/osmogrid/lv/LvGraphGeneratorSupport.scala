@@ -86,7 +86,7 @@ object LvGraphGeneratorSupport extends LazyLogging {
     def createHighwayNodeName(considerHouseConnectionNode: Boolean): String = {
       if (considerHouseConnectionNode) {
         if (this.hasNewNode)
-          "Highway node between: " + highwayNodeA.id + " and " + highwayNodeB.id
+          s"Highway node between: ${highwayNodeA.id} and ${highwayNodeB.id} at (${graphConnectionNode.latitude}, ${graphConnectionNode.longitude}) at Node.id ${graphConnectionNode.id}"
         else if (this.graphConnectionNode == this.highwayNodeA)
           "Highway node: " + highwayNodeA.id
         else "Highway node: " + highwayNodeB.id
