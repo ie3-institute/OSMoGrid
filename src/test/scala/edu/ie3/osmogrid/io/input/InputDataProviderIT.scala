@@ -151,7 +151,7 @@ class InputDataProviderIT extends UnitSpec with InputDataCheck {
               "1 exception(s) occurred within \"Transformer2WTypeInput\" data:"
             )
             exception.getMessage should include(
-              "Field \"uuid\" not found in EntityData"
+              "Field \"uuid\" not found in source"
             )
           case RepAssetTypes(
                 assetInformation: AssetInformation
