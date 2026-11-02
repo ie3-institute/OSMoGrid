@@ -18,7 +18,7 @@ import edu.ie3.util.geo.GeoUtils
 import edu.ie3.util.geo.GeoUtils.orthogonalProjection
 import edu.ie3.util.geo.RichGeometries.{haversineDistance, isBetween}
 import edu.ie3.util.osm.model.OsmEntity.Node
-import edu.ie3.util.quantities.QuantityMatchers.equalWithTolerance
+import edu.ie3.util.quantities.QuantityMatchers
 import edu.ie3.util.quantities.QuantityUtils.{
   asKiloWatt,
   asKilometre,
@@ -35,7 +35,10 @@ import javax.measure.quantity.Length
 import scala.collection.parallel.CollectionConverters.seqIsParallelizable
 import scala.util.{Failure, Success, Try}
 
-class LvGraphGeneratorSupportSpec extends UnitSpec with OsmTestData {
+class LvGraphGeneratorSupportSpec
+    extends UnitSpec
+    with OsmTestData
+    with QuantityMatchers {
 
   "A lv grid generator spec" when {
     "building a complete grid graph" should {
