@@ -71,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactor nodeUpdateMap in `SubGridHandling` [#681](https://github.com/ie3-institute/OSMoGrid/issues/681)
 - Switched config framework to pureconfig [#677](https://github.com/ie3-institute/OSMoGrid/issues/677)
 - Some code polishing [#704](https://github.com/ie3-institute/OSMoGrid/issues/704)
+- Improve documentation of overpass query [#628](https://github.com/ie3-institute/OSMoGrid/issues/628)
 
 ### Fixed
 - Fixed bug in `LvGridGeneratorSupport` [#388](https://github.com/ie3-institute/OSMoGrid/issues/388)
