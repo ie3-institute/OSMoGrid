@@ -3,8 +3,8 @@ plugins {
   id 'java' //java support
   id 'scala'
   id 'pmd' // code check, working on source code
-  id 'com.diffplug.spotless' version '8.10.2'//code format
-  id 'com.github.spotbugs' version '6.5.11' // code check, working on byte code
+  id 'com.diffplug.spotless' version '8.10.4'//code format
+  id 'com.github.spotbugs' version '6.5.13' // code check, working on byte code
   id 'de.undercouch.download' version '5.7.0'
   id 'kr.motd.sphinx' version '2.10.1' // documentation generation
   id "com.github.maiflai.scalatest" version "0.33" // run scalatest without specific spec task
@@ -17,10 +17,10 @@ ext {
   javaVersion = JavaVersion.VERSION_21
 
   scalaVersion = '3'
-  scalaBinaryVersion = '3.8.4'
-  pekkoVersion = '1.7.0'
+  scalaBinaryVersion = '3.9.0'
+  pekkoVersion = '1.7.1'
 
-  scapegoatVersion = '3.3.6'
+  scapegoatVersion = '3.4.1'
 
   scriptsLocation = 'gradle' + File.separator + 'scripts' + File.separator
   docsDirName = 'docs'
@@ -65,7 +65,7 @@ dependencies {
 
   // scala core
   implementation "org.scala-lang:scala3-library_3:${scalaBinaryVersion}"
-  implementation group: 'org.scala-lang.modules', name: "scala-parallel-collections_${scalaVersion}", version: '1.2.0'
+  implementation group: 'org.scala-lang.modules', name: "scala-parallel-collections_${scalaVersion}", version: '1.3.0'
 
   // pekko
   implementation "org.apache.pekko:pekko-actor-typed_${scalaVersion}:${pekkoVersion}"
@@ -73,13 +73,13 @@ dependencies {
 
   // logging
   implementation "com.typesafe.scala-logging:scala-logging_${scalaVersion}:3.9.6"
-  implementation 'ch.qos.logback:logback-classic:1.6.3'
+  implementation 'ch.qos.logback:logback-classic:1.6.6'
 
   // config
   implementation 'com.typesafe:config:1.4.9'
-  implementation "com.github.scopt:scopt_$scalaVersion:4.1.0" // cmd args parser
-  implementation "com.github.pureconfig:pureconfig-core_${scalaVersion}:0.17.10"
-  implementation "com.github.pureconfig:pureconfig-generic-scala3_${scalaVersion}:0.17.10"
+  implementation "com.github.scopt:scopt_$scalaVersion:4.2.0" // cmd args parser
+  implementation "com.github.pureconfig:pureconfig-core_${scalaVersion}:0.17.11"
+  implementation "com.github.pureconfig:pureconfig-generic-scala3_${scalaVersion}:0.17.11"
 
   // osm4scala
   implementation "org.openstreetmap.osmosis:osmosis-core:0.49.2"
@@ -87,14 +87,14 @@ dependencies {
 
 
   // ie³ power system utils
-  implementation('com.github.ie3-institute:PowerSystemUtils:3.2.2') {
+  implementation('com.github.ie3-institute:PowerSystemUtils:3.2.3') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
   }
 
   // ie³ power system data model
-  implementation('com.github.ie3-institute:PowerSystemDataModel:9.1.0') {
+  implementation('com.github.ie3-institute:PowerSystemDataModel:9.2.0') {
     exclude group: 'org.slf4j'
     exclude group: 'org.apache.logging.log4j'
     exclude group: 'com.github.ie3-institute'
@@ -112,7 +112,7 @@ dependencies {
   testRuntimeOnly 'com.vladsch.flexmark:flexmark-all:0.64.8' //scalatest html output
   testImplementation 'org.pegdown:pegdown:1.6.0'
 
-  testImplementation 'org.mockito:mockito-core:5.23.0' // mocking framework
+  testImplementation 'org.mockito:mockito-core:5.24.0' // mocking framework
   testImplementation "org.scalatestplus:mockito-3-12_$scalaVersion:3.2.10.0" // syntactic sugar
 }
 
@@ -125,6 +125,7 @@ test.dependsOn processScoverageResources
 tasks.withType(ScalaCompile) {
   scalaCompileOptions.additionalParameters = [
     "-Xmax-inlines:128",
+    '-Xunchecked-java-output-version:' + javaVersion.majorVersion,
     "-Xplugin:" + configurations.scalaCompilerPlugin.asPath,
     "-P:scapegoat:dataDir:" + layout.buildDirectory.dir("reports/scapegoat/src/").get(),
     "-P:scapegoat:disabledInspections:ComparingFloatingPointTypes",

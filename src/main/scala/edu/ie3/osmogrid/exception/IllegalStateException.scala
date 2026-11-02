@@ -8,5 +8,5 @@ package edu.ie3.osmogrid.exception
 
 case class IllegalStateException(
     msg: String = "",
-    cause: Throwable = None.orNull,
+    cause: Throwable = null,
 ) extends Exception(msg, cause)

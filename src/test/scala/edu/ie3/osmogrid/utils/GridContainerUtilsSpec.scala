@@ -8,7 +8,6 @@ package edu.ie3.osmogrid.utils
 
 import edu.ie3.datamodel.models.input.container.{
   EnergyManagementUnits,
-  GraphicElements,
   JointGridContainer,
   RawGridElements,
   SystemParticipants,
@@ -16,7 +15,6 @@ import edu.ie3.datamodel.models.input.container.{
 import edu.ie3.datamodel.models.input.{AssetInput, NodeInput}
 import edu.ie3.datamodel.models.voltagelevels.GermanVoltageLevelUtils.*
 import edu.ie3.osmogrid.cfg.OsmoGridConfig
-import edu.ie3.osmogrid.guardian.run.RunGuardian
 import edu.ie3.test.common.{GridSupport, MvTestData, UnitSpec}
 import utils.GridContainerUtils.combine
 import utils.{GridContainerUtils, VoltageUtils}

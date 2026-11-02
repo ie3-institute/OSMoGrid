@@ -8,5 +8,5 @@ package edu.ie3.osmogrid.exception
 
 final case class OsmDataException(
     msg: String = "",
-    cause: Throwable = None.orNull,
+    cause: Throwable = null,
 ) extends Exception(msg, cause)

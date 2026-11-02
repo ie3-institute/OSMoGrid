@@ -8,5 +8,5 @@ package edu.ie3.osmogrid.exception
 
 final case class SolverException(
     msg: String = "Error during solving.",
-    cause: Throwable = None.orNull,
+    cause: Throwable = null,
 ) extends Exception(msg, cause)
