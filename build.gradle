@@ -76,7 +76,7 @@ dependencies {
   implementation 'ch.qos.logback:logback-classic:1.6.6'
 
   // config
-  implementation 'com.typesafe:config:1.4.9'
+  implementation 'com.typesafe:config:1.4.10'
   implementation "com.github.scopt:scopt_$scalaVersion:4.2.0" // cmd args parser
   implementation "com.github.pureconfig:pureconfig-core_${scalaVersion}:0.17.11"
   implementation "com.github.pureconfig:pureconfig-generic-scala3_${scalaVersion}:0.17.11"
