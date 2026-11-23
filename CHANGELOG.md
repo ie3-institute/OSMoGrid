@@ -86,6 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clustering crashes with less than two nodes [#506](https://github.com/ie3-institute/OSMoGrid/issues/506)
 - Handle additional case when building a polygon from ways [#427](https://github.com/ie3-institute/OSMoGrid/issues/427)
 - Fix clustering at LvGridGeneration [#680](https://github.com/ie3-institute/OSMoGrid/issues/680)
+- Updated get_versions.sh [#770](https://github.com/ie3-institute/simona/issues/770)
 
 ### Removed
 - Legacy Java code
